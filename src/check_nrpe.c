@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 04-03-2003
+ * Last Modified: 04-15-2003
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -53,7 +53,7 @@ void alarm_handler(int);
 
 
 int main(int argc, char **argv){
-        u_int32_t long packet_crc32;
+        u_int32_t packet_crc32;
         u_int32_t calculated_crc32;
 	int16_t result;
 	int rc;

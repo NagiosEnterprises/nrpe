@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 04-03-2003
+ * Last Modified: 04-15-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -85,8 +85,7 @@ int use_ssl=FALSE;
 
 
 int main(int argc, char **argv){
-	int error=FALSE;
-	int result;
+	int result=OK;
 	int x;
 	char buffer[MAX_INPUT_BUFFER];
 #ifdef HAVE_SSL
@@ -270,7 +269,6 @@ int read_config_file(char *filename){
 	char *varname;
 	char *varvalue;
 	int line;
-	int x;
 
 
 	/* open the config file for reading */
@@ -516,7 +514,8 @@ void wait_for_connections(void){
 	struct sockaddr_in *nptr;
 	struct sockaddr addr;
 	int rc;
-	int sock, new_sd, addrlen;
+	int sock, new_sd;
+	socklen_t addrlen;
 	char connecting_host[16];
 	pid_t pid;
 	int flag=1;
@@ -703,12 +702,11 @@ void handle_connection(int sock){
 	int early_timeout=FALSE;
 	int rc;
 	int x;
-	FILE *fp;
 #ifdef DEBUG
 	FILE *errfp;
 #endif
 #ifdef HAVE_SSL
-	SSL *ssl;
+	SSL *ssl=NULL;
 #endif
 
 
@@ -727,7 +725,7 @@ void handle_connection(int sock){
 		if((ssl=SSL_new(ctx))!=NULL){
 			SSL_set_fd(ssl,sock);
 			if((rc=SSL_accept(ssl))!=1){
-				syslog(LOG_ERR,"Error: Could not complete SSL handshake. %s\n",SSL_get_error(ssl,rc));
+				syslog(LOG_ERR,"Error: Could not complete SSL handshake. %d\n",SSL_get_error(ssl,rc));
 #ifdef DEBUG
 				errfp=fopen("/tmp/err.log","w");
 				ERR_print_errors_fp(errfp);
@@ -1258,10 +1256,9 @@ int check_privileges(void){
 
 /* tests whether or not a client request is valid */
 int validate_request(packet *pkt){
-        u_int32_t long packet_crc32;
+        u_int32_t packet_crc32;
         u_int32_t calculated_crc32;
 	char *ptr;
-	int x;
 
 
 	/***** DECRYPT REQUEST ******/
@@ -1431,9 +1428,7 @@ int process_macros(char *input_buffer,char *output_buffer,int buffer_length){
 /* process command line arguments */
 int process_arguments(int argc, char **argv){
 	char optchars[MAX_INPUT_BUFFER];
-	int argindex=0;
 	int c=1;
-	int i=1;
 	int have_mode=FALSE;
 
 #ifdef HAVE_GETOPT_H

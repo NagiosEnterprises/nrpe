@@ -5,7 +5,7 @@
  * License: GPL
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  *
- * Last Modified: 01-28-2003
+ * Last Modified: 04-15-2003
  *
  * Description:
  *
@@ -302,7 +302,7 @@ void strip(char *buffer){
 int sendall(int s, char *buf, int *len){
 	int total=0;
 	int bytesleft=*len;
-	int n;
+	int n=0;
 
 	/* send all the data */
 	while(total<*len){
@@ -331,7 +331,7 @@ int sendall(int s, char *buf, int *len){
 int recvall(int s, char *buf, int *len, int timeout){
 	int total=0;
 	int bytesleft=*len;
-	int n;
+	int n=0;
 	time_t start_time;
 	time_t current_time;
 	
