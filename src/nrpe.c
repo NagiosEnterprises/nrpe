@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2004 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 03-06-2004
+ * Last Modified: 05-20-2004
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -134,9 +134,10 @@ int main(int argc, char **argv){
 
 	else if(result!=OK || show_help==TRUE){
 
-		printf("Usage: nrpe -c <config_file> <mode>\n");
+		printf("Usage: nrpe [-n] -c <config_file> <mode>\n");
 		printf("\n");
 		printf("Options:\n");
+		printf(" -n            = Do not use SSL\n");
 		printf(" <config_file> = Name of config file to use\n");
 		printf(" <mode>        = One of the following two operating modes:\n");  
 		printf("   -i          =    Run as a service under inetd or xinetd\n");
@@ -232,7 +233,7 @@ int main(int argc, char **argv){
 		/* make sure we're not root */
 		check_privileges();
 
-		/* redirect STDERR to /dev/null
+		/* redirect STDERR to /dev/null */
 		close(2);
 		open("/dev/null",O_WRONLY);
 

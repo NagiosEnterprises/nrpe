@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2004 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-19-2004
+ * Last Modified: 05-20-2004
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -82,9 +82,10 @@ int main(int argc, char **argv){
 
 	if(result!=OK || show_help==TRUE){
 
-		printf("Usage: check_nrpe -H <host> [-p <port>] [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
+		printf("Usage: check_nrpe -H <host> [-n] [-p <port>] [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
+		printf(" -n         = Do no use SSL\n");
 		printf(" <host>     = The address of the host running the NRPE daemon\n");
 		printf(" [port]     = The port on which the daemon is running (default=%d)\n",DEFAULT_SERVER_PORT);
 		printf(" [timeout]  = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
