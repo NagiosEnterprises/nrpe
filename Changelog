@@ -8,6 +8,7 @@ NRPE Changelog
 - Replaced host access list with TCP wrapper support
 - Removed length restrictions for command names and command lines
 - Configure script patch for getopt_long on Solaris
+- Bug fixes for accept() on HP-UX 11.0
 
 
 2.0 - 09/08/2003

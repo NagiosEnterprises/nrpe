@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 10-14-2003
+ * Last Modified: 10-23-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -537,6 +537,9 @@ void wait_for_connections(void){
 	char connecting_host[16];
 	pid_t pid;
 	int flag=1;
+	fd_set fdread;
+	struct timeval timeout;
+	int retval;
 #ifdef HAVE_LIBWRAP
 	struct request_info req;
 #endif
@@ -604,10 +607,38 @@ void wait_for_connections(void){
 
 		/* wait for a connection request */
 	        while(1){
+
+			/* wait until there's something to do */
+			FD_ZERO(&fdread);
+			FD_SET(sock,&fdread);
+			timeout.tv_sec=0;
+			timeout.tv_usec=500000;
+			retval=select(sock+1,&fdread,NULL,&fdread,&timeout);
+
+			/* error */
+			if(retval<0)
+				continue;
+
+			/* accept a new connection request */
 			new_sd=accept(sock,0,0);
-			if(new_sd>=0 || (errno!=EWOULDBLOCK && errno!=EINTR))
+
+			/* some kind of error occurred... */
+			if(new_sd<0){
+
+				/* fix for HP-UX 11.0 - just retry */
+				if(errno==ENOBUFS)
+					continue;
+
+				/* retry */
+				if(errno==EWOULDBLOCK || errno==EINTR)
+					continue;
+
+				/* else handle the error later */
 				break;
-			sleep(1);
+			        }
+
+			/* connection was good */
+			break;
 		        }
 
 		/* child process should handle the connection */
@@ -700,9 +731,6 @@ void wait_for_connections(void){
 			waitpid(pid,NULL,0);
 		        }
   		}
-
-	/* we shouldn't ever get here... */
-	syslog(LOG_NOTICE,"Terminating");
 
 	return;
 	}

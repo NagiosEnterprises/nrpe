@@ -1,4 +1,37 @@
-------- Forwarded message follows -------
+NOTES:
+------
+
+The service definition below assumes you have a command called "check_tcp" already setup
+in your config files.
+
+The command definition below assumes that the $USER1$ macro is used to define the location
+of your Nagios plugins (i.e. "/usr/local/nagios/libexec") and that the nrpe_check_control
+service is located in that directory.
+
+
+
+SAMPLE CONFIG FILE SNIPPETS:
+----------------------------
+
+define service {
+	host_name	<host name goes here>
+	description	NRPE
+	...
+	event_handler	nrpe_check_control
+	check_command	check_tcp!-p 5666
+        }
+
+define command {
+	command_name	nrpe_check_control
+	command_line	$USER1$/nrpe_check_control $SERVICESTATE$ $SERVICESTATETYPE$ $SERVICEATTEMPT$ "$HOSTNAME$"
+	}
+
+
+
+
+ORIGINAL EMAIL SNIPPET: 
+-----------------------
+
 Date sent:      	Fri, 30 Mar 2001 18:51:48 -0500
 From:           	adam.bowen@<>
 Subject:        	Event Handler
@@ -8,11 +41,11 @@ I am attaching the source code for an event handler I wrote to
 control checks using nrpe.  I add the following check to all remote hosts
 using nrpe:
 
-service[<host Hame>]=NRPE;0;24x7;3;5;1;<contactgroup>;120;24x7;1;1;0;nrpe_check_control;check_tcp!-p 5666
+<see example above>
 
 I added this line to the commands.cfg file:
 
-command[nrpe_check_control]=$USER2$/nrpe_check_control $SERVICESTATE$ $STATETYPE$ $SERVICEATTEMPT$ "$HOSTNAME$"
+<see example above>
 
 When the NRPE service check listed above has 3 failed connection
 attempts, it will run the nrpe_check_control which will search the
