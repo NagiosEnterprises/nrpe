@@ -48,7 +48,7 @@
 typedef unsigned short u_int32_t
 typedef short int32_t
 #endif
-#ifdef U_INT32_T_IS_UINT
+#ifdef U_INT32_T_IS_ULONG
 typedef unsigned long u_int32_t
 typedef long int32_t
 #endif
