@@ -3,6 +3,11 @@ NRPE Changelog
 **************
 
 
+1.6 - ??/??/2002
+----------------
+- Updated sample commands to match new plugin argument format
+
+
 1.5 - 06/03/2002
 ----------------
 - Added setuid/setgid option to config file (suggested by Marek Cervenka) 

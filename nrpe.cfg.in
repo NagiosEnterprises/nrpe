@@ -89,11 +89,13 @@ debug=0
 # Note: Any plugins that are used in the command lines must reside
 # on the machine that this daemon is running on!  The examples below
 # assume that you have plugins installed in a /usr/local/nagios/libexec
-# directory.
+# directory.  Also note that you will have to modify the definitions below
+# to match the argument format the plugins expect.  Remember, these are
+# examples only!
 
-command[check_users]=/usr/local/nagios/libexec/check_users 5 10
-command[check_load]=/usr/local/nagios/libexec/check_load 5 10 15 20 25 30
-command[check_disk1]=/usr/local/nagios/libexec/check_disk 80 95 /dev/hda1
-command[check_disk2]=/usr/local/nagios/libexec/check_disk 80 95 /dev/hdb1
-command[check_zombie_procs]=/usr/local/nagios/libexec/check_procs 5 10 Z
-command[check_total_procs]=/usr/local/nagios/libexec/check_procs 150 200 
+command[check_users]=/usr/local/nagios/libexec/check_users -w 5 -c 10
+command[check_load]=/usr/local/nagios/libexec/check_load -w 15,10,5 -c 30,25,20
+command[check_disk1]=/usr/local/nagios/libexec/check_disk -w 20 -c 10 -p /dev/hda1
+command[check_disk2]=/usr/local/nagios/libexec/check_disk -w 20 -c 10 -p /dev/hdb1
+command[check_zombie_procs]=/usr/local/nagios/libexec/check_procs -w 5 -c 10 -s Z
+command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w 150 -c 200 
