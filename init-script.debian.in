@@ -11,7 +11,7 @@ test -f $NrpeBin || exit 0
 
 case "$1" in
 start)	echo -n "Starting nagios remote plugin daemon: nrpe"
-        start-stop-daemon --start --quiet --exec $NrpeBin -c $NrpeCfg -d
+        start-stop-daemon --start --quiet --exec $NrpeBin -- -c $NrpeCfg -d
         echo "." 
 	;;
 stop)	echo -n "Stopping nagios remote plugin daemon: nrpe"
