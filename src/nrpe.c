@@ -378,12 +378,8 @@ int read_config_file(char *filename){
                 else if(!strcmp(varname,"nrpe_group"))
 			nrpe_group=strdup(varvalue);
 		
-		else if(!strcmp(varname,"dont_blame_nrpe")){
-			if(atoi(varvalue)==1)
-				allow_arguments=TRUE;
-			else
-				allow_arguments=FALSE;
-		        }
+		else if(!strcmp(varname,"dont_blame_nrpe"))
+			allow_arguments=(atoi(varvalue)==1)?TRUE:FALSE;
 
  		else if(!strcmp(varname,"command_timeout")){
 			command_timeout=atoi(varvalue);

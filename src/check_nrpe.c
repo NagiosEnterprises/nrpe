@@ -75,7 +75,7 @@ int main(int argc, char **argv){
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL\n");
 #ifdef HAVE_SSL
-		printf("SSL/TLS Available: Anonymous DHMode, OpenSSL 0.9.6 or higher required\n");
+		printf("SSL/TLS Available: Anonymous DH Mode, OpenSSL 0.9.6 or higher required\n");
 #endif
 		printf("\n");
 	        }
@@ -89,7 +89,9 @@ int main(int argc, char **argv){
 		printf(" [port]     = The port on which the daemon is running (default=%d)\n",DEFAULT_SERVER_PORT);
 		printf(" [timeout]  = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
 		printf(" [command]  = The name of the command that the remote daemon should run\n");
-		printf(" [arglist]  = Optional arguments that should be passed to the command\n");
+		printf(" [arglist]  = Optional arguments that should be passed to the command.  Multiple\n");
+		printf("              arguments should be separated by a space.  If provided, this must be\n");
+		printf("              the last option supplied on the command line.\n");
 		printf("\n");
 		printf("Note:\n");
 		printf("This plugin requires that you have the NRPE daemon running on the remote host.\n");
