@@ -80,6 +80,10 @@ if test "$ac_cv_type_int32_t" = no ; then
 fi
 
 
+dnl Check for getopt_long (Solaris)
+AC_CHECK_FUNCS([getopt_long],,AC_CHECK_LIB([iberty],[getopt_long],OTHERLIBS="$OTHERLIBS -liberty"))
+AC_SUBST(OTHERLIBS)
+
 dnl Checks for library functions.
 AC_CHECK_LIB(nsl,main,SOCKETLIBS="$SOCKETLIBS -lnsl")
 AC_CHECK_LIB(socket,socket,SOCKETLIBS="$SOCKETLIBS -lsocket")
