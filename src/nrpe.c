@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-16-2003
+ * Last Modified: 01-28-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -25,10 +25,11 @@
 
 #define DEFAULT_COMMAND_TIMEOUT	60			/* default timeout for execution of plugins */
 #define MAXFD                   64
+#define MAX_COMMAND_ARGUMENTS   16
+#define NASTY_METACHARS         "|`&><'\"\\[]{}"
 
 
 int process_arguments(int,char **);
-
 void wait_for_connections(void);
 void handle_connection(int);
 int read_config_file(char *);
@@ -36,12 +37,20 @@ int add_command(char *,char *);
 command *find_command(char *);
 void sighandler(int);
 int drop_privileges(char *,char *);
+int check_privileges(void);
 void free_memory(void);
 int is_an_allowed_host(char *);
-
+int validate_request(packet *);
+int contains_nasty_metachars(char *);
+int process_macros(char *,char *,int);
 int my_system(char *,int,int *,char *,int);            	/* executes a command via popen(), but also protects against timeouts */
 void my_system_sighandler(int);				/* handles timeouts when executing commands via my_system() */
 
+
+static unsigned long max_packet_age=30;
+
+char    *command_name=NULL;
+char    *macro_argv[MAX_COMMAND_ARGUMENTS];
 
 char    config_file[MAX_INPUT_BUFFER]="nrpe.cfg";
 char    allowed_hosts[MAX_INPUT_BUFFER];
@@ -55,6 +64,8 @@ command *command_list=NULL;
 char    *nrpe_user=NULL;
 char    *nrpe_group=NULL;
 
+int     allow_arguments=FALSE;
+
 int     show_help=FALSE;
 int     show_license=FALSE;
 int     show_version=FALSE;
@@ -66,7 +77,7 @@ int     debug=FALSE;
 int main(int argc, char **argv){
 	int error=FALSE;
 	int result;
-	int i;
+	int x;
 	char buffer[MAX_INPUT_BUFFER];
 
 	result=process_arguments(argc,argv);
@@ -80,9 +91,19 @@ int main(int argc, char **argv){
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL\n");
 		printf("\n");
+#ifdef ENABLE_COMMAND_ARGUMENTS
+		printf("***************************************************************\n");
+		printf("** POSSIBLE SECURITY RISK - COMMAND ARGUMENTS ARE SUPPORTED! **\n");
+		printf("**      Read the NRPE SECURITY file for more information     **\n");
+		printf("***************************************************************\n");
+		printf("\n");
+#endif
 	        }
 
-	if(result!=OK || show_help==TRUE){
+	if(show_license==TRUE)
+		display_license();
+
+	else if(result!=OK || show_help==TRUE){
 
 		printf("Usage: %s -c <config_file> [mode]\n",argv[0]);
 		printf("\n");
@@ -102,9 +123,6 @@ int main(int argc, char **argv){
 		printf("check_nrpe plugin.\n");
 		printf("\n");
 		}
-
-	if(show_license==TRUE)
-		display_license();
 
         if(result!=OK || show_help==TRUE || show_license==TRUE || show_version==TRUE)
 		exit(STATE_UNKNOWN);
@@ -142,9 +160,22 @@ int main(int argc, char **argv){
 		return STATE_CRITICAL;
 		}
 
+	/* initialize macros */
+	for(x=0;x<MAX_COMMAND_ARGUMENTS;x++)
+		macro_argv[x]=NULL;
+
+        /* generate the CRC 32 table */
+        generate_crc32_table();
+
 	/* if we're running under inetd... */
-	if(use_inetd==TRUE)
+	if(use_inetd==TRUE){
+
+		/* make sure we're not root */
+		check_privileges();
+
+		/* handle the connection */
 		handle_connection(0);
+	        }
 
 	/* else daemonize and start listening for requests... */
 	else if(fork()==0){
@@ -171,6 +202,9 @@ int main(int argc, char **argv){
 		/* drop privileges */
 		drop_privileges(nrpe_user,nrpe_group);
 
+		/* make sure we're not root */
+		check_privileges();
+
 		/* wait for connections */
 		wait_for_connections();
 	        }
@@ -191,6 +225,7 @@ int read_config_file(char *filename){
 	char *varname;
 	char *varvalue;
 	int line;
+	int x;
 
 
 	/* open the config file for reading */
@@ -237,7 +272,7 @@ int read_config_file(char *filename){
 			        }
 		        }
 
-                else if(!strcmp(varname,"server_address")){
+               else if(!strcmp(varname,"server_address")){
                         strncpy(server_address,varvalue,sizeof(server_address) - 1);
                         server_address[sizeof(server_address) - 1] = '\0';
                         }
@@ -275,7 +310,14 @@ int read_config_file(char *filename){
                 else if(!strcmp(varname,"nrpe_group"))
 			nrpe_group=strdup(varvalue);
 		
-		else if(!strcmp(varname,"command_timeout")){
+		else if(!strcmp(varname,"dont_blame_nrpe")){
+			if(atoi(varvalue)==1)
+				allow_arguments=TRUE;
+			else
+				allow_arguments=FALSE;
+		        }
+
+ 		else if(!strcmp(varname,"command_timeout")){
 			command_timeout=atoi(varvalue);
 			if(command_timeout<1){
 				syslog(LOG_ERR,"Invalid command_timeout specified in config file '%s' - Line %d\n",filename,line);
@@ -354,7 +396,7 @@ void wait_for_connections(void){
 	/* exit if we couldn't create the socket */
 	if(sock<0){
 	        syslog(LOG_ERR,"Network server socket failure (%d: %s)",errno,strerror(errno));
-	        exit (STATE_CRITICAL);
+	        exit(STATE_CRITICAL);
 		}
 
         /* set the reuse address flag so we don't get errors when restarting */
@@ -374,24 +416,30 @@ void wait_for_connections(void){
 
 	else if(!my_inet_aton(server_address,&myname.sin_addr)){
 		syslog(LOG_ERR,"Server address is not a valid IP address\n");
-		exit (STATE_CRITICAL);
+		exit(STATE_CRITICAL);
                 }
 
 
 	/* bind the address to the Internet socket */
 	if(bind(sock,(struct sockaddr *)&myname,sizeof(myname))<0){
 		syslog(LOG_ERR,"Network server bind failure (%d: %s)\n",errno,strerror(errno));
-	        exit (STATE_CRITICAL);
+	        exit(STATE_CRITICAL);
 	        }
 
 	/* open the socket for listening */
 	if(listen(sock,5)<0){
 	    	syslog(LOG_ERR,"Network server listen failure (%d: %s)\n",errno,strerror(errno));
-	        exit (STATE_CRITICAL);
+	        exit(STATE_CRITICAL);
 		}
 
 	/* log info to syslog facility */
         syslog(LOG_NOTICE,"Starting up daemon");
+
+	/* log warning about command arguments */
+#ifdef ENABLE_COMMAND_ARGUMENTS
+	if(allow_arguments==TRUE)
+		syslog(LOG_NOTICE,"Warning: Daemon is configured to accept command arguments from clients!");
+#endif
 
 	/* Trap signals */
 	signal(SIGQUIT,sighandler);
@@ -511,15 +559,20 @@ void wait_for_connections(void){
 
 /* handles a client connection */
 void handle_connection(int sock){
+        u_int32_t calculated_crc32;
 	command *temp_command;
 	packet receive_packet;
 	packet send_packet;
 	int bytes_to_send;
 	int bytes_to_recv;
 	char buffer[MAX_INPUT_BUFFER];
+	char raw_command[MAX_INPUT_BUFFER];
+	char processed_command[MAX_INPUT_BUFFER];
 	int result=STATE_OK;
 	int early_timeout=FALSE;
 	int rc;
+	int x;
+	FILE *fp;
 
 
 	/* log info to syslog facility */
@@ -550,11 +603,25 @@ void handle_connection(int sock){
 		return;
 	        }
 
-	/* make sure this is the right type of packet */
-	if(ntohl(receive_packet.packet_type)!=QUERY_PACKET || ntohl(receive_packet.packet_version)!=NRPE_PACKET_VERSION_1){
+	fp=fopen("/tmp/packet","w");
+	if(fp){
+		fwrite(&receive_packet,1,sizeof(receive_packet),fp);
+		fclose(fp);
+	        }
 
-		/* log error to syslog facility */
-		syslog(LOG_ERR,"Received invalid packet from client, bailing out...");
+	/* make sure the request is valid */
+	if(validate_request(&receive_packet)==ERROR){
+
+		/* log an error */
+		syslog(LOG_ERR,"Client request was invalid, bailing out...");
+
+		/* free memory */
+		free(command_name);
+		command_name=NULL;
+		for(x=0;x<MAX_COMMAND_ARGUMENTS;x++){
+			free(macro_argv[x]);
+			macro_argv[x]=NULL;
+	                }
 
 		return;
 	        }
@@ -564,7 +631,7 @@ void handle_connection(int sock){
 		syslog(LOG_DEBUG,"Host is asking for command '%s' to be run...",receive_packet.buffer);
 
 	/* if this is the version check command, just spew it out */
-	if(!strcmp(&receive_packet.buffer[0],NRPE_HELLO_COMMAND)){
+	if(!strcmp(command_name,NRPE_HELLO_COMMAND)){
 
 		snprintf(buffer,sizeof(buffer),"NRPE v%s",PROGRAM_VERSION);
 		buffer[sizeof(buffer)-1]='\x0';
@@ -578,10 +645,10 @@ void handle_connection(int sock){
 
 	/* find the command we're supposed to run */
 	else{
-		temp_command=find_command(receive_packet.buffer);
+		temp_command=find_command(command_name);
 		if(temp_command==NULL){
 
-			snprintf(buffer,sizeof(buffer),"NRPE: Command '%s' not defined",receive_packet.buffer);
+			snprintf(buffer,sizeof(buffer),"NRPE: Command '%s' not defined",command_name);
 			buffer[sizeof(buffer)-1]='\x0';
 
 			/* log error to syslog facility */
@@ -593,13 +660,18 @@ void handle_connection(int sock){
 
 		else{
 
+			/* process command line */
+			strncpy(raw_command,temp_command->command_line,sizeof(raw_command)-1);
+			raw_command[sizeof(raw_command)-1]='\x0';
+			process_macros(raw_command,processed_command,sizeof(processed_command));
+
 			/* log info to syslog facility */
 			if(debug==TRUE)
-				syslog(LOG_DEBUG,"Running command: %s",temp_command->command_line);
+				syslog(LOG_DEBUG,"Running command: %s",processed_command);
 
 			/* run the command */
 			strcpy(buffer,"");
-			result=my_system(temp_command->command_line,command_timeout,&early_timeout,buffer,sizeof(buffer));
+			result=my_system(processed_command,command_timeout,&early_timeout,buffer,sizeof(buffer));
 
 			/* see if the command timed out */
 			if(early_timeout==TRUE)
@@ -620,6 +692,14 @@ void handle_connection(int sock){
 		        }
 	        }
 
+	/* free memory */
+	free(command_name);
+	command_name=NULL;
+	for(x=0;x<MAX_COMMAND_ARGUMENTS;x++){
+		free(macro_argv[x]);
+		macro_argv[x]=NULL;
+	        }
+
 	/* strip newline character from end of output buffer */
 	if(buffer[strlen(buffer)-1]=='\n')
 		buffer[strlen(buffer)-1]='\x0';
@@ -627,14 +707,25 @@ void handle_connection(int sock){
 	/* clear the response packet buffer */
 	bzero(&send_packet,sizeof(send_packet));
 
-	/* fill the response packet with data */
-	send_packet.packet_type=htonl(RESPONSE_PACKET);
-	send_packet.packet_version=htonl(NRPE_PACKET_VERSION_1);
-	send_packet.result_code=htonl(result);
-	send_packet.buffer_length=htonl(strlen(buffer));
-	strncpy(&send_packet.buffer[0],buffer,sizeof(send_packet.buffer));
-	send_packet.buffer[sizeof(send_packet.buffer)-1]='\x0';
+	/* fill the packet with semi-random data */
+	randomize_buffer((char *)&send_packet,sizeof(send_packet));
+
+	/* initialize response packet data */
+	send_packet.packet_version=(int16_t)htons(NRPE_PACKET_VERSION_2);
+	send_packet.packet_type=(int16_t)htons(RESPONSE_PACKET);
+	send_packet.result_code=(int16_t)htons(result);
+	strncpy(&send_packet.buffer[0],buffer,MAX_PACKETBUFFER_LENGTH);
+	send_packet.buffer[MAX_PACKETBUFFER_LENGTH-1]='\x0';
 	
+	/* calculate the crc 32 value of the packet */
+	send_packet.crc32_value=(u_int32_t)0L;
+	calculated_crc32=calculate_crc32((char *)&send_packet,sizeof(send_packet));
+	send_packet.crc32_value=(u_int32_t)htonl(calculated_crc32);
+
+
+	/***** ENCRYPT RESPONSE *****/
+
+
 	/* send the response back to the client */
 	bytes_to_send=sizeof(send_packet);
 	sendall(sock,(char *)&send_packet,&bytes_to_send);
@@ -940,6 +1031,198 @@ int drop_privileges(char *user, char *group){
 
 	return OK;
         }
+
+
+
+
+/* bail if daemon is running as root */
+int check_privileges(void){
+	uid_t uid=-1;
+	gid_t gid=-1;
+
+	uid=geteuid();
+	gid=getegid();
+
+	if(uid==0 || gid==0){
+		syslog(LOG_ERR,"Error: NRPE daemon cannot be run as user/group root!");
+		exit(STATE_CRITICAL);
+	        }
+
+	return OK;
+        }
+
+
+
+/* tests whether or not a client request is valid */
+int validate_request(packet *pkt){
+        u_int32_t long packet_crc32;
+        u_int32_t calculated_crc32;
+	char *ptr;
+	int x;
+
+
+	/***** DECRYPT REQUEST ******/
+
+
+        /* check the crc 32 value */
+        packet_crc32=ntohl(pkt->crc32_value);
+        pkt->crc32_value=0L;
+        calculated_crc32=calculate_crc32((char *)pkt,sizeof(packet));
+        if(packet_crc32!=calculated_crc32){
+                syslog(LOG_ERR,"Error: Request packet had invalid CRC32.");
+                return ERROR;
+                }
+
+	/* make sure this is the right type of packet */
+	if(ntohs(pkt->packet_type)!=QUERY_PACKET || ntohs(pkt->packet_version)!=NRPE_PACKET_VERSION_2){
+		syslog(LOG_ERR,"Error: Request packet type/version was invalid!");
+		return ERROR;
+	        }
+
+	/* make sure buffer is terminated */
+	pkt->buffer[MAX_PACKETBUFFER_LENGTH-1]='\x0';
+
+	/* client must send some kind of request */
+	if(!strcmp(pkt->buffer,"")){
+		syslog(LOG_ERR,"Error: Request contained no query!");
+		return ERROR;
+	        }
+
+	/* make sure request doesn't contain nasties */
+	if(contains_nasty_metachars(pkt->buffer)==TRUE){
+		syslog(LOG_ERR,"Error: Request contained illegal metachars!");
+		return ERROR;
+	        }
+
+	/* make sure the request doesn't contain arguments */
+	if(strchr(pkt->buffer,'!')){
+#ifdef ENABLE_COMMAND_ARGUMENTS
+		if(allow_arguments==FALSE){
+			syslog(LOG_ERR,"Error: Request contained command arguments, but argument option is not enabled!");
+			return ERROR;
+	                }
+#else
+		syslog(LOG_ERR,"Error: Request contained command arguments!");
+		return ERROR;
+#endif
+	        }
+
+	/* get command name */
+#ifdef ENABLE_COMMAND_ARGUMENTS
+	ptr=strtok(pkt->buffer,"!");
+#else
+	ptr=pkt->buffer;
+#endif	
+	command_name=strdup(ptr);
+	if(command_name==NULL){
+		syslog(LOG_ERR,"Error: Memory allocation failed");
+		return ERROR;
+	        }
+
+#ifdef ENABLE_COMMAND_ARGUMENTS
+	/* get command arguments */
+	if(allow_arguments==TRUE){
+
+		for(x=0;x<MAX_COMMAND_ARGUMENTS;x++){
+			ptr=strtok(NULL,"!");
+			if(ptr==NULL)
+				break;
+			macro_argv[x]=strdup(ptr);
+			if(macro_argv[x]==NULL){
+				syslog(LOG_ERR,"Error: Memory allocation failed");
+				return ERROR;
+			        }
+			if(!strcmp(macro_argv[x],"")){
+				syslog(LOG_ERR,"Error: Request contained an empty command argument");
+				return ERROR;
+		                }
+		        }
+	        }
+#endif
+
+	return OK;
+        }
+
+
+
+/* tests whether a buffer contains illegal metachars */
+int contains_nasty_metachars(char *str){
+	int result;
+
+	if(str==NULL)
+		return FALSE;
+	
+	result=strcspn(str,NASTY_METACHARS);
+	if(result!=strlen(str))
+		return TRUE;
+
+	return FALSE;
+        }
+
+
+
+/* replace macros in buffer */
+int process_macros(char *input_buffer,char *output_buffer,int buffer_length){
+	char *temp_buffer;
+	int in_macro;
+	int arg_index=0;
+	char *selected_macro=NULL;
+
+	strcpy(output_buffer,"");
+
+	in_macro=FALSE;
+
+	for(temp_buffer=strsep(&input_buffer,"$");temp_buffer!=NULL;temp_buffer=strsep(&input_buffer,"$")){
+
+		selected_macro=NULL;
+
+		if(in_macro==FALSE){
+			if(strlen(output_buffer)+strlen(temp_buffer)<buffer_length-1){
+				strncat(output_buffer,temp_buffer,buffer_length-strlen(output_buffer)-1);
+				output_buffer[buffer_length-1]='\x0';
+			        }
+			in_macro=TRUE;
+			}
+		else{
+
+			if(strlen(output_buffer)+strlen(temp_buffer)<buffer_length-1){
+
+				/* argument macro */
+				if(strstr(temp_buffer,"ARG")==temp_buffer){
+					arg_index=atoi(temp_buffer+3);
+					if(arg_index>=1 && arg_index<=MAX_COMMAND_ARGUMENTS)
+						selected_macro=macro_argv[arg_index-1];
+				        }
+
+				/* an escaped $ is done by specifying two $$ next to each other */
+				else if(!strcmp(temp_buffer,"")){
+					strncat(output_buffer,"$",buffer_length-strlen(output_buffer)-1);
+				        }
+				
+				/* a non-macro, just some user-defined string between two $s */
+				else{
+					strncat(output_buffer,"$",buffer_length-strlen(output_buffer)-1);
+					output_buffer[buffer_length-1]='\x0';
+					strncat(output_buffer,temp_buffer,buffer_length-strlen(output_buffer)-1);
+					output_buffer[buffer_length-1]='\x0';
+					strncat(output_buffer,"$",buffer_length-strlen(output_buffer)-1);
+				        }
+
+				
+				/* insert macro */
+				if(selected_macro!=NULL)
+					strncat(output_buffer,(selected_macro==NULL)?"":selected_macro,buffer_length-strlen(output_buffer)-1);
+
+				output_buffer[buffer_length-1]='\x0';
+				}
+
+			in_macro=FALSE;
+			}
+		}
+
+	return OK;
+	}
+
 
 
 /* process command line arguments */

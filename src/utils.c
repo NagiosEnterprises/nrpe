@@ -3,9 +3,9 @@
  * UTILS.C - NRPE Utility Functions
  *
  * License: GPL
- * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
+ * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  *
- * Last Modified: 10-24-2002
+ * Last Modified: 01-28-2003
  *
  * Description:
  *
@@ -31,6 +31,82 @@
 
 #include "../common/common.h"
 #include "utils.h"
+
+static unsigned long crc32_table[256];
+
+
+
+/* build the crc table - must be called before calculating the crc value */
+void generate_crc32_table(void){
+	unsigned long crc, poly;
+	int i, j;
+
+	poly=0xEDB88320L;
+	for(i=0;i<256;i++){
+		crc=i;
+		for(j=8;j>0;j--){
+			if(crc & 1)
+				crc=(crc>>1)^poly;
+			else
+				crc>>=1;
+		        }
+		crc32_table[i]=crc;
+                }
+
+	return;
+        }
+
+
+/* calculates the CRC 32 value for a buffer */
+unsigned long calculate_crc32(char *buffer, int buffer_size){
+	register unsigned long crc;
+	int this_char;
+	int current_index;
+
+	crc=0xFFFFFFFF;
+
+	for(current_index=0;current_index<buffer_size;current_index++){
+		this_char=(int)buffer[current_index];
+		crc=((crc>>8) & 0x00FFFFFF) ^ crc32_table[(crc ^ this_char) & 0xFF];
+	        }
+
+	return (crc ^ 0xFFFFFFFF);
+        }
+
+
+/* fill a buffer with semi-random data */
+void randomize_buffer(char *buffer,int buffer_size){
+	FILE *fp;
+	int x;
+	int seed;
+
+	/**** FILL BUFFER WITH RANDOM ALPHA-NUMERIC CHARACTERS ****/
+
+	/***************************************************************
+	   Only use alpha-numeric characters becase plugins usually
+	   only generate numbers and letters in their output.  We
+	   want the buffer to contain the same set of characters as
+	   plugins, so its harder to distinguish where the real output
+	   ends and the rest of the buffer (padded randomly) starts.
+	***************************************************************/
+
+	/* try to get seed value from /dev/urandom, as its a better source of entropy */
+	fp=fopen("/dev/urandom","r");
+	if(fp!=NULL){
+		seed=fgetc(fp);
+		fclose(fp);
+	        }
+
+	/* else fallback to using the current time as the seed */
+	else
+		seed=(int)time(NULL);
+
+	srand(seed);
+	for(x=0;x<buffer_size;x++)
+		buffer[x]=(int)'0'+(int)(72.0*rand()/(RAND_MAX+1.0));
+
+	return;
+        }
 
 
 /* opens a connection to a remote host/tcp port */
@@ -313,3 +389,6 @@ void display_license(void){
 
 	return;
         }
+
+
+

@@ -1,0 +1,39 @@
+********************
+NRPE SECURITY README
+********************
+
+NRPE 2.0 include the ability for clients to suppy arguments to
+commands which should be run.  Please note that this feature
+should be considered a security risk, and you should only use
+it if you know what you're doing!
+
+To enable support for command argument in the daemon, you must
+do two things:
+
+   1.  Run the configure script with the --enable-command-args 
+       option
+
+   2.  Set the 'dont_blame_nrpe' directive in the NRPE config
+       file to 1.	
+
+To help prevent some nasty things from being done by evil 
+clients, the following twelve metacharacters are not allowed
+in client command arguments:
+
+   | ` & > < ' " \ [ ] { }
+
+Any client request which contains the abovementioned metachars
+is discarded.
+
+If you do enable support for command arguments in the NRPE daemon,
+make sure that you encrypt communications either by using:
+
+   1.  Stunnel (see http://www.stunnel.org)
+   2.  Native SSL support
+
+Do NOT assume that just because the daemon is behind a firewall
+that you are safe!  Always encrypt NRPE traffic!
+
+
+    -- Ethan Galstad (nagios@nagios.org)
+

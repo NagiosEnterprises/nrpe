@@ -1,5 +1,5 @@
 %define name nrpe
-%define version 1.8
+%define version 2.0a1
 %define release 1
 %define nsusr nagios
 %define nsgrp nagios

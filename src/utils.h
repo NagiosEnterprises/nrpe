@@ -3,9 +3,9 @@
  * UTILS.H - NRPE Utilities Include File
  *
  * License: GPL
- * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
+ * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  *
- * Last Modified: 07-09-2002
+ * Last Modified: 01-28-2003
  *
  * Description:
  *
@@ -29,7 +29,16 @@
  *
  ************************************************************************************************/
 
+#ifndef _UTILS_H
+#define _UTILS_H
+
 #include "../common/config.h"
+
+
+void generate_crc32_table(void);
+unsigned long calculate_crc32(char *, int);
+
+void randomize_buffer(char *,int);
 
 int my_tcp_connect(char *,int,int *);
 int my_connect(char *,int,int *,char *);
@@ -42,6 +51,8 @@ int sendall(int,char *,int *);
 int recvall(int,char *,int *,int);
 
 void display_license(void);
+
+#endif
 
 
 

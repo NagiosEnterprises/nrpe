@@ -1,8 +1,8 @@
 /************************************************************************
  *
  * COMMON.H - NRPE Common Include File
- * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 12-30-2002
+ * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
+ * Last Modified: 01-28-2003
  *
  * License:
  *
@@ -21,9 +21,10 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************/
 
+#include "config.h"
 
-#define PROGRAM_VERSION "1.8"
-#define MODIFICATION_DATE "01-16-2003"
+#define PROGRAM_VERSION "2.0a1"
+#define MODIFICATION_DATE "01-28-2003"
 
 #define OK		0
 #define ERROR		-1
@@ -51,14 +52,15 @@
 #define QUERY_PACKET		1		/* id code for a packet containing a query */
 #define	RESPONSE_PACKET		2		/* id code for a packet containing a response */
 
-#define NRPE_PACKET_VERSION_1	1		/* packet version identifier (in case packet type changes in future versions) */
+#define NRPE_PACKET_VERSION_2   2               /* packet version identifier */
+#define NRPE_PACKET_VERSION_1	1		/* older packet version identifiers (no longer supported) */
 
 #define MAX_PACKETBUFFER_LENGTH	1024		/* max amount of data we'll send in one query/response */
 
 typedef struct packet_struct{
-	int packet_type;
-	int packet_version;
-	int result_code;
-	int buffer_length;
-	char buffer[MAX_PACKETBUFFER_LENGTH];
+	int16_t   packet_version;
+	int16_t   packet_type;
+	u_int32_t crc32_value;
+	int16_t   result_code;
+	char      buffer[MAX_PACKETBUFFER_LENGTH];
         }packet;

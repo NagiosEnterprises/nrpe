@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-16-2003
+ * Last Modified: 01-28-2003
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -41,9 +41,11 @@ void alarm_handler(int);
 
 
 int main(int argc, char **argv){
+        u_int32_t long packet_crc32;
+        u_int32_t calculated_crc32;
+	int16_t result;
 	int sd;
 	int rc;
-	int result;
 	packet send_packet;
 	packet receive_packet;
 	int bytes_to_send;
@@ -93,6 +95,9 @@ int main(int argc, char **argv){
 		exit(STATE_UNKNOWN);
 
 
+        /* generate the CRC 32 table */
+        generate_crc32_table();
+
 	/* initialize alarm signal handling */
 	signal(SIGALRM,alarm_handler);
 
@@ -105,16 +110,30 @@ int main(int argc, char **argv){
 	/* we connected, so close connection before exiting */
 	if(result==STATE_OK){
 
-		/* send the query packet */
+		/* clear the packet buffer */
 		bzero(&send_packet,sizeof(send_packet));
-		send_packet.packet_type=htonl(QUERY_PACKET);
-		send_packet.packet_version=htonl(NRPE_PACKET_VERSION_1);
-		send_packet.buffer_length=htonl(strlen(query_string));
-		strcpy(&send_packet.buffer[0],query_string);
 
+		/* fill the packet with semi-random data */
+		randomize_buffer((char *)&send_packet,sizeof(send_packet));
+
+		/* initialize packet data */
+		send_packet.packet_version=(int16_t)htons(NRPE_PACKET_VERSION_2);
+		send_packet.packet_type=(int16_t)htons(QUERY_PACKET);
+		strncpy(&send_packet.buffer[0],query_string,MAX_PACKETBUFFER_LENGTH);
+		send_packet.buffer[MAX_PACKETBUFFER_LENGTH-1]='\x0';
+
+		/* calculate the crc 32 value of the packet */
+		send_packet.crc32_value=(u_int32_t)0L;
+		calculated_crc32=calculate_crc32((char *)&send_packet,sizeof(send_packet));
+		send_packet.crc32_value=(u_int32_t)htonl(calculated_crc32);
+
+
+		/***** ENCRYPT REQUEST *****/
+
+
+		/* send the packet */
 		bytes_to_send=sizeof(send_packet);
 		rc=sendall(sd,(char *)&send_packet,&bytes_to_send);
-
 		if(rc==-1){
 			printf("CHECK_NRPE: Error sending query to host.\n");
 			close(sd);
@@ -125,45 +144,56 @@ int main(int argc, char **argv){
 		bytes_to_recv=sizeof(receive_packet);
 		rc=recvall(sd,(char *)&receive_packet,&bytes_to_recv,socket_timeout);
 
+		/* reset timeout and close the connection */
+		alarm(0);
+		close(sd);
+
 		/* recv() error */
 		if(rc<0){
-			printf("CHECK_NRPE: Error receiving data from host.\n");
-			close(sd);
-			alarm(0);
+			printf("CHECK_NRPE: Error receiving data from daemon.\n");
 			return STATE_UNKNOWN;
 		        }
 
 		/* server disconnected */
 		else if(rc==0){
-			printf("CHECK_NRPE: Received 0 bytes.  Are we allowed to connect to the host?\n");
-			close(sd);
-			alarm(0);
+			printf("CHECK_NRPE: Received 0 bytes from daemon.  Check the remote server logs for error messages.\n");
 			return STATE_UNKNOWN;
 		        }
 
 		/* receive underflow */
 		else if(bytes_to_recv<sizeof(receive_packet)){
 			printf("CHECK_NRPE: Receive underflow - only %d bytes received (%d expected).\n",bytes_to_recv,sizeof(receive_packet));
-			close(sd);
-			alarm(0);
 			return STATE_UNKNOWN;
 		        }
 
-		/* get the return code from the remote plugin */
-		result=ntohl(receive_packet.result_code);
+		
+		/***** DECRYPT RESPONSE *****/
 
-		/* make sure there is something in the plugin output buffer */
+
+		/* check the crc 32 value */
+		packet_crc32=ntohl(receive_packet.crc32_value);
+		receive_packet.crc32_value=0L;
+		calculated_crc32=calculate_crc32((char *)&receive_packet,sizeof(receive_packet));
+		if(packet_crc32!=calculated_crc32){
+			printf("CHECK_NRPE: Response packet had invalid CRC32.\n");
+			close(sd);
+			return STATE_UNKNOWN;
+                        }
+	
+		/* get the return code from the remote plugin */
+		result=(int16_t)ntohl(receive_packet.result_code);
+
+		/* print the output returned by the daemon */
+		receive_packet.buffer[MAX_PACKETBUFFER_LENGTH-1]='\x0';
 		if(!strcmp(receive_packet.buffer,""))
-			printf("CHECK_NRPE: No output returned from NRPE daemon.\n");
+			printf("CHECK_NRPE: No output returned from daemon.\n");
 		else
 			printf("%s\n",receive_packet.buffer);
-
-		/* close the connection */
-		close(sd);
 	        }
 
 	/* reset the alarm */
-	alarm(0);
+	else
+		alarm(0);
 
 	return result;
         }
