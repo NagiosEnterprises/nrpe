@@ -267,14 +267,14 @@ int main(int argc, char **argv){
                         }
 	
 		/* check packet version */
-		if(ntohs(receive_packet.packet_version!=NRPE_PACKET_VERSION_2)){
+		if(ntohs(receive_packet.packet_version)!=NRPE_PACKET_VERSION_2){
 			printf("CHECK_NRPE: Invalid packet version received from server.\n");
 			close(sd);
 			return STATE_UNKNOWN;
 			}
 
 		/* check packet type */
-		if(ntohs(receive_packet.packet_type!=RESPONSE_PACKET)){
+		if(ntohs(receive_packet.packet_type)!=RESPONSE_PACKET){
 			printf("CHECK_NRPE: Invalid packet type received from server.\n");
 			close(sd);
 			return STATE_UNKNOWN;
