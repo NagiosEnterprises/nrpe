@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 09-08-2003
+ * Last Modified: 09-09-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -643,7 +643,7 @@ void wait_for_connections(void){
 				if(!is_an_allowed_host(connecting_host)){
 
 				        /* log error to syslog facility */
-					syslog(LOG_ERR,"Host %s is not allowed to talk to us!",connecting_host);
+					syslog(LOG_DEBUG,"Host %s is not allowed to talk to us!",connecting_host);
 			                }
 				else{
 
@@ -945,16 +945,51 @@ void handle_connection(int sock){
 int is_an_allowed_host(char *connecting_host){
 	char temp_buffer[MAX_INPUT_BUFFER];
 	char *temp_ptr;
+	int result=0;
+        struct hostent *myhost;
+	char **pptr;
+	char resolved_addr[INET6_ADDRSTRLEN];
 
+	/* try and match IP addresses first */
 	strncpy(temp_buffer,allowed_hosts,sizeof(temp_buffer));
 	temp_buffer[sizeof(temp_buffer)-1]='\x0';
 
 	for(temp_ptr=strtok(temp_buffer,",");temp_ptr!=NULL;temp_ptr=strtok(NULL,",")){
-		if(!strcmp(connecting_host,temp_ptr))
-			return 1;
+
+		if(!strcmp(connecting_host,temp_ptr)){
+			result=1;
+			break;
+		        }
 	        }
 
-	return 0;
+	/* try DNS lookups if needed */
+	if(result==0){
+
+		strncpy(temp_buffer,allowed_hosts,sizeof(temp_buffer));
+		temp_buffer[sizeof(temp_buffer)-1]='\x0';
+
+		for(temp_ptr=strtok(temp_buffer,",");temp_ptr!=NULL;temp_ptr=strtok(NULL,",")){
+
+			myhost=gethostbyname(temp_ptr);
+			if(myhost!=NULL){
+
+				/* check all addresses for the host... */
+				for(pptr=myhost->h_addr_list;*pptr!=NULL;pptr++){
+
+					inet_ntop(myhost->h_addrtype,*pptr,resolved_addr,sizeof(resolved_addr));
+					if(!strcmp(resolved_addr,connecting_host)){
+						result=1;
+						break;
+					        }
+					}
+			        }
+
+			if(result==1)
+				break;
+		        }
+	        }
+
+	return result;
         }
 
 
