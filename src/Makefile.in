@@ -1,0 +1,35 @@
+###############################
+# Makefile for NRPE
+#
+# Last Modified: 06/23/2001
+###############################
+
+
+# Source code directories
+SRC_COMMON=../common
+
+CC=@CC@
+CFLAGS=@CFLAGS@ @DEFS@
+LDFLAGS=@LDFLAGS@ @LIBS@
+SOCKETLIBS=@SOCKETLIBS@
+
+CP=@CP@
+
+
+all: nrpe check_nrpe
+
+nrpe: nrpe.c nrpe.h netutils.c netutils.h $(SRC_COMMON)/common.h $(SRC_COMMON)/config.h
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SOCKETLIBS) nrpe.c netutils.c -o $@
+
+check_nrpe: check_nrpe.c netutils.c netutils.h $(SRC_COMMON)/common.h $(SRC_COMMON)/config.h
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SOCKETLIBS) check_nrpe.c netutils.c -o $@
+
+clean:
+	rm -f core \
+	nrpe check_nrpe
+
+distclean: clean
+	rm -f Makefile
+
+devclean: distclean
+	rm -f *~ */*~

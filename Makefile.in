@@ -1,0 +1,32 @@
+###############################
+# Makefile for NRPE
+#
+# Last Modified: 01/21/2000
+###############################
+
+
+# Source code directories
+SRC_BASE=./src/
+SRC_COMMON=./common/
+
+all:	nrpe check_nrpe	
+
+nrpe:
+	cd $(SRC_BASE); $(MAKE) ; cd ..
+
+check_nrpe:
+	cd $(SRC_BASE); $(MAKE) ; cd ..
+
+
+clean:
+	cd $(SRC_BASE); $(MAKE) $@ ; cd ..
+	rm -f core
+
+distclean: clean
+	cd $(SRC_BASE); $(MAKE) $@ ; cd ..
+	rm -f config.log config.status config.cache Makefile \
+	$(SRC_COMMON)/config.h \
+
+devclean: distclean
+	rm -f *~ */*~
+

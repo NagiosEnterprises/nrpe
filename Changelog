@@ -1,0 +1,104 @@
+**************
+NRPE Changelog
+**************
+
+1.3 - 06/23/2001
+----------------
+- Name change
+- Version number change
+
+
+1.2.3 - 12/21/2000
+------------------
+- A bit more documentation on configuring command definitions for the plugin
+
+
+1.2.2 - 06/05/2000
+------------------
+- Fixed error in docs for running under inetd using TCP wrappers
+- Replaced old email address in src/netutils.h with new one
+
+
+1.2.1 - 05/07/2000
+------------------
+- Removed trapping of SIGCHLD
+- Changed wait4() to waitpid() to allow compilation on HP-UX and AIX
+
+
+1.2.0 - 04/18/2000
+------------------
+- Server forks twice after accepting a client connection, so as to prevent the
+  creation of zombies
+
+
+1.1.5 - 04/07/2000
+------------------
+- Fixed a small bug where one debug message was not getting logged properly
+
+
+1.1.4 - 03/30/2000
+------------------
+- Added option to disable/enable debug messages using the debug option in the
+  config file
+
+
+1.1.3 - 03/11/2000
+------------------
+- Changed config file to use an absolute path
+- Changed all debug output to use syslog (Rene Klootwijk)
+- No convert all data to network order before sending it and convert it back to
+  host order when receiving it. This makes it possible to mix Solaris and Linux,  
+  e.g. running check_nrpe on Linux and nrpe on Solaris. (Rene Klootwijk)
+
+
+1.1.2 - 03/07/2000
+------------------
+- Removed unnecessary code in signal handler routine
+- Unused signals are no longer trapper
+
+
+1.1.1 - 02/28/2000 - RKL
+---------------------------
+- Modified syslog code to include string describing the error code.
+- Changed hardcoded number in signal handler to its name. This prevented nrpe
+  to run on Solaris.
+- Fixed race condition in accept loop. The result of accept should also be
+  checked for EINTR.
+- Modified recv and send function calls to compile without warnings on Solaris.
+- Modified configure.in,configure and Makefile.in to include nsl and socket libs
+  for Solaris.
+- Modified the signal handler to reestablish itself after being called.
+
+
+
+1.1 - 02/24/2000 - Rene Klootwijk <rene@klootwijk.org>
+-----------------
+- Added ability to bind nrpe to a specific interface by specifying the address
+  of this interface in the nrpe.cfg file (e.g. server_address=192.168.2.3)
+
+
+1.0   - 02/16/2000
+------------------
+- Added ability to run as a service under inetd
+
+
+1.0b6 - 02/01/2000
+------------------
+- Added configure script
+- Netutils functions from the plugins is now used
+- Reset SIGCHLD to default behavior before calling popen() to
+  prevent race condition with pclose() (Reported by Rene Klootwijk)
+- Cleaned up code
+
+
+1.0b5 - 01/10/2000
+------------------
+- Added init script contributed by Jacob L
+- Incorporated syslog code and other patches contributed by Jacob L
+
+
+1.0b4 - 11/04/1999
+------------------
+- Changed 'allowed_ip' option in configuration file to
+  'allowed_hosts' and added support for multiple hosts
+- Minor buffer overflow protection fixes
