@@ -1,22 +1,20 @@
 /********************************************************************************************
  *
- * CHECK_NRPE.C
- *
- * Program: NRPE plugin for Nagios
- * License: GPL
+ * CHECK_NRPE.C - NRPE Plugin For Nagios
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
+ * License: GPL
  *
- * Last Modified: 06-01-2002
+ * Last Modified: 06-03-2002
  *
  * Command line: CHECK_NRPE <host_address> [-p port] [-c command] [-wt warn_time] \
  *                          [-ct crit_time] [-to to_sec]
  *
  * Description:
  *
- * This plugin will attempt to connect to the Nagios remote plugin executor daemon on the
- * specified server and port.  The daemon will attempt to run the command defined as
- * [command].  Program output and return code are sent back from the daemon and displayed
- * as this plugin's own output and return code.
+ * This plugin will attempt to connect to the NRPE daemon on the specified server and port.
+ * The daemon will attempt to run the command defined as [command].  Program output and
+ * return code are sent back from the daemon and displayed as this plugin's own output and
+ * return code.
  *
  ********************************************************************************************/
 

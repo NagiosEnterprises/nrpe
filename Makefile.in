@@ -1,7 +1,7 @@
 ###############################
 # Makefile for NRPE
 #
-# Last Modified: 12-23-2001
+# Last Modified: 06-03-2002
 ###############################
 
 
@@ -12,6 +12,31 @@ SRC_COMMON=./common/
 all:
 	cd $(SRC_BASE); $(MAKE) ; cd ..
 
+	@echo ""
+	@echo "*** Compile finished ***"
+	@echo ""
+	@echo "If the NRPE daemon and client compiled without any errors, you"
+	@echo "can continue with installation.  The NRPE daemon and client"
+	@echo "binaries are located in the src/ subdirectory."
+	@echo ""
+	@echo " ** If this is your monitoring host **"
+	@echo ""
+	@echo "     - Copy the check_nrpe client to the directory that"
+	@echo "       contains your Nagios plugins."
+	@echo "     - Create a command definition in your Nagios config"
+	@echo "       file for the NRPE client.  See the README file for"
+	@echo "       more info on doing this."
+	@echo ""
+	@echo " ** If this host will be running the NRPE daemon **"
+	@echo ""
+	@echo "     - Copy the nrpe daemon to /usr/sbin, /usr/local/nagios"
+	@echo "       or wherever you feel it fits best."
+	@echo "     - Copy the sample nrpe.cfg config file to /etc,"
+	@echo "       /usr/local/nagios or wherever you feel it fits best."
+	@echo "     - Modify the /etc/services file and configure NRPE to"
+	@echo "       run under inetd, xinetd, or as a standalone daemon."
+	@echo "       See the README file for more info on doing this."
+	@echo ""
 nrpe:
 	cd $(SRC_BASE); $(MAKE) ; cd ..
 
@@ -23,7 +48,7 @@ clean:
 	cd $(SRC_BASE); $(MAKE) $@ ; cd ..
 	rm -f core
 	rm -f *~ */*~
-	rm -f config.log config.status config.cache Makefile $(SRC_COMMON)/config.h
+	rm -f config.log config.status config.cache nrpe.cfg Makefile $(SRC_COMMON)/config.h
 
 distclean: clean
 

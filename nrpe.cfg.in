@@ -2,7 +2,7 @@
 # Sample NRPE Config File 
 # Written by: Ethan Galstad (nagios@nagios.org)
 # 
-# Last Modified: 06-01-2002
+# Last Modified: 06-03-2002
 #
 # NOTES:
 # This is a sample configuration file for the NRPE daemon.  It needs to be
@@ -42,6 +42,26 @@ server_port=5666
 # NOTE: This option is ignored if NRPE is running under either inetd or xinetd
 
 allowed_hosts=127.0.0.1
+
+
+
+# NRPE USER
+# This determines the effective user that the NRPE daemon should run as.  
+# You can either supply a username or a UID.
+# 
+# NOTE: This option is ignored if NRPE is running under either inetd or xinetd
+
+nrpe_user=@nrpe_user@
+
+
+
+# NRPE GROUP
+# This determines the effective group that the NRPE daemon should run as.  
+# You can either supply a group name or a GID.
+# 
+# NOTE: This option is ignored if NRPE is running under either inetd or xinetd
+
+nrpe_group=@nrpe_grp@
 
 
 

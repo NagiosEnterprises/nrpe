@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 06-01-2002
+ * Last Modified: 06-03-2002
  *
  * Command line: nrpe [-i | -d] <config_file>
  *
@@ -16,13 +16,6 @@
  * such as check_users, check_load, check_disk, etc. without
  * having to use rsh or ssh.
  * 
- * Modifications:
- * 
- * Vers 1.0b4-2   2000-01-03 jaclu@grm.se
- * 
- * main() returned STATE_UNKNOWN on successfull launch, changed to STATE_OK
- * I also added syslog support
- * 
  ******************************************************************************/
 
 #include "../common/common.h"
@@ -30,15 +23,9 @@
 #include "nrpe.h"
 #include "netutils.h"
 
-
 #define COMMAND_TIMEOUT		60			/* timeout for execution of plugins */
 #define MAXFD                   64
 
-char allowed_hosts[MAX_INPUT_BUFFER];
-int server_port=DEFAULT_SERVER_PORT;
-char server_address[16]="0.0.0.0";
-int socket_timeout=DEFAULT_SOCKET_TIMEOUT;
-command *command_list=NULL;
 
 void wait_for_connections(void);
 void handle_connection(int);
@@ -46,14 +33,26 @@ int read_config_file(char *);
 int add_command(char *,char *);
 command *find_command(char *);
 void sighandler(int);
+int drop_privileges(char *,char *);
 void free_memory(void);
 int is_an_allowed_host(char *);
 
 int my_system(char *,int,int *,char *,int);            	/* executes a command via popen(), but also protects against timeouts */
 void my_system_sighandler(int);				/* handles timeouts when executing commands via my_system() */
 
-int use_inetd=TRUE;
-int debug=FALSE;
+
+char    allowed_hosts[MAX_INPUT_BUFFER];
+int     server_port=DEFAULT_SERVER_PORT;
+char    server_address[16]="0.0.0.0";
+int     socket_timeout=DEFAULT_SOCKET_TIMEOUT;
+
+command *command_list=NULL;
+
+char    *nrpe_user=NULL;
+char    *nrpe_group=NULL;
+
+int     use_inetd=TRUE;
+int     debug=FALSE;
 
 
 
@@ -162,10 +161,8 @@ int main(int argc, char **argv){
 		chdir("/");
 		umask(0);
 
-		/*
-		for(i=0;i<MAXFD;i++)
-			close(i);
-		*/
+		/* drop privileges */
+		drop_privileges(nrpe_user,nrpe_group);
 
 		/* wait for connections */
 		wait_for_connections();
@@ -264,6 +261,12 @@ int read_config_file(char *filename){
 			else 
 				debug=FALSE;
 		        }
+
+                else if(!strcmp(varname,"nrpe_user"))
+			nrpe_user=strdup(varvalue);
+
+                else if(!strcmp(varname,"nrpe_group"))
+			nrpe_group=strdup(varvalue);
 
 		else{
 			syslog(LOG_ERR,"Unknown option specified in config file '%s' - Line %d\n",filename,line);
@@ -850,3 +853,75 @@ void my_system_sighandler(int sig){
 	exit(STATE_CRITICAL);
         }
 
+
+
+/* drops privileges */
+int drop_privileges(char *user, char *group){
+	uid_t uid=-1;
+	gid_t gid=-1;
+	struct group *grp;
+	struct passwd *pw;
+
+	/* set effective group ID */
+	if(group!=NULL){
+		
+		/* see if this is a group name */
+		if(strspn(group,"0123456789")<strlen(group)){
+			grp=(struct group *)getgrnam(group);
+			if(grp!=NULL)
+				gid=(gid_t)(grp->gr_gid);
+			else
+				syslog(LOG_ERR,"Warning: Could not get group entry for '%s'",group);
+		        }
+
+		/* else we were passed the GID */
+		else
+			gid=(gid_t)atoi(group);
+
+		/* set effective group ID if other than current EGID */
+		if(gid!=getegid()){
+
+			if(setgid(gid)==-1)
+				syslog(LOG_ERR,"Warning: Could not set effective GID=%d",(int)gid);
+		        }
+	        }
+
+
+	/* set effective user ID */
+	if(user!=NULL){
+		
+		/* see if this is a user name */
+		if(strspn(user,"0123456789")<strlen(user)){
+			pw=(struct passwd *)getpwnam(user);
+			if(pw!=NULL)
+				uid=(uid_t)(pw->pw_uid);
+			else
+				syslog(LOG_ERR,"Warning: Could not get passwd entry for '%s'",user);
+		        }
+
+		/* else we were passed the UID */
+		else
+			uid=(uid_t)atoi(user);
+			
+#ifdef HAVE_INITGROUPS
+
+		if(uid!=geteuid()){
+
+			/* initialize supplementary groups */
+			if(initgroups(user,gid)==-1){
+				if(errno==EPERM)
+					syslog(LOG_ERR,"Warning: Unable to change supplementary groups using initgroups()");
+				else{
+					syslog(LOG_ERR,"Warning: Possibly root user failed dropping privileges with initgroups()");
+					return ERROR;
+			                }
+	                        }
+		        }
+#endif
+
+		if(setuid(uid)==-1)
+			syslog(LOG_ERR,"Warning: Could not set effective UID=%d",(int)uid);
+	        }
+
+	return OK;
+        }

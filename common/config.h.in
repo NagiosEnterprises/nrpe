@@ -2,7 +2,7 @@
  *
  * NRPE Common Header File
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 02-21-2002
+ * Last Modified: 06-03-2002
  *
  * License:
  *
@@ -26,10 +26,14 @@
 
 
 #undef STDC_HEADERS
-#undef HAVE_SYSLOG_H
 #undef HAVE_STRDUP
 #undef HAVE_STRSTR
 #undef HAVE_STRTOUL 
+#undef HAVE_INITGROUPS
+
+#undef HAVE_PWD_H
+#undef HAVE_GRP_H
+#undef HAVE_SYSLOG_H
 #undef HAVE_LIMITS_H
 #undef HAVE_SYS_RESOURCE_H
 
@@ -140,5 +144,11 @@
 #include <ctype.h>
 #endif
 
-
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
+ 
+#ifdef HAVE_GRP_H
+#include <grp.h>
+#endif
 

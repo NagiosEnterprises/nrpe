@@ -3,6 +3,11 @@ AC_INIT(src/nrpe.c)
 AC_CONFIG_HEADER(common/config.h)
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
+PKG_NAME=nrpe
+PKG_VERSION="1.5"
+PKG_HOME_URL="http://www.nagios.org/"
+PKG_REL_DATE="06-03-2002"
+
 dnl Figure out how to invoke "install" and what install options to use.
 
 AC_PROG_INSTALL
@@ -16,7 +21,7 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(ctype.h errno.h fcntl.h netdb.h signal.h strings.h string.h syslog.h unistd.h arpa/inet.h netinet/in.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h)
+AC_CHECK_HEADERS(ctype.h errno.h fcntl.h grp.h netdb.h pwd.h signal.h strings.h string.h syslog.h unistd.h arpa/inet.h netinet/in.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -31,7 +36,7 @@ dnl Checks for library functions.
 AC_CHECK_LIB(nsl,main,SOCKETLIBS="$SOCKETLIBS -lnsl")
 AC_CHECK_LIB(socket,socket,SOCKETLIBS="$SOCKETLIBS -lsocket")
 AC_SUBST(SOCKETLIBS)
-AC_CHECK_FUNCS(strdup strstr strtoul)
+AC_CHECK_FUNCS(strdup strstr strtoul initgroups)
 
 AC_MSG_CHECKING(for type of socket size)
 AC_TRY_COMPILE([#include <stdlib.h>
@@ -42,15 +47,32 @@ AC_TRY_COMPILE([#include <stdlib.h>
 [AC_DEFINE(SOCKET_SIZE_TYPE, size_t) AC_MSG_RESULT(size_t)],
 [AC_DEFINE(SOCKET_SIZE_TYPE, int) AC_MSG_RESULT(int)])
 
-AC_OUTPUT(Makefile src/Makefile)
+
+AC_ARG_WITH(nrpe_user,--with-nrpe-user=<user> sets user name to run NRPE,nrpe_user=$withval,nrpe_user=nagios)
+AC_ARG_WITH(nrpe_grp,--with-nrpe-grp=<grp> sets group name to run NRPE,nrpe_grp=$withval,nrpe_grp=nagios)
+AC_SUBST(nrpe_user)
+AC_SUBST(nrpe_grp)
+
+
+AC_OUTPUT(Makefile src/Makefile nrpe.cfg)
+
+
+dnl Review options
+echo ""
+echo ""
+AC_MSG_RESULT([*** Configuration summary for $PKG_NAME $PKG_VERSION $PKG_REL_DATE ***:])
+
+echo ""
+echo " General Options:"
+echo " -------------------------"
+
+AC_MSG_RESULT([ NRPE user:  $nrpe_user])
+AC_MSG_RESULT([ NRPE group: $nrpe_grp])
+
 
 echo ""
 echo ""
-echo "Type 'make all' to compile the NRPE daemon and client."
+echo "Review the options above for accuracy.  If they look okay,"
+echo "type 'make all' to compile the NRPE daemon and client."
 echo ""
-
-
-
-
-
 

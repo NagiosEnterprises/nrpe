@@ -3,6 +3,11 @@ NRPE Changelog
 **************
 
 
+1.5 - 06/03/2002
+----------------
+- Added setuid/setgid option to config file (suggested by Marek Cervenka) 
+
+
 1.4 - 06/01/2002
 ----------------
 - Changed STATE_UNKNOWN to value of 3 instead of -1 (old style)
@@ -121,3 +126,5 @@ NRPE Changelog
 - Changed 'allowed_ip' option in configuration file to
   'allowed_hosts' and added support for multiple hosts
 - Minor buffer overflow protection fixes
+- main() returned STATE_UNKNOWN on successful launch, changed to STATE_OK (jaclu@grm.se)
+- Added syslog support (jaclu@grm.se)
