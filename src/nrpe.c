@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 02-21-2002
+ * Last Modified: 03-19-2002
  *
  * Command line: nrpe [-i | -d] <config_file>
  *
@@ -193,8 +193,10 @@ int read_config_file(char *filename){
 	fp=fopen(filename,"r");
 
 	/* exit if we couldn't open the config file */
-	if(fp==NULL)
+	if(fp==NULL){
+		syslog(LOG_ERR,"Unable to open config file '%s' for reading\n",filename);
 		return ERROR;
+	        }
 
 	line=0;
 	while(fgets(input_buffer,MAX_INPUT_BUFFER-1,fp)){
