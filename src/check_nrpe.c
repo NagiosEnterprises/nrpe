@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 09-08-2003
+ * Last Modified: 10-14-2003
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -17,9 +17,9 @@
  *
  ********************************************************************************************/
 
-#include "../common/common.h"
-#include "../common/config.h"
-#include "utils.h"
+#include "../include/common.h"
+#include "../include/config.h"
+#include "../include/utils.h"
 
 
 #define DEFAULT_NRPE_COMMAND	"_NRPE_CHECK"  /* check version of NRPE daemon */

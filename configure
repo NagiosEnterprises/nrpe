@@ -535,9 +535,9 @@ fi
 
 
 PKG_NAME=nrpe
-PKG_VERSION="2.0"
+PKG_VERSION="2.1"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="09-08-2003"
+PKG_REL_DATE="10-14-2003"
 
 
 ac_aux_dir=
@@ -1136,7 +1136,7 @@ EOF
 
 fi
 
-for ac_hdr in ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h unistd.h arpa/inet.h netinet/in.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h
+for ac_hdr in ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h tcpd.h unistd.h arpa/inet.h netinet/in.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -1977,15 +1977,58 @@ else
 fi
 
 
+echo $ac_n "checking for main in -lwrap""... $ac_c" 1>&6
+echo "configure:1982: checking for main in -lwrap" >&5
+ac_lib_var=`echo wrap'_'main | sed 'y%./+-%__p_%'`
+if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  ac_save_LIBS="$LIBS"
+LIBS="-lwrap  $LIBS"
+cat > conftest.$ac_ext <<EOF
+#line 1990 "configure"
+#include "confdefs.h"
+
+int main() {
+main()
+; return 0; }
+EOF
+if { (eval echo configure:1997: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+  rm -rf conftest*
+  eval "ac_cv_lib_$ac_lib_var=yes"
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -rf conftest*
+  eval "ac_cv_lib_$ac_lib_var=no"
+fi
+rm -f conftest*
+LIBS="$ac_save_LIBS"
+
+fi
+if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
+  echo "$ac_t""yes" 1>&6
+  
+	LIBWRAPLIBS="$LIBWRAPLIBS -lwrap"
+	cat >> confdefs.h <<\EOF
+#define HAVE_LIBWRAP 1
+EOF
+
+	
+else
+  echo "$ac_t""no" 1>&6
+fi
+
+
 for ac_func in strdup strstr strtoul initgroups
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
-echo "configure:1984: checking for $ac_func" >&5
+echo "configure:2027: checking for $ac_func" >&5
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1989 "configure"
+#line 2032 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -2008,7 +2051,7 @@ $ac_func();
 
 ; return 0; }
 EOF
-if { (eval echo configure:2012: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:2055: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_func_$ac_func=yes"
 else
@@ -2034,9 +2077,9 @@ done
 
 
 echo $ac_n "checking for type of socket size""... $ac_c" 1>&6
-echo "configure:2038: checking for type of socket size" >&5
+echo "configure:2081: checking for type of socket size" >&5
 cat > conftest.$ac_ext <<EOF
-#line 2040 "configure"
+#line 2083 "configure"
 #include "confdefs.h"
 #include <stdlib.h>
 #include <sys/types.h>
@@ -2046,7 +2089,7 @@ int main() {
 int a = send(1, (const void *)0, (size_t *) 0, (int *) 0);
 ; return 0; }
 EOF
-if { (eval echo configure:2050: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:2093: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   cat >> confdefs.h <<\EOF
 #define SOCKET_SIZE_TYPE size_t
@@ -2107,7 +2150,7 @@ fi
 
 if test x$check_for_ssl = xyes; then
 	echo $ac_n "checking for SSL""... $ac_c" 1>&6
-echo "configure:2111: checking for SSL" >&5
+echo "configure:2154: checking for SSL" >&5
 	found_ssl=no
 	for dir in $ssl_inc_dir /usr/local/openssl /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr; do
 		ssldir="$dir"
@@ -2146,11 +2189,11 @@ EOF
 		else
 			sslbin=$ssldir/bin/openssl
 		fi
-		$sslbin dhparam -out /dev/null -C 512 > src/dh.h
+		$sslbin dhparam -out /dev/null -C 512 > include/dh.h
 	fi
 
 		echo $ac_n "checking for Kerberos include files""... $ac_c" 1>&6
-echo "configure:2154: checking for Kerberos include files" >&5
+echo "configure:2197: checking for Kerberos include files" >&5
 	found_kerberos=no
 	for dir in $kerberos_inc_dir /usr/kerberos/include; do
 		kerbdir="$dir"
@@ -2220,7 +2263,7 @@ fi
 # Extract the first word of "perl", so it can be a program name with args.
 set dummy perl; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2224: checking for $ac_word" >&5
+echo "configure:2267: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_PERL'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2307,7 +2350,7 @@ done
 ac_given_srcdir=$srcdir
 ac_given_INSTALL="$INSTALL"
 
-trap 'rm -fr `echo "Makefile src/Makefile subst common/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+trap 'rm -fr `echo "Makefile src/Makefile subst include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -2348,6 +2391,7 @@ s%@SET_MAKE@%$SET_MAKE%g
 s%@CPP@%$CPP%g
 s%@OTHERLIBS@%$OTHERLIBS%g
 s%@SOCKETLIBS@%$SOCKETLIBS%g
+s%@LIBWRAPLIBS@%$LIBWRAPLIBS%g
 s%@HAVE_SSL@%$HAVE_SSL%g
 s%@nrpe_user@%$nrpe_user%g
 s%@nrpe_grp@%$nrpe_grp%g
@@ -2475,7 +2519,7 @@ ac_eD='%g'
 if test "${CONFIG_HEADERS+set}" != set; then
 EOF
 cat >> $CONFIG_STATUS <<EOF
-  CONFIG_HEADERS="common/config.h"
+  CONFIG_HEADERS="include/config.h"
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 fi
@@ -2573,11 +2617,11 @@ rm -fr confdefs* $ac_clean_files
 test "$no_create" = yes || ${CONFIG_SHELL-/bin/sh} $CONFIG_STATUS || exit 1
 
 
-perl subst nrpe.cfg
 perl subst init-script
 perl subst init-script.debian
 perl subst init-script.freebsd
-perl subst nrpe.xinetd
+perl subst sample-config/nrpe.cfg
+perl subst sample-config/nrpe.xinetd
 
 
 echo ""

@@ -5,7 +5,7 @@
  * License: GPL
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  *
- * Last Modified: 06-04-2003
+ * Last Modified: 10-14-2003
  *
  * Description:
  *
@@ -29,8 +29,8 @@
  *
  ****************************************************************************/
 
-#include "../common/common.h"
-#include "utils.h"
+#include "../include/common.h"
+#include "../include/utils.h"
 
 static unsigned long crc32_table[256];
 

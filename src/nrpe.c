@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 09-09-2003
+ * Last Modified: 10-14-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -18,13 +18,18 @@
  * 
  ******************************************************************************/
 
-#include "../common/common.h"
-#include "../common/config.h"
-#include "nrpe.h"
-#include "utils.h"
+#include "../include/common.h"
+#include "../include/config.h"
+#include "../include/nrpe.h"
+#include "../include/utils.h"
 
 #ifdef HAVE_SSL
-#include "dh.h"
+#include "../include/dh.h"
+#endif
+
+#ifdef HAVE_LIBWRAP
+int allow_severity=LOG_INFO;
+int deny_severity=LOG_WARNING;
 #endif
 
 #define DEFAULT_COMMAND_TIMEOUT	60			/* default timeout for execution of plugins */
@@ -55,7 +60,6 @@ char    *command_name=NULL;
 char    *macro_argv[MAX_COMMAND_ARGUMENTS];
 
 char    config_file[MAX_INPUT_BUFFER]="nrpe.cfg";
-char    allowed_hosts[MAX_INPUT_BUFFER];
 int     server_port=DEFAULT_SERVER_PORT;
 char    server_address[16]="0.0.0.0";
 int     socket_timeout=DEFAULT_SOCKET_TIMEOUT;
@@ -105,10 +109,20 @@ int main(int argc, char **argv){
 #ifdef HAVE_SSL
 		printf("SSL/TLS Available: Anonymous DH Mode, OpenSSL 0.9.6 or higher required\n");
 #endif
+#ifdef HAVE_LIBWRAP
+		printf("TCP Wrappers Available\n");
+#endif
 		printf("\n");
 #ifdef ENABLE_COMMAND_ARGUMENTS
 		printf("***************************************************************\n");
 		printf("** POSSIBLE SECURITY RISK - COMMAND ARGUMENTS ARE SUPPORTED! **\n");
+		printf("**      Read the NRPE SECURITY file for more information     **\n");
+		printf("***************************************************************\n");
+		printf("\n");
+#endif
+#ifndef HAVE_LIBWRAP
+		printf("***************************************************************\n");
+		printf("** POSSIBLE SECURITY RISK - TCP WRAPPERS ARE NOT AVAILABLE!  **\n");
 		printf("**      Read the NRPE SECURITY file for more information     **\n");
 		printf("***************************************************************\n");
 		printf("\n");
@@ -227,7 +241,7 @@ int main(int argc, char **argv){
 		signal(SIGHUP, SIG_IGN);
 
 		chdir("/");
-		umask(0);
+		/*umask(0);*/
 
 		/* close standard file descriptors */
 		close(0);
@@ -345,15 +359,6 @@ int read_config_file(char *filename){
                         server_address[sizeof(server_address)-1]='\0';
                         }
 
-		else if(!strcmp(varname,"allowed_hosts")){
-			if(strlen(input_buffer)>sizeof(allowed_hosts)){
-				syslog(LOG_ERR,"Allowed hosts list too long in config file '%s' - Line %d\n",filename,line);
-				return ERROR;
-			        }
-			strncpy(allowed_hosts,varvalue,sizeof(allowed_hosts));
-			allowed_hosts[sizeof(allowed_hosts)-1]='\x0';
-		        }
-
 		else if(strstr(input_buffer,"command[")){
 			temp_buffer=strtok(varname,"[");
 			temp_buffer=strtok(NULL,"]");
@@ -390,9 +395,8 @@ int read_config_file(char *filename){
 		        }
 
 		else{
-			syslog(LOG_ERR,"Unknown option specified in config file '%s' - Line %d\n",filename,line);
-
-			return ERROR;
+			syslog(LOG_WARNING,"Unknown option specified in config file '%s' - Line %d\n",filename,line);
+			continue;
 		        }
 
 	        }
@@ -477,13 +481,25 @@ int read_config_dir(char *dirname){
 int add_command(char *command_name, char *command_line){
 	command *new_command;
 
+	if(command_name==NULL || command_line==NULL)
+		return ERROR;
+
 	/* allocate memory for the new command */
 	new_command=(command *)malloc(sizeof(command));
 	if(new_command==NULL)
 		return ERROR;
 
-	strcpy(new_command->command_name,command_name);
-	strcpy(new_command->command_line,command_line);
+	new_command->command_name=strdup(command_name);
+	if(new_command->command_name==NULL){
+		free(new_command);
+		return ERROR;
+	        }
+	new_command->command_line=strdup(command_line);
+	if(new_command->command_line==NULL){
+		free(new_command->command_name);
+		free(new_command);
+		return ERROR;
+	        }
 
 	/* add new command to head of list in memory */
 	new_command->next=command_list;
@@ -521,6 +537,9 @@ void wait_for_connections(void){
 	char connecting_host[16];
 	pid_t pid;
 	int flag=1;
+#ifdef HAVE_LIBWRAP
+	struct request_info req;
+#endif
 
 	/* create a socket for listening */
 	sock=socket(AF_INET,SOCK_STREAM,0);
@@ -578,7 +597,6 @@ void wait_for_connections(void){
 
 	if(debug==TRUE){
 		syslog(LOG_DEBUG,"Listening for connections on port %d\n",htons(myname.sin_port));
-		syslog(LOG_DEBUG,"Allowing connections from: %s\n",allowed_hosts);
 	        }
 
 	/* listen for connection requests - fork() if we get one */
@@ -636,24 +654,27 @@ void wait_for_connections(void){
 				if(debug==TRUE)
 					syslog(LOG_DEBUG,"Connection from %s port %d",inet_ntoa(nptr->sin_addr),nptr->sin_port);
 
-				/* is this is a blessed machine? */
-				snprintf(connecting_host,sizeof(connecting_host),"%s",inet_ntoa(nptr->sin_addr));
-				connecting_host[sizeof(connecting_host)-1]='\x0';
+#ifdef HAVE_LIBWRAP
 
-				if(!is_an_allowed_host(connecting_host)){
+				/* Check whether or not connections are allowed from this host */
+				request_init(&req,RQ_DAEMON,"nrpe",RQ_FILE,new_sd,0);
+				fromhost(&req);
 
-				        /* log error to syslog facility */
-					syslog(LOG_DEBUG,"Host %s is not allowed to talk to us!",connecting_host);
-			                }
-				else{
+				if(!hosts_access(&req)){
 
-				        /* log info to syslog facility */
-					if(debug==TRUE)
-						syslog(LOG_DEBUG,"Host address checks out ok");
+					syslog(LOG_DEBUG,"Connection refused by TCP wrapper");
 
-				        /* handle the client connection */
-					handle_connection(new_sd);
-			                }
+					/* refuse the connection */
+					refuse(&req);
+
+					/* should not be reached */
+					syslog(LOG_ERR,"libwrap refuse() returns!");
+					exit(STATE_CRITICAL);
+					}
+#endif
+
+				/* handle the client connection */
+				handle_connection(new_sd);
 
 				/* log info to syslog facility */
 				if(debug==TRUE)
@@ -941,59 +962,6 @@ void handle_connection(int sock){
 
 
 
-/* checks to see if a given host is allowed to talk to us */
-int is_an_allowed_host(char *connecting_host){
-	char temp_buffer[MAX_INPUT_BUFFER];
-	char *temp_ptr;
-	int result=0;
-        struct hostent *myhost;
-	char **pptr;
-	char resolved_addr[INET6_ADDRSTRLEN];
-
-	/* try and match IP addresses first */
-	strncpy(temp_buffer,allowed_hosts,sizeof(temp_buffer));
-	temp_buffer[sizeof(temp_buffer)-1]='\x0';
-
-	for(temp_ptr=strtok(temp_buffer,",");temp_ptr!=NULL;temp_ptr=strtok(NULL,",")){
-
-		if(!strcmp(connecting_host,temp_ptr)){
-			result=1;
-			break;
-		        }
-	        }
-
-	/* try DNS lookups if needed */
-	if(result==0){
-
-		strncpy(temp_buffer,allowed_hosts,sizeof(temp_buffer));
-		temp_buffer[sizeof(temp_buffer)-1]='\x0';
-
-		for(temp_ptr=strtok(temp_buffer,",");temp_ptr!=NULL;temp_ptr=strtok(NULL,",")){
-
-			myhost=gethostbyname(temp_ptr);
-			if(myhost!=NULL){
-
-				/* check all addresses for the host... */
-				for(pptr=myhost->h_addr_list;*pptr!=NULL;pptr++){
-
-					inet_ntop(myhost->h_addrtype,*pptr,resolved_addr,sizeof(resolved_addr));
-					if(!strcmp(resolved_addr,connecting_host)){
-						result=1;
-						break;
-					        }
-					}
-			        }
-
-			if(result==1)
-				break;
-		        }
-	        }
-
-	return result;
-        }
-
-
-
 /* handle signals */
 void sighandler(int sig){
 
@@ -1018,6 +986,8 @@ void free_memory(void){
 	this_command=command_list;
 	while(this_command!=NULL){
 		next_command=this_command->next;
+		free(this_command->command_name);
+		free(this_command->command_line);
 		free(this_command);
 		this_command=next_command;
 	        }

@@ -5,7 +5,8 @@ NRPE Changelog
 
 2.1 - ??/??/2003
 ----------------
-- Host names can now be specified in allowed host list
+- Replaced host access list with TCP wrapper support
+- Removed length restrictions for command names and command lines
 - Configure script patch for getopt_long on Solaris
 
 

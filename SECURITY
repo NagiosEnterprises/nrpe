@@ -2,6 +2,25 @@
 NRPE SECURITY README
 ********************
 
+
+TCP WRAPPER SUPPORT
+===================
+
+NRPE 2.1 includes native support for TCP wrappers.  The older
+host access list directive was removed from the config file.
+Make sure your system supports TCP wrappers before running NRPE.
+Once you compile NRPE you can check to see if it has wrapper
+support built in by running the daemon from the command line
+without any arguments like this:
+
+	./nrpe --help
+
+
+
+
+COMMAND ARGUMENTS
+=================
+
 NRPE 2.0 includes the ability for clients to supply arguments to
 commands which should be run.  Please note that this feature
 should be considered a security risk, and you should only use

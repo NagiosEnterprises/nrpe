@@ -70,6 +70,14 @@ make much use of this addon.
 
 
 
+Configuring
+-----------
+
+Sample config files for the NRPE daemon are located in the
+sample-config/ subdirectory.
+
+
+
 Running Under INETD or XINETD
 -----------------------------
 

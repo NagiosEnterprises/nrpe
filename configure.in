@@ -5,13 +5,13 @@ define([AC_CACHE_LOAD],)
 define([AC_CACHE_SAVE],)
 
 AC_INIT(src/nrpe.c)
-AC_CONFIG_HEADER(common/config.h)
+AC_CONFIG_HEADER(include/config.h)
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
 PKG_NAME=nrpe
-PKG_VERSION="2.0"
+PKG_VERSION="2.1"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="09-08-2003"
+PKG_REL_DATE="10-14-2003"
 
 dnl Figure out how to invoke "install" and what install options to use.
 
@@ -26,7 +26,7 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h unistd.h arpa/inet.h netinet/in.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h)
+AC_CHECK_HEADERS(ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h tcpd.h unistd.h arpa/inet.h netinet/in.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -88,6 +88,11 @@ dnl Checks for library functions.
 AC_CHECK_LIB(nsl,main,SOCKETLIBS="$SOCKETLIBS -lnsl")
 AC_CHECK_LIB(socket,socket,SOCKETLIBS="$SOCKETLIBS -lsocket")
 AC_SUBST(SOCKETLIBS)
+AC_CHECK_LIB(wrap,main,[
+	LIBWRAPLIBS="$LIBWRAPLIBS -lwrap"
+	AC_DEFINE(HAVE_LIBWRAP)
+	])
+AC_SUBST(LIBWRAPLIBS)
 AC_CHECK_FUNCS(strdup strstr strtoul initgroups)
 
 AC_MSG_CHECKING(for type of socket size)
@@ -161,7 +166,7 @@ if test x$check_for_ssl = xyes; then
 		else
 			sslbin=$ssldir/bin/openssl
 		fi
-		$sslbin dhparam -out /dev/null -C 512 > src/dh.h
+		$sslbin dhparam -out /dev/null -C 512 > include/dh.h
 	fi
 
 	dnl RedHat 8.0 and 9.0 include openssl compiled with kerberos, so we must include header file
@@ -201,11 +206,11 @@ AC_ARG_ENABLE(command-args,--enable-command-args allows clients to specify comma
 AC_PATH_PROG(PERL,perl)
 AC_OUTPUT(Makefile src/Makefile subst)
 
-perl subst nrpe.cfg
 perl subst init-script
 perl subst init-script.debian
 perl subst init-script.freebsd
-perl subst nrpe.xinetd
+perl subst sample-config/nrpe.cfg
+perl subst sample-config/nrpe.xinetd
 
 
 dnl Review options
