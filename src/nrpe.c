@@ -25,7 +25,6 @@
 
 #define DEFAULT_COMMAND_TIMEOUT	60			/* default timeout for execution of plugins */
 #define MAXFD                   64
-#define MAX_COMMAND_ARGUMENTS   16
 #define NASTY_METACHARS         "|`&><'\"\\[]{}"
 
 

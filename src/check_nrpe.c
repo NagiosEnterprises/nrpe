@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-28-2003
+ * Last Modified: 01-29-2003
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -21,13 +21,15 @@
 #include "../common/config.h"
 #include "utils.h"
 
+
 #define DEFAULT_NRPE_COMMAND	"_NRPE_CHECK"  /* check version of NRPE daemon */
 
 int server_port=DEFAULT_SERVER_PORT;
-char server_name[MAX_HOST_ADDRESS_LENGTH];
-
-char query_string[MAX_PACKETBUFFER_LENGTH]=DEFAULT_NRPE_COMMAND;;
+char *server_name=NULL;
+char *command_name=NULL;
 int socket_timeout=DEFAULT_SOCKET_TIMEOUT;
+
+char query[MAX_INPUT_BUFFER]="";
 
 int show_help=FALSE;
 int show_license=FALSE;
@@ -68,14 +70,14 @@ int main(int argc, char **argv){
 
 	if(result!=OK || show_help==TRUE){
 
-		printf("Usage: %s -H <host_address> [-p port] [-c command] [-to to_sec]\n",argv[0]);
+		printf("Usage: check_nrpe -H <host> [-p <port>] [-t <timeout>] [-c <command>] [-a arglist...]\n");
 		printf("\n");
 		printf("Options:\n");
-		printf(" <host_address> = The IP address of the host running the NRPE daemon\n");
-		printf(" [port]         = The port on which the daemon is running - default is %d\n",DEFAULT_SERVER_PORT);
-		printf(" [command]      = The name of the command that the remote daemon should run\n");
-		printf(" [to_sec]       = Number of seconds before connection attempt times out.\n");
-		printf("                  Default timeout is %d seconds\n",DEFAULT_SOCKET_TIMEOUT);
+		printf(" <host>     = The address of the host running the NRPE daemon\n");
+		printf(" [port]     = The port on which the daemon is running (default=%d)\n",DEFAULT_SERVER_PORT);
+		printf(" [timeout]  = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
+		printf(" [command]  = The name of the command that the remote daemon should run\n");
+		printf(" [arglist]  = Optional arguments that should be passed to the command\n");
 		printf("\n");
 		printf("Note:\n");
 		printf("This plugin requires that you have the NRPE daemon running on the remote host.\n");
@@ -119,7 +121,7 @@ int main(int argc, char **argv){
 		/* initialize packet data */
 		send_packet.packet_version=(int16_t)htons(NRPE_PACKET_VERSION_2);
 		send_packet.packet_type=(int16_t)htons(QUERY_PACKET);
-		strncpy(&send_packet.buffer[0],query_string,MAX_PACKETBUFFER_LENGTH);
+		strncpy(&send_packet.buffer[0],query,MAX_PACKETBUFFER_LENGTH);
 		send_packet.buffer[MAX_PACKETBUFFER_LENGTH-1]='\x0';
 
 		/* calculate the crc 32 value of the packet */
@@ -202,65 +204,101 @@ int main(int argc, char **argv){
 
 /* process command line arguments */
 int process_arguments(int argc, char **argv){
-	int x;
+	char optchars[MAX_INPUT_BUFFER];
+	int argindex=0;
+	int c=1;
+	int i=1;
 
+#ifdef HAVE_GETOPT_H
+	int option_index=0;
+	static struct option long_options[]={
+		{"host", required_argument, 0, 'H'},
+		{"command", required_argument, 0, 'c'},
+		{"args", required_argument, 0, 'a'},
+		{"timeout", required_argument, 0, 't'},
+		{"port", required_argument, 0, 'p'},
+		{"help", no_argument, 0, 'h'},
+		{"license", no_argument, 0, 'l'},
+		{0, 0, 0, 0}
+                };
+#endif
 
 	/* no options were supplied */
 	if(argc<2)
 		return ERROR;
 
-	/* handle older style command line format - host address was first argument */
-	strncpy(server_name,argv[1],sizeof(server_name)-1);
-	server_name[sizeof(server_name)-1]='\x0';
+	snprintf(optchars,MAX_INPUT_BUFFER,"H:c:a:t:p:hl");
 
-	/* process all arguments */
-	for(x=2;x<=argc;x++){
+	while(1){
+#ifdef HAVE_GETOPT_H
+		c=getopt_long(argc,argv,optchars,long_options,&option_index);
+#else
+		c=getopt(argc,argv,optchars);
+#endif
+		if(c==-1 || c==EOF)
+			break;
 
-		if(!strcmp(argv[x-1],"-H")){
-			if(x<argc){
-				strncpy(server_name,argv[x],sizeof(server_name)-1);
-				server_name[sizeof(server_name)-1]='\x0';
-				x++;
-			        }
-			else
-				return ERROR;
-		        }
-		else if(!strcmp(argv[x-1],"-c")){
-			if(x<argc){
-				strncpy(query_string,argv[x],sizeof(query_string)-1);
-				query_string[sizeof(query_string)-1]='\x0';
-				x++;
-			        }
-			else
-				return ERROR;
-		        }
-		else if(!strcmp(argv[x-1],"-p")){
-			if(x<argc){
-				server_port=atoi(argv[x]);
-				x++;
-			        }
-			else
-				return ERROR;
-		        }
-		else if(!strcmp(argv[x-1],"-to")){
-			if(x<argc){
-				socket_timeout=atoi(argv[x]);
-				if(socket_timeout<=0)
-					return ERROR;
-				x++;
-			        }
-			else
-				return ERROR;
-		        }
-		else if(!strcmp(argv[x-1],"-h") || !strcmp(argv[x-1],"--help"))
+		/* process all arguments */
+		switch(c){
+
+		case '?':
+		case 'h':
 			show_help=TRUE;
-		else if(!strcmp(argv[x-1],"--license"))
-			show_license=TRUE;
-		else if(!strcmp(argv[x-1],"--version"))
+			break;
+		case 'V':
 			show_version=TRUE;
-		else
+			break;
+		case 'l':
+			show_license=TRUE;
+			break;
+		case 't':
+			socket_timeout=atoi(optarg);
+			if(socket_timeout<=0)
+				return ERROR;
+			break;
+		case 'p':
+			server_port=atoi(optarg);
+			if(server_port<=0)
+				return ERROR;
+			break;
+		case 'H':
+			server_name=strdup(optarg);
+			break;
+		case 'c':
+			command_name=strdup(optarg);
+			break;
+		case 'a':
+			argindex=optind;
+			break;
+		default:
 			return ERROR;
+			break;
+		        }
 	        }
+
+	/* determine (base) command query */
+	snprintf(query,sizeof(query),"%s",(command_name==NULL)?DEFAULT_NRPE_COMMAND:command_name);
+	query[sizeof(query)-1]='\x0';
+
+	/* get the command args */
+	if(argindex>0){
+
+		for(c=argindex-1;c<argc;c++){
+
+			i=sizeof(query)-strlen(query)-2;
+			if(i<=0)
+				break;
+
+			strcat(query,"!");
+			strncat(query,argv[c],i);
+			query[sizeof(query)-1]='\x0';
+		        }
+	        }
+
+	/* make sure required args were supplied */
+	if(server_name==NULL)
+		return ERROR;
+
 
 	return OK;
         }

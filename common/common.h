@@ -46,6 +46,8 @@
 
 #define NRPE_HELLO_COMMAND      "_NRPE_CHECK"
 
+#define MAX_COMMAND_ARGUMENTS   16
+
 
 /**************** PACKET STRUCTURE DEFINITION **********/
 
