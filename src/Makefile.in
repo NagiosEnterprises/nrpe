@@ -1,7 +1,7 @@
 ###############################
 # Makefile for NRPE
 #
-# Last Modified: 07-09-2002
+# Last Modified: 01-16-2003
 ###############################
 
 
@@ -27,8 +27,8 @@ check_nrpe: check_nrpe.c utils.c utils.h $(SRC_COMMON)/common.h $(SRC_COMMON)/co
 clean:
 	rm -f core nrpe check_nrpe
 	rm -f *~ */*~
-	rm -f Makefile
 
 distclean: clean
+	rm -f Makefile
 
-devclean: clean
+devclean: distclean

@@ -3,6 +3,14 @@ NRPE Changelog
 **************
 
 
+1.8 - 01/16/2003
+----------------
+- Daemon now closes stdio/out/err properly (James Peterson)
+- Makefile changes (James Peterson)
+- Mode command line option bug fix in daemon
+- Fixed incorrect command line options in check_nrpe plugin
+
+
 1.7 - 01/08/2003
 ----------------
 - Spec file updates and minor bug fixes (James Peterson)

@@ -22,8 +22,8 @@
  ************************************************************************/
 
 
-#define PROGRAM_VERSION "1.7"
-#define MODIFICATION_DATE "01-08-2003"
+#define PROGRAM_VERSION "1.8"
+#define MODIFICATION_DATE "01-16-2003"
 
 #define OK		0
 #define ERROR		-1

@@ -4,10 +4,9 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-08-2003
+ * Last Modified: 01-16-2003
  *
- * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-wt warn_time] \
- *                          [-ct crit_time] [-to to_sec]
+ * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
  * Description:
  *
@@ -67,8 +66,7 @@ int main(int argc, char **argv){
 
 	if(result!=OK || show_help==TRUE){
 
-		printf("Usage: %s -H <host_address> [-p port] [-c command] [-wt warn_time]\n",argv[0]);
-		printf("          [-ct crit_time] [-to to_sec]\n");
+		printf("Usage: %s -H <host_address> [-p port] [-c command] [-to to_sec]\n",argv[0]);
 		printf("\n");
 		printf("Options:\n");
 		printf(" <host_address> = The IP address of the host running the NRPE daemon\n");

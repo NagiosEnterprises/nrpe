@@ -1,7 +1,7 @@
 ###############################
 # Makefile for NRPE
 #
-# Last Modified: 01-07-2003
+# Last Modified: 01-16-2003
 ###############################
 
 
@@ -48,9 +48,11 @@ clean:
 	cd $(SRC_BASE); $(MAKE) $@ ; cd ..
 	rm -f core
 	rm -f *~ */*~
-	rm -f config.log config.status config.cache nrpe.cfg nrpe.xinetd Makefile subst $(SRC_COMMON)/config.h init-script init-script.debian init-script.freebsd
 
 distclean: clean
+	cd $(SRC_BASE); $(MAKE) $@ ; cd ..
+	rm -f config.log config.status config.cache nrpe.cfg nrpe.xinetd subst $(SRC_COMMON)/config.h init-script init-script.debian init-script.freebsd
+	rm -f Makefile
 
-devclean: clean
+devclean: distclean
 

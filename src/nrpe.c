@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-08-2003
+ * Last Modified: 01-16-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -149,20 +149,24 @@ int main(int argc, char **argv){
 	/* else daemonize and start listening for requests... */
 	else if(fork()==0){
 
-		/* We are in the 1st child, become session leader */
+		/* we're a daemon - set up a new process group */
 		setsid();
 
 		/* ignore SIGHUP */
 		signal(SIGHUP, SIG_IGN);
 
-		/* fork again, 1st child exits */
-		if(fork()!=0)
-			exit(0);
-
-		/* grandchild process continues... */
-	  
 		chdir("/");
 		umask(0);
+
+		/* close standard file descriptors */
+		close(0);
+		close(1);
+		close(2);
+
+		/* redirect standard descriptors to /dev/null */
+		open("/dev/null",O_RDONLY);
+		open("/dev/null",O_WRONLY);
+		open("/dev/null",O_WRONLY);
 
 		/* drop privileges */
 		drop_privileges(nrpe_user,nrpe_group);
@@ -941,7 +945,7 @@ int drop_privileges(char *user, char *group){
 /* process command line arguments */
 int process_arguments(int argc, char **argv){
 	int x;
-
+	int have_mode=FALSE;
 
 	/* no options were supplied */
 	if(argc<2)
@@ -959,10 +963,14 @@ int process_arguments(int argc, char **argv){
 			else
 				return ERROR;
 		        }
-		else if(!strcmp(argv[x-1],"-d") || !strcmp(argv[x-1],"--daemon"))
+		else if(!strcmp(argv[x-1],"-d") || !strcmp(argv[x-1],"--daemon")){
 			use_inetd=FALSE;
-		else if(!strcmp(argv[1],"-i") || !strcmp(argv[x-1],"--inetd"))
+			have_mode=TRUE;
+		        }
+		else if(!strcmp(argv[1],"-i") || !strcmp(argv[x-1],"--inetd")){
 			use_inetd=TRUE;
+			have_mode=TRUE;
+		        }
 		else if(!strcmp(argv[x-1],"-h") || !strcmp(argv[x-1],"--help"))
 			show_help=TRUE;
 		else if(!strcmp(argv[x-1],"-l") || !strcmp(argv[x-1],"--license"))
@@ -972,6 +980,10 @@ int process_arguments(int argc, char **argv){
 		else
 			return ERROR;
 	        }
+
+	/* bail if we didn't get a mode */
+	if(have_mode==FALSE)
+		return ERROR;
 
 	return OK;
         }
