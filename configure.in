@@ -122,11 +122,11 @@ dnl Modified version of Mark Ethan Trostler's macro <trostler@juniper.net>
 if test x$check_for_ssl = xyes; then
 	AC_MSG_CHECKING(for SSL)
 	found_ssl=no
-	for dir in $ssl_inc_dir /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr; do
+	for dir in $ssl_inc_dir /usr/local/openssl /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr; do
 		ssldir="$dir"
 		if test -f "$dir/include/openssl/ssl.h"; then
 			found_ssl=yes
-			CFLAGS="$CFLAGS -I$ssldir/include/openssl"
+			CFLAGS="$CFLAGS -I$ssldir/include/openssl -I$ssldir/include"
 		        break
 		fi
 		if test -f "$dir/include/ssl.h"; then
