@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 06-13-2003
+ * Last Modified: 07-22-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -551,7 +551,6 @@ void wait_for_connections(void){
 		exit(STATE_CRITICAL);
                 }
 
-
 	/* bind the address to the Internet socket */
 	if(bind(sock,(struct sockaddr *)&myname,sizeof(myname))<0){
 		syslog(LOG_ERR,"Network server bind failure (%d: %s)\n",errno,strerror(errno));
@@ -593,18 +592,6 @@ void wait_for_connections(void){
 			sleep(1);
 		        }
 
-		/* hey, there was an error... */
-		if(new_sd<0){
-
-			/* log error to syslog facility */
-			syslog(LOG_ERR,"Network server accept failure (%d: %s)",errno,strerror(errno));
-
-			/* close socket prioer to exiting */
-			close(sock);
-
-			return;
-			}
-
 		/* child process should handle the connection */
     		pid=fork();
     		if(pid==0){
@@ -612,6 +599,18 @@ void wait_for_connections(void){
 			/* fork again so we don't create zombies */
 			pid=fork();
 			if(pid==0){
+
+				/* hey, there was an error... */
+				if(new_sd<0){
+
+					/* log error to syslog facility */
+					syslog(LOG_ERR,"Network server accept failure (%d: %s)",errno,strerror(errno));
+
+					/* close socket prioer to exiting */
+					close(sock);
+			
+					return;
+				        }
 
 				/* grandchild does not need to listen for connections, so close the socket */
 				close(sock);  
