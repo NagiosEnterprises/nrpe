@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-30-2003
+ * Last Modified: 03-05-2003
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -263,8 +263,22 @@ int main(int argc, char **argv){
 			return STATE_UNKNOWN;
                         }
 	
+		/* check packet version */
+		if(ntohs(receive_packet.packet_version!=NRPE_PACKET_VERSION_2)){
+			printf("CHECK_NRPE: Invalid packet version received from server.\n");
+			close(sd);
+			return STATE_UNKNOWN;
+			}
+
+		/* check packet type */
+		if(ntohs(receive_packet.packet_type!=RESPONSE_PACKET)){
+			printf("CHECK_NRPE: Invalid packet type received from server.\n");
+			close(sd);
+			return STATE_UNKNOWN;
+			}
+
 		/* get the return code from the remote plugin */
-		result=(int16_t)ntohl(receive_packet.result_code);
+		result=(int16_t)ntohs(receive_packet.result_code);
 
 		/* print the output returned by the daemon */
 		receive_packet.buffer[MAX_PACKETBUFFER_LENGTH-1]='\x0';
