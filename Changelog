@@ -3,7 +3,7 @@ NRPE Changelog
 **************
 
 
-2.0 - ??/??/2003
+2.0 - 09/08/2003
 ----------------
 - Added support for passing arguments to command
 - NRPE daemon can no longer be run as root user/group
