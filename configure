@@ -1947,7 +1947,7 @@ EOF
 		
 				echo ""
 		echo "*** Generating DH Parameters for SSL/TLS ***"
-		openssl dhparam -out /dev/null -C 512 > src/dh.h
+		$ssldir/bin/openssl dhparam -out /dev/null -C 512 > src/dh.h
 	    fi
 
 		echo $ac_n "checking for Kerberos include files""... $ac_c" 1>&6

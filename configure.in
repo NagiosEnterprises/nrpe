@@ -144,7 +144,7 @@ if test x$check_for_ssl = xyes; then
 		dnl Generate DH parameters
 		echo ""
 		echo "*** Generating DH Parameters for SSL/TLS ***"
-		openssl dhparam -out /dev/null -C 512 > src/dh.h
+		$ssldir/bin/openssl dhparam -out /dev/null -C 512 > src/dh.h
 	    fi
 
 	dnl RedHat 8.0 and 9.0 include openssl compiled with kerberos, so we must include header file
