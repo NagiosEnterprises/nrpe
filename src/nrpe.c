@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 03-06-2003
+ * Last Modified: 03-13-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -22,6 +22,10 @@
 #include "../common/config.h"
 #include "nrpe.h"
 #include "utils.h"
+
+#ifdef HAVE_SSL
+#include "dh.h"
+#endif
 
 #define DEFAULT_COMMAND_TIMEOUT	60			/* default timeout for execution of plugins */
 #define MAXFD                   64
@@ -85,6 +89,9 @@ int main(int argc, char **argv){
 	int result;
 	int x;
 	char buffer[MAX_INPUT_BUFFER];
+#ifdef HAVE_SSL
+	DH *dh;
+#endif
 
 	result=process_arguments(argc,argv);
 
@@ -97,7 +104,7 @@ int main(int argc, char **argv){
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL\n");
 #ifdef HAVE_SSL
-		printf("SSL Available\n");
+		printf("SSL/TLS Available: Anonymous DH Mode, OpenSSL 0.9.6 or higher required\n");
 #endif
 		printf("\n");
 #ifdef ENABLE_COMMAND_ARGUMENTS
@@ -188,9 +195,15 @@ int main(int argc, char **argv){
 			exit(STATE_CRITICAL);
 		        }
 		/*SSL_CTX_set_cipher_list(ctx,"ALL");*/
-		SSL_CTX_set_options(ctx,SSL_OP_SINGLE_DH_USE);
-		SSL_CTX_set_cipher_list(ctx,"DH");
-                }
+		SSL_CTX_set_cipher_list(ctx,"ADH");
+		dh=get_dh512();
+		SSL_CTX_set_tmp_dh(ctx,dh);
+		DH_free(dh);
+		syslog(LOG_INFO,"INFO: SSL/TLS initialized. All network traffic will be encrypted.");
+	        }
+	else{
+		syslog(LOG_INFO,"INFO: SSL/TLS NOT initialized. Network encryption DISABLED.");
+	        }
 #endif
 
 	/* if we're running under inetd... */
@@ -329,7 +342,7 @@ int read_config_file(char *filename){
 
 		else if(!strcmp(varname,"server_address")){
                         strncpy(server_address,varvalue,sizeof(server_address) - 1);
-                        server_address[sizeof(server_address) - 1] = '\0';
+                        server_address[sizeof(server_address)-1]='\0';
                         }
 
 		else if(!strcmp(varname,"allowed_hosts")){
@@ -717,8 +730,8 @@ void handle_connection(int sock){
 	if(result==STATE_OK && use_ssl==TRUE){
 		if((ssl=SSL_new(ctx))!=NULL){
 			SSL_set_fd(ssl,sock);
-			if(SSL_accept(ssl)!=1){
-				syslog(LOG_ERR,"Error: Could not complete SSL handshake.\n");
+			if((rc=SSL_accept(ssl))!=1){
+				syslog(LOG_ERR,"Error: Could not complete SSL handshake. %s\n",SSL_get_error(ssl,rc));
 #ifdef DEBUG
 				errfp=fopen("/tmp/err.log","w");
 				ERR_print_errors_fp(errfp);
@@ -756,6 +769,7 @@ void handle_connection(int sock){
 #ifdef HAVE_SSL
 		SSL_shutdown(ssl);
 		SSL_free(ssl);
+		syslog(LOG_INFO,"INFO: SSL Socket Shutdown.\n");
 #endif
 
 		return;
@@ -851,6 +865,10 @@ void handle_connection(int sock){
 			/* run the command */
 			strcpy(buffer,"");
 			result=my_system(processed_command,command_timeout,&early_timeout,buffer,sizeof(buffer));
+
+			/* log debug info */
+			if(debug==TRUE)
+				syslog(LOG_DEBUG,"Command completed with return code %d and output: %s",result,buffer);
 
 			/* see if the command timed out */
 			if(early_timeout==TRUE)

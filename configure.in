@@ -119,6 +119,11 @@ if test x$check_for_ssl = xyes; then
 		fi
 		AC_DEFINE_UNQUOTED(HAVE_SSL)
 		AC_SUBST(HAVE_SSL)
+		
+		dnl Generate DH parameters
+		echo ""
+		echo "*** Generating DH Parameters for SSL/TLS ***"
+		openssl dhparam -out /dev/null -C 512 > src/dh.h
 	    fi
 fi
 
@@ -162,4 +167,3 @@ echo ""
 echo "Review the options above for accuracy.  If they look okay,"
 echo "type 'make all' to compile the NRPE daemon and client."
 echo ""
-

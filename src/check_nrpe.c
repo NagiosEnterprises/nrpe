@@ -75,7 +75,7 @@ int main(int argc, char **argv){
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL\n");
 #ifdef HAVE_SSL
-		printf("SSL Available\n");
+		printf("SSL/TLS Available: Anonymous DHMode, OpenSSL 0.9.6 or higher required\n");
 #endif
 		printf("\n");
 	        }
@@ -139,8 +139,7 @@ int main(int argc, char **argv){
 	/* do SSL handshake */
 	if(result==STATE_OK && use_ssl==TRUE){
 		if((ssl=SSL_new(ctx))!=NULL){
-			/*SSL_CTX_set_cipher_list(ctx,"ALL");*/
-			SSL_CTX_set_cipher_list(ctx,"DH");
+			SSL_CTX_set_cipher_list(ctx,"ADH");
 			SSL_set_fd(ssl,sd);
 			if((rc=SSL_connect(ssl))!=1){
 				printf("CHECK_NRPE: Error - Could not complete SSL handshake.\n");

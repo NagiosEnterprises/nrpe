@@ -3,7 +3,7 @@ NRPE Changelog
 **************
 
 
-2,0 - ??/??/2003
+2.0 - ??/??/2003
 ----------------
 - Added support for passing arguments to command
 - NRPE daemon can no longer be run as root user/group
@@ -12,7 +12,7 @@ NRPE Changelog
   of external config files
 - Added 'include_dir' variable to allow inclusion of external
   config files in directories (with recursion)
-- Added native SSL support (still not working)
+- Added native SSL support (Derrick)
 
 
 1.8 - 01/16/2003
