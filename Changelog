@@ -12,7 +12,7 @@ NRPE Changelog
   of external config files
 - Added 'include_dir' variable to allow inclusion of external
   config files in directories (with recursion)
-- Added native SSL support (Derrick)
+- Added native SSL support (Derrick Bennett)
 
 
 1.8 - 01/16/2003
