@@ -9,6 +9,8 @@ NRPE Changelog
 - Added sample init scripts for FreeBSD and Debian (Andrew Ryder)
 - Syntax changes (-H option specifies host name in check_nrpe, 
   -c option specifies config file in nrpe)
+- Added command_timeout directive to config file to allow user
+  to specify timeout for executing plugins
 
 
 1.5 - 06/03/2002

@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 07-08-2002
+ * Last Modified: 10-24-2002
  *
  * Command line: nrpe [--inetd | --standalone] -c <config_file>
  *
@@ -23,7 +23,7 @@
 #include "nrpe.h"
 #include "utils.h"
 
-#define COMMAND_TIMEOUT		60			/* timeout for execution of plugins */
+#define DEFAULT_COMMAND_TIMEOUT	60			/* default timeout for execution of plugins */
 #define MAXFD                   64
 
 
@@ -48,6 +48,7 @@ char    allowed_hosts[MAX_INPUT_BUFFER];
 int     server_port=DEFAULT_SERVER_PORT;
 char    server_address[16]="0.0.0.0";
 int     socket_timeout=DEFAULT_SOCKET_TIMEOUT;
+int     command_timeout=DEFAULT_COMMAND_TIMEOUT;
 
 command *command_list=NULL;
 
@@ -586,11 +587,11 @@ void handle_connection(int sock){
 
 			/* run the command */
 			strcpy(buffer,"");
-			result=my_system(temp_command->command_line,COMMAND_TIMEOUT,&early_timeout,buffer,sizeof(buffer));
+			result=my_system(temp_command->command_line,command_timeout,&early_timeout,buffer,sizeof(buffer));
 
 			/* see if the command timed out */
 			if(early_timeout==TRUE)
-				snprintf(buffer,sizeof(buffer)-1,"NRPE: Command timed out after %d seconds\n",COMMAND_TIMEOUT);
+				snprintf(buffer,sizeof(buffer)-1,"NRPE: Command timed out after %d seconds\n",command_timeout);
 			else if(!strcmp(buffer,""))
 				snprintf(buffer,sizeof(buffer)-1,"NRPE: Unable to read output\n");
 
