@@ -5,7 +5,7 @@
  * License: GPL
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
  *
- * Last Modified: 07-09-2002
+ * Last Modified: 10-24-2002
  *
  * Description:
  *
@@ -68,7 +68,7 @@ int my_connect(char *host_name,int port,int *sd,char *proto){
 	        }
 
 	/* map transport protocol name to protocol number */
-	if(((int)(ptrp=getprotobyname(proto)))==(int)0){
+	if(((ptrp=getprotobyname(proto)))==NULL){
 		printf("Cannot map \"%s\" to protocol number\n",proto);
 		return STATE_UNKNOWN;
 	        }
