@@ -94,11 +94,15 @@ of TCP wrappers, you need to do the following things:
 
 
    ***** INETD *****
-   If your system uses the inetd superserver, add an entry to 
-   /etc/inetd.conf as follows:
-
+   If your system uses the inetd superserver WITH tcpwrappers, add an
+   entry to /etc/inetd.conf as follows:
 
 	nrpe 	stream 	tcp 	nowait 	<user> /usr/sbin/tcpd <nrpebin> -c <nrpecfg> --inetd
+
+   If your system uses the inetd superserver WITHOUT tcpwrappers, add an
+   entry to /etc/inetd.conf as follows:
+
+	nrpe 	stream 	tcp 	nowait 	<user> <nrpebin> -c <nrpecfg> --inetd
 
 
    - Replace <user> with the name of the user that the nrpe server should run as.
@@ -136,7 +140,7 @@ of TCP wrappers, you need to do the following things:
    - Replace <nrpecfg> with the path to the nrpe config file on your system.
    - Replace the <ipaddress> fields with the IP addresses of hosts which
      are allowed to connect to the NRPE daemon.  This only works if xinetd was
-     compiled with support for wrappers.
+     compiled with support for tcpwrappers.
 
 
 
