@@ -23,3 +23,6 @@ perl -i -p -e "s/PKG_VERSION=.*/PKG_VERSION=\"$1\"/;" configure
 perl -i -p -e "s/PKG_REL_DATE=.*\"/PKG_REL_DATE=\"$SHORTDATE\"/;" configure
 perl -i -p -e "s/PKG_VERSION=.*/PKG_VERSION=\"$1\"/;" configure.in
 perl -i -p -e "s/PKG_REL_DATE=.*\"/PKG_REL_DATE=\"$SHORTDATE\"/;" configure.in
+
+# Update RPM spec file with version number
+perl -i -p -e "s/%define version .*/%define version $1/;" nrpe.spec

@@ -1,5 +1,5 @@
 %define name nrpe
-%define version 1.5
+%define version 1.7
 %define release 3
 %define nsusr nagios
 %define nsgrp nagios
@@ -12,7 +12,7 @@
 # Macro that print mesages to syslog at package (un)install time
 %define nnmmsg logger -t %{name}/rpm
 
-Summary: Host/service/network monitoring agent for nagios
+Summary: Host/service/network monitoring agent for Nagios
 URL: http://www.nagios.org
 Name: %{name}
 Version: %{version}
@@ -20,7 +20,6 @@ Release: %{release}
 Copyright: GPL
 Group: Application/System
 Source0: %{name}-%{version}.tar.gz
-Patch0: %{name}.patch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 Prefix: %{_prefix}
 Prefix: /etc/init.d
@@ -29,16 +28,13 @@ Requires: bash, grep, nagios-plugins
 PreReq: /usr/bin/logger, chkconfig, sh-utils, shadow-utils, sed, initscripts, fileutils, mktemp
 
 %description
-Nrpe is a agent application that will monitor services on your
-system. Nrpe is written in C and is designed to run under Linux
-(and some other *NIX variants) as a background process, 
-intermittently running checks on various services that you specify.
+Nrpe is a system daemon that will execute various Nagios plugins
+locally on behalf of a remote (monitoring) host that uses the
+check_nrpe plugin.  Various plugins that can be executed by the 
+daemon are available at:
+http://sourceforge.net/projects/nagiosplug
 
-The actual service checks are performed by separate "plugin" programs
-which return the status of the checks to Nagios. The plugins are
-available at http://sourceforge.net/projects/nagiosplug
-
-This package provide core agent.
+This package provides the core agent.
 
 %package plugin
 Group: Application/System
@@ -46,18 +42,16 @@ Summary: Provides nrpe plugin for Nagios.
 Requires: nagios-plugins
 
 %description plugin
-Nagios is a program that will monitor hosts and services on your
-network. It has the ability to email or page you when a problem arises
-and when a problem is resolved. Nagios is written in C and is
-designed to run under Linux (and some other *NIX variants) as a
-background process, intermittently running checks on various services
-that you specify.
+Nrpe is a system daemon that will execute various Nagios plugins
+locally on behalf of a remote (monitoring) host that uses the
+check_nrpe plugin.  Various plugins that can be executed by the 
+daemon are available at:
+http://sourceforge.net/projects/nagiosplug
 
 This package provides the nrpe plugin for Nagios-related applications.
 
 %prep
 %setup -q
-%patch0 -p1
 
 
 %pre
@@ -151,5 +145,9 @@ rm -rf $RPM_BUILD_ROOT
 %doc Changelog LEGAL README
 
 %changelog
+* Mon Jan 06 2003 James 'Showkilr' Peterson <showkilr@showkilr.com>
+- Removed patch files required for nrpe 1.5
+- Update spec file for version 1.6 (1.6-1)
+
 * Sat Dec 28 2002 James 'Showkilr' Peterson <showkilr@showkilr.com>
 - First RPM build (1.5-1)
