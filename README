@@ -98,7 +98,7 @@ of TCP wrappers, you need to do the following things:
    /etc/inetd.conf as follows:
 
 
-	nrpe 	stream 	tcp 	nowait 	<user> /usr/sbin/tcpd <nrpebin> -i <nrpecfg>
+	nrpe 	stream 	tcp 	nowait 	<user> /usr/sbin/tcpd <nrpebin> --inetd -c <nrpecfg>
 
 
    - Replace <user> with the name of the user that the nrpe server should run as.
@@ -124,7 +124,7 @@ of TCP wrappers, you need to do the following things:
         	wait            = no
 	        user            = <user>
         	server          = <nrpebin>
-	        server_args     = -i <nrpecfg>
+	        server_args     = --inetd -c <nrpecfg>
         	log_on_failure  += USERID
 	        disable         = no
 		only_from       = <ipaddress1> <ipaddress2> ...

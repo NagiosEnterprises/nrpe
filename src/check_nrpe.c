@@ -4,9 +4,9 @@
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 06-03-2002
+ * Last Modified: 07-08-2002
  *
- * Command line: CHECK_NRPE <host_address> [-p port] [-c command] [-wt warn_time] \
+ * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-wt warn_time] \
  *                          [-ct crit_time] [-to to_sec]
  *
  * Description:
@@ -20,7 +20,7 @@
 
 #include "../common/common.h"
 #include "../common/config.h"
-#include "netutils.h"
+#include "utils.h"
 
 #define DEFAULT_NRPE_COMMAND	"_NRPE_CHECK"  /* check version of NRPE daemon */
 
@@ -30,6 +30,9 @@ char server_name[MAX_HOST_ADDRESS_LENGTH];
 char query_string[MAX_PACKETBUFFER_LENGTH]=DEFAULT_NRPE_COMMAND;;
 int socket_timeout=DEFAULT_SOCKET_TIMEOUT;
 
+int show_help=FALSE;
+int show_license=FALSE;
+int show_version=FALSE;
 
 
 int process_arguments(int,char **);
@@ -49,17 +52,22 @@ int main(int argc, char **argv){
 
 	result=process_arguments(argc,argv);
 
-	if(result!=OK){
+        if(result!=OK || show_help==TRUE || show_license==TRUE || show_version==TRUE){
 
-		printf("Incorrect command line arguments supplied\n");
-		printf("\n");
+		if(result!=OK)
+			printf("Incorrect command line arguments supplied\n");
+                printf("\n");
 		printf("NRPE Plugin for Nagios\n");
 		printf("Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)\n");
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL\n");
 		printf("\n");
-		printf("Usage: %s <host_address> [-p port] [-c command] [-wt warn_time]\n",argv[0]);
+	        }
+
+	if(result!=OK || show_help==TRUE){
+
+		printf("Usage: %s -H <host_address> [-p port] [-c command] [-wt warn_time]\n",argv[0]);
 		printf("          [-ct crit_time] [-to to_sec]\n");
 		printf("\n");
 		printf("Options:\n");
@@ -78,9 +86,14 @@ int main(int argc, char **argv){
 		printf("to execute plugins on remote hosts and 'fake' the results to make Nagios think\n");
 		printf("the plugin is being run locally.\n");
 		printf("\n");
-
-		return STATE_UNKNOWN;
 	        }
+
+	if(show_license==TRUE)
+		display_license();
+
+        if(result!=OK || show_help==TRUE || show_license==TRUE || show_version==TRUE)
+		exit(STATE_UNKNOWN);
+
 
 	/* initialize alarm signal handling */
 	signal(SIGALRM,alarm_handler);
@@ -168,14 +181,23 @@ int process_arguments(int argc, char **argv){
 	if(argc<2)
 		return ERROR;
 
-	/* first option is always the server name/address */
+	/* handle older style command line format - host address was first argument */
 	strncpy(server_name,argv[1],sizeof(server_name)-1);
 	server_name[sizeof(server_name)-1]='\x0';
 
-	/* process all remaining arguments */
-	for(x=3;x<=argc;x++){
+	/* process all arguments */
+	for(x=2;x<=argc;x++){
 
-		if(!strcmp(argv[x-1],"-c")){
+		if(!strcmp(argv[x-1],"-H")){
+			if(x<argc){
+				strncpy(server_name,argv[x],sizeof(server_name)-1);
+				server_name[sizeof(server_name)-1]='\x0';
+				x++;
+			        }
+			else
+				return ERROR;
+		        }
+		else if(!strcmp(argv[x-1],"-c")){
 			if(x<argc){
 				strncpy(query_string,argv[x],sizeof(query_string)-1);
 				query_string[sizeof(query_string)-1]='\x0';
@@ -202,6 +224,12 @@ int process_arguments(int argc, char **argv){
 			else
 				return ERROR;
 		        }
+		else if(!strcmp(argv[x-1],"-h") || !strcmp(argv[x-1],"--help"))
+			show_help=TRUE;
+		else if(!strcmp(argv[x-1],"--license"))
+			show_license=TRUE;
+		else if(!strcmp(argv[x-1],"--version"))
+			show_version=TRUE;
 		else
 			return ERROR;
 	        }

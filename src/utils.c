@@ -1,11 +1,11 @@
 /****************************************************************************
  *
- * NETUTILS.C - NRPE Network Utilities
+ * UTILS.C - NRPE Utility Functions
  *
  * License: GPL
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
  *
- * Last Modified: 02-21-2002
+ * Last Modified: 07-09-2002
  *
  * Description:
  *
@@ -30,7 +30,7 @@
  ****************************************************************************/
 
 #include "../common/common.h"
-#include "netutils.h"
+#include "utils.h"
 
 
 /* opens a connection to a remote host/tcp port */
@@ -293,4 +293,23 @@ int recvall(int s, char *buf, int *len, int timeout){
 
 	/* return <=0 on failure, bytes received on success */
 	return (n<=0)?n:total;
+        }
+
+
+/* show license */
+void display_license(void){
+
+	printf("This program is free software; you can redistribute it and/or modify\n");
+	printf("it under the terms of the GNU General Public License as published by\n");
+	printf("the Free Software Foundation; either version 2 of the License, or\n");
+	printf("(at your option) any later version.\n\n");
+	printf("This program is distributed in the hope that it will be useful,\n");
+	printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\n");
+	printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n");
+	printf("GNU General Public License for more details.\n\n");
+	printf("You should have received a copy of the GNU General Public License\n");
+	printf("along with this program; if not, write to the Free Software\n");
+	printf("Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.\n\n");
+
+	return;
         }

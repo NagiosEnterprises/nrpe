@@ -4,9 +4,9 @@
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 06-03-2002
+ * Last Modified: 07-08-2002
  *
- * Command line: nrpe [-i | -d] <config_file>
+ * Command line: nrpe [--inetd | --standalone] -c <config_file>
  *
  * Description:
  *
@@ -21,11 +21,13 @@
 #include "../common/common.h"
 #include "../common/config.h"
 #include "nrpe.h"
-#include "netutils.h"
+#include "utils.h"
 
 #define COMMAND_TIMEOUT		60			/* timeout for execution of plugins */
 #define MAXFD                   64
 
+
+int process_arguments(int,char **);
 
 void wait_for_connections(void);
 void handle_connection(int);
@@ -41,6 +43,7 @@ int my_system(char *,int,int *,char *,int);            	/* executes a command vi
 void my_system_sighandler(int);				/* handles timeouts when executing commands via my_system() */
 
 
+char    config_file[MAX_INPUT_BUFFER]="nrpe.cfg";
 char    allowed_hosts[MAX_INPUT_BUFFER];
 int     server_port=DEFAULT_SERVER_PORT;
 char    server_address[16]="0.0.0.0";
@@ -51,6 +54,9 @@ command *command_list=NULL;
 char    *nrpe_user=NULL;
 char    *nrpe_group=NULL;
 
+int     show_help=FALSE;
+int     show_license=FALSE;
+int     show_version=FALSE;
 int     use_inetd=TRUE;
 int     debug=FALSE;
 
@@ -60,22 +66,11 @@ int main(int argc, char **argv){
 	int error=FALSE;
 	int result;
 	int i;
-	char config_file[MAX_INPUT_BUFFER];
 	char buffer[MAX_INPUT_BUFFER];
 
-	/* check command line arguments */
-	if(argc!=3)
-		error=TRUE;
-	else{
-		if(!strcmp(argv[1],"-d"))
-			use_inetd=FALSE;
-		else if(!strcmp(argv[1],"-i"))
-			use_inetd=TRUE;
-		else
-			error=TRUE;
-	        }
+	result=process_arguments(argc,argv);
 
-	if(error==TRUE){
+        if(result!=OK || show_help==TRUE || show_license==TRUE || show_version==TRUE){
 
 		printf("\n");
 		printf("NRPE - Nagios Remote Plugin Executor\n");
@@ -84,11 +79,17 @@ int main(int argc, char **argv){
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL\n");
 		printf("\n");
-		printf("Usage: %s <-i | -d> <config_file>\n",argv[0]);
+	        }
+
+	if(result!=OK || show_help==TRUE){
+
+		printf("Usage: %s -c <config_file> [mode]\n",argv[0]);
 		printf("\n");
 		printf("Options:\n");
-		printf("  -i      Run as a service under inetd or xinetd\n");
-		printf("  -d      Run as a standalone daemon\n");
+		printf(" <config_file> = Name of config file to use\n");
+		printf(" [mode]        = Determines how NRPE should run. Valid modes:\n");
+		printf("   --inetd     = Run as a service under inetd or xinetd\n");
+		printf("   --daemon    = Run as a standalone daemon\n");
 		printf("\n");
 		printf("Notes:\n");
 		printf("This program is designed to process requests from the check_nrpe\n");
@@ -99,16 +100,17 @@ int main(int argc, char **argv){
 		printf("config file) and return the plugin output and return code to the\n");
 		printf("check_nrpe plugin.\n");
 		printf("\n");
-
-		exit(STATE_UNKNOWN);
 		}
+
+	if(show_license==TRUE)
+		display_license();
+
+        if(result!=OK || show_help==TRUE || show_license==TRUE || show_version==TRUE)
+		exit(STATE_UNKNOWN);
+
 
 	/* open a connection to the syslog facility */
         openlog("nrpe",LOG_PID,LOG_DAEMON); 
-
-	/* grab the config file */
-	strncpy(config_file,argv[2],sizeof(config_file)-1);
-	config_file[sizeof(config_file)-1]='\x0';
 
 	/* make sure the config file uses an absolute path */
 	if(config_file[0]!='/'){
@@ -925,3 +927,43 @@ int drop_privileges(char *user, char *group){
 
 	return OK;
         }
+
+
+/* process command line arguments */
+int process_arguments(int argc, char **argv){
+	int x;
+
+
+	/* no options were supplied */
+	if(argc<2)
+		return ERROR;
+
+	/* process all arguments */
+	for(x=2;x<=argc;x++){
+
+		if(!strcmp(argv[x-1],"-c")){
+			if(x<argc){
+				strncpy(config_file,argv[x],sizeof(config_file)-1);
+				config_file[sizeof(config_file)-1]='\x0';
+				x++;
+			        }
+			else
+				return ERROR;
+		        }
+		else if(!strcmp(argv[x-1],"-d") || !strcmp(argv[x-1],"--daemon"))
+			use_inetd=FALSE;
+		else if(!strcmp(argv[1],"-i") || !strcmp(argv[x-1],"--inetd"))
+			use_inetd=TRUE;
+		else if(!strcmp(argv[x-1],"-h") || !strcmp(argv[x-1],"--help"))
+			show_help=TRUE;
+		else if(!strcmp(argv[x-1],"-l") || !strcmp(argv[x-1],"--license"))
+			show_license=TRUE;
+		else if(!strcmp(argv[x-1],"-V") || !strcmp(argv[x-1],"--version"))
+			show_version=TRUE;
+		else
+			return ERROR;
+	        }
+
+	return OK;
+        }
+

@@ -1,11 +1,11 @@
 /************************************************************************************************
  *
- * NETUTILS.H - NRPE Network Utilities Include File
+ * UTILS.H - NRPE Utilities Include File
  *
  * License: GPL
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
  *
- * Last Modified: 02-21-2002
+ * Last Modified: 07-09-2002
  *
  * Description:
  *
@@ -40,6 +40,8 @@ void strip(char *);
 
 int sendall(int,char *,int *);
 int recvall(int,char *,int *,int);
+
+void display_license(void);
 
 
 
