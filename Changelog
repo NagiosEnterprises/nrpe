@@ -3,7 +3,7 @@ NRPE Changelog
 **************
 
 
-1.7 - ??/??/2003
+1.7 - 01/08/2003
 ----------------
 - Spec file updates and minor bug fixes (James Peterson)
 - Bug fix with default nrpe port definition

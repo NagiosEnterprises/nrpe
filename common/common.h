@@ -23,7 +23,7 @@
 
 
 #define PROGRAM_VERSION "1.7"
-#define MODIFICATION_DATE "01-07-2003"
+#define MODIFICATION_DATE "01-08-2003"
 
 #define OK		0
 #define ERROR		-1
