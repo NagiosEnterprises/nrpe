@@ -2,7 +2,7 @@
  *
  * NRPE Common Header File
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 04-04-2003
+ * Last Modified: 04-29-2003
  *
  * License:
  *
@@ -45,16 +45,16 @@
 #undef U_INT32_T_IS_ULONG
 
 #ifdef U_INT32_T_IS_USHORT
-typedef unsigned short u_int32_t
-typedef short int32_t
+typedef unsigned short u_int32_t;
+typedef short int32_t;
 #endif
 #ifdef U_INT32_T_IS_ULONG
-typedef unsigned long u_int32_t
-typedef long int32_t
+typedef unsigned long u_int32_t;
+typedef long int32_t;
 #endif
 #ifdef U_INT32_T_IS_UINT
-typedef unsigned int u_int32_t
-typedef int int32_t
+typedef unsigned int u_int32_t;
+typedef int int32_t;
 #endif
 
 

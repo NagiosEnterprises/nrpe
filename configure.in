@@ -43,11 +43,11 @@ AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_TYPE(u_int32_t,unsigned int)
 if test "$ac_cv_type_u_int32_t" = no ; then
-	if test "$ac_cv_sizeof_long" = 4 ; then
-		AC_DEFINE(U_INT32_T_IS_ULONG)
+	if test "$ac_cv_sizeof_int" = 4 ; then
+		AC_DEFINE(U_INT32_T_IS_UINT)
 	else
-		if test "$ac_cv_sizeof_int" = 4 ; then
-			AC_DEFINE(U_INT32_T_IS_UINT)
+		if test "$ac_cv_sizeof_long" = 4 ; then
+			AC_DEFINE(U_INT32_T_IS_ULONG)
 		else
 			if test "$ac_cv_sizeof_short" = 4 ; then
 				AC_DEFINE(U_INT32_T_IS_USHORT)
