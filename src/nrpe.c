@@ -4,9 +4,9 @@
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-06-2003
+ * Last Modified: 01-07-2003
  *
- * Command line: nrpe [--inetd | --standalone] -c <config_file>
+ * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
  * Description:
  *
@@ -270,6 +270,14 @@ int read_config_file(char *filename){
 
                 else if(!strcmp(varname,"nrpe_group"))
 			nrpe_group=strdup(varvalue);
+		
+		else if(!strcmp(varname,"command_timeout")){
+			command_timeout=atoi(varvalue);
+			if(command_timeout<1){
+				syslog(LOG_ERR,"Invalid command_timeout specified in config file '%s' - Line %d\n",filename,line);
+				return ERROR;
+			        }
+		        }
 
 		else{
 			syslog(LOG_ERR,"Unknown option specified in config file '%s' - Line %d\n",filename,line);

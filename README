@@ -98,7 +98,7 @@ of TCP wrappers, you need to do the following things:
    /etc/inetd.conf as follows:
 
 
-	nrpe 	stream 	tcp 	nowait 	<user> /usr/sbin/tcpd <nrpebin> --inetd -c <nrpecfg>
+	nrpe 	stream 	tcp 	nowait 	<user> /usr/sbin/tcpd <nrpebin> -c <nrpecfg> --inetd
 
 
    - Replace <user> with the name of the user that the nrpe server should run as.
@@ -124,7 +124,7 @@ of TCP wrappers, you need to do the following things:
         	wait            = no
 	        user            = <user>
         	server          = <nrpebin>
-	        server_args     = --inetd -c <nrpecfg>
+	        server_args     = -c <nrpecfg> --inetd
         	log_on_failure  += USERID
 	        disable         = no
 		only_from       = <ipaddress1> <ipaddress2> ...
@@ -169,7 +169,7 @@ command definition for the check_nrpe plugin would look like this:
 
 define command{
 	command_name	check_nrpe
-	command_line	/usr/local/nagios/libexec/check_nrpe $HOSTADDRESS$ -c $ARG1$
+	command_line	/usr/local/nagios/libexec/check_nrpe -H $HOSTADDRESS$ -c $ARG1$
 	}
 
 In any service definitions that use the nrpe plugin/daemon to

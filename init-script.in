@@ -27,8 +27,8 @@ fi
 # Check that networking is up.
 [ ${NETWORKING} = "no" ] && exit 0
 
-NrpeBin=/usr/local/nagios/bin/nrpe
-NrpeCfg=/usr/local/nagios/etc/nrpe.cfg
+NrpeBin=@bindir@/nrpe
+NrpeCfg=@sysconfdir@/nrpe.cfg
 LockFile=/var/lock/subsys/nrpe
 
 # See how we were called.
@@ -36,7 +36,7 @@ case "$1" in
   start)
 	# Start daemons.
 	echo -n "Starting nrpe: "
-	daemon $NrpeBin -d $NrpeCfg
+	daemon $NrpeBin -c $NrpeCfg -d
 	echo
 	touch $LockFile
 	;;

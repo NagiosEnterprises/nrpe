@@ -5,8 +5,10 @@ NRPE Changelog
 
 1.7 - ??/??/2003
 ----------------
-- Updated spec file
+- Spec file updates and minor bug fixes (James Peterson)
 - Bug fix with default nrpe port definition
+- Added sample xinetd config file (nrpe.xinetd)
+- Bug fix for command_timeout variable (James Peterson)
 
 
 1.6 - 12/30/2002

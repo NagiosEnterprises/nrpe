@@ -1,6 +1,6 @@
 %define name nrpe
 %define version 1.7
-%define release 3
+%define release 1
 %define nsusr nagios
 %define nsgrp nagios
 %define nsport 5666
@@ -86,11 +86,6 @@ fi
 if [ "$1" -ge "1" ]; then
 	/sbin/service nrpe condrestart >/dev/null 2>&1 || :
 fi
-# Delete nagios user and group
-if [ $1 = 0 ]; then
-	/usr/sbin/userdel %{nsusr} || %nnmmsg "User %{nsusr} could not be deleted."
-	/usr/sbin/groupdel %{nsgrp} || %nnmmsg "Group %{nsgrp} could not be deleted."
-fi
 
 %build
 export PATH=$PATH:/usr/sbin
@@ -145,6 +140,10 @@ rm -rf $RPM_BUILD_ROOT
 %doc Changelog LEGAL README
 
 %changelog
+* Tue Jan 07 2003 James 'Showkilr' Peterson <showkilr@showkilr.com>
+- Removed the lines which removed the nagios user and group from the system
+- changed the patch release version from 3 to 1
+
 * Mon Jan 06 2003 James 'Showkilr' Peterson <showkilr@showkilr.com>
 - Removed patch files required for nrpe 1.5
 - Update spec file for version 1.6 (1.6-1)

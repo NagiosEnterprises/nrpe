@@ -527,7 +527,7 @@ fi
 PKG_NAME=nrpe
 PKG_VERSION="1.7"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="01-06-2003"
+PKG_REL_DATE="01-07-2003"
 
 
 ac_aux_dir=
@@ -2074,7 +2074,10 @@ test "$no_create" = yes || ${CONFIG_SHELL-/bin/sh} $CONFIG_STATUS || exit 1
 
 
 perl subst nrpe.cfg
-
+perl subst init-script
+perl subst init-script.debian
+perl subst init-script.freebsd
+perl subst nrpe.xinetd
 
 
 echo ""

@@ -4,12 +4,12 @@
 # Contributed by Andrew Ryder 06-22-02
 # Slight mods by Ethan Galstad 07-09-02
 
-NrpeBin=/usr/local/bin/nrpe
-NrpeCfg=/usr/local/etc/nrpe.cfg
+NrpeBin=@bindir@/nrpe
+NrpeCfg=@sysconfdir@/nrpe.cfg
 
 case "$1" in
 start)
-	$NrpeBin -d $NrpeCfg
+	$NrpeBin -c $NrpeCfg -d
 	echo -n ' nrpe'
 	;;
 stop)
