@@ -28,12 +28,22 @@ int server_port=DEFAULT_SERVER_PORT;
 char *server_name=NULL;
 char *command_name=NULL;
 int socket_timeout=DEFAULT_SOCKET_TIMEOUT;
+int sd;
 
 char query[MAX_INPUT_BUFFER]="";
 
 int show_help=FALSE;
 int show_license=FALSE;
 int show_version=FALSE;
+
+#ifdef HAVE_SSL
+SSL_METHOD *meth;
+SSL_CTX *ctx;
+SSL *ssl;
+int use_ssl=TRUE;
+#else
+int use_ssl=FALSE;
+#endif
 
 
 int process_arguments(int,char **);
@@ -46,7 +56,6 @@ int main(int argc, char **argv){
         u_int32_t long packet_crc32;
         u_int32_t calculated_crc32;
 	int16_t result;
-	int sd;
 	int rc;
 	packet send_packet;
 	packet receive_packet;
@@ -65,6 +74,9 @@ int main(int argc, char **argv){
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL\n");
+#ifdef HAVE_SSL
+		printf("SSL Available\n");
+#endif
 		printf("\n");
 	        }
 
@@ -100,6 +112,20 @@ int main(int argc, char **argv){
         /* generate the CRC 32 table */
         generate_crc32_table();
 
+#ifdef HAVE_SSL
+	/* initialize SSL */
+	if(use_ssl==TRUE){
+		SSL_library_init();
+		SSLeay_add_ssl_algorithms();
+		meth=SSLv23_client_method();
+		SSL_load_error_strings();
+		if((ctx=SSL_CTX_new(meth))==NULL){
+			printf("CHECK_NRPE: Error - could not create SSL context.\n");
+			exit(STATE_CRITICAL);
+		        }
+                }
+#endif
+
 	/* initialize alarm signal handling */
 	signal(SIGALRM,alarm_handler);
 
@@ -109,7 +135,40 @@ int main(int argc, char **argv){
 	/* try to connect to the host at the given port number */
 	result=my_tcp_connect(server_name,server_port,&sd);
 
-	/* we connected, so close connection before exiting */
+#ifdef HAVE_SSL
+	/* do SSL handshake */
+	if(result==STATE_OK && use_ssl==TRUE){
+		if((ssl=SSL_new(ctx))!=NULL){
+			SSL_CTX_set_cipher_list(ctx,"ALL");
+			SSL_set_fd(ssl,sd);
+			if((rc=SSL_connect(ssl))!=1){
+				printf("CHECK_NRPE: Error - Could not complete SSL handshake.\n");
+				printf("SSL_connect=%d\n",rc);
+				/*
+				rc=SSL_get_error(ssl,rc);
+				printf("SSL_get_error=%d\n",rc);
+				printf("ERR_get_error=%lu\n",ERR_get_error());
+				printf("%s\n",ERR_error_string(rc,NULL));
+				*/
+				ERR_print_errors_fp(stdout);
+				result=STATE_CRITICAL;
+			        }
+		        }
+		else{
+			printf("CHECK_NRPE: Error - Could not initiate SSL handshake.\n");
+			result=STATE_CRITICAL;
+		        }
+
+		/* bail if we had errors */
+		if(result!=STATE_OK){
+			SSL_CTX_free(ctx);
+			close(sd);
+			exit(result);
+		        }
+	        }
+#endif
+
+	/* we're connected and ready to go */
 	if(result==STATE_OK){
 
 		/* clear the packet buffer */
@@ -135,7 +194,15 @@ int main(int argc, char **argv){
 
 		/* send the packet */
 		bytes_to_send=sizeof(send_packet);
-		rc=sendall(sd,(char *)&send_packet,&bytes_to_send);
+		if(use_ssl==FALSE)
+			rc=sendall(sd,(char *)&send_packet,&bytes_to_send);
+#ifdef HAVE_SSL
+		else{
+			rc=SSL_write(ssl,&send_packet,bytes_to_send);
+			if(rc<0)
+				rc=-1;
+		        }
+#endif
 		if(rc==-1){
 			printf("CHECK_NRPE: Error sending query to host.\n");
 			close(sd);
@@ -144,10 +211,24 @@ int main(int argc, char **argv){
 
 		/* wait for the response packet */
 		bytes_to_recv=sizeof(receive_packet);
-		rc=recvall(sd,(char *)&receive_packet,&bytes_to_recv,socket_timeout);
+		if(use_ssl==FALSE)
+			rc=recvall(sd,(char *)&receive_packet,&bytes_to_recv,socket_timeout);
+#ifdef HAVE_SSL
+		else
+			rc=SSL_read(ssl,&receive_packet,bytes_to_recv);
+#endif
 
-		/* reset timeout and close the connection */
+		/* reset timeout */
 		alarm(0);
+
+		/* close the connection */
+#ifdef HAVE_SSL
+		if(use_ssl==TRUE){
+			SSL_shutdown(ssl);
+			SSL_free(ssl);
+			SSL_CTX_free(ctx);
+	                }
+#endif
 		close(sd);
 
 		/* recv() error */
@@ -215,6 +296,7 @@ int process_arguments(int argc, char **argv){
 		{"host", required_argument, 0, 'H'},
 		{"command", required_argument, 0, 'c'},
 		{"args", required_argument, 0, 'a'},
+		{"no-ssl", no_argument, 0, 'n'},
 		{"timeout", required_argument, 0, 't'},
 		{"port", required_argument, 0, 'p'},
 		{"help", no_argument, 0, 'h'},
@@ -227,7 +309,7 @@ int process_arguments(int argc, char **argv){
 	if(argc<2)
 		return ERROR;
 
-	snprintf(optchars,MAX_INPUT_BUFFER,"H:c:a:t:p:hl");
+	snprintf(optchars,MAX_INPUT_BUFFER,"H:c:a:t:p:nhl");
 
 	while(1){
 #ifdef HAVE_GETOPT_H
@@ -270,6 +352,9 @@ int process_arguments(int argc, char **argv){
 		case 'a':
 			argindex=optind;
 			break;
+		case 'n':
+			use_ssl=FALSE;
+			break;
 		default:
 			return ERROR;
 			break;
@@ -311,3 +396,4 @@ void alarm_handler(int sig){
 
 	exit(STATE_CRITICAL);
         }
+

@@ -2,7 +2,7 @@
  *
  * NRPE Common Header File
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 01-26-2003
+ * Last Modified: 02-04-2003
  *
  * License:
  *
@@ -34,12 +34,6 @@
 #undef HAVE_STRSTR
 #undef HAVE_STRTOUL 
 #undef HAVE_INITGROUPS
-
-#undef HAVE_PWD_H
-#undef HAVE_GRP_H
-#undef HAVE_SYSLOG_H
-#undef HAVE_LIMITS_H
-#undef HAVE_SYS_RESOURCE_H
 
 
 #define SOCKET_SIZE_TYPE ""
@@ -153,11 +147,23 @@
 #include <ctype.h>
 #endif
 
+#undef HAVE_PWD_H
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
  
+#undef HAVE_GRP_H
 #ifdef HAVE_GRP_H
 #include <grp.h>
+#endif
+
+#undef HAVE_SSL
+#ifdef HAVE_SSL
+#include <rsa.h>
+#include <crypto.h>
+#include <pem.h>
+#include <ssl.h>
+#include <err.h>
+#include <rand.h>
 #endif
 

@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-30-2003
+ * Last Modified: 03-03-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -46,8 +46,6 @@ int my_system(char *,int,int *,char *,int);            	/* executes a command vi
 void my_system_sighandler(int);				/* handles timeouts when executing commands via my_system() */
 
 
-static unsigned long max_packet_age=30;
-
 char    *command_name=NULL;
 char    *macro_argv[MAX_COMMAND_ARGUMENTS];
 
@@ -71,6 +69,14 @@ int     show_version=FALSE;
 int     use_inetd=TRUE;
 int     debug=FALSE;
 
+#ifdef HAVE_SSL
+SSL_METHOD *meth;
+SSL_CTX *ctx;
+int use_ssl=TRUE;
+#else
+int use_ssl=FALSE;
+#endif
+
 
 
 int main(int argc, char **argv){
@@ -89,6 +95,9 @@ int main(int argc, char **argv){
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL\n");
+#ifdef HAVE_SSL
+		printf("SSL Available\n");
+#endif
 		printf("\n");
 #ifdef ENABLE_COMMAND_ARGUMENTS
 		printf("***************************************************************\n");
@@ -166,6 +175,21 @@ int main(int argc, char **argv){
         /* generate the CRC 32 table */
         generate_crc32_table();
 
+#ifdef HAVE_SSL
+	/* initialize SSL */
+	if(use_ssl==TRUE){
+		SSL_library_init();
+		SSLeay_add_ssl_algorithms();
+		meth=SSLv23_server_method();
+		SSL_load_error_strings();
+		if((ctx=SSL_CTX_new(meth))==NULL){
+			syslog(LOG_ERR,"Error: could not create SSL context.\n");
+			exit(STATE_CRITICAL);
+		        }
+		SSL_CTX_set_cipher_list(ctx,"ALL");
+                }
+#endif
+
 	/* if we're running under inetd... */
 	if(use_inetd==TRUE){
 
@@ -207,6 +231,11 @@ int main(int argc, char **argv){
 		/* wait for connections */
 		wait_for_connections();
 	        }
+
+#ifdef HAVE_SSL
+	if(use_ssl==TRUE)
+		SSL_CTX_free(ctx);
+#endif
 
 	/* We are now running in daemon mode, or the connection handed over by inetd has
 	   been completed, so the parent process exits */
@@ -572,23 +601,59 @@ void handle_connection(int sock){
 	int rc;
 	int x;
 	FILE *fp;
+	FILE *errfp;
+#ifdef HAVE_SSL
+	SSL *ssl;
+#endif
 
 
 	/* log info to syslog facility */
 	if(debug==TRUE)
 		syslog(LOG_DEBUG,"Handling the connection...");
 
+#ifdef OLDSTUFF
 	/* socket should be non-blocking */
 	fcntl(sock,F_SETFL,O_NONBLOCK);
+#endif
+
+#ifdef HAVE_SSL
+	/* do SSL handshake */
+	if(result==STATE_OK && use_ssl==TRUE){
+		if((ssl=SSL_new(ctx))!=NULL){
+			SSL_set_fd(ssl,sock);
+			if(SSL_accept(ssl)!=1){
+				syslog(LOG_ERR,"Error: Could not complete SSL handshake.\n");
+				errfp=fopen("/tmp/err.log","w");
+				ERR_print_errors_fp(errfp);
+				fclose(errfp);
+				return;
+			        }
+		        }
+		else{
+			syslog(LOG_ERR,"Error: Could not initiate SSL handshake.\n");
+			return;
+		        }
+	        }
+#endif
 
 	bytes_to_recv=sizeof(receive_packet);
-	rc=recvall(sock,(char *)&receive_packet,&bytes_to_recv,socket_timeout);
+	if(use_ssl==FALSE)
+		rc=recvall(sock,(char *)&receive_packet,&bytes_to_recv,socket_timeout);
+#ifdef HAVE_SSL
+	else
+		rc=SSL_read(ssl,&receive_packet,bytes_to_recv);
+#endif
 
 	/* recv() error or client disconnect */
 	if(rc<=0){
 
 		/* log error to syslog facility */
 		syslog(LOG_ERR,"Could not read request from client, bailing out...");
+
+#ifdef HAVE_SSL
+		SSL_shutdown(ssl);
+		SSL_free(ssl);
+#endif
 
 		return;
                 }
@@ -598,6 +663,11 @@ void handle_connection(int sock){
 
 		/* log error to syslog facility */
 		syslog(LOG_ERR,"Data packet from client was too short, bailing out...");
+
+#ifdef HAVE_SSL
+		SSL_shutdown(ssl);
+		SSL_free(ssl);
+#endif
 
 		return;
 	        }
@@ -621,6 +691,11 @@ void handle_connection(int sock){
 			free(macro_argv[x]);
 			macro_argv[x]=NULL;
 	                }
+
+#ifdef HAVE_SSL
+		SSL_shutdown(ssl);
+		SSL_free(ssl);
+#endif
 
 		return;
 	        }
@@ -727,7 +802,17 @@ void handle_connection(int sock){
 
 	/* send the response back to the client */
 	bytes_to_send=sizeof(send_packet);
-	sendall(sock,(char *)&send_packet,&bytes_to_send);
+	if(use_ssl==FALSE)
+		sendall(sock,(char *)&send_packet,&bytes_to_send);
+#ifdef HAVE_SSL
+	else
+		SSL_write(ssl,&send_packet,bytes_to_send);
+#endif
+
+#ifdef HAVE_SSL
+	SSL_shutdown(ssl);
+	SSL_free(ssl);
+#endif
 
 	/* log info to syslog facility */
 	if(debug==TRUE)
@@ -1238,6 +1323,7 @@ int process_arguments(int argc, char **argv){
 		{"config", required_argument, 0, 'c'},
 		{"inetd", no_argument, 0, 'i'},
 		{"daemon", no_argument, 0, 'd'},
+		{"no-ssl", no_argument, 0, 'n'},
 		{"help", no_argument, 0, 'h'},
 		{"license", no_argument, 0, 'l'},
 		{0, 0, 0, 0}
@@ -1248,7 +1334,7 @@ int process_arguments(int argc, char **argv){
 	if(argc<2)
 		return ERROR;
 
-	snprintf(optchars,MAX_INPUT_BUFFER,"c:idhl");
+	snprintf(optchars,MAX_INPUT_BUFFER,"c:nidhl");
 
 	while(1){
 #ifdef HAVE_GETOPT_H
@@ -1283,6 +1369,9 @@ int process_arguments(int argc, char **argv){
 		case 'i':
 			use_inetd=TRUE;
 			have_mode=TRUE;
+			break;
+		case 'n':
+			use_ssl=FALSE;
 			break;
 		default:
 			return ERROR;
