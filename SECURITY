@@ -35,6 +35,16 @@ is discarded.  Also, the bang character (!) is not allowed, as
 it is used internally as a delimiter between command arguments.
 
 
+USER/GROUP RESTRICTIONS
+-----------------------
+
+The NRPE daemon cannot be run with (effective) root user/group
+privileges.  You must run the daemon with an account that does
+not have superuser rights.  Use the nrpe_user and nrpe_group
+directives in the config file to specify which user/group the
+daemon should run as.
+
+
 ENCRYPTION
 ----------
 

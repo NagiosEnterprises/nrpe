@@ -3,6 +3,14 @@ NRPE Changelog
 **************
 
 
+2,0 - ??/??/2003
+----------------
+- Added support for passing arguments to command
+- NRPE daemon can no longer be run as root user/group
+- Added getopt support
+- Added native SSL support
+
+
 1.8 - 01/16/2003
 ----------------
 - Daemon now closes stdio/out/err properly (James Peterson)

@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-28-2003
+ * Last Modified: 01-30-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -104,13 +104,13 @@ int main(int argc, char **argv){
 
 	else if(result!=OK || show_help==TRUE){
 
-		printf("Usage: %s -c <config_file> [mode]\n",argv[0]);
+		printf("Usage: nrpe -c <config_file> <mode>\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" <config_file> = Name of config file to use\n");
-		printf(" [mode]        = Determines how NRPE should run. Valid modes:\n");
-		printf("   --inetd     = Run as a service under inetd or xinetd\n");
-		printf("   --daemon    = Run as a standalone daemon\n");
+		printf(" <mode>        = One of the following two operating modes:\n");  
+		printf("   -i          =    Run as a service under inetd or xinetd\n");
+		printf("   -d          =    Run as a standalone daemon\n");
 		printf("\n");
 		printf("Notes:\n");
 		printf("This program is designed to process requests from the check_nrpe\n");
@@ -1226,44 +1226,71 @@ int process_macros(char *input_buffer,char *output_buffer,int buffer_length){
 
 /* process command line arguments */
 int process_arguments(int argc, char **argv){
-	int x;
+	char optchars[MAX_INPUT_BUFFER];
+	int argindex=0;
+	int c=1;
+	int i=1;
 	int have_mode=FALSE;
+
+#ifdef HAVE_GETOPT_H
+	int option_index=0;
+	static struct option long_options[]={
+		{"config", required_argument, 0, 'c'},
+		{"inetd", no_argument, 0, 'i'},
+		{"daemon", no_argument, 0, 'd'},
+		{"help", no_argument, 0, 'h'},
+		{"license", no_argument, 0, 'l'},
+		{0, 0, 0, 0}
+                };
+#endif
 
 	/* no options were supplied */
 	if(argc<2)
 		return ERROR;
 
-	/* process all arguments */
-	for(x=2;x<=argc;x++){
+	snprintf(optchars,MAX_INPUT_BUFFER,"c:idhl");
 
-		if(!strcmp(argv[x-1],"-c")){
-			if(x<argc){
-				strncpy(config_file,argv[x],sizeof(config_file)-1);
-				config_file[sizeof(config_file)-1]='\x0';
-				x++;
-			        }
-			else
-				return ERROR;
-		        }
-		else if(!strcmp(argv[x-1],"-d") || !strcmp(argv[x-1],"--daemon")){
+	while(1){
+#ifdef HAVE_GETOPT_H
+		c=getopt_long(argc,argv,optchars,long_options,&option_index);
+#else
+		c=getopt(argc,argv,optchars);
+#endif
+		if(c==-1 || c==EOF)
+			break;
+
+		/* process all arguments */
+		switch(c){
+
+		case '?':
+		case 'h':
+			show_help=TRUE;
+			break;
+		case 'V':
+			show_version=TRUE;
+			break;
+		case 'l':
+			show_license=TRUE;
+			break;
+		case 'c':
+			strncpy(config_file,optarg,sizeof(config_file));
+			config_file[sizeof(config_file)-1]='\x0';
+			break;
+		case 'd':
 			use_inetd=FALSE;
 			have_mode=TRUE;
-		        }
-		else if(!strcmp(argv[1],"-i") || !strcmp(argv[x-1],"--inetd")){
+			break;
+		case 'i':
 			use_inetd=TRUE;
 			have_mode=TRUE;
-		        }
-		else if(!strcmp(argv[x-1],"-h") || !strcmp(argv[x-1],"--help"))
-			show_help=TRUE;
-		else if(!strcmp(argv[x-1],"-l") || !strcmp(argv[x-1],"--license"))
-			show_license=TRUE;
-		else if(!strcmp(argv[x-1],"-V") || !strcmp(argv[x-1],"--version"))
-			show_version=TRUE;
-		else
+			break;
+		default:
 			return ERROR;
+			break;
+		        }
 	        }
 
-	/* bail if we didn't get a mode */
+	/* bail if we didn't get required args */
 	if(have_mode==FALSE)
 		return ERROR;
 

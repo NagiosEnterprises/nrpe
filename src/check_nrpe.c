@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-29-2003
+ * Last Modified: 01-30-2003
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -70,7 +70,7 @@ int main(int argc, char **argv){
 
 	if(result!=OK || show_help==TRUE){
 
-		printf("Usage: check_nrpe -H <host> [-p <port>] [-t <timeout>] [-c <command>] [-a arglist...]\n");
+		printf("Usage: check_nrpe -H <host> [-p <port>] [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" <host>     = The address of the host running the NRPE daemon\n");
