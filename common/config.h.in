@@ -2,7 +2,7 @@
  *
  * NRPE Common Header File
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 03-31-2003
+ * Last Modified: 04-04-2003
  *
  * License:
  *
@@ -193,5 +193,10 @@ typedef int int32_t
 #include <ssl.h>
 #include <err.h>
 #include <rand.h>
+#endif
+
+#undef HAVE_KRB5_H
+#ifdef HAVE_KRB5_H
+#include <krb5.h>
 #endif
 

@@ -105,6 +105,9 @@ AC_ARG_WITH(ssl-lib,--with-ssl-lib=DIR sets location of the SSL library,[
 AC_ARG_WITH(ssl-inc,--with-ssl-inc=DIR sets location of the SSL include files,[
 	ssl_inc_dir=$withval
 	])
+AC_ARG_WITH(kerberos-inc,--with-kerberos-inc=DIR sets location of the Kerberos include files,[
+	kerberos_inc_dir=$withval
+	])
 
 dnl Check for SSL support
 dnl Modified version of Mark Ethan Trostler's macro <trostler@juniper.net>
@@ -143,6 +146,28 @@ if test x$check_for_ssl = xyes; then
 		echo "*** Generating DH Parameters for SSL/TLS ***"
 		openssl dhparam -out /dev/null -C 512 > src/dh.h
 	    fi
+
+	dnl RedHat 8.0 and 9.0 include openssl compiled with kerberos, so we must include header file
+	AC_MSG_CHECKING(for Kerberos include files)
+	found_kerberos=no
+	for dir in $kerberos_inc_dir /usr/kerberos/include; do
+		kerbdir="$dir"
+		if test -f "$dir/krb5.h"; then
+			found_kerberos=yes
+			CFLAGS="$CFLAGS -I$kerbdir"
+			AC_DEFINE_UNQUOTED(HAVE_KRB5_H)
+			dnl AC_CHECK_HEADERS(krb5.h)
+			break
+		fi
+	done
+
+	if test x_$found_kerberos != x_yes; then
+		printf "could not find include files\n";
+	else
+		printf "found Kerberos include files in $kerbdir\n";
+	fi
+	
+
 fi
 
 AC_ARG_WITH(nrpe_user,--with-nrpe-user=<user> sets user name to run NRPE,nrpe_user=$withval,nrpe_user=nagios)
