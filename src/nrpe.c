@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 04-15-2003
+ * Last Modified: 04-17-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -1259,6 +1259,9 @@ int validate_request(packet *pkt){
         u_int32_t packet_crc32;
         u_int32_t calculated_crc32;
 	char *ptr;
+#ifdef ENABLE_COMMAND_ARGUMENTS
+	int x;
+#endif
 
 
 	/***** DECRYPT REQUEST ******/

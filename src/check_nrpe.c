@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 04-15-2003
+ * Last Modified: 04-17-2003
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
