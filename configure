@@ -1136,7 +1136,7 @@ EOF
 
 fi
 
-for ac_hdr in ctype.h dirent.h errno.h fcntl.h getopt.h grp.h netdb.h pwd.h signal.h strings.h string.h syslog.h unistd.h arpa/inet.h netinet/in.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h
+for ac_hdr in ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h unistd.h arpa/inet.h netinet/in.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -1717,7 +1717,7 @@ EOF
 fi
 
 if test "$ac_cv_type_u_int32_t" = no ; then
-	if test "$ac_cv_type_int32_t" = yes ; then
+	if test "$ac_cv_type_u_int32_t" = yes ; then
 		cat >> confdefs.h <<\EOF
 #define U_INT32_T_IS_UINT32_T 1
 EOF
@@ -2028,7 +2028,7 @@ echo "configure:2014: checking for SSL" >&5
 
 	if test x_$found_ssl != x_yes; then
         	{ echo "configure: error: Cannot find ssl libraries" 1>&2; exit 1; }
-	    else
+	else
 	        printf "SSL found in $ssldir\n";
 	        LIBS="$LIBS -lssl -lcrypto";
 		if test x$ssl_lib_dir != x; then
@@ -2050,7 +2050,7 @@ EOF
 			sslbin=$ssldir/bin/openssl
 		fi
 		$sslbin dhparam -out /dev/null -C 512 > src/dh.h
-	    fi
+	fi
 
 		echo $ac_n "checking for Kerberos include files""... $ac_c" 1>&6
 echo "configure:2057: checking for Kerberos include files" >&5

@@ -2,7 +2,7 @@
  *
  * NRPE Common Header File
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 06-12-2003
+ * Last Modified: 06-19-2003
  *
  * License:
  *
@@ -219,5 +219,14 @@ typedef int int32_t;
 #include <krb5.h>
 #endif
 
+#undef HAVE_INTTYPES_H
+#undef HAVE_STDINT_H
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#else
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
+#endif
 
 #endif
