@@ -2,7 +2,7 @@
  *
  * COMMON.H - NRPE Common Include File
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 06-03-2002
+ * Last Modified: 12-30-2002
  *
  * License:
  *
@@ -38,7 +38,6 @@
 
 
 #define DEFAULT_SOCKET_TIMEOUT	10	/* timeout after 10 seconds */
-#define DEFAULT_SERVER_PORT	5666	/* default port to use */
 
 #define MAX_INPUT_BUFFER	2048	/* max size of most buffers we use */
 

@@ -48,7 +48,7 @@ clean:
 	cd $(SRC_BASE); $(MAKE) $@ ; cd ..
 	rm -f core
 	rm -f *~ */*~
-	rm -f config.log config.status config.cache nrpe.cfg Makefile $(SRC_COMMON)/config.h
+	rm -f config.log config.status config.cache nrpe.cfg Makefile subst $(SRC_COMMON)/config.h
 
 distclean: clean
 

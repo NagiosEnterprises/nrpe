@@ -2,7 +2,7 @@
  *
  * NRPE Common Header File
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 06-03-2002
+ * Last Modified: 12-30-2002
  *
  * License:
  *
@@ -23,6 +23,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+
+#define DEFAULT_SERVER_PORT	@nrpe_port@	/* default port to use */
 
 
 #undef STDC_HEADERS

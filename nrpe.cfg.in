@@ -2,7 +2,7 @@
 # Sample NRPE Config File 
 # Written by: Ethan Galstad (nagios@nagios.org)
 # 
-# Last Modified: 10-24-2002
+# Last Modified: 12-30-2002
 #
 # NOTES:
 # This is a sample configuration file for the NRPE daemon.  It needs to be
@@ -17,7 +17,7 @@
 # NOTE: This must be a non-priviledged port (i.e. > 1024).
 # NOTE: This option is ignored if NRPE is running under either inetd or xinetd
 
-server_port=5666
+server_port=@nrpe_port@
 
 
 
@@ -101,9 +101,9 @@ command_timeout=60
 # to match the argument format the plugins expect.  Remember, these are
 # examples only!
 
-command[check_users]=/usr/local/nagios/libexec/check_users -w 5 -c 10
-command[check_load]=/usr/local/nagios/libexec/check_load -w 15,10,5 -c 30,25,20
-command[check_disk1]=/usr/local/nagios/libexec/check_disk -w 20 -c 10 -p /dev/hda1
-command[check_disk2]=/usr/local/nagios/libexec/check_disk -w 20 -c 10 -p /dev/hdb1
-command[check_zombie_procs]=/usr/local/nagios/libexec/check_procs -w 5 -c 10 -s Z
-command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w 150 -c 200 
+command[check_users]=@libexecdir@/check_users -w 5 -c 10
+command[check_load]=@libexecdir@/check_load -w 15,10,5 -c 30,25,20
+command[check_disk1]=@libexecdir@/check_disk -w 20 -c 10 -p /dev/hda1
+command[check_disk2]=@libexecdir@/check_disk -w 20 -c 10 -p /dev/hdb1
+command[check_zombie_procs]=@libexecdir@/check_procs -w 5 -c 10 -s Z
+command[check_total_procs]=@libexecdir@/check_procs -w 150 -c 200 
