@@ -1,10 +1,10 @@
 /*******************************************************************************
  *
  * NRPE.C - Nagios Remote Plugin Executor
- * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
+ * Copyright (c) 1999-2004 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 10-24-2003
+ * Last Modified: 03-06-2004
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -102,7 +102,7 @@ int main(int argc, char **argv){
 
 		printf("\n");
 		printf("NRPE - Nagios Remote Plugin Executor\n");
-		printf("Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)\n");
+		printf("Copyright (c) 1999-2004 Ethan Galstad (nagios@nagios.org)\n");
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL with exemptions (-l for more info)\n");
@@ -207,7 +207,12 @@ int main(int argc, char **argv){
 			syslog(LOG_ERR,"Error: could not create SSL context.\n");
 			exit(STATE_CRITICAL);
 		        }
-		/*SSL_CTX_set_cipher_list(ctx,"ALL");*/
+
+		/* ADDED 01/19/2004 */
+		/* use only TLSv1 protocol */
+		SSL_CTX_set_options(ctx,SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+
+		/* use anonymous DH ciphers */
 		SSL_CTX_set_cipher_list(ctx,"ADH");
 		dh=get_dh512();
 		SSL_CTX_set_tmp_dh(ctx,dh);
@@ -226,6 +231,10 @@ int main(int argc, char **argv){
 
 		/* make sure we're not root */
 		check_privileges();
+
+		/* redirect STDERR to /dev/null
+		close(2);
+		open("/dev/null",O_WRONLY);
 
 		/* handle the connection */
 		handle_connection(0);
@@ -1034,6 +1043,7 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 	int result;
 	extern int errno;
 	char buffer[MAX_INPUT_BUFFER];
+	char temp_buffer[MAX_INPUT_BUFFER];
 	int fd[2];
 	FILE *fp;
 	int bytes_read=0;
@@ -1111,6 +1121,10 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 			/* read in the first line of output from the command */
 			strcpy(buffer,"");
 			fgets(buffer,sizeof(buffer)-1,fp);
+
+			/* ADDED 01/19/2004 */
+			/* ignore any additional lines of output */
+			while(fgets(temp_buffer,sizeof(temp_buffer)-1,fp));
 
 			/* close the command and get termination status */
 			status=pclose(fp);

@@ -3,13 +3,16 @@ NRPE Changelog
 **************
 
 
-2.1 - ??/??/2003
+2.1 - 01/19/2004
 ----------------
 - Replaced host access list with TCP wrapper support
 - Removed length restrictions for command names and command lines
 - Configure script patch for getopt_long on Solaris
 - Bug fixes for accept() on HP-UX 11.0
 - Init script for SUSE Linux (Subhendu Ghosh)
+- SSL protocol used is now limited to TLSv1
+- Any output from plugins after first line is now ignored before
+  plugin process is closed
 
 
 2.0 - 09/08/2003

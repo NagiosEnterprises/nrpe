@@ -1,10 +1,10 @@
 /********************************************************************************************
  *
  * CHECK_NRPE.C - NRPE Plugin For Nagios
- * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
+ * Copyright (c) 1999-2004 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 10-14-2003
+ * Last Modified: 01-19-2004
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -70,7 +70,7 @@ int main(int argc, char **argv){
 			printf("Incorrect command line arguments supplied\n");
                 printf("\n");
 		printf("NRPE Plugin for Nagios\n");
-		printf("Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)\n");
+		printf("Copyright (c) 1999-2004 Ethan Galstad (nagios@nagios.org)\n");
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL with exemptions (-l for more info)\n");
@@ -125,6 +125,10 @@ int main(int argc, char **argv){
 			printf("CHECK_NRPE: Error - could not create SSL context.\n");
 			exit(STATE_CRITICAL);
 		        }
+
+		/* ADDED 01/19/2004 */
+		/* use only TLSv1 protocol */
+		SSL_CTX_set_options(ctx,SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
                 }
 #endif
 

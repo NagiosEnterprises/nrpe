@@ -537,7 +537,7 @@ fi
 PKG_NAME=nrpe
 PKG_VERSION="2.1"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="10-14-2003"
+PKG_REL_DATE="01-19-2004"
 
 
 ac_aux_dir=

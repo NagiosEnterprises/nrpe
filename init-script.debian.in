@@ -20,7 +20,7 @@ stop)	echo -n "Stopping nagios remote plugin daemon: nrpe"
         ;;
 restart) echo -n "Restarting nagios remote plugin daemon: nrpe"
         start-stop-daemon --stop --quiet --exec $NrpeBin
-        start-stop-daemon --start --quiet --exec $NrpeBin
+        start-stop-daemon --start --quiet --exec $NrpeBin -- -c $NrpeCfg -d
         echo "."
         ;;
 reload|force-reload) echo -n "Reloading configuration files for nagios remote plugin daemon: nrpe"
