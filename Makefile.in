@@ -51,7 +51,7 @@ clean:
 
 distclean: clean
 	cd $(SRC_BASE); $(MAKE) $@ ; cd ..
-	rm -f config.log config.status config.cache nrpe.cfg nrpe.xinetd subst $(SRC_INCLUDE)/config.h init-script init-script.debian init-script.freebsd
+	rm -f config.log config.status config.cache nrpe.cfg nrpe.xinetd subst $(SRC_INCLUDE)/config.h init-script init-script.debian init-script.freebsd init-script.suse
 	rm -f sample-config/*.cfg sample-config/*.xinetd
 	rm -f Makefile
 
