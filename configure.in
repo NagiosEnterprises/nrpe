@@ -26,7 +26,7 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h tcpd.h unistd.h arpa/inet.h netinet/in.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h)
+AC_CHECK_HEADERS(ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h tcpd.h unistd.h arpa/inet.h netinet/in.h socket.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -103,6 +103,18 @@ AC_TRY_COMPILE([#include <stdlib.h>
 [int a = send(1, (const void *)0, (size_t *) 0, (int *) 0);],
 [AC_DEFINE(SOCKET_SIZE_TYPE, size_t) AC_MSG_RESULT(size_t)],
 [AC_DEFINE(SOCKET_SIZE_TYPE, int) AC_MSG_RESULT(int)])
+
+dnl Stolen from Python code: loewis@users.sourceforge.net
+AC_CHECK_TYPE(socklen_t,int,
+	AC_DEFINE(socklen_t,int,
+	Define to `int' if <sys/socket.h> does not define.),[
+	#ifdef HAVE_SYS_TYPES_H
+	#include <sys/types.h>
+	#endif
+	#ifdef HAVE_SYS_SOCKET_H
+	#include <sys/socket.h>
+	#endif
+	])
 
 dnl Does user want to check for SSL?
 AC_ARG_ENABLE(ssl,--enable-ssl enables native SSL support,[

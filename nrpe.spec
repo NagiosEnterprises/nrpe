@@ -55,6 +55,13 @@ This package provides the nrpe plugin for Nagios-related applications.
 
 
 %pre
+# Create `nagios' group on the system if necessary
+if grep ^nagios: /etc/group; then
+	: # group already exists
+else
+	/usr/sbin/groupadd %{nsgrp} || %nnmmsg Unexpected error adding group "%{nsgrp}". Aborting install process.
+fi
+
 # Create `nagios' user on the system if necessary
 if id %{nsusr} ; then
 	: # user already exists
@@ -140,6 +147,9 @@ rm -rf $RPM_BUILD_ROOT
 %doc Changelog LEGAL README
 
 %changelog
+* Wed Nov 12 2003 Ingimar Robertsson <iar@skyrr.is>
+- Added adding of nagios group if it does not exist.
+
 * Tue Jan 07 2003 James 'Showkilr' Peterson <showkilr@showkilr.com>
 - Removed the lines which removed the nagios user and group from the system
 - changed the patch release version from 3 to 1

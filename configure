@@ -1136,7 +1136,7 @@ EOF
 
 fi
 
-for ac_hdr in ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h tcpd.h unistd.h arpa/inet.h netinet/in.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h
+for ac_hdr in ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h tcpd.h unistd.h arpa/inet.h netinet/in.h socket.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -2106,6 +2106,40 @@ EOF
 fi
 rm -f conftest*
 
+echo $ac_n "checking for socklen_t""... $ac_c" 1>&6
+echo "configure:2111: checking for socklen_t" >&5
+if eval "test \"`echo '$''{'ac_cv_type_socklen_t'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  cat > conftest.$ac_ext <<EOF
+#line 2116 "configure"
+#include "confdefs.h"
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+EOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  egrep "(^|[^a-zA-Z_0-9])socklen_t[^a-zA-Z_0-9]" >/dev/null 2>&1; then
+  rm -rf conftest*
+  ac_cv_type_socklen_t=yes
+else
+  rm -rf conftest*
+  ac_cv_type_socklen_t=no
+fi
+rm -f conftest*
+
+fi
+echo "$ac_t""$ac_cv_type_socklen_t" 1>&6
+if test $ac_cv_type_socklen_t = no; then
+  cat >> confdefs.h <<\EOF
+#define socklen_t int
+EOF
+
+fi
+
+
 # Check whether --enable-ssl or --disable-ssl was given.
 if test "${enable_ssl+set}" = set; then
   enableval="$enable_ssl"
@@ -2150,7 +2184,7 @@ fi
 
 if test x$check_for_ssl = xyes; then
 	echo $ac_n "checking for SSL""... $ac_c" 1>&6
-echo "configure:2154: checking for SSL" >&5
+echo "configure:2188: checking for SSL" >&5
 	found_ssl=no
 	for dir in $ssl_inc_dir /usr/local/openssl /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr; do
 		ssldir="$dir"
@@ -2193,7 +2227,7 @@ EOF
 	fi
 
 		echo $ac_n "checking for Kerberos include files""... $ac_c" 1>&6
-echo "configure:2197: checking for Kerberos include files" >&5
+echo "configure:2231: checking for Kerberos include files" >&5
 	found_kerberos=no
 	for dir in $kerberos_inc_dir /usr/kerberos/include; do
 		kerbdir="$dir"
@@ -2263,7 +2297,7 @@ fi
 # Extract the first word of "perl", so it can be a program name with args.
 set dummy perl; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2267: checking for $ac_word" >&5
+echo "configure:2301: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_PERL'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
