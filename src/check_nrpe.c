@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 06-04-2003
+ * Last Modified: 06-13-2003
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -73,7 +73,7 @@ int main(int argc, char **argv){
 		printf("Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)\n");
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
-		printf("License: GPL\n");
+		printf("License: GPL with exemptions (-l for more info)\n");
 #ifdef HAVE_SSL
 		printf("SSL/TLS Available: Anonymous DH Mode, OpenSSL 0.9.6 or higher required\n");
 #endif
@@ -399,7 +399,7 @@ int process_arguments(int argc, char **argv){
 	        }
 
 	/* make sure required args were supplied */
-	if(server_name==NULL)
+	if(server_name==NULL && show_help==FALSE && show_version==FALSE  && show_license==FALSE)
 		return ERROR;
 
 

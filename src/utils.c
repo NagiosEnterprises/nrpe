@@ -418,6 +418,9 @@ char *my_strsep (char **stringp, const char *delim){
 /* show license */
 void display_license(void){
 
+	printf("This program is released under the GPL (see below) with the additional\n");
+	printf("exemption that compiling, linking, and/or using OpenSSL is allowed.\n\n");
+
 	printf("This program is free software; you can redistribute it and/or modify\n");
 	printf("it under the terms of the GNU General Public License as published by\n");
 	printf("the Free Software Foundation; either version 2 of the License, or\n");

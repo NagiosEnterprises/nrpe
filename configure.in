@@ -9,9 +9,9 @@ AC_CONFIG_HEADER(common/config.h)
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
 PKG_NAME=nrpe
-PKG_VERSION="2.0b4"
+PKG_VERSION="2.0b5"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="06-04-2003"
+PKG_REL_DATE="06-13-2003"
 
 dnl Figure out how to invoke "install" and what install options to use.
 
@@ -37,40 +37,48 @@ AC_TYPE_SIZE_T
 AC_TYPE_SIGNAL
 AC_TYPE_GETGROUPS
 
-dnl Define u_int32_t if we don't have it already (Solaris)
+dnl Check lengths for later tests of u_int32_t and int32_t
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(long)
+
+dnl Define u_int32_t if we don't have it already (Solaris, etc.)
+AC_CHECK_TYPE(uint32_t,unsigned int)
 AC_CHECK_TYPE(u_int32_t,unsigned int)
 if test "$ac_cv_type_u_int32_t" = no ; then
-	if test "$ac_cv_sizeof_int" = 4 ; then
-		AC_DEFINE(U_INT32_T_IS_UINT)
+	if test "$ac_cv_type_int32_t" = yes ; then
+		AC_DEFINE(U_INT32_T_IS_UINT32_T)
 	else
-		if test "$ac_cv_sizeof_long" = 4 ; then
-			AC_DEFINE(U_INT32_T_IS_ULONG)
+		if test "$ac_cv_sizeof_int" = 4 ; then
+			AC_DEFINE(U_INT32_T_IS_UINT)
 		else
-			if test "$ac_cv_sizeof_short" = 4 ; then
-				AC_DEFINE(U_INT32_T_IS_USHORT)
+			if test "$ac_cv_sizeof_long" = 4 ; then
+				AC_DEFINE(U_INT32_T_IS_ULONG)
+			else
+				if test "$ac_cv_sizeof_short" = 4 ; then
+					AC_DEFINE(U_INT32_T_IS_USHORT)
+				fi
 			fi
 		fi
 	fi
 fi
 
-dnl AC_CHECK_SIZEOF(int)
-dnl AC_CHECK_SIZEOF(short)
-dnl AC_CHECK_SIZEOF(long)
-dnl if test "$ac_cv_sizeof_int" = 4 ; then
-dnl 	AC_CHECK_TYPE(int32_t, int)
-dnl 	AC_CHECK_TYPE(u_int32_t, unsigned int)
-dnl elif test "$ac_cv_sizeof_short" = 4 ; then
-dnl 	AC_CHECK_TYPE(int32_t, short)
-dnl 	AC_CHECK_TYPE(u_int32_t, unsigned short)
-dnl elif test "$ac_cv_sizeof_long" = 4 ; then
-dnl 	AC_CHECK_TYPE(int32_t, long)
-dnl 	AC_CHECK_TYPE(u_int32_t, unsigned long)
-dnl else
-dnl 	AC_MSG_ERROR([Cannot find a type with size of 32 bits])
-dnl fi
+dnl Define int32_t if we don't have it already
+AC_CHECK_TYPE(int32_t,int)
+if test "$ac_cv_type_int32_t" = no ; then
+	if test "$ac_cv_sizeof_int" = 4 ; then
+		AC_DEFINE(INT32_T_IS_UINT)
+	else
+		if test "$ac_cv_sizeof_long" = 4 ; then
+			AC_DEFINE(INT32_T_IS_ULONG)
+		else
+			if test "$ac_cv_sizeof_short" = 4 ; then
+				AC_DEFINE(INT32_T_IS_USHORT)
+			fi
+		fi
+	fi
+fi
+
 
 dnl Checks for library functions.
 AC_CHECK_LIB(nsl,main,SOCKETLIBS="$SOCKETLIBS -lnsl")

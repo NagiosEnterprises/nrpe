@@ -14,6 +14,7 @@ NRPE Changelog
   config files in directories (with recursion)
 - Added native SSL support (Derrick Bennett)
 - Added my_strsep(), as Solaris doesn't have strsep()
+- Added license exemption for use with OpenSSL
 
 
 1.8 - 01/16/2003

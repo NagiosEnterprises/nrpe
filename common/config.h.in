@@ -2,7 +2,7 @@
  *
  * NRPE Common Header File
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 04-29-2003
+ * Last Modified: 06-12-2003
  *
  * License:
  *
@@ -20,6 +20,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************/
+
+#ifndef _CONFIG_H
+#define _CONFIG_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,17 +46,33 @@
 #undef U_INT32_T_IS_USHORT
 #undef U_INT32_T_IS_UINT
 #undef U_INT32_T_IS_ULONG
+#undef U_INT32_T_IS_UINT32_T
 
 #ifdef U_INT32_T_IS_USHORT
 typedef unsigned short u_int32_t;
-typedef short int32_t;
 #endif
 #ifdef U_INT32_T_IS_ULONG
 typedef unsigned long u_int32_t;
-typedef long int32_t;
 #endif
 #ifdef U_INT32_T_IS_UINT
 typedef unsigned int u_int32_t;
+#endif
+#ifdef U_INT32_T_IS_UINT32_t
+typedef uint32_t u_int32_t;
+#endif
+
+/* stupid stuff for int32_t */
+#undef INT32_T_IS_SHORT
+#undef INT32_T_IS_INT
+#undef INT32_T_IS_LONG
+
+#ifdef INT32_T_IS_USHORT
+typedef short int32_t;
+#endif
+#ifdef INT32_T_IS_ULONG
+typedef long int32_t;
+#endif
+#ifdef INT32_T_IS_UINT
 typedef int int32_t;
 #endif
 
@@ -200,3 +219,5 @@ typedef int int32_t;
 #include <krb5.h>
 #endif
 
+
+#endif

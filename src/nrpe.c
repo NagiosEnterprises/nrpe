@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 06-04-2003
+ * Last Modified: 06-13-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -101,7 +101,7 @@ int main(int argc, char **argv){
 		printf("Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)\n");
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
-		printf("License: GPL\n");
+		printf("License: GPL with exemptions (-l for more info)\n");
 #ifdef HAVE_SSL
 		printf("SSL/TLS Available: Anonymous DH Mode, OpenSSL 0.9.6 or higher required\n");
 #endif
@@ -198,10 +198,12 @@ int main(int argc, char **argv){
 		dh=get_dh512();
 		SSL_CTX_set_tmp_dh(ctx,dh);
 		DH_free(dh);
-		syslog(LOG_INFO,"INFO: SSL/TLS initialized. All network traffic will be encrypted.");
+		if(debug==TRUE)
+			syslog(LOG_INFO,"INFO: SSL/TLS initialized. All network traffic will be encrypted.");
 	        }
 	else{
-		syslog(LOG_INFO,"INFO: SSL/TLS NOT initialized. Network encryption DISABLED.");
+		if(debug==TRUE)
+			syslog(LOG_INFO,"INFO: SSL/TLS NOT initialized. Network encryption DISABLED.");
 	        }
 #endif
 
