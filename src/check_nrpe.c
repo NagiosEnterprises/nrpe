@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 03-05-2003
+ * Last Modified: 03-06-2003
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -139,10 +139,12 @@ int main(int argc, char **argv){
 	/* do SSL handshake */
 	if(result==STATE_OK && use_ssl==TRUE){
 		if((ssl=SSL_new(ctx))!=NULL){
-			SSL_CTX_set_cipher_list(ctx,"ALL");
+			/*SSL_CTX_set_cipher_list(ctx,"ALL");*/
+			SSL_CTX_set_cipher_list(ctx,"DH");
 			SSL_set_fd(ssl,sd);
 			if((rc=SSL_connect(ssl))!=1){
 				printf("CHECK_NRPE: Error - Could not complete SSL handshake.\n");
+#ifdef DEBUG
 				printf("SSL_connect=%d\n",rc);
 				/*
 				rc=SSL_get_error(ssl,rc);
@@ -151,11 +153,12 @@ int main(int argc, char **argv){
 				printf("%s\n",ERR_error_string(rc,NULL));
 				*/
 				ERR_print_errors_fp(stdout);
+#endif
 				result=STATE_CRITICAL;
 			        }
 		        }
 		else{
-			printf("CHECK_NRPE: Error - Could not initiate SSL handshake.\n");
+			printf("CHECK_NRPE: Error - Could not create SSL connection structure.\n");
 			result=STATE_CRITICAL;
 		        }
 

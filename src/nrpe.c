@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 03-05-2003
+ * Last Modified: 03-06-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -187,7 +187,9 @@ int main(int argc, char **argv){
 			syslog(LOG_ERR,"Error: could not create SSL context.\n");
 			exit(STATE_CRITICAL);
 		        }
-		SSL_CTX_set_cipher_list(ctx,"ALL");
+		/*SSL_CTX_set_cipher_list(ctx,"ALL");*/
+		SSL_CTX_set_options(ctx,SSL_OP_SINGLE_DH_USE);
+		SSL_CTX_set_cipher_list(ctx,"DH");
                 }
 #endif
 
@@ -693,7 +695,9 @@ void handle_connection(int sock){
 	int rc;
 	int x;
 	FILE *fp;
+#ifdef DEBUG
 	FILE *errfp;
+#endif
 #ifdef HAVE_SSL
 	SSL *ssl;
 #endif
@@ -715,14 +719,21 @@ void handle_connection(int sock){
 			SSL_set_fd(ssl,sock);
 			if(SSL_accept(ssl)!=1){
 				syslog(LOG_ERR,"Error: Could not complete SSL handshake.\n");
+#ifdef DEBUG
 				errfp=fopen("/tmp/err.log","w");
 				ERR_print_errors_fp(errfp);
 				fclose(errfp);
+#endif
 				return;
 			        }
 		        }
 		else{
-			syslog(LOG_ERR,"Error: Could not initiate SSL handshake.\n");
+			syslog(LOG_ERR,"Error: Could not create SSL connection structure.\n");
+#ifdef DEBUG
+			errfp=fopen("/tmp/err.log","w");
+			ERR_print_errors_fp(errfp);
+			fclose(errfp);
+#endif
 			return;
 		        }
 	        }
@@ -764,11 +775,13 @@ void handle_connection(int sock){
 		return;
 	        }
 
+#ifdef DEBUG
 	fp=fopen("/tmp/packet","w");
 	if(fp){
 		fwrite(&receive_packet,1,sizeof(receive_packet),fp);
 		fclose(fp);
 	        }
+#endif
 
 	/* make sure the request is valid */
 	if(validate_request(&receive_packet)==ERROR){
