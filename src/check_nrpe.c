@@ -6,7 +6,7 @@
  * License: GPL
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
  *
- * Last Modified: 02-21-2002
+ * Last Modified: 06-01-2002
  *
  * Command line: CHECK_NRPE <host_address> [-p port] [-c command] [-wt warn_time] \
  *                          [-ct crit_time] [-to to_sec]

@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 03-19-2002
+ * Last Modified: 06-01-2002
  *
  * Command line: nrpe [-i | -d] <config_file>
  *
@@ -94,8 +94,8 @@ int main(int argc, char **argv){
 		printf("Notes:\n");
 		printf("This program is designed to process requests from the check_nrpe\n");
 		printf("plugin on the host(s) running Nagios.  It can run as a service\n");
-		printf("under inetd (read the docs for info on this), or as a standalone\n");
-		printf("daemon if you wish. Once a request is received from an authorized\n");
+		printf("under inetd or xinetd (read the docs for info on this), or as a\n");
+		printf("standalone daemon. Once a request is received from an authorized\n");
 		printf("host, NRPE will execute the command/plugin (as defined in the\n");
 		printf("config file) and return the plugin output and return code to the\n");
 		printf("check_nrpe plugin.\n");
@@ -592,7 +592,7 @@ void handle_connection(int sock){
 			buffer[sizeof(buffer)-1]='\x0';
 
 			/* check return code bounds */
-			if((result<-1) || (result>2)){
+			if((result<0) || (result>3)){
 
 				/* log error to syslog facility */
 				syslog(LOG_ERR,"Bad return code for [%s]: %d", buffer,result);
@@ -808,7 +808,7 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 			result=STATE_UNKNOWN;
 
 		/* check bounds on the return value */
-		if(result<-1 || result>2)
+		if(result<0 || result>3)
 			result=STATE_UNKNOWN;
 
 		/* try and read the results from the command output (retry if we encountered a signal) */

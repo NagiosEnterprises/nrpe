@@ -3,6 +3,12 @@ NRPE Changelog
 **************
 
 
+1.4 - 06/01/2002
+----------------
+- Changed STATE_UNKNOWN to value of 3 instead of -1 (old style)
+- Minor doc and sample config file changes
+
+
 1.3 - 02/21/2002
 ----------------
 - Name and version change

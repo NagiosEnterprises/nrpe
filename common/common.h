@@ -2,7 +2,7 @@
  *
  * COMMON.H - NRPE Common Include File
  * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 02-21-2002
+ * Last Modified: 06-01-2002
  *
  * License:
  *
@@ -22,8 +22,8 @@
  ************************************************************************/
 
 
-#define PROGRAM_VERSION "1.3"
-#define MODIFICATION_DATE "02-21-2002"
+#define PROGRAM_VERSION "1.4"
+#define MODIFICATION_DATE "06-01-2002"
 
 #define OK		0
 #define ERROR		-1
@@ -31,10 +31,10 @@
 #define TRUE		1
 #define FALSE		0
 
-#define	STATE_CRITICAL 	2	/* service state return codes */
+#define STATE_UNKNOWN  	3	/* service state return codes */
+#define	STATE_CRITICAL 	2
 #define STATE_WARNING 	1
 #define STATE_OK       	0
-#define STATE_UNKNOWN  	-1
 
 
 #define DEFAULT_SOCKET_TIMEOUT	10	/* timeout after 10 seconds */

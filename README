@@ -76,12 +76,25 @@ Running Under INETD or XINETD
 If you plan on running nrpe under inetd or xinetd and making use
 of TCP wrappers, you need to do the following things:
 
+
+
 1) Add a line to your /etc/services file as follows (modify the port
    number as you see fit)
 
 	nrpe            5666/tcp	# NRPE
 
-2) If your system uses the inetd superserver, add an entry to 
+
+
+2) Add entries for the NRPE daemon to either your inetd or xinetd
+   configuration files.  Which one your use will depend on which
+   superserver is installed on your system.  Both methods are described
+   below.  NOTE: If you run nrpe under inetd or xinetd, the server_port
+   and allowed_hosts variables in the nrpe configuration file are
+   ignored.
+
+
+   ***** INETD *****
+   If your system uses the inetd superserver, add an entry to 
    /etc/inetd.conf as follows:
 
 
@@ -95,7 +108,9 @@ of TCP wrappers, you need to do the following things:
    - Replace <nrpecfg> with the path to the nrpe config file on your system.
 	Example: /usr/local/nagios/nrpe.cfg
 
-3) If your system uses xinetd instead of inetd, you'll probably
+
+   ***** XINETD *****
+   If your system uses xinetd instead of inetd, you'll probably
    want to create a file called 'nrpe' in your /etc/xinetd.d
    directory that contains the following entries:
 
@@ -123,21 +138,21 @@ of TCP wrappers, you need to do the following things:
      are allowed to connect to the NRPE daemon.  This only works if xinetd was
      compiled with support for wrappers.
 
-4) Restart inetd or xinetd will the following command (pick the
+
+
+3) Restart inetd or xinetd will the following command (pick the
    on that is appropriate for your system:
 
 	/etc/rc.d/init.d/inet restart
 
 	/etc/rc.d/init.d/xinetd restart
 
-5) Add entries to your /etc/hosts.allow and /etc/hosts.deny
+
+
+4) Add entries to your /etc/hosts.allow and /etc/hosts.deny
    file to enable TCP wrapper protection for the nrpe service.
    This is optional, although highly recommended.
 
-
-Note: If you run nrpe under inetd or xinetd, the server_port
-      and allowed_hosts variables in the nrpe configuration 
-      file are ignored.
 
 
 
@@ -152,13 +167,22 @@ to use the check_nrpe plugin from within Nagios, you'll have
 to define a few things in the host config file.  An example
 command definition for the check_nrpe plugin would look like this:
 
-command[check_nrpe]=/usr/local/nagios/libexec/check_nrpe $HOSTADDRESS$ -c $ARG1$
+define command{
+	command_name	check_nrpe
+	command_line	/usr/local/nagios/libexec/check_nrpe $HOSTADDRESS$ -c $ARG1$
+	}
 
 In any service definitions that use the nrpe plugin/daemon to
 get their results, you would set the service check command portion
-of the definition to something like this:
+of the definition to something like this (sample service definition
+is simplified for this example):
 
-check_nrpe!yourcommand
+define service{
+	host_name		someremotehost
+	service_description	someremoteservice
+	check_command		check_nrpe!yourcommand
+	... etc ...
+	}
 
 where "yourcommand" is a name of a command that you define in 
 your nrpe.cfg file on the remote host (see the docs in the 
