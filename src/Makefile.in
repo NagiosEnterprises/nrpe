@@ -1,7 +1,7 @@
 ###############################
 # Makefile for NRPE
 #
-# Last Modified: 03-31-2003
+# Last Modified: 08-04-2003
 ###############################
 
 
@@ -19,10 +19,10 @@ CP=@CP@
 all: nrpe check_nrpe
 
 nrpe: nrpe.c nrpe.h utils.c utils.h $(SRC_COMMON)/common.h $(SRC_COMMON)/config.h
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(SOCKETLIBS) nrpe.c utils.c
+	$(CC) $(CFLAGS) -o $@ nrpe.c utils.c $(LDFLAGS) $(SOCKETLIBS)
 
 check_nrpe: check_nrpe.c utils.c utils.h $(SRC_COMMON)/common.h $(SRC_COMMON)/config.h
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(SOCKETLIBS) check_nrpe.c utils.c
+	$(CC) $(CFLAGS) -o $@ check_nrpe.c utils.c $(LDFLAGS) $(SOCKETLIBS)
 
 clean:
 	rm -f core nrpe check_nrpe
