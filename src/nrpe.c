@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 04-17-2003
+ * Last Modified: 06-04-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -1074,6 +1074,7 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 		else{
 
 			/* read in the first line of output from the command */
+			strcpy(buffer,"");
 			fgets(buffer,sizeof(buffer)-1,fp);
 
 			/* close the command and get termination status */
@@ -1123,6 +1124,7 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 
 		/* try and read the results from the command output (retry if we encountered a signal) */
 		if(output!=NULL){
+			strcpy(output,"");
 			do{
 				bytes_read=read(fd[0],output,output_length-1);
 		                }while(bytes_read==-1 && errno==EINTR);
@@ -1375,7 +1377,7 @@ int process_macros(char *input_buffer,char *output_buffer,int buffer_length){
 
 	in_macro=FALSE;
 
-	for(temp_buffer=strsep(&input_buffer,"$");temp_buffer!=NULL;temp_buffer=strsep(&input_buffer,"$")){
+	for(temp_buffer=my_strsep(&input_buffer,"$");temp_buffer!=NULL;temp_buffer=my_strsep(&input_buffer,"$")){
 
 		selected_macro=NULL;
 

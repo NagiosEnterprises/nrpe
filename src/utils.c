@@ -5,7 +5,7 @@
  * License: GPL
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  *
- * Last Modified: 04-15-2003
+ * Last Modified: 06-04-2003
  *
  * Description:
  *
@@ -370,6 +370,49 @@ int recvall(int s, char *buf, int *len, int timeout){
 	/* return <=0 on failure, bytes received on success */
 	return (n<=0)?n:total;
         }
+
+
+/* fixes compiler problems under Solaris, since strsep() isn't included */
+/* this code is taken from the glibc source */
+char *my_strsep (char **stringp, const char *delim){
+	char *begin, *end;
+
+	begin = *stringp;
+	if (begin == NULL)
+		return NULL;
+
+	/* A frequent case is when the delimiter string contains only one
+	   character.  Here we don't need to call the expensive `strpbrk'
+	   function and instead work using `strchr'.  */
+	if(delim[0]=='\0' || delim[1]=='\0'){
+		char ch = delim[0];
+
+		if(ch=='\0')
+			end=NULL;
+		else{
+			if(*begin==ch)
+				end=begin;
+			else
+				end=strchr(begin+1,ch);
+			}
+		}
+
+	else
+		/* Find the end of the token.  */
+		end = strpbrk (begin, delim);
+
+	if(end){
+
+		/* Terminate the token and set *STRINGP past NUL character.  */
+		*end++='\0';
+		*stringp=end;
+		}
+	else
+		/* No more delimiters; this is the last token.  */
+		*stringp=NULL;
+
+	return begin;
+	}
 
 
 /* show license */

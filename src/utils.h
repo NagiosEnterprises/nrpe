@@ -5,7 +5,7 @@
  * License: GPL
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  *
- * Last Modified: 01-28-2003
+ * Last Modified: 06-04-2003
  *
  * Description:
  *
@@ -49,6 +49,8 @@ void strip(char *);
 
 int sendall(int,char *,int *);
 int recvall(int,char *,int *,int);
+
+char *my_strsep(char **,const char *);
 
 void display_license(void);
 
