@@ -54,7 +54,7 @@ AC_ARG_WITH(nrpe_port,--with-nrpe-port=<port> sets port number for NRPE to liste
 AC_SUBST(nrpe_user)
 AC_SUBST(nrpe_grp)
 AC_SUBST(nrpe_port)
-AC_DEFINE_UNQUOTED(DEFAULT_SERVER_PORT,"$nrpe_port")
+AC_DEFINE_UNQUOTED(DEFAULT_SERVER_PORT,$nrpe_port)
 
 
 AC_PATH_PROG(PERL,perl)

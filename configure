@@ -1721,7 +1721,7 @@ fi
 
 
 cat >> confdefs.h <<EOF
-#define DEFAULT_SERVER_PORT "$nrpe_port"
+#define DEFAULT_SERVER_PORT $nrpe_port
 EOF
 
 
