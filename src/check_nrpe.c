@@ -4,10 +4,9 @@
  *
  * Program: NRPE plugin for Nagios
  * License: GPL
- * Copyright (c) 1999-2001 Ethan Galstad (nagios@nagios.org)
+ * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
  *
- * Version: 1.3
- * Last Modified: 06-23-2001
+ * Last Modified: 02-21-2002
  *
  * Command line: CHECK_NRPE <host_address> [-p port] [-c command] [-wt warn_time] \
  *                          [-ct crit_time] [-to to_sec]
@@ -25,13 +24,7 @@
 #include "../common/config.h"
 #include "netutils.h"
 
-
-#define PROGRAM_VERSION "1.3"
-#define MODIFICATION_DATE "06-23-2001"
-
 #define DEFAULT_NRPE_COMMAND	"_NRPE_CHECK"  /* check version of NRPE daemon */
-
-time_t start_time,end_time;
 
 int server_port=DEFAULT_SERVER_PORT;
 char server_name[MAX_HOST_ADDRESS_LENGTH];
@@ -39,10 +32,6 @@ char server_name[MAX_HOST_ADDRESS_LENGTH];
 char query_string[MAX_PACKETBUFFER_LENGTH]=DEFAULT_NRPE_COMMAND;;
 int socket_timeout=DEFAULT_SOCKET_TIMEOUT;
 
-int warning_time=0;
-int check_warning_time=FALSE;
-int critical_time=0;
-int check_critical_time=FALSE;
 
 
 int process_arguments(int,char **);
@@ -57,6 +46,8 @@ int main(int argc, char **argv){
 	int result;
 	packet send_packet;
 	packet receive_packet;
+	int bytes_to_send;
+	int bytes_to_recv;
 
 	result=process_arguments(argc,argv);
 
@@ -65,7 +56,7 @@ int main(int argc, char **argv){
 		printf("Incorrect command line arguments supplied\n");
 		printf("\n");
 		printf("NRPE Plugin for Nagios\n");
-		printf("Copyright (c) 1999-2001 Ethan Galstad (nagios@nagios.org)\n");
+		printf("Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)\n");
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL\n");
@@ -77,10 +68,6 @@ int main(int argc, char **argv){
 		printf(" <host_address> = The IP address of the host running the NRPE daemon\n");
 		printf(" [port]         = The port on which the daemon is running - default is %d\n",DEFAULT_SERVER_PORT);
 		printf(" [command]      = The name of the command that the remote daemon should run\n");
-		printf(" [warn_time]    = Response time in seconds necessary to result in a warning\n");
-		printf("                  status\n");
-		printf(" [crit_time]    = Response time in seconds necessary to result in a critical\n");
-		printf("                  status\n");
 		printf(" [to_sec]       = Number of seconds before connection attempt times out.\n");
 		printf("                  Default timeout is %d seconds\n",DEFAULT_SOCKET_TIMEOUT);
 		printf("\n");
@@ -103,8 +90,6 @@ int main(int argc, char **argv){
 	/* set socket timeout */
 	alarm(socket_timeout);
 
-	time(&start_time);
-
 	/* try to connect to the host at the given port number */
 	result=my_tcp_connect(server_name,server_port,&sd);
 
@@ -118,47 +103,42 @@ int main(int argc, char **argv){
 		send_packet.buffer_length=htonl(strlen(query_string));
 		strcpy(&send_packet.buffer[0],query_string);
 
-		rc=send(sd,(void *)&send_packet,sizeof(send_packet),0);
+		bytes_to_send=sizeof(send_packet);
+		rc=sendall(sd,(char *)&send_packet,&bytes_to_send);
 
 		if(rc==-1){
-			printf("CHECK_NRPE: Error sending query to host\n");
+			printf("CHECK_NRPE: Error sending query to host.\n");
 			close(sd);
 			return STATE_UNKNOWN;
 		        }
 
 		/* wait for the response packet */
-		bzero(&receive_packet,sizeof(receive_packet));
-		rc=recv(sd,(void *)&receive_packet,sizeof(receive_packet),0);
+		bytes_to_recv=sizeof(receive_packet);
+		rc=recvall(sd,(char *)&receive_packet,&bytes_to_recv,socket_timeout);
 
-		if(rc==-1){
-			printf("CHECK_NRPE: Error receiving data from host\n");
+		/* recv() error */
+		if(rc<0){
+			printf("CHECK_NRPE: Error receiving data from host.\n");
 			close(sd);
+			alarm(0);
 			return STATE_UNKNOWN;
 		        }
 
+		/* server disconnected */
 		else if(rc==0){
-			printf("CHECK_NRPE: Received 0 bytes. Is this host authorized to connect with nrpe daemon?\n");
+			printf("CHECK_NRPE: Received 0 bytes.  Are we allowed to connect to the host?\n");
 			close(sd);
+			alarm(0);
 			return STATE_UNKNOWN;
 		        }
 
-		else if(rc<sizeof(receive_packet)){
-			printf("CHECK_NRPE: Receive underflow.  Only %d bytes received (%d expected).\n",rc,sizeof(receive_packet));
+		/* receive underflow */
+		else if(bytes_to_recv<sizeof(receive_packet)){
+			printf("CHECK_NRPE: Receive underflow - only %d bytes received (%d expected).\n",bytes_to_recv,sizeof(receive_packet));
 			close(sd);
+			alarm(0);
 			return STATE_UNKNOWN;
 		        }
-
-		time(&end_time);
-
-		result=STATE_OK;
-
-		if(check_critical_time==TRUE && (end_time-start_time)>critical_time)
-			result=STATE_CRITICAL;
-		else if(check_warning_time==TRUE && (end_time-start_time)>warning_time)
-			result=STATE_WARNING;
-
-		if(result!=STATE_OK)
-			printf("CHECK_NRPE problem - %d second response time: ",(int)(end_time-start_time));
 
 		/* get the return code from the remote plugin */
 		result=ntohl(receive_packet.result_code);
@@ -224,24 +204,6 @@ int process_arguments(int argc, char **argv){
 			else
 				return ERROR;
 		        }
-		else if(!strcmp(argv[x-1],"-wt")){
-			if(x<argc){
-				warning_time=atoi(argv[x]);
-				check_warning_time=TRUE;
-				x++;
-			        }
-			else
-				return ERROR;
-		        }
-		else if(!strcmp(argv[x-1],"-ct")){
-			if(x<argc){
-				critical_time=atoi(argv[x]);
-				check_critical_time=TRUE;
-				x++;
-			        }
-			else
-				return ERROR;
-		        }
 		else
 			return ERROR;
 	        }
@@ -253,7 +215,7 @@ int process_arguments(int argc, char **argv){
 
 void alarm_handler(int sig){
 
-	printf("CHECK_NRPE: Socket timeout after %d seconds\n",socket_timeout);
+	printf("CHECK_NRPE: Socket timeout after %d seconds.\n",socket_timeout);
 
 	exit(STATE_CRITICAL);
         }

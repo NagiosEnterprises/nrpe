@@ -5,7 +5,7 @@ NRPE README
 
 Purpose
 -------
-The purpose of this addon is to allow you to execute Nagios
+The purpose of this addon is to allow you to execute Nagios 
 plugins on a remote host in as transparent a manner as possible.
 
 
@@ -70,39 +70,73 @@ make much use of this addon.
 
 
 
-Running Under INETD
--------------------
+Running Under INETD or XINETD
+-----------------------------
 
-If you plan on running nrpe under inetd and making use of TCP
-wrappers, you need to do two things:
+If you plan on running nrpe under inetd or xinetd and making use
+of TCP wrappers, you need to do the following things:
 
 1) Add a line to your /etc/services file as follows (modify the port
    number as you see fit)
 
 	nrpe            5666/tcp	# NRPE
 
-2) Add an entry to /etc/inetd.conf as follows
+2) If your system uses the inetd superserver, add an entry to 
+   /etc/inetd.conf as follows:
+
 
 	nrpe 	stream 	tcp 	nowait 	<user> /usr/sbin/tcpd <nrpebin> -i <nrpecfg>
 
-   - Replace <user> with the name of the user that nrpe should run as
-	Example: nagios
+
+   - Replace <user> with the name of the user that the nrpe server should run as.
+     	Example: nagios
    - Replace <nrpebin> with the path to the nrpe binary on your system.
 	Example: /usr/local/nagios/nrpe
    - Replace <nrpecfg> with the path to the nrpe config file on your system.
 	Example: /usr/local/nagios/nrpe.cfg
 
-3) Restart inetd will the following command
+3) If your system uses xinetd instead of inetd, you'll probably
+   want to create a file called 'nrpe' in your /etc/xinetd.d
+   directory that contains the following entries:
+
+
+	# default: on
+	# description: NRPE
+	service nrpe
+	{
+        	flags           = REUSE
+	        socket_type     = stream        
+        	wait            = no
+	        user            = <user>
+        	server          = <nrpebin>
+	        server_args     = -i <nrpecfg>
+        	log_on_failure  += USERID
+	        disable         = no
+		only_from       = <ipaddress1> <ipaddress2> ...
+	}
+
+
+   - Replace <user> with the name of the user that the nrpe server should run as.
+   - Replace <nrpebin> with the path to the nrpe binary on your system.
+   - Replace <nrpecfg> with the path to the nrpe config file on your system.
+   - Replace the <ipaddress> fields with the IP addresses of hosts which
+     are allowed to connect to the NRPE daemon.  This only works if xinetd was
+     compiled with support for wrappers.
+
+4) Restart inetd or xinetd will the following command (pick the
+   on that is appropriate for your system:
 
 	/etc/rc.d/init.d/inet restart
 
-4) Add entries to your /etc/hosts.allow and /etc/hosts.deny
+	/etc/rc.d/init.d/xinetd restart
+
+5) Add entries to your /etc/hosts.allow and /etc/hosts.deny
    file to enable TCP wrapper protection for the nrpe service.
    This is optional, although highly recommended.
 
 
-Note: If you run nrpe under inetd, the server_port and 
-      allowed_hosts variables in the nrpe.cfg configuration 
+Note: If you run nrpe under inetd or xinetd, the server_port
+      and allowed_hosts variables in the nrpe configuration 
       file are ignored.
 
 

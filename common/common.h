@@ -1,8 +1,8 @@
 /************************************************************************
  *
  * COMMON.H - NRPE Common Include File
- * Copyright (c) 1999-2001 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 06-23-2001
+ * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
+ * Last Modified: 02-21-2002
  *
  * License:
  *
@@ -21,6 +21,9 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************/
 
+
+#define PROGRAM_VERSION "1.3"
+#define MODIFICATION_DATE "02-21-2002"
 
 #define OK		0
 #define ERROR		-1

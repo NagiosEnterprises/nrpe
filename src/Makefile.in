@@ -1,7 +1,7 @@
 ###############################
 # Makefile for NRPE
 #
-# Last Modified: 06/23/2001
+# Last Modified: 12-23-2001
 ###############################
 
 
@@ -25,11 +25,10 @@ check_nrpe: check_nrpe.c netutils.c netutils.h $(SRC_COMMON)/common.h $(SRC_COMM
 	$(CC) $(CFLAGS) $(LDFLAGS) $(SOCKETLIBS) check_nrpe.c netutils.c -o $@
 
 clean:
-	rm -f core \
-	nrpe check_nrpe
-
-distclean: clean
+	rm -f core nrpe check_nrpe
+	rm -f *~ */*~
 	rm -f Makefile
 
-devclean: distclean
-	rm -f *~ */*~
+distclean: clean
+
+devclean: clean

@@ -1,11 +1,10 @@
 /*******************************************************************************
  *
  * NRPE.C - Nagios Remote Plugin Executor
- * Copyright (c) 1999-2001 Ethan Galstad (nagios@nagios.org)
- * Version: 1.3
+ * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 06-23-2001
+ * Last Modified: 02-21-2002
  *
  * Command line: nrpe [-i | -d] <config_file>
  *
@@ -32,10 +31,8 @@
 #include "netutils.h"
 
 
-#define PROGRAM_VERSION "1.3"
-#define MODIFICATION_DATE "06-23-2001"
-
 #define COMMAND_TIMEOUT		60			/* timeout for execution of plugins */
+#define MAXFD                   64
 
 char allowed_hosts[MAX_INPUT_BUFFER];
 int server_port=DEFAULT_SERVER_PORT;
@@ -63,6 +60,7 @@ int debug=FALSE;
 int main(int argc, char **argv){
 	int error=FALSE;
 	int result;
+	int i;
 	char config_file[MAX_INPUT_BUFFER];
 	char buffer[MAX_INPUT_BUFFER];
 
@@ -82,7 +80,7 @@ int main(int argc, char **argv){
 
 		printf("\n");
 		printf("NRPE - Nagios Remote Plugin Executor\n");
-		printf("Copyright (c) 1999-2001 Ethan Galstad (nagios@nagios.org)\n");
+		printf("Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)\n");
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL\n");
@@ -90,8 +88,8 @@ int main(int argc, char **argv){
 		printf("Usage: %s <-i | -d> <config_file>\n",argv[0]);
 		printf("\n");
 		printf("Options:\n");
-		printf("  -i      Run as a service under inetd\n");
-		printf("  -d      Run as a standalone daemon without inetd\n");
+		printf("  -i      Run as a service under inetd or xinetd\n");
+		printf("  -d      Run as a standalone daemon\n");
 		printf("\n");
 		printf("Notes:\n");
 		printf("This program is designed to process requests from the check_nrpe\n");
@@ -148,6 +146,26 @@ int main(int argc, char **argv){
 
 	/* else daemonize and start listening for requests... */
 	else if(fork()==0){
+
+		/* We are in the 1st child, become session leader */
+		setsid();
+
+		/* ignore SIGHUP */
+		signal(SIGHUP, SIG_IGN);
+
+		/* fork again, 1st child exits */
+		if(fork()!=0)
+			exit(0);
+
+		/* grandchild process continues... */
+	  
+		chdir("/");
+		umask(0);
+
+		/*
+		for(i=0;i<MAXFD;i++)
+			close(i);
+		*/
 
 		/* wait for connections */
 		wait_for_connections();
@@ -476,12 +494,12 @@ void handle_connection(int sock){
 	command *temp_command;
 	packet receive_packet;
 	packet send_packet;
+	int bytes_to_send;
+	int bytes_to_recv;
 	char buffer[MAX_INPUT_BUFFER];
 	int result=STATE_OK;
 	int early_timeout=FALSE;
 	int rc;
-	time_t current_time;
-	time_t start_time;
 
 
 	/* log info to syslog facility */
@@ -491,53 +509,25 @@ void handle_connection(int sock){
 	/* socket should be non-blocking */
 	fcntl(sock,F_SETFL,O_NONBLOCK);
 
-	/* clear the request packet buffer */
-	bzero(&receive_packet,sizeof(receive_packet));
+	bytes_to_recv=sizeof(receive_packet);
+	rc=recvall(sock,(char *)&receive_packet,&bytes_to_recv,socket_timeout);
 
-	/* get the current time */
-	time(&start_time);
+	/* recv() error or client disconnect */
+	if(rc<=0){
 
-	/* wait for the data from the client */
-	while(1){
+		/* log error to syslog facility */
+		syslog(LOG_ERR,"Could not read request from client, bailing out...");
 
-		/* read the packet */
-		rc=recv(sock,(void *)&receive_packet,sizeof(receive_packet),0);
+		return;
+                }
 
-		/* we haven't received data, hang around for a bit more */
-		if(rc==-1 && errno==EAGAIN){
-			time(&current_time);
-			if(current_time-start_time>DEFAULT_SOCKET_TIMEOUT){
-				return;
-			        }
-			sleep(1);
-			continue;
-		        }
+	/* we couldn't read the correct amount of data, so bail out */
+	else if(bytes_to_recv!=sizeof(receive_packet)){
 
-		/* the client connection was closed */
-		else if(rc==0)
-			return;
+		/* log error to syslog facility */
+		syslog(LOG_ERR,"Data packet from client was too short, bailing out...");
 
-		/* there was an error receiving data... */
-		else if(rc==-1){
-
-			/* log error to syslog facility */
-			syslog(LOG_ERR,"Could not read request from client, bailing out...");
-
-			return;
-	                }
-
-		/* we couldn't read the correct amount of data, so bail out */
-		else if(rc!=sizeof(receive_packet)){
-
-			/* log error to syslog facility */
-			syslog(LOG_ERR,"Data packet from client was too short, bailing out...");
-
-			return;
-		        }
-
-		/* the packet looks good so far... */
-		else
-			break;
+		return;
 	        }
 
 	/* make sure this is the right type of packet */
@@ -626,7 +616,8 @@ void handle_connection(int sock){
 	send_packet.buffer[sizeof(send_packet.buffer)-1]='\x0';
 	
 	/* send the response back to the client */
-	send(sock,(void *)&send_packet,sizeof(send_packet),0);
+	bytes_to_send=sizeof(send_packet);
+	sendall(sock,(char *)&send_packet,&bytes_to_send);
 
 	/* log info to syslog facility */
 	if(debug==TRUE)
@@ -856,8 +847,4 @@ void my_system_sighandler(int sig){
 	/* force the child process to exit... */
 	exit(STATE_CRITICAL);
         }
-
-
-
-
 

@@ -1,0 +1,31 @@
+------- Forwarded message follows -------
+Date sent:      	Fri, 30 Mar 2001 18:51:48 -0500
+From:           	adam.bowen@<>
+Subject:        	Event Handler
+To:             	[nagios@nagios.org]
+
+I am attaching the source code for an event handler I wrote to 
+control checks using nrpe.  I add the following check to all remote hosts
+using nrpe:
+
+service[<host Hame>]=NRPE;0;24x7;3;5;1;<contactgroup>;120;24x7;1;1;0;nrpe_check_control;check_tcp!-p 5666
+
+I added this line to the commands.cfg file:
+
+command[nrpe_check_control]=$USER2$/nrpe_check_control $SERVICESTATE$ $STATETYPE$ $SERVICEATTEMPT$ "$HOSTNAME$"
+
+When the NRPE service check listed above has 3 failed connection
+attempts, it will run the nrpe_check_control which will search the
+services file for all services for $HOSTNAME$ that use the check_nrpe.
+
+It will then request that all these services be disabled.  When the
+NRPE check returns to the OK state, it will request that all services
+using check_nrpe be re-enabled. This will prevent unnecessary e-mail
+when there is a problem with the NRPE daemon.  This does require 
+that external commands be enabled.
+
+(See attached file: nrpe_check_control.c)
+
+I thought some other [Nagios] users might find this useful.
+
+Adam G. Bowen

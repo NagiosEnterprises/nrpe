@@ -1,7 +1,7 @@
 ###############################
 # Makefile for NRPE
 #
-# Last Modified: 01/21/2000
+# Last Modified: 12-23-2001
 ###############################
 
 
@@ -9,7 +9,8 @@
 SRC_BASE=./src/
 SRC_COMMON=./common/
 
-all:	nrpe check_nrpe	
+all:
+	cd $(SRC_BASE); $(MAKE) ; cd ..
 
 nrpe:
 	cd $(SRC_BASE); $(MAKE) ; cd ..
@@ -21,12 +22,10 @@ check_nrpe:
 clean:
 	cd $(SRC_BASE); $(MAKE) $@ ; cd ..
 	rm -f core
+	rm -f *~ */*~
+	rm -f config.log config.status config.cache Makefile $(SRC_COMMON)/config.h
 
 distclean: clean
-	cd $(SRC_BASE); $(MAKE) $@ ; cd ..
-	rm -f config.log config.status config.cache Makefile \
-	$(SRC_COMMON)/config.h \
 
-devclean: distclean
-	rm -f *~ */*~
+devclean: clean
 

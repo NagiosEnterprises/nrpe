@@ -1,8 +1,11 @@
 /************************************************************************************************
  *
- * NETUTILS.H - NRPE Network Function Header File
- * Copyright (c) 1999-2001 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 06-23-2001
+ * NETUTILS.H - NRPE Network Utilities Include File
+ *
+ * License: GPL
+ * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
+ *
+ * Last Modified: 02-21-2002
  *
  * Description:
  *
@@ -28,19 +31,15 @@
 
 #include "../common/config.h"
 
-void socket_timeout_alarm_handler(int);
+int my_tcp_connect(char *,int,int *);
+int my_connect(char *,int,int *,char *);
 
-int process_tcp_request(char *address,int port,char *sbuffer,char *rbuffer,int rsize);
-int process_udp_request(char *address,int port,char *sbuffer,char *rbuffer,int rsize);
-int process_request(char *address,int port,char *proto,char *sbuffer,char *rbuffer,int rsize);
-
-int my_tcp_connect(char *address,int port,int *sd);
-int my_udp_connect(char *address,int port,int *sd);
-int my_connect(char *address,int port,int *sd,char *proto);
-
-int my_inet_aton(register const char *cp, struct in_addr *addr);
+int my_inet_aton(register const char *,struct in_addr *);
 
 void strip(char *);
+
+int sendall(int,char *,int *);
+int recvall(int,char *,int *,int);
 
 
 

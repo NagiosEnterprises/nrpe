@@ -1,9 +1,11 @@
 /****************************************************************************
  *
  * NETUTILS.C - NRPE Network Utilities
- * Copyright (c) 1999-2001 Ethan Galstad (nagios@nagios.org)
+ *
  * License: GPL
- * Last Modified: 06-23-2001
+ * Copyright (c) 1999-2002 Ethan Galstad (nagios@nagios.org)
+ *
+ * Last Modified: 02-21-2002
  *
  * Description:
  *
@@ -30,111 +32,12 @@
 #include "../common/common.h"
 #include "netutils.h"
 
-extern int socket_timeout;    /* this doesn't have to be used, but it is nice to know how many seconds we timed out after */
-
-extern int errno;
-
-
-/* handles socket timeouts */
-void socket_timeout_alarm_handler(int sig){
-
-	printf("Socket timeout after %d seconds\n",socket_timeout);
-
-	exit(STATE_CRITICAL);
-        }
-
-
-/* connects to a host on a specified TCP port, sends a string, and gets a response */
-int process_tcp_request(char *server_address, int server_port, char *send_buffer, char *recv_buffer, int recv_size){
-	int result;
-
-	result=process_request(server_address,server_port,"tcp",send_buffer,recv_buffer,recv_size);
-
-	return result;
-        }
-
-
-/* connects to a host on a specified UDP port, sends a string, and gets a response */
-int process_udp_request(char *server_address, int server_port, char *send_buffer, char *recv_buffer, int recv_size){
-	int result;
-
-	result=process_request(server_address,server_port,"udp",send_buffer,recv_buffer,recv_size);
-
-	return result;
-        }
-
-
-/* connects to a host on a specified port, sends a string, and gets a response */
-int process_request(char *server_address, int server_port, char *proto, char *send_buffer, char *recv_buffer, int recv_size){
-	int result;
-	int send_result;
-	int recv_result;
-	int sd;
-	struct timeval tv;
-	fd_set readfds;
-
-	result=STATE_OK;
-
-	result=my_connect(server_address,server_port,&sd,proto);
-	if(result!=STATE_OK)
-		return STATE_CRITICAL;
-
-	send_result=send(sd,send_buffer,strlen(send_buffer),0);
-	if(send_result!=strlen(send_buffer)){
-		printf("send() failed\n");
-		result=STATE_WARNING;
-	        }
-
-	/* wait up to the number of seconds for socket timeout minus one for data from the host */
-	tv.tv_sec=socket_timeout-1;
-	tv.tv_usec=0;
-	FD_ZERO(&readfds);
-	FD_SET(sd,&readfds);
-	select(sd+1,&readfds,NULL,NULL,&tv);
-
-	/* make sure some data has arrived */
-	if(!FD_ISSET(sd,&readfds)){
-		strcpy(recv_buffer,"");
-		printf("No data was recieved from host!\n");
-		result=STATE_WARNING;
-	        }
-
-	else{
-		recv_result=recv(sd,recv_buffer,recv_size-1,0);
-		if(recv_result==-1){
-			strcpy(recv_buffer,"");
-			if(!strcmp(proto,"tcp"))
-				printf("recv() failed\n");
-			result=STATE_WARNING;
-	                }
-		else
-			recv_buffer[recv_result]='\x0';
-
-		/* terminate returned string */
-		recv_buffer[recv_size-1]='\x0';
-	        }
-
-	close(sd);
-
-	return result;
-        }
-
 
 /* opens a connection to a remote host/tcp port */
 int my_tcp_connect(char *host_name,int port,int *sd){
 	int result;
 
 	result=my_connect(host_name,port,sd,"tcp");
-
-	return result;
-        }
-
-
-/* opens a connection to a remote host/udp port */
-int my_udp_connect(char *host_name,int port,int *sd){
-	int result;
-
-	result=my_connect(host_name,port,sd,"udp");
 
 	return result;
         }
@@ -316,4 +219,78 @@ void strip(char *buffer){
 	        }
 
 	return;
+        }
+
+
+/* sends all data - thanks to Beej's Guide to Network Programming */
+int sendall(int s, char *buf, int *len){
+	int total=0;
+	int bytesleft=*len;
+	int n;
+
+	/* send all the data */
+	while(total<*len){
+
+		/* send some data */
+		n=send(s,buf+total,bytesleft,0);
+
+		/* break on error */
+		if(n==-1)
+			break;
+
+		/* apply bytes we sent */
+		total+=n;
+		bytesleft-=n;
+	        }
+
+	/* return number of bytes actually send here */
+	*len=total;
+
+	/* return -1 on failure, 0 on success */
+	return n==-1?-1:0;
+        }
+
+
+/* receives all data - modelled after sendall() */
+int recvall(int s, char *buf, int *len, int timeout){
+	int total=0;
+	int bytesleft=*len;
+	int n;
+	time_t start_time;
+	time_t current_time;
+	
+	/* clear the receive buffer */
+	bzero(buf,*len);
+
+	time(&start_time);
+
+	/* receive all data */
+	while(total<*len){
+
+		/* receive some data */
+		n=recv(s,buf+total,bytesleft,0);
+
+		/* no data has arrived yet (non-blocking socket) */
+		if(n==-1 && errno==EAGAIN){
+			time(&current_time);
+			if(current_time-start_time>timeout)
+				break;
+			sleep(1);
+			continue;
+		        }
+
+		/* receive error or client disconnect */
+		else if(n<=0)
+			break;
+
+		/* apply bytes we received */
+		total+=n;
+		bytesleft-=n;
+	        }
+
+	/* return number of bytes actually received here */
+	*len=total;
+
+	/* return <=0 on failure, bytes received on success */
+	return (n<=0)?n:total;
         }
