@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 10-23-2003
+ * Last Modified: 10-24-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -697,6 +697,7 @@ void wait_for_connections(void){
 
 					/* refuse the connection */
 					refuse(&req);
+					close(new_sd);
 
 					/* should not be reached */
 					syslog(LOG_ERR,"libwrap refuse() returns!");
@@ -1215,6 +1216,7 @@ int drop_privileges(char *user, char *group){
 				gid=(gid_t)(grp->gr_gid);
 			else
 				syslog(LOG_ERR,"Warning: Could not get group entry for '%s'",group);
+			endgrent();
 		        }
 
 		/* else we were passed the GID */
@@ -1240,6 +1242,7 @@ int drop_privileges(char *user, char *group){
 				uid=(uid_t)(pw->pw_uid);
 			else
 				syslog(LOG_ERR,"Warning: Could not get passwd entry for '%s'",user);
+			endpwent();
 		        }
 
 		/* else we were passed the UID */
