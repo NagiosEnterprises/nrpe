@@ -290,6 +290,7 @@ int read_config_file(char *filename){
 	FILE *fp;
 	char config_file[MAX_FILENAME_LENGTH];
 	char input_buffer[MAX_INPUT_BUFFER];
+	char *input_line;
 	char *temp_buffer;
 	char *varname;
 	char *varvalue;
@@ -309,17 +310,23 @@ int read_config_file(char *filename){
 	while(fgets(input_buffer,MAX_INPUT_BUFFER-1,fp)){
 
 		line++;
+        input_line = input_buffer;
+
+        /* skip leading whitespace */
+        while (isspace(*input_line)) {
+                ++input_line;
+        }
 
 		/* skip comments and blank lines */
-		if(input_buffer[0]=='#')
+		if(input_line[0]=='#')
 			continue;
-		if(input_buffer[0]=='\x0')
+		if(input_line[0]=='\x0')
 			continue;
-		if(input_buffer[0]=='\n')
+		if(input_line[0]=='\n')
 			continue;
 
 		/* get the variable name */
-		varname=strtok(input_buffer,"=");
+		varname=strtok(input_line,"=");
 		if(varname==NULL){
 			syslog(LOG_ERR,"No variable name specified in config file '%s' - Line %d\n",filename,line);
 			return ERROR;
@@ -368,7 +375,7 @@ int read_config_file(char *filename){
                         server_address[sizeof(server_address)-1]='\0';
                         }
 
-		else if(strstr(input_buffer,"command[")){
+		else if(strstr(input_line,"command[")){
 			temp_buffer=strtok(varname,"[");
 			temp_buffer=strtok(NULL,"]");
 			if(temp_buffer==NULL){
