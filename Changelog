@@ -8,7 +8,11 @@ NRPE Changelog
 - Added support for passing arguments to command
 - NRPE daemon can no longer be run as root user/group
 - Added getopt support
-- Added native SSL support
+- Added 'include' variable to config file to allow inclusion
+  of external config files
+- Added 'include_dir' variable to allow inclusion of external
+  config files in directories (with recursion)
+- Added native SSL support (still not working)
 
 
 1.8 - 01/16/2003

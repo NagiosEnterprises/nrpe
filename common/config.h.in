@@ -2,7 +2,7 @@
  *
  * NRPE Common Header File
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 02-04-2003
+ * Last Modified: 03-05-2003
  *
  * License:
  *
@@ -155,6 +155,11 @@
 #undef HAVE_GRP_H
 #ifdef HAVE_GRP_H
 #include <grp.h>
+#endif
+
+#undef HAVE_DIRENT_H
+#ifdef HAVE_DIRENT_H
+#include <dirent.h>
 #endif
 
 #undef HAVE_SSL

@@ -2,7 +2,7 @@
 # Sample NRPE Config File 
 # Written by: Ethan Galstad (nagios@nagios.org)
 # 
-# Last Modified: 01-30-2003
+# Last Modified: 03-05-2003
 #
 # NOTES:
 # This is a sample configuration file for the NRPE daemon.  It needs to be
@@ -95,6 +95,22 @@ debug=0
 # allow plugins to finish executing before killing them off.
 
 command_timeout=60
+
+
+
+# INCLUDE CONFIG FILE
+# This directive allows you to include definitions from an external config file.
+
+#include=<somefile.cfg>
+
+
+
+# INCLUDE CONFIG DIRECTORY
+# This directive allows you to include definitions from config files (with a
+# .cfg extension) in one or more directories (with recursion).
+
+#include_dir=<somedirectory>
+#include_dir=<someotherdirectory>
 
 
 

@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 03-03-2003
+ * Last Modified: 03-05-2003
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -32,6 +32,7 @@ int process_arguments(int,char **);
 void wait_for_connections(void);
 void handle_connection(int);
 int read_config_file(char *);
+int read_config_dir(char *);
 int add_command(char *,char *);
 command *find_command(char *);
 void sighandler(int);
@@ -248,6 +249,7 @@ int main(int argc, char **argv){
 /* read in the configuration file */
 int read_config_file(char *filename){
 	FILE *fp;
+	char config_file[MAX_FILENAME_LENGTH];
 	char input_buffer[MAX_INPUT_BUFFER];
 	char *temp_buffer;
 	char *varname;
@@ -292,7 +294,30 @@ int read_config_file(char *filename){
 			return ERROR;
 		        }
 
-		if(!strcmp(varname,"server_port")){
+		/* allow users to specify directories to recurse into for config files */
+		else if(!strcmp(varname,"include_dir")){
+
+			strncpy(config_file,varvalue,sizeof(config_file)-1);
+			config_file[sizeof(config_file)-1]='\x0';
+
+			/* strip trailing / if necessary */
+			if(config_file[strlen(config_file)-1]=='/')
+				config_file[strlen(config_file)-1]='\x0';
+
+			/* process the config directory... */
+			if(read_config_dir(config_file)==ERROR)
+				break;
+		        }
+
+		/* allow users to specify individual config files to include */
+		else if(!strcmp(varname,"include") || !strcmp(varname,"include_file")){
+
+			/* process the config file... */
+			if(read_config_file(varvalue)==ERROR)
+				break;
+		        }
+
+		else if(!strcmp(varname,"server_port")){
 			server_port=atoi(varvalue);
 			if(server_port<1024){
 				syslog(LOG_ERR,"Invalid port number specified in config file '%s' - Line %d\n",filename,line);
@@ -300,7 +325,7 @@ int read_config_file(char *filename){
 			        }
 		        }
 
-               else if(!strcmp(varname,"server_address")){
+		else if(!strcmp(varname,"server_address")){
                         strncpy(server_address,varvalue,sizeof(server_address) - 1);
                         server_address[sizeof(server_address) - 1] = '\0';
                         }
@@ -368,6 +393,73 @@ int read_config_file(char *filename){
 	return OK;
 	}
 
+
+/* process all config files in a specific config directory (with directory recursion) */
+int read_config_dir(char *dirname){
+	char config_file[MAX_FILENAME_LENGTH];
+	DIR *dirp;
+	struct dirent *dirfile;
+	int result=OK;
+	int x;
+
+	/* open the directory for reading */
+	dirp=opendir(dirname);
+        if(dirp==NULL){
+		syslog(LOG_ERR,"Could not open config directory '%s' for reading.\n",dirname);
+		return ERROR;
+	        }
+
+	/* process all files in the directory... */
+	while((dirfile=readdir(dirp))!=NULL){
+
+		/* process this if it's a config file... */
+		x=strlen(dirfile->d_name);
+		if(x>4 && !strcmp(dirfile->d_name+(x-4),".cfg")){
+
+#ifdef _DIRENT_HAVE_D_TYPE
+			/* only process normal files */
+			if(dirfile->d_type!=DT_REG)
+				continue;
+#endif
+
+			/* create the full path to the config file */
+			snprintf(config_file,sizeof(config_file)-1,"%s/%s",dirname,dirfile->d_name);
+			config_file[sizeof(config_file)-1]='\x0';
+
+			/* process the config file */
+			result=read_config_file(config_file);
+
+			/* break out if we encountered an error */
+			if(result==ERROR)
+				break;
+		        }
+
+#ifdef _DIRENT_HAVE_D_TYPE
+		/* recurse into subdirectories... */
+		if(dirfile->d_type==DT_DIR){
+
+			/* ignore current, parent and hidden directory entries */
+			if(dirfile->d_name[0]=='.')
+				continue;
+
+			/* create the full path to the config directory */
+			snprintf(config_file,sizeof(config_file)-1,"%s/%s",dirname,dirfile->d_name);
+			config_file[sizeof(config_file)-1]='\x0';
+
+			/* process the config directory */
+			result=read_config_dir(config_file);
+
+			/* break out if we encountered an error */
+			if(result==ERROR)
+				break;
+		        }
+#endif
+		}
+
+	closedir(dirp);
+
+	return result;
+        }
 
 
 /* adds a new command definition from the config file to the list in memory */
