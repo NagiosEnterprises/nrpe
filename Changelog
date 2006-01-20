@@ -10,6 +10,7 @@ NRPE Changelog
 - Updated config.sub and config.guess
 - Fixed bug with config file lines with only whitespace
 - Fixed bug with missing getopt() command line option for -V
+- Removed sample FreeBSD init script (now maintained by FreeBSD port)
 
 
 2.1 - 01/19/2004
