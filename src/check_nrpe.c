@@ -1,10 +1,10 @@
 /********************************************************************************************
  *
  * CHECK_NRPE.C - NRPE Plugin For Nagios
- * Copyright (c) 1999-2004 Ethan Galstad (nagios@nagios.org)
+ * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 05-20-2004
+ * Last Modified: 01-20-2006
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -70,10 +70,10 @@ int main(int argc, char **argv){
 			printf("Incorrect command line arguments supplied\n");
                 printf("\n");
 		printf("NRPE Plugin for Nagios\n");
-		printf("Copyright (c) 1999-2004 Ethan Galstad (nagios@nagios.org)\n");
+		printf("Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)\n");
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
-		printf("License: GPL with exemptions (-l for more info)\n");
+		printf("License: GPL v2 with exemptions (-l for more info)\n");
 #ifdef HAVE_SSL
 		printf("SSL/TLS Available: Anonymous DH Mode, OpenSSL 0.9.6 or higher required\n");
 #endif
@@ -313,7 +313,7 @@ int process_arguments(int argc, char **argv){
 	int c=1;
 	int i=1;
 
-#ifdef HAVE_GETOPT_H
+#ifdef HAVE_GETOPT_LONG
 	int option_index=0;
 	static struct option long_options[]={
 		{"host", required_argument, 0, 'H'},
@@ -335,7 +335,7 @@ int process_arguments(int argc, char **argv){
 	snprintf(optchars,MAX_INPUT_BUFFER,"H:c:a:t:p:nhl");
 
 	while(1){
-#ifdef HAVE_GETOPT_H
+#ifdef HAVE_GETOPT_LONG
 		c=getopt_long(argc,argv,optchars,long_options,&option_index);
 #else
 		c=getopt(argc,argv,optchars);

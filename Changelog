@@ -3,6 +3,15 @@ NRPE Changelog
 **************
 
 
+3.0 - ??/??/2006
+----------------
+- Spec file fix
+- Patch to add Tru64 and IRIX support (Ton Voon)
+- Updated config.sub and config.guess
+- Fixed bug with config file lines with only whitespace
+- Fixed bug with missing getopt() command line option for -V
+
+
 2.1 - 01/19/2004
 ----------------
 - Replaced host access list with TCP wrapper support

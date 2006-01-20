@@ -1,5 +1,5 @@
 %define name nrpe
-%define version 2.1
+%define version 3.0
 %define release 1
 %define nsusr nagios
 %define nsgrp nagios
@@ -101,7 +101,7 @@ CFLAGS="$RPM_OPT_FLAGS" CXXFLAGS="$RPM_OPT_FLAGS" \
 	--with-init-dir=/etc/init.d \
 	--with-nrpe-port=%{nsport} \
 	--with-nrpe-user=%{nsusr} \
-	--with-nrpe-grp=%{nsgrp} \
+	--with-nrpe-group=%{nsgrp} \
 	--prefix=%{_prefix} \
 	--exec-prefix=%{_prefix}/sbin \
 	--bindir=%{_prefix}/sbin \

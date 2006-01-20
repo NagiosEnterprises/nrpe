@@ -1,4 +1,4 @@
-dnl Process this file with autoconf to produce a configure script.
+dnl Process this -*-m4-*- file with autoconf to produce a configure script.
 
 dnl Disable caching
 define([AC_CACHE_LOAD],)
@@ -9,14 +9,16 @@ AC_CONFIG_HEADER(include/config.h)
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
 PKG_NAME=nrpe
-PKG_VERSION="2.1"
+PKG_VERSION="3.0"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="01-19-2004"
+PKG_REL_DATE="01-20-2006"
 
 dnl Figure out how to invoke "install" and what install options to use.
-
 AC_PROG_INSTALL
 AC_SUBST(INSTALL)
+
+dnl What OS are we running?
+AC_CANONICAL_HOST
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -95,6 +97,46 @@ AC_CHECK_LIB(wrap,main,[
 AC_SUBST(LIBWRAPLIBS)
 AC_CHECK_FUNCS(strdup strstr strtoul initgroups)
 
+dnl socklen_t check - from curl
+AC_CHECK_TYPE([socklen_t], ,[
+       AC_MSG_CHECKING([for socklen_t equivalent])
+       AC_CACHE_VAL([curl_cv_socklen_t_equiv],
+       [
+          # Systems have either "struct sockaddr *" or
+          # "void *" as the second argument to getpeername
+          curl_cv_socklen_t_equiv=
+          for arg2 in "struct sockaddr" void; do
+             for t in int size_t unsigned long "unsigned long"; do
+                AC_TRY_COMPILE([
+                   #ifdef HAVE_SYS_TYPES_H
+                   #include <sys/types.h>
+                   #endif 
+                   #ifdef HAVE_SYS_SOCKET_H
+                   #include <sys/socket.h>
+                   #endif
+                   
+                   int getpeername (int, $arg2 *, $t *);
+                ],[
+                   $t len;
+                   getpeername(0,0,&len);
+                ],[
+                   curl_cv_socklen_t_equiv="$t"
+                   break
+                ])
+             done
+          done
+ 
+          if test "x$curl_cv_socklen_t_equiv" = x; then
+             AC_MSG_ERROR([Cannot find a type to use in place of socklen_t])
+          fi
+       ])
+       AC_MSG_RESULT($curl_cv_socklen_t_equiv)
+       AC_DEFINE_UNQUOTED(socklen_t, $curl_cv_socklen_t_equiv,
+                         [type to use in place of socklen_t if not defined])],
+       [#include <sys/types.h>
+#include <sys/socket.h>])
+
+
 AC_MSG_CHECKING(for type of socket size)
 AC_TRY_COMPILE([#include <stdlib.h>
 #include <sys/types.h>
@@ -105,16 +147,16 @@ AC_TRY_COMPILE([#include <stdlib.h>
 [AC_DEFINE(SOCKET_SIZE_TYPE, int) AC_MSG_RESULT(int)])
 
 dnl Stolen from Python code: loewis@users.sourceforge.net
-AC_CHECK_TYPE(socklen_t,int,
-	AC_DEFINE(socklen_t,int,
-	Define to `int' if <sys/socket.h> does not define.),[
-	#ifdef HAVE_SYS_TYPES_H
-	#include <sys/types.h>
-	#endif
-	#ifdef HAVE_SYS_SOCKET_H
-	#include <sys/socket.h>
-	#endif
-	])
+#AC_CHECK_TYPE(socklen_t,int,
+#	AC_DEFINE(socklen_t,int,
+#	Define to `int' if <sys/socket.h> does not define.),[
+#	#ifdef HAVE_SYS_TYPES_H
+#	#include <sys/types.h>
+#	#endif
+#	#ifdef HAVE_SYS_SOCKET_H
+#	#include <sys/socket.h>
+#	#endif
+#	])
 
 dnl Does user want to check for SSL?
 AC_ARG_ENABLE(ssl,--enable-ssl enables native SSL support,[
@@ -143,7 +185,7 @@ dnl Modified version of Mark Ethan Trostler's macro <trostler@juniper.net>
 if test x$check_for_ssl = xyes; then
 	AC_MSG_CHECKING(for SSL)
 	found_ssl=no
-	for dir in $ssl_inc_dir /usr/local/openssl /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr; do
+	for dir in $ssl_inc_dir /usr/local/openssl /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr /usr/freeware/lib/openssl; do
 		ssldir="$dir"
 		if test -f "$dir/include/openssl/ssl.h"; then
 			found_ssl=yes
@@ -178,7 +220,8 @@ if test x$check_for_ssl = xyes; then
 		else
 			sslbin=$ssldir/bin/openssl
 		fi
-		$sslbin dhparam -out /dev/null -C 512 > include/dh.h
+		# awk to strip off meta data at bottom of dhparam output
+		$sslbin dhparam -C 512 | awk '/^-----/ {exit} {print}' > src/dh.h
 	fi
 
 	dnl RedHat 8.0 and 9.0 include openssl compiled with kerberos, so we must include header file

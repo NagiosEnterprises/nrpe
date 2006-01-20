@@ -1,10 +1,10 @@
 /*******************************************************************************
  *
  * NRPE.C - Nagios Remote Plugin Executor
- * Copyright (c) 1999-2004 Ethan Galstad (nagios@nagios.org)
+ * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 05-20-2004
+ * Last Modified: 01-20-2006
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -102,10 +102,10 @@ int main(int argc, char **argv){
 
 		printf("\n");
 		printf("NRPE - Nagios Remote Plugin Executor\n");
-		printf("Copyright (c) 1999-2004 Ethan Galstad (nagios@nagios.org)\n");
+		printf("Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)\n");
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
-		printf("License: GPL with exemptions (-l for more info)\n");
+		printf("License: GPL v2 with exemptions (-l for more info)\n");
 #ifdef HAVE_SSL
 		printf("SSL/TLS Available: Anonymous DH Mode, OpenSSL 0.9.6 or higher required\n");
 #endif
@@ -295,7 +295,9 @@ int read_config_file(char *filename){
 	char *temp_buffer;
 	char *varname;
 	char *varvalue;
-	int line;
+	int line=0;
+	int len=0;
+	int x=0;
 
 
 	/* open the config file for reading */
@@ -307,16 +309,21 @@ int read_config_file(char *filename){
 		return ERROR;
 	        }
 
-	line=0;
 	while(fgets(input_buffer,MAX_INPUT_BUFFER-1,fp)){
 
 		line++;
-        input_line = input_buffer;
+		input_line=input_buffer;
 
-        /* skip leading whitespace */
-        while (isspace(*input_line)) {
-                ++input_line;
-        }
+		/* skip leading whitespace */
+		while(isspace(*input_line))
+			++input_line;
+
+		/* trim trailing whitespace */
+		len=strlen(input_line);
+		for(x=len-1;x>=0;x--){
+			if(isspace(input_line[x]))
+				input_line[x]='\x0';
+		        }
 
 		/* skip comments and blank lines */
 		if(input_line[0]=='#')
@@ -1495,7 +1502,7 @@ int process_arguments(int argc, char **argv){
 	int c=1;
 	int have_mode=FALSE;
 
-#ifdef HAVE_GETOPT_H
+#ifdef HAVE_GETOPT_LONG
 	int option_index=0;
 	static struct option long_options[]={
 		{"config", required_argument, 0, 'c'},
@@ -1512,10 +1519,10 @@ int process_arguments(int argc, char **argv){
 	if(argc<2)
 		return ERROR;
 
-	snprintf(optchars,MAX_INPUT_BUFFER,"c:nidhl");
+	snprintf(optchars,MAX_INPUT_BUFFER,"c:hVldin");
 
 	while(1){
-#ifdef HAVE_GETOPT_H
+#ifdef HAVE_GETOPT_LONG
 		c=getopt_long(argc,argv,optchars,long_options,&option_index);
 #else
 		c=getopt(argc,argv,optchars);

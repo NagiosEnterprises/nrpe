@@ -1,8 +1,8 @@
 /************************************************************************
  *
  * NRPE Common Header File
- * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 11-12-2003
+ * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
+ * Last Modified: 01-20-2006
  *
  * License:
  *
@@ -31,6 +31,10 @@
 #define DEFAULT_SERVER_PORT	@nrpe_port@	/* default port to use */
 
 #undef ENABLE_COMMAND_ARGUMENTS
+
+#undef socklen_t
+
+#undef HAVE_GETOPT_LONG
 
 #undef HAVE_LIBWRAP
 
