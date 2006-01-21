@@ -3,7 +3,7 @@ NRPE Changelog
 **************
 
 
-3.0 - ??/??/2006
+2.2 - 01/??/2006
 ----------------
 - Spec file fix
 - Patch to add Tru64 and IRIX support (Ton Voon)
@@ -11,6 +11,7 @@ NRPE Changelog
 - Fixed bug with config file lines with only whitespace
 - Fixed bug with missing getopt() command line option for -V
 - Removed sample FreeBSD init script (now maintained by FreeBSD port)
+- Added config file option for writing a PID file
 
 
 2.1 - 01/19/2004

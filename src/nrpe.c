@@ -32,29 +32,17 @@ int allow_severity=LOG_INFO;
 int deny_severity=LOG_WARNING;
 #endif
 
+#ifdef HAVE_SSL
+SSL_METHOD *meth;
+SSL_CTX *ctx;
+int use_ssl=TRUE;
+#else
+int use_ssl=FALSE;
+#endif
+
 #define DEFAULT_COMMAND_TIMEOUT	60			/* default timeout for execution of plugins */
 #define MAXFD                   64
 #define NASTY_METACHARS         "|`&><'\"\\[]{}"
-
-
-int process_arguments(int,char **);
-void wait_for_connections(void);
-void handle_connection(int);
-int read_config_file(char *);
-int read_config_dir(char *);
-int add_command(char *,char *);
-command *find_command(char *);
-void sighandler(int);
-int drop_privileges(char *,char *);
-int check_privileges(void);
-void free_memory(void);
-int is_an_allowed_host(char *);
-int validate_request(packet *);
-int contains_nasty_metachars(char *);
-int process_macros(char *,char *,int);
-int my_system(char *,int,int *,char *,int);            	/* executes a command via popen(), but also protects against timeouts */
-void my_system_sighandler(int);				/* handles timeouts when executing commands via my_system() */
-
 
 char    *command_name=NULL;
 char    *macro_argv[MAX_COMMAND_ARGUMENTS];
@@ -70,6 +58,8 @@ command *command_list=NULL;
 char    *nrpe_user=NULL;
 char    *nrpe_group=NULL;
 
+char    *pid_file=NULL;
+
 int     allow_arguments=FALSE;
 
 int     show_help=FALSE;
@@ -78,13 +68,6 @@ int     show_version=FALSE;
 int     use_inetd=TRUE;
 int     debug=FALSE;
 
-#ifdef HAVE_SSL
-SSL_METHOD *meth;
-SSL_CTX *ctx;
-int use_ssl=TRUE;
-#else
-int use_ssl=FALSE;
-#endif
 
 
 
@@ -243,12 +226,16 @@ int main(int argc, char **argv){
 
 	/* else daemonize and start listening for requests... */
 	else if(fork()==0){
-
+		
 		/* we're a daemon - set up a new process group */
 		setsid();
 
 		/* ignore SIGHUP */
 		signal(SIGHUP, SIG_IGN);
+
+		/* write pid file */
+		if(write_pid_file()==ERROR)
+			return STATE_CRITICAL;
 
 		chdir("/");
 		/*umask(0);*/
@@ -417,6 +404,9 @@ int read_config_file(char *filename){
 				return ERROR;
 			        }
 		        }
+
+		else if(!strcmp(varname,"pid_file"))
+			pid_file=strdup(varvalue);
 
 		else{
 			syslog(LOG_WARNING,"Unknown option specified in config file '%s' - Line %d\n",filename,line);
@@ -1301,6 +1291,55 @@ int drop_privileges(char *user, char *group){
 	return OK;
         }
 
+
+/* write an optional pid file */
+int write_pid_file(void){
+	int fd;
+	int result=0;
+	pid_t pid=0;
+	char pbuf[16];
+
+	/* no pid file was specified */
+	if(pid_file==NULL)
+		return OK;
+
+	/* read existing pid file */
+	if((fd=open(pid_file,O_RDONLY))>=0){
+
+		result=read(fd,pbuf,(sizeof pbuf)-1);
+
+		close(fd);
+
+		if(result>0){
+
+			pbuf[result]='\x0';
+			pid=(pid_t)atoi(pbuf);
+
+			/* if previous process is no longer running running, remove the old pid file */
+			if(pid && (pid==getpid() || kill(pid,0)<0))
+				unlink(pid_file);
+
+			/* previous process is still running */
+			else{
+				syslog(LOG_ERR,"There's already a nrpe server running.");
+				return ERROR;
+			        }
+		        }
+	        } 
+
+	/* write new pid file */
+	if((fd=open(pid_file,O_WRONLY | O_CREAT,0644))>=0){
+		sprintf(pbuf,"%d\n",(int)getpid());
+		write(fd,pbuf,strlen(pbuf));
+		close(fd);
+	        }
+	else{
+		syslog(LOG_ERR,"Cannot write to pidfile '%s'.",pid_file);
+		perror("TEST");
+	        }
+
+	return OK;
+        }
 
 
 

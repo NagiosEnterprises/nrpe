@@ -9,7 +9,7 @@ AC_CONFIG_HEADER(include/config.h)
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
 PKG_NAME=nrpe
-PKG_VERSION="3.0"
+PKG_VERSION="2.2"
 PKG_HOME_URL="http://www.nagios.org/"
 PKG_REL_DATE="01-20-2006"
 
