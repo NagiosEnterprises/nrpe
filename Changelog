@@ -3,7 +3,7 @@ NRPE Changelog
 **************
 
 
-2.2 - 01/??/2006
+2.2 - 01/22/2006
 ----------------
 - Spec file fix
 - Patch to add Tru64 and IRIX support (Ton Voon)
