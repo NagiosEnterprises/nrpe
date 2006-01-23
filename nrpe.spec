@@ -121,7 +121,7 @@ install -d -m 0755 ${RPM_BUILD_ROOT}/usr/sbin
 install -d -m 0755 ${RPM_BUILD_ROOT}/usr/lib/nagios/plugins
 
 # install templated configuration files
-cp nrpe.cfg ${RPM_BUILD_ROOT}/etc/nagios/nrpe.cfg
+cp sample-config/nrpe.cfg ${RPM_BUILD_ROOT}/etc/nagios/nrpe.cfg
 cp init-script ${RPM_BUILD_ROOT}/etc/init.d/nrpe
 cp src/nrpe ${RPM_BUILD_ROOT}/usr/sbin
 cp src/check_nrpe ${RPM_BUILD_ROOT}/usr/lib/nagios/plugins
