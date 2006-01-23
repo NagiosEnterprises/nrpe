@@ -1,5 +1,5 @@
 %define name nrpe
-%define version 2.2
+%define version 2.3
 %define release 1
 %define nsusr nagios
 %define nsgrp nagios
@@ -17,7 +17,7 @@ URL: http://www.nagios.org
 Name: %{name}
 Version: %{version}
 Release: %{release}
-Copyright: GPL
+License: GPL
 Group: Application/System
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-buildroot
@@ -109,7 +109,8 @@ CFLAGS="$RPM_OPT_FLAGS" CXXFLAGS="$RPM_OPT_FLAGS" \
 	--libexecdir=%{_prefix}/lib/nagios/plugins \
 	--datadir=%{_prefix}/share/nagios \
 	--sysconfdir=/etc/nagios \
-	--localstatedir=/var/log/nagios 
+	--localstatedir=/var/log/nagios \
+	--enable-command-args
 
 make all
 
@@ -147,6 +148,11 @@ rm -rf $RPM_BUILD_ROOT
 %doc Changelog LEGAL README
 
 %changelog
+* Mon Jan 23 2006 Andreas Kasenides ank<@>cs.ucy.ac.cy
+- fixed nrpe.cfg relocation to sample-config
+- replaced Copyright label with License
+- added --enable-command-args to enable remote arg passing (if desired can be disabled by commenting out)
+
 * Wed Nov 12 2003 Ingimar Robertsson <iar@skyrr.is>
 - Added adding of nagios group if it does not exist.
 

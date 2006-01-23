@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-21-2006
+ * Last Modified: 01-23-2006
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -310,6 +310,8 @@ int read_config_file(char *filename){
 		for(x=len-1;x>=0;x--){
 			if(isspace(input_line[x]))
 				input_line[x]='\x0';
+			else
+				break;
 		        }
 
 		/* skip comments and blank lines */
@@ -1335,7 +1337,6 @@ int write_pid_file(void){
 	        }
 	else{
 		syslog(LOG_ERR,"Cannot write to pidfile '%s'.",pid_file);
-		perror("TEST");
 	        }
 
 	return OK;

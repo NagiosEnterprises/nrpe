@@ -3,9 +3,11 @@ NRPE Changelog
 **************
 
 
-2.3 - ??/??/2006
----------------
-- Spec file fix
+2.3 - 01/23/2006
+----------------
+- Spec file fixes
+- Removed errant PID file debugging code
+- Fixed problem with trimming command definitions
 
 
 2.2 - 01/22/2006

@@ -1294,9 +1294,9 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 PKG_NAME=nrpe
-PKG_VERSION="2.2"
+PKG_VERSION="2.3"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="01-21-2006"
+PKG_REL_DATE="01-23-2006"
 
 ac_aux_dir=
 for ac_dir in $srcdir $srcdir/.. $srcdir/../..; do
