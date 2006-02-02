@@ -3,6 +3,11 @@ NRPE Changelog
 **************
 
 
+2.4 - ??/??/2006
+----------------
+- Added option to allow week random seed (Gerhard Lausser)
+
+
 2.3 - 01/23/2006
 ----------------
 - Spec file fixes

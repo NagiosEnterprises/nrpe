@@ -2,7 +2,7 @@
 # Sample NRPE Config File 
 # Written by: Ethan Galstad (nagios@nagios.org)
 # 
-# Last Modified: 01-20-2006
+# Last Modified: 02-02-2006
 #
 # NOTES:
 # This is a sample configuration file for the NRPE daemon.  It needs to be
@@ -87,6 +87,19 @@ debug=0
 # allow plugins to finish executing before killing them off.
 
 command_timeout=60
+
+
+
+# WEEK RANDOM SEED OPTION
+# This directive allows you to use SSL even if your system does not have
+# a /dev/random or /dev/urandom (on purpose or because the necessary patches
+# were not applied). The random number generator will be seeded from a file
+# which is either a file pointed to by the environment valiable $RANDFILE
+# or $HOME/.rnd. If neither exists, the pseudo random number generator will
+# be initialized and a warning will be issued.
+# Values: 0=only seed from /dev/[u]random, 1=also seed from weak randomness
+
+#allow_weak_random_seed=1
 
 
 

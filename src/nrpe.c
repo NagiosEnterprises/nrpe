@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-23-2006
+ * Last Modified: 02-02-2006
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -62,6 +62,8 @@ char    *pid_file=NULL;
 
 int     allow_arguments=FALSE;
 
+int     allow_weak_random_seed=FALSE;
+
 int     show_help=FALSE;
 int     show_license=FALSE;
 int     show_version=FALSE;
@@ -77,6 +79,8 @@ int main(int argc, char **argv){
 	char buffer[MAX_INPUT_BUFFER];
 #ifdef HAVE_SSL
 	DH *dh;
+	char seedfile[FILENAME_MAX];
+	int i,c;
 #endif
 
 	result=process_arguments(argc,argv);
@@ -187,6 +191,25 @@ int main(int argc, char **argv){
 		SSLeay_add_ssl_algorithms();
 		meth=SSLv23_server_method();
 		SSL_load_error_strings();
+
+		/* use week random seed if necessary */
+		if(allow_weak_random_seed && (RAND_status()==0)){
+
+			if(RAND_file_name(seedfile,sizeof(seedfile)-1))
+				if(RAND_load_file(seedfile,-1))
+					RAND_write_file(seedfile);
+
+			if(RAND_status()==0){
+				syslog(LOG_ERR,"Warning: SSL/TLS uses a weak random seed which is highly discouraged");
+				for(i=0;i<500 && RAND_status()==0;i++){
+					for(c=0;c<sizeof(seedfile);c+=sizeof(int)){
+						*((int *)(seedfile+c))=rand();
+					        }
+					RAND_seed(seedfile,sizeof(seedfile));
+					}
+				}
+			}
+
 		if((ctx=SSL_CTX_new(meth))==NULL){
 			syslog(LOG_ERR,"Error: could not create SSL context.\n");
 			exit(STATE_CRITICAL);
@@ -406,6 +429,9 @@ int read_config_file(char *filename){
 				return ERROR;
 			        }
 		        }
+
+		else if(!strcmp(varname,"allow_weak_random_seed"))
+			allow_weak_random_seed=(atoi(varvalue)==1)?TRUE:FALSE;
 
 		else if(!strcmp(varname,"pid_file"))
 			pid_file=strdup(varvalue);
