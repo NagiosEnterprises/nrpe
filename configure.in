@@ -263,7 +263,6 @@ AC_OUTPUT(Makefile src/Makefile subst)
 
 perl subst init-script
 perl subst init-script.debian
-perl subst init-script.freebsd
 perl subst init-script.suse
 perl subst sample-config/nrpe.cfg
 perl subst sample-config/nrpe.xinetd

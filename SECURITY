@@ -6,7 +6,7 @@ NRPE SECURITY README
 TCP WRAPPER SUPPORT
 ===================
 
-NRPE 2.1 includes native support for TCP wrappers.  The older
+NRPE 2.x includes native support for TCP wrappers.  The older
 host access list directive was removed from the config file.
 Make sure your system supports TCP wrappers before running NRPE.
 Once you compile NRPE you can check to see if it has wrapper

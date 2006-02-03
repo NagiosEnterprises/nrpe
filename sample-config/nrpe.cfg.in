@@ -2,7 +2,7 @@
 # Sample NRPE Config File 
 # Written by: Ethan Galstad (nagios@nagios.org)
 # 
-# Last Modified: 02-02-2006
+# Last Modified: 02-03-2006
 #
 # NOTES:
 # This is a sample configuration file for the NRPE daemon.  It needs to be
@@ -17,6 +17,7 @@
 # user and is running in standalone mode.
 
 pid_file=/var/run/nrpe.pid
+
 
 
 # PORT NUMBER
@@ -70,6 +71,27 @@ nrpe_group=@nrpe_grp@
 # Values: 0=do not allow arguments, 1=allow command arguments
 
 dont_blame_nrpe=0
+
+
+
+# COMMAND PREFIX
+# This option allows you to prefix all commands with a user-defined string.
+# A space is automatically added between the specified prefix string and the
+# command line from the command definition.
+#
+# *** THIS EXAMPLE MAY POSE A POTENTIAL SECURITY RISK, SO USE WITH CAUTION! ***
+# Usage scenario: 
+# Execute restricted commmands using sudo.  For this to work, you need to add
+# the nagios user to your /etc/sudoers.  An example entry for alllowing 
+# execution of the plugins from might be:
+#
+# nagios          ALL=(ALL) NOPASSWD: /usr/lib/nagios/plugins/
+#
+# This lets the nagios user run all commands in that directory (and only them)
+# without asking for a password.  If you do this, make sure you don't give
+# random users write access to that directory or its contents!
+
+# command_prefix=/usr/bin/sudo 
 
 
 

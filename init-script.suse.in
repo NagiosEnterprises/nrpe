@@ -62,7 +62,6 @@ case "$1" in
 	echo -n "Shutting down nrpe:"
 	killproc -TERM $NRPEBIN
 	rc_status -v ; rc_reset
-
 	;;
     restart)
 	$0 stop

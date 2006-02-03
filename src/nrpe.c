@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 02-02-2006
+ * Last Modified: 02-03-2006
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -52,6 +52,7 @@ int     server_port=DEFAULT_SERVER_PORT;
 char    server_address[16]="0.0.0.0";
 int     socket_timeout=DEFAULT_SOCKET_TIMEOUT;
 int     command_timeout=DEFAULT_COMMAND_TIMEOUT;
+char    *command_prefix=NULL;
 
 command *command_list=NULL;
 
@@ -63,6 +64,9 @@ char    *pid_file=NULL;
 int     allow_arguments=FALSE;
 
 int     allow_weak_random_seed=FALSE;
+
+int     sigrestart=FALSE;
+int     sigshutdown=FALSE;
 
 int     show_help=FALSE;
 int     show_license=FALSE;
@@ -168,21 +172,12 @@ int main(int argc, char **argv){
 		config_file[sizeof(config_file)-1]='\x0';
 	        }
 
-	/* read the config file */
-	result=read_config_file(config_file);	
-
-	/* exit if there are errors... */
-	if(result==ERROR){
-		syslog(LOG_ERR,"Config file '%s' contained errors, bailing out...",config_file);
-		return STATE_CRITICAL;
-		}
+        /* generate the CRC 32 table */
+        generate_crc32_table();
 
 	/* initialize macros */
 	for(x=0;x<MAX_COMMAND_ARGUMENTS;x++)
 		macro_argv[x]=NULL;
-
-        /* generate the CRC 32 table */
-        generate_crc32_table();
 
 #ifdef HAVE_SSL
 	/* initialize SSL */
@@ -236,6 +231,15 @@ int main(int argc, char **argv){
 	/* if we're running under inetd... */
 	if(use_inetd==TRUE){
 
+		/* read the config file */
+		result=read_config_file(config_file);	
+
+		/* exit if there are errors... */
+		if(result==ERROR){
+			syslog(LOG_ERR,"Config file '%s' contained errors, bailing out...",config_file);
+			return STATE_CRITICAL;
+		        }
+
 		/* make sure we're not root */
 		check_privileges();
 
@@ -253,16 +257,6 @@ int main(int argc, char **argv){
 		/* we're a daemon - set up a new process group */
 		setsid();
 
-		/* ignore SIGHUP */
-		signal(SIGHUP, SIG_IGN);
-
-		/* write pid file */
-		if(write_pid_file()==ERROR)
-			return STATE_CRITICAL;
-
-		chdir("/");
-		/*umask(0);*/
-
 		/* close standard file descriptors */
 		close(0);
 		close(1);
@@ -273,14 +267,66 @@ int main(int argc, char **argv){
 		open("/dev/null",O_WRONLY);
 		open("/dev/null",O_WRONLY);
 
+		chdir("/");
+		/*umask(0);*/
+
+		/* handle signals */
+		signal(SIGQUIT,sighandler);
+		signal(SIGTERM,sighandler);
+		signal(SIGHUP,sighandler);
+
+		/* log info to syslog facility */
+		syslog(LOG_NOTICE,"Starting up daemon");
+
+		/* read the config file */
+		result=read_config_file(config_file);	
+
+		/* exit if there are errors... */
+		if(result==ERROR){
+			syslog(LOG_ERR,"Config file '%s' contained errors, bailing out...",config_file);
+			return STATE_CRITICAL;
+		        }
+
+		/* write pid file */
+		if(write_pid_file()==ERROR)
+			return STATE_CRITICAL;
+		
 		/* drop privileges */
 		drop_privileges(nrpe_user,nrpe_group);
 
 		/* make sure we're not root */
 		check_privileges();
 
-		/* wait for connections */
-		wait_for_connections();
+		do{
+
+			/* reset flags */
+			sigrestart=FALSE;
+			sigshutdown=FALSE;
+
+			/* wait for connections */
+			wait_for_connections();
+
+			/* free all memory we allocated */
+			free_memory();
+
+			if(sigrestart==TRUE){
+
+				/* read the config file */
+				result=read_config_file(config_file);	
+
+				/* exit if there are errors... */
+				if(result==ERROR){
+					syslog(LOG_ERR,"Config file '%s' contained errors, bailing out...",config_file);
+					return STATE_CRITICAL;
+				        }
+			        }
+	
+		        }while(sigrestart==TRUE && sigshutdown==FALSE);
+
+		/* remove pid file */
+		remove_pid_file();
+
+		syslog(LOG_NOTICE,"Daemon shutdown\n");
 	        }
 
 #ifdef HAVE_SSL
@@ -389,6 +435,8 @@ int read_config_file(char *filename){
 				return ERROR;
 			        }
 		        }
+		else if(!strcmp(varname,"command_prefix"))
+			command_prefix=strdup(varvalue);
 
 		else if(!strcmp(varname,"server_address")){
                         strncpy(server_address,varvalue,sizeof(server_address) - 1);
@@ -595,6 +643,9 @@ void wait_for_connections(void){
 	        exit(STATE_CRITICAL);
 		}
 
+	/* socket should be non-blocking */
+	fcntl(sock,F_SETFL,O_NONBLOCK);
+
         /* set the reuse address flag so we don't get errors when restarting */
         flag=1;
         if(setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(char *)&flag,sizeof(flag))<0){
@@ -627,22 +678,13 @@ void wait_for_connections(void){
 	        exit(STATE_CRITICAL);
 		}
 
-	/* log info to syslog facility */
-        syslog(LOG_NOTICE,"Starting up daemon");
-
 	/* log warning about command arguments */
 #ifdef ENABLE_COMMAND_ARGUMENTS
 	if(allow_arguments==TRUE)
 		syslog(LOG_NOTICE,"Warning: Daemon is configured to accept command arguments from clients!");
 #endif
 
-	/* Trap signals */
-	signal(SIGQUIT,sighandler);
-	signal(SIGTERM,sighandler);
-
-	if(debug==TRUE){
-		syslog(LOG_DEBUG,"Listening for connections on port %d\n",htons(myname.sin_port));
-	        }
+	syslog(LOG_INFO,"Listening for connections on port %d\n",htons(myname.sin_port));
 
 	/* listen for connection requests - fork() if we get one */
 	while(1){
@@ -656,6 +698,10 @@ void wait_for_connections(void){
 			timeout.tv_sec=0;
 			timeout.tv_usec=500000;
 			retval=select(sock+1,&fdread,NULL,&fdread,&timeout);
+
+			/* bail out if necessary */
+			if(sigrestart==TRUE || sigshutdown==TRUE)
+				break;
 
 			/* error */
 			if(retval<0)
@@ -671,6 +717,10 @@ void wait_for_connections(void){
 				if(errno==ENOBUFS)
 					continue;
 
+				/* bail out if necessary */
+				if(sigrestart==TRUE || sigshutdown==TRUE)
+					break;
+
 				/* retry */
 				if(errno==EWOULDBLOCK || errno==EINTR)
 					continue;
@@ -682,6 +732,10 @@ void wait_for_connections(void){
 			/* connection was good */
 			break;
 		        }
+
+		/* bail out if necessary */
+		if(sigrestart==TRUE || sigshutdown==TRUE)
+			break;
 
 		/* child process should handle the connection */
     		pid=fork();
@@ -702,6 +756,11 @@ void wait_for_connections(void){
 			
 					return;
 				        }
+
+				/* handle signals */
+				signal(SIGQUIT,child_sighandler);
+				signal(SIGTERM,child_sighandler);
+				signal(SIGHUP,child_sighandler);
 
 				/* grandchild does not need to listen for connections, so close the socket */
 				close(sock);  
@@ -757,7 +816,7 @@ void wait_for_connections(void){
 				/* close socket prior to exiting */
 				close(new_sd);
 
-				return;
+				exit(STATE_OK);
     			        }
 
 			/* first child returns immediately, grandchild is inherited by INIT process -> no zombies... */
@@ -774,6 +833,9 @@ void wait_for_connections(void){
 			waitpid(pid,NULL,0);
 		        }
   		}
+
+	/* close the socket we're listening on */
+	close(sock);
 
 	return;
 	}
@@ -941,7 +1003,10 @@ void handle_connection(int sock){
 		else{
 
 			/* process command line */
-			strncpy(raw_command,temp_command->command_line,sizeof(raw_command)-1);
+			if(command_prefix==NULL)
+				strncpy(raw_command,temp_command->command_line,sizeof(raw_command)-1);
+			else
+				snprintf(raw_command,sizeof(raw_command)-1,"%s %s",command_prefix,temp_command->command_line);
 			raw_command[sizeof(raw_command)-1]='\x0';
 			process_macros(raw_command,processed_command,sizeof(processed_command));
 
@@ -1033,21 +1098,6 @@ void handle_connection(int sock){
 
 
 
-/* handle signals */
-void sighandler(int sig){
-
-	/* free all memory we allocated */
-	free_memory();
-	
-	/* terminate... */
-	exit(0);
-
-	/* so the compiler doesn't complain.. */
-	return;
-        }
-
-
-
 /* free all allocated memory */
 void free_memory(void){
 	command *this_command;
@@ -1057,15 +1107,18 @@ void free_memory(void){
 	this_command=command_list;
 	while(this_command!=NULL){
 		next_command=this_command->next;
-		free(this_command->command_name);
-		free(this_command->command_line);
+		if(this_command->command_name)
+			free(this_command->command_name);
+		if(this_command->command_line)
+			free(this_command->command_line);
 		free(this_command);
 		this_command=next_command;
 	        }
 
+	command_list=NULL;
+
 	return;
         }
-
 
 
 
@@ -1296,10 +1349,10 @@ int drop_privileges(char *user, char *group){
 		else
 			uid=(uid_t)atoi(user);
 			
-#ifdef HAVE_INITGROUPS
-
+		/* set effective user ID if other than current EUID */
 		if(uid!=geteuid()){
 
+#ifdef HAVE_INITGROUPS
 			/* initialize supplementary groups */
 			if(initgroups(user,gid)==-1){
 				if(errno==EPERM)
@@ -1309,11 +1362,11 @@ int drop_privileges(char *user, char *group){
 					return ERROR;
 			                }
 	                        }
-		        }
 #endif
 
-		if(setuid(uid)==-1)
-			syslog(LOG_ERR,"Warning: Could not set effective UID=%d",(int)uid);
+			if(setuid(uid)==-1)
+				syslog(LOG_ERR,"Warning: Could not set effective UID=%d",(int)uid);
+		        }
 	        }
 
 	return OK;
@@ -1362,7 +1415,25 @@ int write_pid_file(void){
 		close(fd);
 	        }
 	else{
-		syslog(LOG_ERR,"Cannot write to pidfile '%s'.",pid_file);
+		syslog(LOG_ERR,"Cannot write to pidfile '%s' - check your privileges.",pid_file);
+	        }
+
+	return OK;
+        }
+
+
+
+/* remove pid file */
+int remove_pid_file(void){
+
+	/* no pid file was specified */
+	if(pid_file==NULL)
+		return OK;
+
+	/* remove existing pid file */
+	if(unlink(pid_file)==-1){
+		syslog(LOG_ERR,"Cannot remove pidfile '%s' - check your privileges.",pid_file);
+		return ERROR;
 	        }
 
 	return OK;
@@ -1384,6 +1455,59 @@ int check_privileges(void){
 	        }
 
 	return OK;
+        }
+
+
+
+/* handle signals (parent process) */
+void sighandler(int sig){
+	static char *sigs[]={"EXIT","HUP","INT","QUIT","ILL","TRAP","ABRT","BUS","FPE","KILL","USR1","SEGV","USR2","PIPE","ALRM","TERM","STKFLT","CHLD","CONT","STOP","TSTP","TTIN","TTOU","URG","XCPU","XFSZ","VTALRM","PROF","WINCH","IO","PWR","UNUSED","ZERR","DEBUG",(char *)NULL};
+	int i;
+	char temp_buffer[MAX_INPUT_BUFFER];
+
+	if(sig<0)
+		sig=-sig;
+
+	for(i=0;sigs[i]!=(char *)NULL;i++);
+
+	sig%=i;
+
+	/* we received a SIGHUP, so restart... */
+	if(sig==SIGHUP){
+
+		sigrestart=TRUE;
+
+		syslog(LOG_NOTICE,"Caught SIGHUP - restarting...\n");
+	        }
+
+	/* else begin shutting down... */
+	if(sig==SIGTERM){
+
+		/* if shutdown is already true, we're in a signal trap loop! */
+		if(sigshutdown==TRUE)
+			exit(STATE_CRITICAL);
+
+		sigshutdown=TRUE;
+
+		syslog(LOG_NOTICE,"Caught SIG%s - shutting down...\n",sigs[sig]);
+	        }
+
+	return;
+        }
+
+
+
+/* handle signals (child processes) */
+void child_sighandler(int sig){
+
+	/* free all memory we allocated */
+	free_memory();
+
+	/* terminate */
+	exit(0);
+	
+	/* so the compiler doesn't complain... */
+	return;
         }
 
 
