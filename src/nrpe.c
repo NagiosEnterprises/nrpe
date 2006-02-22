@@ -811,7 +811,7 @@ void wait_for_connections(void){
 
 				/* log info to syslog facility */
 				if(debug==TRUE)
-					syslog(LOG_DEBUG,"Connection from %s closed.",connecting_host);
+					syslog(LOG_DEBUG,"Connection from %s closed.",inet_ntoa(nptr->sin_addr));
 
 				/* close socket prior to exiting */
 				close(new_sd);

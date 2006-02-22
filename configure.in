@@ -221,7 +221,7 @@ if test x$check_for_ssl = xyes; then
 			sslbin=$ssldir/bin/openssl
 		fi
 		# awk to strip off meta data at bottom of dhparam output
-		$sslbin dhparam -C 512 | awk '/^-----/ {exit} {print}' > src/dh.h
+		$sslbin dhparam -C 512 | awk '/^-----/ {exit} {print}' > include/dh.h
 	fi
 
 	dnl RedHat 8.0 and 9.0 include openssl compiled with kerberos, so we must include header file

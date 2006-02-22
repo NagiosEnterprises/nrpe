@@ -6065,7 +6065,7 @@ _ACEOF
 			sslbin=$ssldir/bin/openssl
 		fi
 		# awk to strip off meta data at bottom of dhparam output
-		$sslbin dhparam -C 512 | awk '/^-----/ {exit} {print}' > src/dh.h
+		$sslbin dhparam -C 512 | awk '/^-----/ {exit} {print}' > include/dh.h
 	fi
 
 		echo "$as_me:$LINENO: checking for Kerberos include files" >&5
@@ -7261,7 +7261,6 @@ fi
 
 perl subst init-script
 perl subst init-script.debian
-perl subst init-script.freebsd
 perl subst init-script.suse
 perl subst sample-config/nrpe.cfg
 perl subst sample-config/nrpe.xinetd
