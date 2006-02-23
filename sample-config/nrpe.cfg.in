@@ -2,7 +2,7 @@
 # Sample NRPE Config File 
 # Written by: Ethan Galstad (nagios@nagios.org)
 # 
-# Last Modified: 02-03-2006
+# Last Modified: 02-23-2006
 #
 # NOTES:
 # This is a sample configuration file for the NRPE daemon.  It needs to be
@@ -56,6 +56,21 @@ nrpe_user=@nrpe_user@
 
 nrpe_group=@nrpe_grp@
 
+
+
+# ALLOWED HOST ADDRESSES
+# This is an optional comma-delimited list of IP address or hostnames 
+# that are allowed to talk to the NRPE daemon.
+#
+# Note: The daemon only does rudimentary checking of the client's IP
+# address.  I would highly recommend adding entries in your /etc/hosts.allow
+# file to allow only the specified host to connect to the port
+# you are running this daemon on.
+#
+# NOTE: This option is ignored if NRPE is running under either inetd or xinetd
+
+#allowed_hosts=127.0.0.1,192.168.0.2
+ 
 
 
 # COMMAND ARGUMENT PROCESSING

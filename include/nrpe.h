@@ -2,7 +2,7 @@
  *
  * NRPE.H - NRPE Include File
  * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 02-03-2006
+ * Last Modified: 02-23-2006
  *
  * License:
  *
