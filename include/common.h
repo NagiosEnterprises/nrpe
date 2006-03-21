@@ -24,7 +24,7 @@
 #include "config.h"
 
 #define PROGRAM_VERSION "2.5"
-#define MODIFICATION_DATE "02-28-2006"
+#define MODIFICATION_DATE "03-21-2006"
 
 #define OK		0
 #define ERROR		-1

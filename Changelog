@@ -6,6 +6,7 @@ NRPE Changelog
 2.5 - ??/??/2006
 ----------------
 - (Re)added allowed_hosts option for systems that don't support TCP wrappers
+- Fix for SSL errors under Solaris 8 (Niels Endres)
 
 
 2.4 - 02/22/2006

@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 02-28-2006
+ * Last Modified: 03-21-2006
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -974,7 +974,11 @@ void handle_connection(int sock){
 	if(result==STATE_OK && use_ssl==TRUE){
 		if((ssl=SSL_new(ctx))!=NULL){
 			SSL_set_fd(ssl,sock);
-			if((rc=SSL_accept(ssl))!=1){
+
+			/* keep attempting the request if needed */
+                        while(((rc=SSL_accept(ssl))!=1) && (SSL_get_error(ssl,rc)==SSL_ERROR_WANT_READ));
+
+			if(rc!=1){
 				syslog(LOG_ERR,"Error: Could not complete SSL handshake. %d\n",SSL_get_error(ssl,rc));
 #ifdef DEBUG
 				errfp=fopen("/tmp/err.log","w");
@@ -1000,8 +1004,9 @@ void handle_connection(int sock){
 	if(use_ssl==FALSE)
 		rc=recvall(sock,(char *)&receive_packet,&bytes_to_recv,socket_timeout);
 #ifdef HAVE_SSL
-	else
-		rc=SSL_read(ssl,&receive_packet,bytes_to_recv);
+	else{
+                while(((rc=SSL_read(ssl,&receive_packet,bytes_to_recv))<=0) && (SSL_get_error(ssl,rc)==SSL_ERROR_WANT_READ));
+		}
 #endif
 
 	/* recv() error or client disconnect */
