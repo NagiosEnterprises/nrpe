@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 03-21-2006
+ * Last Modified: 04-06-2006
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -62,6 +62,7 @@ char    *nrpe_group=NULL;
 char    *allowed_hosts=NULL;
 
 char    *pid_file=NULL;
+int     wrote_pid_file=FALSE;
 
 int     allow_arguments=FALSE;
 
@@ -882,7 +883,8 @@ int is_an_allowed_host(char *connecting_host){
 	int result=0;
         struct hostent *myhost;
 	char **pptr=NULL;
-	char resolved_addr[INET6_ADDRSTRLEN]="";
+	char *save_connecting_host=NULL;
+	struct in_addr addr;
 	
 	/* make sure we have something */
 	if(connecting_host==NULL)
@@ -909,6 +911,7 @@ int is_an_allowed_host(char *connecting_host){
 		if((temp_buffer=strdup(allowed_hosts))==NULL)
 			return 0;
 
+		save_connecting_host=strdup(connecting_host);
 		for(temp_ptr=strtok(temp_buffer,",");temp_ptr!=NULL;temp_ptr=strtok(NULL,",")){
 
 			myhost=gethostbyname(temp_ptr);
@@ -916,9 +919,8 @@ int is_an_allowed_host(char *connecting_host){
 
 				/* check all addresses for the host... */
 				for(pptr=myhost->h_addr_list;*pptr!=NULL;pptr++){
-
-					inet_ntop(myhost->h_addrtype,*pptr,resolved_addr,sizeof(resolved_addr));
-					if(!strcmp(resolved_addr,connecting_host)){
+					memcpy(&addr, *pptr, sizeof(addr));
+					if(!strcmp(save_connecting_host, inet_ntoa(addr))){
 						result=1;
 						break;
 					        }
@@ -928,6 +930,9 @@ int is_an_allowed_host(char *connecting_host){
 			if(result==1)
 				break;
 		        }
+
+		strcpy(connecting_host, save_connecting_host);
+		free(save_connecting_host);
 	        }
 
 	free(temp_buffer);
@@ -1502,7 +1507,7 @@ int write_pid_file(void){
 
 			/* previous process is still running */
 			else{
-				syslog(LOG_ERR,"There's already a nrpe server running.");
+				syslog(LOG_ERR,"There's already an NRPE server running (PID %lu).  Bailing out...",(unsigned long)pid);
 				return ERROR;
 			        }
 		        }
@@ -1513,6 +1518,7 @@ int write_pid_file(void){
 		sprintf(pbuf,"%d\n",(int)getpid());
 		write(fd,pbuf,strlen(pbuf));
 		close(fd);
+		wrote_pid_file=TRUE;
 	        }
 	else{
 		syslog(LOG_ERR,"Cannot write to pidfile '%s' - check your privileges.",pid_file);
@@ -1528,6 +1534,10 @@ int remove_pid_file(void){
 
 	/* no pid file was specified */
 	if(pid_file==NULL)
+		return OK;
+
+	/* pid file was not written */
+	if(wrote_pid_file==FALSE)
 		return OK;
 
 	/* remove existing pid file */
