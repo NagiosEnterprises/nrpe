@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 04-06-2006
+ * Last Modified: 04-09-2006
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -1015,9 +1015,11 @@ void handle_connection(int sock){
 		syslog(LOG_ERR,"Could not read request from client, bailing out...");
 
 #ifdef HAVE_SSL
-		SSL_shutdown(ssl);
-		SSL_free(ssl);
-		syslog(LOG_INFO,"INFO: SSL Socket Shutdown.\n");
+		if(ssl){
+			SSL_shutdown(ssl);
+			SSL_free(ssl);
+			syslog(LOG_INFO,"INFO: SSL Socket Shutdown.\n");
+			}
 #endif
 
 		return;
@@ -1030,8 +1032,10 @@ void handle_connection(int sock){
 		syslog(LOG_ERR,"Data packet from client was too short, bailing out...");
 
 #ifdef HAVE_SSL
-		SSL_shutdown(ssl);
-		SSL_free(ssl);
+		if(ssl){
+			SSL_shutdown(ssl);
+			SSL_free(ssl);
+			}
 #endif
 
 		return;
@@ -1060,8 +1064,10 @@ void handle_connection(int sock){
 	                }
 
 #ifdef HAVE_SSL
-		SSL_shutdown(ssl);
-		SSL_free(ssl);
+		if(ssl){
+			SSL_shutdown(ssl);
+			SSL_free(ssl);
+			}
 #endif
 
 		return;
@@ -1184,8 +1190,10 @@ void handle_connection(int sock){
 #endif
 
 #ifdef HAVE_SSL
-	SSL_shutdown(ssl);
-	SSL_free(ssl);
+	if(ssl){
+		SSL_shutdown(ssl);
+		SSL_free(ssl);
+		}
 #endif
 
 	/* log info to syslog facility */
