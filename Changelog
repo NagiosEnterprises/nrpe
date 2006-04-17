@@ -2,6 +2,13 @@
 NRPE Changelog
 **************
 
+
+2.5.2 - ??/??/2006
+------------------
+- Fixed incorrect service name in sample xinetd config file
+- Added note on how to restart inetd for OpenBSD users (Robert Peaslee)
+
+
 2.5.1 - 04/09/2006
 ------------------
 - Patch to fix segfault if --no-ssl option is used (Sean Finney/Peter Palfrader)

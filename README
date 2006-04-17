@@ -159,6 +159,10 @@ of TCP wrappers, you need to do the following things:
 
 	/etc/rc.d/init.d/xinetd restart
 
+   OpenBSD users can use the following command to restart inetd:
+
+	kill -HUP `cat /var/run/inet.pid`
+
 
 
 4) Add entries to your /etc/hosts.allow and /etc/hosts.deny

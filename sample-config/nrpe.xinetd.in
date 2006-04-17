@@ -1,6 +1,6 @@
 # default: on
 # description: NRPE (Nagios Remote Plugin Executor)
-service nsca
+service nrpe
 {
        	flags           = REUSE
         socket_type     = stream        
