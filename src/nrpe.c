@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 04-09-2006
+ * Last Modified: 04-28-2006
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -175,6 +175,15 @@ int main(int argc, char **argv){
 		config_file[sizeof(config_file)-1]='\x0';
 	        }
 
+	/* read the config file */
+	result=read_config_file(config_file);	
+
+	/* exit if there are errors... */
+	if(result==ERROR){
+		syslog(LOG_ERR,"Config file '%s' contained errors, aborting...",config_file);
+		return STATE_CRITICAL;
+		}
+
         /* generate the CRC 32 table */
         generate_crc32_table();
 
@@ -235,15 +244,6 @@ int main(int argc, char **argv){
 	/* if we're running under inetd... */
 	if(use_inetd==TRUE){
 
-		/* read the config file */
-		result=read_config_file(config_file);	
-
-		/* exit if there are errors... */
-		if(result==ERROR){
-			syslog(LOG_ERR,"Config file '%s' contained errors, bailing out...",config_file);
-			return STATE_CRITICAL;
-		        }
-
 		/* make sure we're not root */
 		check_privileges();
 
@@ -281,15 +281,6 @@ int main(int argc, char **argv){
 
 		/* log info to syslog facility */
 		syslog(LOG_NOTICE,"Starting up daemon");
-
-		/* read the config file */
-		result=read_config_file(config_file);	
-
-		/* exit if there are errors... */
-		if(result==ERROR){
-			syslog(LOG_ERR,"Config file '%s' contained errors, bailing out...",config_file);
-			return STATE_CRITICAL;
-		        }
 
 		/* write pid file */
 		if(write_pid_file()==ERROR)
@@ -716,16 +707,20 @@ void wait_for_connections(void){
 			/* some kind of error occurred... */
 			if(new_sd<0){
 
-				/* fix for HP-UX 11.0 - just retry */
-				if(errno==ENOBUFS)
-					continue;
-
 				/* bail out if necessary */
 				if(sigrestart==TRUE || sigshutdown==TRUE)
 					break;
 
 				/* retry */
 				if(errno==EWOULDBLOCK || errno==EINTR)
+					continue;
+
+				/* socket is nonblocking and we don't have a connection yet */
+				if(errno==EAGAIN)
+					continue;
+
+				/* fix for HP-UX 11.0 - just retry */
+				if(errno==ENOBUFS)
 					continue;
 
 				/* else handle the error later */

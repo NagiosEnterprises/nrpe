@@ -7,6 +7,8 @@ NRPE Changelog
 ------------------
 - Fixed incorrect service name in sample xinetd config file
 - Added note on how to restart inetd for OpenBSD users (Robert Peaslee)
+- Fix for nonblocking accept()s on systems that define EAGAIN differently than EWOULDBLOCK (Gerhard Lausser)
+- Fix to (re)allow week random seed (Gerhard Lausser)
 
 
 2.5.1 - 04/09/2006
