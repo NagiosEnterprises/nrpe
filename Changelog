@@ -3,7 +3,7 @@ NRPE Changelog
 **************
 
 
-2.5.2 - ??/??/2006
+2.5.2 - 06/30/2006
 ------------------
 - Fixed incorrect service name in sample xinetd config file
 - Added note on how to restart inetd for OpenBSD users (Robert Peaslee)
