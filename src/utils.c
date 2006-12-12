@@ -3,9 +3,9 @@
  * UTILS.C - NRPE Utility Functions
  *
  * License: GPL
- * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
+ * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
  *
- * Last Modified: 10-14-2003
+ * Last Modified: 12-11-2006
  *
  * Description:
  *

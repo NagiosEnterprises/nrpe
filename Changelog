@@ -2,6 +2,12 @@
 NRPE Changelog
 **************
 
+2.6 - 12/11/2006
+------------------
+- Added -u option to check_nrpe to return UNKNOWN states on socket timeouts (Bjoern Beutel)
+- Added connection_timeout variable to NRPE daemon to catch dead client connections (Ton Voon)
+- Added graceful timeout to check_nrpe to ensure connection to NRPE daemon is properly closed (Mark Plaksin)
+
 
 2.5.2 - 06/30/2006
 ------------------

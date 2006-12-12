@@ -1,8 +1,8 @@
 /************************************************************************
  *
  * COMMON.H - NRPE Common Include File
- * Copyright (c) 1999-2003 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 03-05-2003
+ * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
+ * Last Modified: 12-11-2006
  *
  * License:
  *
@@ -23,8 +23,8 @@
 
 #include "config.h"
 
-#define PROGRAM_VERSION "2.5.1"
-#define MODIFICATION_DATE "04-09-2006"
+#define PROGRAM_VERSION "2.6"
+#define MODIFICATION_DATE "12-11-2006"
 
 #define OK		0
 #define ERROR		-1
@@ -39,6 +39,7 @@
 
 
 #define DEFAULT_SOCKET_TIMEOUT	10	/* timeout after 10 seconds */
+#define DEFAULT_CONNECTION_TIMEOUT 300	/* timeout if daemon is waiting for connection more than this time */
 
 #define MAX_INPUT_BUFFER	2048	/* max size of most buffers we use */
 #define MAX_FILENAME_LENGTH     256

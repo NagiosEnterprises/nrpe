@@ -52,6 +52,7 @@ int contains_nasty_metachars(char *);
 int process_macros(char *,char *,int);
 int my_system(char *,int,int *,char *,int);            	/* executes a command via popen(), but also protects against timeouts */
 void my_system_sighandler(int);				/* handles timeouts when executing commands via my_system() */
+void my_connection_sighandler(int);			/* handles timeouts of connection */
 
 void sighandler(int);
 void child_sighandler(int);

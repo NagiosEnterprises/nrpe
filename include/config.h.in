@@ -2,7 +2,7 @@
  *
  * NRPE Common Header File
  * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 01-20-2006
+ * Last Modified: 12-11-2006
  *
  * License:
  *
@@ -43,6 +43,7 @@
 #undef HAVE_STRSTR
 #undef HAVE_STRTOUL 
 #undef HAVE_INITGROUPS
+#undef HAVE_CLOSESOCKET
 
 #undef SIZEOF_INT
 #undef SIZEOF_SHORT

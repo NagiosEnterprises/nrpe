@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 04-28-2006
+ * Last Modified: 12-11-2006
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -52,6 +52,7 @@ int     server_port=DEFAULT_SERVER_PORT;
 char    server_address[16]="0.0.0.0";
 int     socket_timeout=DEFAULT_SOCKET_TIMEOUT;
 int     command_timeout=DEFAULT_COMMAND_TIMEOUT;
+int     connection_timeout=DEFAULT_CONNECTION_TIMEOUT;
 char    *command_prefix=NULL;
 
 command *command_list=NULL;
@@ -472,6 +473,14 @@ int read_config_file(char *filename){
 			command_timeout=atoi(varvalue);
 			if(command_timeout<1){
 				syslog(LOG_ERR,"Invalid command_timeout specified in config file '%s' - Line %d\n",filename,line);
+				return ERROR;
+			        }
+		        }
+
+ 		else if(!strcmp(varname,"connection_timeout")){
+			connection_timeout=atoi(varvalue);
+			if(connection_timeout<1){
+				syslog(LOG_ERR,"Invalid connection_timeout specified in config file '%s' - Line %d\n",filename,line);
 				return ERROR;
 			        }
 		        }
@@ -963,6 +972,10 @@ void handle_connection(int sock){
 	fcntl(sock,F_SETFL,O_NONBLOCK);
 #endif
 
+	/* set connection handler */
+	signal(SIGALRM,my_connection_sighandler);
+	alarm(connection_timeout);
+
 #ifdef HAVE_SSL
 	/* do SSL handshake */
 	if(result==STATE_OK && use_ssl==TRUE){
@@ -1071,6 +1084,9 @@ void handle_connection(int sock){
 	/* log info to syslog facility */
 	if(debug==TRUE)
 		syslog(LOG_DEBUG,"Host is asking for command '%s' to be run...",receive_packet.buffer);
+
+	/* disable connection alarm - a new alarm will be setup during my_system */
+	alarm(0);
 
 	/* if this is the version check command, just spew it out */
 	if(!strcmp(command_name,NRPE_HELLO_COMMAND)){
@@ -1399,6 +1415,14 @@ void my_system_sighandler(int sig){
 	exit(STATE_CRITICAL);
         }
 
+
+/* handle errors where connection takes too long */
+void my_connection_sighandler(int sig) {
+
+	syslog(LOG_ERR,"Connection has taken too long to establish. Exiting...");
+
+	exit(STATE_CRITICAL);
+	}
 
 
 /* drops privileges */

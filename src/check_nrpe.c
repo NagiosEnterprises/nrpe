@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 04-09-2006
+ * Last Modified: 12-11-2006
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -28,6 +28,7 @@ int server_port=DEFAULT_SERVER_PORT;
 char *server_name=NULL;
 char *command_name=NULL;
 int socket_timeout=DEFAULT_SOCKET_TIMEOUT;
+int timeout_return_code=STATE_CRITICAL;
 int sd;
 
 char query[MAX_INPUT_BUFFER]="";
@@ -48,6 +49,7 @@ int use_ssl=FALSE;
 
 int process_arguments(int,char **);
 void alarm_handler(int);
+int graceful_close(int,int);
 
 
 
@@ -82,10 +84,11 @@ int main(int argc, char **argv){
 
 	if(result!=OK || show_help==TRUE){
 
-		printf("Usage: check_nrpe -H <host> [-n] [-p <port>] [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
+		printf("Usage: check_nrpe -H <host> [-n] [-u] [-p <port>] [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" -n         = Do no use SSL\n");
+		printf(" -u         = Make socket timeouts return an UNKNOWN state instead of CRITICAL\n");
 		printf(" <host>     = The address of the host running the NRPE daemon\n");
 		printf(" [port]     = The port on which the daemon is running (default=%d)\n",DEFAULT_SERVER_PORT);
 		printf(" [timeout]  = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
@@ -238,7 +241,7 @@ int main(int argc, char **argv){
 			SSL_CTX_free(ctx);
 	                }
 #endif
-		close(sd);
+		graceful_close(sd,1000);
 
 		/* recv() error */
 		if(rc<0){
@@ -320,6 +323,7 @@ int process_arguments(int argc, char **argv){
 		{"command", required_argument, 0, 'c'},
 		{"args", required_argument, 0, 'a'},
 		{"no-ssl", no_argument, 0, 'n'},
+		{"unknown-timeout", no_argument, 0, 'u'},
 		{"timeout", required_argument, 0, 't'},
 		{"port", required_argument, 0, 'p'},
 		{"help", no_argument, 0, 'h'},
@@ -332,7 +336,7 @@ int process_arguments(int argc, char **argv){
 	if(argc<2)
 		return ERROR;
 
-	snprintf(optchars,MAX_INPUT_BUFFER,"H:c:a:t:p:nhl");
+	snprintf(optchars,MAX_INPUT_BUFFER,"H:c:a:t:p:nuhl");
 
 	while(1){
 #ifdef HAVE_GETOPT_LONG
@@ -378,6 +382,9 @@ int process_arguments(int argc, char **argv){
 		case 'n':
 			use_ssl=FALSE;
 			break;
+		case 'u':
+			timeout_return_code=STATE_UNKNOWN;
+			break;
 		default:
 			return ERROR;
 			break;
@@ -417,6 +424,38 @@ void alarm_handler(int sig){
 
 	printf("CHECK_NRPE: Socket timeout after %d seconds.\n",socket_timeout);
 
-	exit(STATE_CRITICAL);
+	exit(timeout_return_code);
         }
 
+
+/* submitted by Mark Plaksin 08/31/2006 */
+int graceful_close(int sd, int timeout){
+        fd_set in;
+        struct timeval tv;
+        char buf[1000];
+
+        shutdown(sd,SHUT_WR);  // Send FIN packet
+        for(;;){
+
+                FD_ZERO(&in);
+                FD_SET(sd,&in);
+                tv.tv_sec=timeout/1000;
+                tv.tv_usec=(timeout % 1000)*1000;
+
+		/* timeout or error */
+                if(1!=select(sd+1,&in,NULL,NULL,&tv))
+			break;   
+
+		/* no more data (FIN or RST) */
+                if(0>=recv(sd,buf,sizeof(buf),0))
+			break;
+		}
+
+#ifdef HAVE_CLOSESOCKET
+        closesocket(sd);
+#else
+	close(sd);
+#endif
+
+	return OK;
+	}
