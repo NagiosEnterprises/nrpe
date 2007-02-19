@@ -2,8 +2,14 @@
 NRPE Changelog
 **************
 
+2.7 - 02/18/2007
+----------------
+- Patches for detection SSL header and library locations (Andrew Boyce-Lewis)
+- NRPE daemon will now partially ignore non-fatal configuration file errors and attempt to startup (Andrew Boyce-Lewis)
+
+
 2.6 - 12/11/2006
-------------------
+----------------
 - Added -u option to check_nrpe to return UNKNOWN states on socket timeouts (Bjoern Beutel)
 - Added connection_timeout variable to NRPE daemon to catch dead client connections (Ton Voon)
 - Added graceful timeout to check_nrpe to ensure connection to NRPE daemon is properly closed (Mark Plaksin)

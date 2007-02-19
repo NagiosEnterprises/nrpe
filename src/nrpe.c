@@ -1,10 +1,10 @@
 /*******************************************************************************
  *
  * NRPE.C - Nagios Remote Plugin Executor
- * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
+ * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 12-11-2006
+ * Last Modified: 02-19-2007
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -97,7 +97,7 @@ int main(int argc, char **argv){
 
 		printf("\n");
 		printf("NRPE - Nagios Remote Plugin Executor\n");
-		printf("Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)\n");
+		printf("Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)\n");
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL v2 with exemptions (-l for more info)\n");
@@ -413,15 +413,15 @@ int read_config_file(char *filename){
 
 			/* process the config directory... */
 			if(read_config_dir(config_file)==ERROR)
-				break;
-		        }
+				syslog(LOG_ERR,"Continuing with errors...");
+			}
 
 		/* allow users to specify individual config files to include */
 		else if(!strcmp(varname,"include") || !strcmp(varname,"include_file")){
 
 			/* process the config file... */
 			if(read_config_file(varvalue)==ERROR)
-				break;
+				syslog(LOG_ERR,"Continuing with errors...");
 		        }
 
 		else if(!strcmp(varname,"server_port")){

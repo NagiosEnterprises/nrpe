@@ -851,7 +851,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
---with-ssl-lib=DIR sets location of the SSL library
+--with-ssl=DIR sets location of the SSL installation
 --with-ssl-inc=DIR sets location of the SSL include files
 --with-kerberos-inc=DIR sets location of the Kerberos include files
 --with-nrpe-user=<user> sets user name to run NRPE
@@ -1294,9 +1294,9 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 PKG_NAME=nrpe
-PKG_VERSION="2.6"
+PKG_VERSION="2.7"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="12-11-2006"
+PKG_REL_DATE="02-19-2007"
 
 ac_aux_dir=
 for ac_dir in $srcdir $srcdir/.. $srcdir/../..; do
@@ -5995,14 +5995,13 @@ else
   check_for_ssl=yes
 fi;
 
-ssl_lib_dir=
 ssl_inc_dir=
 
-# Check whether --with-ssl-lib or --without-ssl-lib was given.
-if test "${with_ssl_lib+set}" = set; then
-  withval="$with_ssl_lib"
+# Check whether --with-ssl or --without-ssl was given.
+if test "${with_ssl+set}" = set; then
+  withval="$with_ssl"
 
-	ssl_lib_dir=$withval
+	ssl_dir=$withval
 
 fi;
 
@@ -6026,16 +6025,28 @@ if test x$check_for_ssl = xyes; then
 	echo "$as_me:$LINENO: checking for SSL" >&5
 echo $ECHO_N "checking for SSL... $ECHO_C" >&6
 	found_ssl=no
-	for dir in $ssl_inc_dir /usr/local/openssl /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr /usr/freeware/lib/openssl; do
+	for dir in $ssl_inc_dir $ssl_dir /usr/local/openssl /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr /usr/freeware/lib/openssl; do
 		ssldir="$dir"
 		if test -f "$dir/include/openssl/ssl.h"; then
 			found_ssl=yes
-			CFLAGS="$CFLAGS -I$ssldir/include/openssl -I$ssldir/include"
+			CFLAGS="$CFLAGS -I$dir/include/openssl -I$ssldir/include"
 		        break
 		fi
 		if test -f "$dir/include/ssl.h"; then
 			found_ssl=yes
-			CFLAGS="$CFLAGS -I$ssldir/include"
+			CFLAGS="$CFLAGS -I$dir/include"
+		        break
+		fi
+		if test -f "$dir/ssl.h"; then
+			found_ssl=yes
+			CFLAGS="$CFLAGS -I$dir/include"
+			ssldir="$dir/.."
+		        break
+		fi
+		if test -f "$dir/openssl/ssl.h"; then
+			found_ssl=yes
+			CFLAGS="$CFLAGS -I$dir/include"
+			ssldir="$dir/.."
 		        break
 		fi
 	done

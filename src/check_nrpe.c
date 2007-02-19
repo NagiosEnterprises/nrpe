@@ -1,10 +1,10 @@
 /********************************************************************************************
  *
  * CHECK_NRPE.C - NRPE Plugin For Nagios
- * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
+ * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 12-11-2006
+ * Last Modified: 02-19-2007
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -72,7 +72,7 @@ int main(int argc, char **argv){
 			printf("Incorrect command line arguments supplied\n");
                 printf("\n");
 		printf("NRPE Plugin for Nagios\n");
-		printf("Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)\n");
+		printf("Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)\n");
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL v2 with exemptions (-l for more info)\n");

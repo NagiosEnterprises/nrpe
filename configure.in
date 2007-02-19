@@ -9,9 +9,9 @@ AC_CONFIG_HEADER(include/config.h)
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
 PKG_NAME=nrpe
-PKG_VERSION="2.6"
+PKG_VERSION="2.7"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="12-11-2006"
+PKG_REL_DATE="02-19-2007"
 
 dnl Figure out how to invoke "install" and what install options to use.
 AC_PROG_INSTALL
@@ -168,10 +168,9 @@ AC_ARG_ENABLE(ssl,--enable-ssl enables native SSL support,[
 	],check_for_ssl=yes)
 
 dnl Optional SSL library and include paths
-ssl_lib_dir=
 ssl_inc_dir=
-AC_ARG_WITH(ssl-lib,--with-ssl-lib=DIR sets location of the SSL library,[
-	ssl_lib_dir=$withval
+AC_ARG_WITH(ssl,--with-ssl=DIR sets location of the SSL installation,[
+	ssl_dir=$withval
 	])
 AC_ARG_WITH(ssl-inc,--with-ssl-inc=DIR sets location of the SSL include files,[
 	ssl_inc_dir=$withval
@@ -185,16 +184,28 @@ dnl Modified version of Mark Ethan Trostler's macro <trostler@juniper.net>
 if test x$check_for_ssl = xyes; then
 	AC_MSG_CHECKING(for SSL)
 	found_ssl=no
-	for dir in $ssl_inc_dir /usr/local/openssl /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr /usr/freeware/lib/openssl; do
+	for dir in $ssl_inc_dir $ssl_dir /usr/local/openssl /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr /usr/freeware/lib/openssl; do
 		ssldir="$dir"
 		if test -f "$dir/include/openssl/ssl.h"; then
 			found_ssl=yes
-			CFLAGS="$CFLAGS -I$ssldir/include/openssl -I$ssldir/include"
+			CFLAGS="$CFLAGS -I$dir/include/openssl -I$ssldir/include"
 		        break
 		fi
 		if test -f "$dir/include/ssl.h"; then
 			found_ssl=yes
-			CFLAGS="$CFLAGS -I$ssldir/include"
+			CFLAGS="$CFLAGS -I$dir/include"
+		        break
+		fi
+		if test -f "$dir/ssl.h"; then
+			found_ssl=yes
+			CFLAGS="$CFLAGS -I$dir/include"
+			ssldir="$dir/.."
+		        break
+		fi
+		if test -f "$dir/openssl/ssl.h"; then
+			found_ssl=yes
+			CFLAGS="$CFLAGS -I$dir/include"
+			ssldir="$dir/.."
 		        break
 		fi
 	done
