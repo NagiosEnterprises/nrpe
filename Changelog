@@ -3,7 +3,7 @@ NRPE Changelog
 **************
 
 
-2.7.1 - 03/??/2007
+2.7.1 - 03/08/2007
 ------------------
 - Changed C++ style comment to C style to fix compilation errors on AIX (Ryan McGarry)
 
