@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 02-19-2007
+ * Last Modified: 03-07-2007
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -434,7 +434,8 @@ int graceful_close(int sd, int timeout){
         struct timeval tv;
         char buf[1000];
 
-        shutdown(sd,SHUT_WR);  // Send FIN packet
+	/* send FIN packet */
+        shutdown(sd,SHUT_WR);  
         for(;;){
 
                 FD_ZERO(&in);

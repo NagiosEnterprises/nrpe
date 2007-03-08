@@ -2,6 +2,12 @@
 NRPE Changelog
 **************
 
+
+2.7.1 - 03/??/2007
+------------------
+- Changed C++ style comment to C style to fix compilation errors on AIX (Ryan McGarry)
+
+
 2.7 - 02/18/2007
 ----------------
 - Patches for detection SSL header and library locations (Andrew Boyce-Lewis)
