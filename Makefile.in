@@ -72,10 +72,11 @@ install:
 	cd $(SRC_BASE) && $(MAKE) $@
 
 install-xinetd:
-	$(INSTALL) -m 644 sample-config/nrpe-xinetd /etc/xinetd.d/nrpe 
+	$(INSTALL) -m 644 sample-config/nrpe.xinetd /etc/xinetd.d/nrpe 
 
 install-daemon-config:
-	$(INSTALL) -m 644 sample-config/nrpe.xinetd /etc/xinetd.d/nrpe 
+	$(INSTALL) -m 775 $(INSTALL_OPTS) -d $(DESTDIR)$(CFGDIR)
+	$(INSTALL) -m 644 sample-config/nrpe.cfg $(DESTDIR)$(CFGDIR)
 
 clean:
 	cd $(SRC_BASE); $(MAKE) $@ ; cd ..

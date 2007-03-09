@@ -3,7 +3,8 @@
 service nrpe
 {
        	flags           = REUSE
-        socket_type     = stream        
+        socket_type     = stream    
+	port		= @nrpe_port@    
        	wait            = no
         user            = @nrpe_user@
 	group		= @nrpe_group@
