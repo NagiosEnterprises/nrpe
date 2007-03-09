@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 03-08-2007
+ * Last Modified: 03-09-2007
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -42,7 +42,7 @@ int use_ssl=FALSE;
 
 #define DEFAULT_COMMAND_TIMEOUT	60			/* default timeout for execution of plugins */
 #define MAXFD                   64
-#define NASTY_METACHARS         "|`&><'\"\\[]{}"
+#define NASTY_METACHARS         "|`&><'\"\\[]{};"
 
 char    *command_name=NULL;
 char    *macro_argv[MAX_COMMAND_ARGUMENTS];

@@ -21,7 +21,7 @@ while ($f = shift @ARGV) {
 
 	while (<IN>) {
 		s|\@nrpe_user\@|@nrpe_user@|g;
-		s|\@nrpe_grp\@|@nrpe_grp@|g;
+		s|\@nrpe_group\@|@nrpe_group@|g;
 		s|\@nrpe_port\@|@nrpe_port@|g;
 		s|\@libexecdir\@|@libexecdir@|g; # put all --with-vars before directories
 		s|\@localstatedir\@|@localstatedir@|g;

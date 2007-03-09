@@ -1,13 +1,31 @@
 ###############################
 # Makefile for NRPE
 #
-# Last Modified: 10-14-2003
+# Last Modified: 03-09-2007
 ###############################
 
 
 # Source code directories
 SRC_BASE=./src/
 SRC_INCLUDE=./include/
+
+CC=@CC@
+CFLAGS=@CFLAGS@ @DEFS@
+LDFLAGS=@LDFLAGS@ @LIBS@
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+CFGDIR=@sysconfdir@
+BINDIR=@bindir@
+SBINDIR=@sbindir@
+LIBEXECDIR=@libexecdir@
+INSTALL=@INSTALL@
+NAGIOS_INSTALL_OPTS=@NAGIOS_INSTALL_OPTS@
+NRPE_INSTALL_OPTS=@NRPE_INSTALL_OPTS@
+
+INIT_DIR=@init_dir@
+INIT_OPTS=-o root -g root
+
 
 all:
 	cd $(SRC_BASE); $(MAKE) ; cd ..
@@ -43,6 +61,21 @@ nrpe:
 check_nrpe:
 	cd $(SRC_BASE); $(MAKE) ; cd ..
 
+
+install-plugin:
+	cd $(SRC_BASE) && $(MAKE) $@
+
+install-daemon:
+	cd $(SRC_BASE) && $(MAKE) $@
+
+install:
+	cd $(SRC_BASE) && $(MAKE) $@
+
+install-xinetd:
+	$(INSTALL) -m 644 sample-config/nrpe-xinetd /etc/xinetd.d/nrpe 
+
+install-daemon-config:
+	$(INSTALL) -m 644 sample-config/nrpe.xinetd /etc/xinetd.d/nrpe 
 
 clean:
 	cd $(SRC_BASE); $(MAKE) $@ ; cd ..

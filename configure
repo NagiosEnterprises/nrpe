@@ -310,7 +310,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA INSTALL build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT SET_MAKE CPP EGREP OTHERLIBS SOCKETLIBS LIBWRAPLIBS HAVE_SSL nrpe_user nrpe_grp nrpe_port PERL LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA INSTALL build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT SET_MAKE CPP EGREP OTHERLIBS SOCKETLIBS LIBWRAPLIBS HAVE_SSL nrpe_user nrpe_group NRPE_INSTALL_OPTS nrpe_port nagios_user nagios_group NAGIOS_INSTALL_OPTS PERL LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -857,6 +857,8 @@ Optional Packages:
 --with-nrpe-user=<user> sets user name to run NRPE
 --with-nrpe-group=<group> sets group name to run NRPE
 --with-nrpe-port=<port> sets port number for NRPE to listen on
+--with-nagios-user=<user> sets user name forfile permissions
+--with-nagios-group=<grp> sets group name file permissions
 
 Some influential environment variables:
   CC          C compiler command
@@ -6119,7 +6121,7 @@ if test "${with_nrpe_group+set}" = set; then
   withval="$with_nrpe_group"
   nrpe_grp=$withval
 else
-  nrpe_grp=nagios
+  nrpe_group=nagios
 fi;
 
 # Check whether --with-nrpe_port or --without-nrpe_port was given.
@@ -6131,11 +6133,36 @@ else
 fi;
 
 
+NRPE_INSTALL_OPTS="-o $nrpe_user -g $nrpe_group"
+
 
 cat >>confdefs.h <<_ACEOF
 #define DEFAULT_SERVER_PORT $nrpe_port
 _ACEOF
 
+
+
+# Check whether --with-nagios_user or --without-nagios_user was given.
+if test "${with_nagios_user+set}" = set; then
+  withval="$with_nagios_user"
+  nagios_user=$withval
+else
+  nagios_user=nagios
+fi;
+
+# Check whether --with-nagios_group or --without-nagios_group was given.
+if test "${with_nagios_group+set}" = set; then
+  withval="$with_nagios_group"
+  nagios_grp=$withval
+else
+  nagios_group=nagios
+fi;
+
+
+NAGIOS_INSTALL_OPTS="-o $nagios_user -g $nagios_group"
+
+
+A
 
 # Check whether --enable-command-args or --disable-command-args was given.
 if test "${enable_command_args+set}" = set; then
@@ -6774,8 +6801,12 @@ s,@SOCKETLIBS@,$SOCKETLIBS,;t t
 s,@LIBWRAPLIBS@,$LIBWRAPLIBS,;t t
 s,@HAVE_SSL@,$HAVE_SSL,;t t
 s,@nrpe_user@,$nrpe_user,;t t
-s,@nrpe_grp@,$nrpe_grp,;t t
+s,@nrpe_group@,$nrpe_group,;t t
+s,@NRPE_INSTALL_OPTS@,$NRPE_INSTALL_OPTS,;t t
 s,@nrpe_port@,$nrpe_port,;t t
+s,@nagios_user@,$nagios_user,;t t
+s,@nagios_group@,$nagios_group,;t t
+s,@NAGIOS_INSTALL_OPTS@,$NAGIOS_INSTALL_OPTS,;t t
 s,@PERL@,$PERL,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
@@ -7291,8 +7322,8 @@ echo "$as_me:$LINENO: result:  NRPE port:  $nrpe_port" >&5
 echo "${ECHO_T} NRPE port:  $nrpe_port" >&6
 echo "$as_me:$LINENO: result:  NRPE user:  $nrpe_user" >&5
 echo "${ECHO_T} NRPE user:  $nrpe_user" >&6
-echo "$as_me:$LINENO: result:  NRPE group: $nrpe_grp" >&5
-echo "${ECHO_T} NRPE group: $nrpe_grp" >&6
+echo "$as_me:$LINENO: result:  NRPE group: $nrpe_group" >&5
+echo "${ECHO_T} NRPE group: $nrpe_group" >&6
 
 
 echo ""

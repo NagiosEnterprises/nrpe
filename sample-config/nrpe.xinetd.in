@@ -6,7 +6,7 @@ service nrpe
         socket_type     = stream        
        	wait            = no
         user            = @nrpe_user@
-	group		= @nrpe_grp@
+	group		= @nrpe_group@
        	server          = @bindir@/nrpe
         server_args     = -c @sysconfdir@/nrpe.cfg --inetd
        	log_on_failure  += USERID

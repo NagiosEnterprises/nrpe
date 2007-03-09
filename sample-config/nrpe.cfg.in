@@ -2,7 +2,7 @@
 # Sample NRPE Config File 
 # Written by: Ethan Galstad (nagios@nagios.org)
 # 
-# Last Modified: 12-11-2006
+# Last Modified: 03-09-2007
 #
 # NOTES:
 # This is a sample configuration file for the NRPE daemon.  It needs to be
@@ -34,7 +34,7 @@ server_port=@nrpe_port@
 # and you do not want nrpe to bind on all interfaces.
 # NOTE: This option is ignored if NRPE is running under either inetd or xinetd
 
-#server_address=192.168.1.1
+#server_address=127.0.0.1
 
 
 
@@ -54,7 +54,7 @@ nrpe_user=@nrpe_user@
 # 
 # NOTE: This option is ignored if NRPE is running under either inetd or xinetd
 
-nrpe_group=@nrpe_grp@
+nrpe_group=@nrpe_group@
 
 
 
@@ -69,7 +69,7 @@ nrpe_group=@nrpe_grp@
 #
 # NOTE: This option is ignored if NRPE is running under either inetd or xinetd
 
-#allowed_hosts=127.0.0.1,192.168.0.2
+allowed_hosts=127.0.0.1
  
 
 
@@ -186,19 +186,21 @@ connection_timeout=300
 # to match the argument format the plugins expect.  Remember, these are
 # examples only!
 
+
 # The following examples use hardcoded command arguments...
 
 command[check_users]=@libexecdir@/check_users -w 5 -c 10
 command[check_load]=@libexecdir@/check_load -w 15,10,5 -c 30,25,20
-command[check_disk1]=@libexecdir@/check_disk -w 20 -c 10 -p /dev/hda1
-command[check_disk2]=@libexecdir@/check_disk -w 20 -c 10 -p /dev/hdb1
+command[check_hda1]=@libexecdir@/check_disk -w 20 -c 10 -p /dev/hda1
 command[check_zombie_procs]=@libexecdir@/check_procs -w 5 -c 10 -s Z
 command[check_total_procs]=@libexecdir@/check_procs -w 150 -c 200 
+
 
 # The following examples allow user-supplied arguments and can
 # only be used if the NRPE daemon was compiled with support for 
 # command arguments *AND* the dont_blame_nrpe directive in this
-# config file is set to '1'...
+# config file is set to '1'.  This poses a potential security risk, so
+# make sure you read the SECURITY file before doing this.
 
 #command[check_users]=@libexecdir@/check_users -w $ARG1$ -c $ARG2$
 #command[check_load]=@libexecdir@/check_load -w $ARG1$ -c $ARG2$

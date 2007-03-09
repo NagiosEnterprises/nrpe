@@ -44,14 +44,13 @@ ILLEGAL METACHARS
 -----------------
 
 To help prevent some nasty things from being done by evil 
-clients, the following twelve metacharacters are not allowed
+clients, the following metacharacters are not allowed
 in client command arguments:
 
-   | ` & > < ' " \ [ ] { }
+   | ` & > < ' " \ [ ] { } ; !
 
 Any client request which contains the abovementioned metachars
-is discarded.  Also, the bang character (!) is not allowed, as
-it is used internally as a delimiter between command arguments.
+is discarded.
 
 
 USER/GROUP RESTRICTIONS
