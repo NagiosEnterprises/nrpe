@@ -3,7 +3,7 @@ NRPE Changelog
 **************
 
 
-2.8b1 - 03/??/2007
+2.8b1 - 03/14/2007
 -----------------
 - Changes to sample config files
 - Added ';' as an additional prohibited metachar for command arguments

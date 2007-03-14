@@ -1,6 +1,15 @@
-***********
+-----------
 NRPE README
-***********
+-----------
+
+
+** UPDATED DOCUMENTATION!
+
+For installation instructions and information on the design overview
+of the NRPE addon, please read the PDF documentation that is found in 
+this directory: NRPE.pdf
+
+
 
 
 Purpose
