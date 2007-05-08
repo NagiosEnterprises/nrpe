@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 03-14-2007
+ * Last Modified: 05-08-2007
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -1322,13 +1322,12 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 		        }
 		else{
 
-			/* read in the first line of output from the command */
-			strcpy(buffer,"");
-			fgets(buffer,sizeof(buffer)-1,fp);
+			/* read all lines of output - supports Nagios 3.x multiline output */
+			while((bytes_read=fread(buffer,1,sizeof(buffer)-1,fp))>0){
 
-			/* ADDED 01/19/2004 */
-			/* ignore any additional lines of output */
-			while(fgets(temp_buffer,sizeof(temp_buffer)-1,fp));
+				/* write the output back to the parent process */
+				write(fd[1],buffer,bytes_read);
+				}
 
 			/* close the command and get termination status */
 			status=pclose(fp);
@@ -1338,9 +1337,6 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 				result=STATE_CRITICAL;
 			else
 				result=WEXITSTATUS(status);
-
-			/* write the output back to the parent process */
-			write(fd[1],buffer,strlen(buffer)+1);
 		        }
 
 		/* close pipe for writing */
@@ -1349,6 +1345,7 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 		/* reset the alarm */
 		alarm(0);
 
+		/* return plugin exit code to parent process */
 		exit(result);
 	        }
 

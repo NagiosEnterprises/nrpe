@@ -3,6 +3,11 @@ NRPE Changelog
 **************
 
 
+2.8 - 05/08/2007
+---------------
+- Added support for multiline plugin output (limited to 1KB at the moment) (Matthias Flacke)
+
+
 2.8b1 - 03/14/2007
 -----------------
 - Changes to sample config files
