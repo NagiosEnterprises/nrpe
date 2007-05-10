@@ -857,7 +857,7 @@ Optional Packages:
 --with-nrpe-user=<user> sets user name to run NRPE
 --with-nrpe-group=<group> sets group name to run NRPE
 --with-nrpe-port=<port> sets port number for NRPE to listen on
---with-nagios-user=<user> sets user name forfile permissions
+--with-nagios-user=<user> sets user name for file permissions
 --with-nagios-group=<grp> sets group name file permissions
 
 Some influential environment variables:
@@ -1296,9 +1296,9 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 PKG_NAME=nrpe
-PKG_VERSION="2.8"
+PKG_VERSION="2.8.1"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="05-08-2007"
+PKG_REL_DATE="05-10-2007"
 
 ac_aux_dir=
 for ac_dir in $srcdir $srcdir/.. $srcdir/../..; do
@@ -6119,7 +6119,7 @@ fi;
 # Check whether --with-nrpe_group or --without-nrpe_group was given.
 if test "${with_nrpe_group+set}" = set; then
   withval="$with_nrpe_group"
-  nrpe_grp=$withval
+  nrpe_group=$withval
 else
   nrpe_group=nagios
 fi;
@@ -6133,6 +6133,7 @@ else
 fi;
 
 
+echo "GROUP: $nrpe_group"
 NRPE_INSTALL_OPTS="-o $nrpe_user -g $nrpe_group"
 
 
@@ -6162,7 +6163,6 @@ fi;
 NAGIOS_INSTALL_OPTS="-o $nagios_user -g $nagios_group"
 
 
-A
 
 # Check whether --enable-command-args or --disable-command-args was given.
 if test "${enable_command_args+set}" = set; then
@@ -7318,12 +7318,16 @@ echo ""
 echo " General Options:"
 echo " -------------------------"
 
-echo "$as_me:$LINENO: result:  NRPE port:  $nrpe_port" >&5
-echo "${ECHO_T} NRPE port:  $nrpe_port" >&6
-echo "$as_me:$LINENO: result:  NRPE user:  $nrpe_user" >&5
-echo "${ECHO_T} NRPE user:  $nrpe_user" >&6
-echo "$as_me:$LINENO: result:  NRPE group: $nrpe_group" >&5
-echo "${ECHO_T} NRPE group: $nrpe_group" >&6
+echo "$as_me:$LINENO: result:  NRPE port:    $nrpe_port" >&5
+echo "${ECHO_T} NRPE port:    $nrpe_port" >&6
+echo "$as_me:$LINENO: result:  NRPE user:    $nrpe_user" >&5
+echo "${ECHO_T} NRPE user:    $nrpe_user" >&6
+echo "$as_me:$LINENO: result:  NRPE group:   $nrpe_group" >&5
+echo "${ECHO_T} NRPE group:   $nrpe_group" >&6
+echo "$as_me:$LINENO: result:  Nagios user:  $nagios_user" >&5
+echo "${ECHO_T} Nagios user:  $nagios_user" >&6
+echo "$as_me:$LINENO: result:  Nagios group: $nagios_group" >&5
+echo "${ECHO_T} Nagios group: $nagios_group" >&6
 
 
 echo ""

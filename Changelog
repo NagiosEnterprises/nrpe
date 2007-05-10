@@ -3,9 +3,17 @@ NRPE Changelog
 **************
 
 
+
+2.8.1 - 05/10/2007
+-----------------
+- Fixed configure script error with user-specified NRPE group
+
+
+
 2.8 - 05/08/2007
 ---------------
 - Added support for multiline plugin output (limited to 1KB at the moment) (Matthias Flacke)
+
 
 
 2.8b1 - 03/14/2007
@@ -15,9 +23,11 @@ NRPE Changelog
 - Updated documentation and added easier installation commands
 
 
+
 2.7.1 - 03/08/2007
 ------------------
 - Changed C++ style comment to C style to fix compilation errors on AIX (Ryan McGarry)
+
 
 
 2.7 - 02/18/2007
@@ -26,11 +36,13 @@ NRPE Changelog
 - NRPE daemon will now partially ignore non-fatal configuration file errors and attempt to startup (Andrew Boyce-Lewis)
 
 
+
 2.6 - 12/11/2006
 ----------------
 - Added -u option to check_nrpe to return UNKNOWN states on socket timeouts (Bjoern Beutel)
 - Added connection_timeout variable to NRPE daemon to catch dead client connections (Ton Voon)
 - Added graceful timeout to check_nrpe to ensure connection to NRPE daemon is properly closed (Mark Plaksin)
+
 
 
 2.5.2 - 06/30/2006
@@ -41,9 +53,11 @@ NRPE Changelog
 - Fix to (re)allow week random seed (Gerhard Lausser)
 
 
+
 2.5.1 - 04/09/2006
 ------------------
 - Patch to fix segfault if --no-ssl option is used (Sean Finney/Peter Palfrader)
+
 
 
 2.5 - 04/06/2006
@@ -51,6 +65,7 @@ NRPE Changelog
 - (Re)added allowed_hosts option for systems that don't support TCP wrappers
 - Fix for SSL errors under Solaris 8 (Niels Endres)
 - Fix for config file directory inclusion on ReiserFS (Gerhard Lausser)
+
 
 
 2.4 - 02/22/2006
@@ -62,11 +77,13 @@ NRPE Changelog
 - Fixed bug with disconnect message in debug mode
 
 
+
 2.3 - 01/23/2006
 ----------------
 - Spec file fixes
 - Removed errant PID file debugging code
 - Fixed problem with trimming command definitions
+
 
 
 2.2 - 01/22/2006
@@ -80,6 +97,7 @@ NRPE Changelog
 - Added config file option for writing a PID file
 
 
+
 2.1 - 01/19/2004
 ----------------
 - Replaced host access list with TCP wrapper support
@@ -90,6 +108,7 @@ NRPE Changelog
 - SSL protocol used is now limited to TLSv1
 - Any output from plugins after first line is now ignored before
   plugin process is closed
+
 
 
 2.0 - 09/08/2003
@@ -106,6 +125,7 @@ NRPE Changelog
 - Added license exemption for use with OpenSSL
 
 
+
 1.8 - 01/16/2003
 ----------------
 - Daemon now closes stdio/out/err properly (James Peterson)
@@ -114,12 +134,14 @@ NRPE Changelog
 - Fixed incorrect command line options in check_nrpe plugin
 
 
+
 1.7 - 01/08/2003
 ----------------
 - Spec file updates and minor bug fixes (James Peterson)
 - Bug fix with default nrpe port definition
 - Added sample xinetd config file (nrpe.xinetd)
 - Bug fix for command_timeout variable (James Peterson)
+
 
 
 1.6 - 12/30/2002
@@ -134,9 +156,11 @@ NRPE Changelog
 - Added --with-nrpe-port config directive (James Peterson)
 
 
+
 1.5 - 06/03/2002
 ----------------
 - Added setuid/setgid option to config file (suggested by Marek Cervenka) 
+
 
 
 1.4 - 06/01/2002
@@ -145,10 +169,12 @@ NRPE Changelog
 - Minor doc and sample config file changes
 
 
+
 1.3 - 02/21/2002
 ----------------
 - Name and version change
 - Ignore SIGHUP, minor cleanup (Jon Andrews)
+
 
 
 1.2.5 - 12/22/2001
@@ -158,14 +184,17 @@ NRPE Changelog
 - Removed some old crud
 
 
+
 1.2.4 - 02/22/2001
 ------------------
 - I forgot what changes I made.  Go figure...
 
 
+
 1.2.3 - 12/21/2000
 ------------------
 - A bit more documentation on configuring command definitions for the plugin
+
 
 
 1.2.2 - 06/05/2000
@@ -174,10 +203,12 @@ NRPE Changelog
 - Replaced old email address in src/netutils.h with new one
 
 
+
 1.2.1 - 05/07/2000
 ------------------
 - Removed trapping of SIGCHLD
 - Changed wait4() to waitpid() to allow compilation on HP-UX and AIX
+
 
 
 1.2.0 - 04/18/2000
@@ -186,15 +217,18 @@ NRPE Changelog
   creation of zombies
 
 
+
 1.1.5 - 04/07/2000
 ------------------
 - Fixed a small bug where one debug message was not getting logged properly
+
 
 
 1.1.4 - 03/30/2000
 ------------------
 - Added option to disable/enable debug messages using the debug option in the
   config file
+
 
 
 1.1.3 - 03/11/2000
@@ -206,10 +240,12 @@ NRPE Changelog
   e.g. running check_nrpe on Linux and nrpe on Solaris. (Rene Klootwijk)
 
 
+
 1.1.2 - 03/07/2000
 ------------------
 - Removed unnecessary code in signal handler routine
 - Unused signals are no longer trapper
+
 
 
 1.1.1 - 02/28/2000 - RKL
@@ -232,9 +268,11 @@ NRPE Changelog
   of this interface in the nrpe.cfg file (e.g. server_address=192.168.2.3)
 
 
+
 1.0   - 02/16/2000
 ------------------
 - Added ability to run as a service under inetd
+
 
 
 1.0b6 - 02/01/2000
@@ -246,10 +284,12 @@ NRPE Changelog
 - Cleaned up code
 
 
+
 1.0b5 - 01/10/2000
 ------------------
 - Added init script contributed by Jacob L
 - Incorporated syslog code and other patches contributed by Jacob L
+
 
 
 1.0b4 - 11/04/1999

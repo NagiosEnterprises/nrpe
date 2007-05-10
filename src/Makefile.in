@@ -1,7 +1,7 @@
 ###############################
 # Makefile for NRPE
 #
-# Last Modified: 03-14-2007
+# Last Modified: 05-10-2007
 ###############################
 
 
@@ -46,7 +46,7 @@ install-plugin:
 
 install-daemon:
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(DESTDIR)$(BINDIR)
-	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) nrpe $(DESTDIR)$(BINDIR)
+	$(INSTALL) -m 775 $(NRPE_INSTALL_OPTS) nrpe $(DESTDIR)$(BINDIR)
 
 clean:
 	rm -f core nrpe check_nrpe
