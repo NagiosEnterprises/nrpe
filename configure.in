@@ -270,7 +270,7 @@ AC_SUBST(nrpe_port)
 AC_DEFINE_UNQUOTED(DEFAULT_SERVER_PORT,$nrpe_port)
 
 AC_ARG_WITH(nagios_user,--with-nagios-user=<user> sets user name for file permissions,nagios_user=$withval,nagios_user=nagios)
-AC_ARG_WITH(nagios_group,--with-nagios-group=<grp> sets group name file permissions,nagios_grp=$withval,nagios_group=nagios)
+AC_ARG_WITH(nagios_group,--with-nagios-group=<grp> sets group name file permissions,nagios_group=$withval,nagios_group=nagios)
 AC_SUBST(nagios_user)
 AC_SUBST(nagios_group)
 NAGIOS_INSTALL_OPTS="-o $nagios_user -g $nagios_group"

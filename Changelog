@@ -3,6 +3,11 @@ NRPE Changelog
 **************
 
 
+2.x - ??/??/2007
+----------------
+- Fixed bug with --with-nrpe-group configure script option (Graham Collinson)
+
+
 
 2.8.1 - 05/10/2007
 -----------------

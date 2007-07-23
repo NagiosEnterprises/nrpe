@@ -6154,7 +6154,7 @@ fi;
 # Check whether --with-nagios_group or --without-nagios_group was given.
 if test "${with_nagios_group+set}" = set; then
   withval="$with_nagios_group"
-  nagios_grp=$withval
+  nagios_group=$withval
 else
   nagios_group=nagios
 fi;
