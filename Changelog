@@ -6,6 +6,7 @@ NRPE Changelog
 2.x - ??/??/2007
 ----------------
 - Fixed bug with --with-nrpe-group configure script option (Graham Collinson)
+- Fixed bug with check_disk thresholds in sample config file (Patric Wust)
 
 
 

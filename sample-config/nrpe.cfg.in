@@ -191,7 +191,7 @@ connection_timeout=300
 
 command[check_users]=@libexecdir@/check_users -w 5 -c 10
 command[check_load]=@libexecdir@/check_load -w 15,10,5 -c 30,25,20
-command[check_hda1]=@libexecdir@/check_disk -w 20 -c 10 -p /dev/hda1
+command[check_hda1]=@libexecdir@/check_disk -w 20% -c 10% -p /dev/hda1
 command[check_zombie_procs]=@libexecdir@/check_procs -w 5 -c 10 -s Z
 command[check_total_procs]=@libexecdir@/check_procs -w 150 -c 200 
 
