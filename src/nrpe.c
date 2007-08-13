@@ -85,12 +85,20 @@ int main(int argc, char **argv){
 	int result=OK;
 	int x;
 	char buffer[MAX_INPUT_BUFFER];
+	char *env_string=NULL;
 #ifdef HAVE_SSL
 	DH *dh;
 	char seedfile[FILENAME_MAX];
 	int i,c;
 #endif
 
+	/* set some environment variables */
+	asprintf(&env_string,"NRPE_MULTILINESUPPORT=1");
+	putenv(env_string);
+	asprintf(&env_string,"NRPE_PROGRAMVERSION=%s",PROGRAM_VERSION);
+	putenv(env_string);
+
+	/* process command-line args */
 	result=process_arguments(argc,argv);
 
         if(result!=OK || show_help==TRUE || show_license==TRUE || show_version==TRUE){

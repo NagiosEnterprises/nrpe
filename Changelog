@@ -7,6 +7,9 @@ NRPE Changelog
 ----------------
 - Fixed bug with --with-nrpe-group configure script option (Graham Collinson)
 - Fixed bug with check_disk thresholds in sample config file (Patric Wust)
+- Added NRPE_PROGRAMVERSION and NRPE_MULTILINESUPPORT environment variables
+  for scripts that need to detect NRPE version and capabilities (Gerhard Lausser)
+- Added asprintf() support for systems that are missing it (Samba team)
 
 
 

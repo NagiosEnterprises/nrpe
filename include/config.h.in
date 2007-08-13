@@ -1,8 +1,8 @@
 /************************************************************************
  *
  * NRPE Common Header File
- * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 12-11-2006
+ * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
+ * Last Modified: 08-13-2007
  *
  * License:
  *
@@ -82,6 +82,18 @@ typedef long int32_t;
 #ifdef INT32_T_IS_UINT
 typedef int int32_t;
 #endif
+
+
+/***** ASPRINTF() AND FRIENDS *****/
+
+#undef HAVE_VSNPRINTF
+#undef HAVE_SNPRINTF
+#undef HAVE_ASPRINTF
+#undef HAVE_VASPRINTF
+#undef HAVE_C99_VSNPRINTF
+#undef HAVE_VA_COPY
+#undef HAVE___VA_COPY
+
 
 
 #define SOCKET_SIZE_TYPE ""
