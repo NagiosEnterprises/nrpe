@@ -9,9 +9,9 @@ AC_CONFIG_HEADER(include/config.h)
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
 PKG_NAME=nrpe
-PKG_VERSION="2.8.1"
+PKG_VERSION="2.9"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="05-10-2007"
+PKG_REL_DATE="08-13-2007"
 
 dnl Figure out how to invoke "install" and what install options to use.
 AC_PROG_INSTALL
