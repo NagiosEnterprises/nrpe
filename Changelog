@@ -3,6 +3,13 @@ NRPE Changelog
 **************
 
 
+
+2.10 - ??/??/2007
+-----------------
+- Moved PDF docs to docs/ subdirectory, added OpenOffice source document
+
+
+
 2.9 - 08/13/2007
 ----------------
 - Fixed bug with --with-nrpe-group configure script option (Graham Collinson)
