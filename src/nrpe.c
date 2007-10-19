@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 08-13-2007
+ * Last Modified: 10-19-2007
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -1342,6 +1342,9 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 
 			/* report an error if we couldn't close the command */
 			if(status==-1)
+				result=STATE_CRITICAL;
+			/* report an error if child died due to signal (Klas Lindfors) */
+			else if(!WIFEXITED(status))
 				result=STATE_CRITICAL;
 			else
 				result=WEXITSTATUS(status);

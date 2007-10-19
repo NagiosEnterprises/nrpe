@@ -4,9 +4,10 @@ NRPE Changelog
 
 
 
-2.10 - ??/??/2007
+2.10 - 10/19/2007
 -----------------
 - Moved PDF docs to docs/ subdirectory, added OpenOffice source document
+- A critical result is now returned for child processed that die due to a signal (Klas Lindfors) 
 
 
 
