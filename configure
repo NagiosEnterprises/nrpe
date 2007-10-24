@@ -853,6 +853,7 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
 --with-ssl=DIR sets location of the SSL installation
 --with-ssl-inc=DIR sets location of the SSL include files
+--with-ssl-lib=DIR sets location of the SSL libraries
 --with-kerberos-inc=DIR sets location of the Kerberos include files
 --with-nrpe-user=<user> sets user name to run NRPE
 --with-nrpe-group=<group> sets group name to run NRPE
@@ -1296,9 +1297,9 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 PKG_NAME=nrpe
-PKG_VERSION="2.10"
+PKG_VERSION="2.9"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="10-19-2007"
+PKG_REL_DATE="08-13-2007"
 
 ac_aux_dir=
 for ac_dir in $srcdir $srcdir/.. $srcdir/../..; do
@@ -6585,7 +6586,9 @@ else
   check_for_ssl=yes
 fi;
 
+ssl_dir=
 ssl_inc_dir=
+ssl_lib_dir=
 
 # Check whether --with-ssl or --without-ssl was given.
 if test "${with_ssl+set}" = set; then
@@ -6603,6 +6606,14 @@ if test "${with_ssl_inc+set}" = set; then
 
 fi;
 
+# Check whether --with-ssl-lib or --without-ssl-lib was given.
+if test "${with_ssl_lib+set}" = set; then
+  withval="$with_ssl_lib"
+
+	ssl_lib_dir=$withval
+
+fi;
+
 # Check whether --with-kerberos-inc or --without-kerberos-inc was given.
 if test "${with_kerberos_inc+set}" = set; then
   withval="$with_kerberos_inc"
@@ -6612,62 +6623,84 @@ if test "${with_kerberos_inc+set}" = set; then
 fi;
 
 if test x$check_for_ssl = xyes; then
-	echo "$as_me:$LINENO: checking for SSL" >&5
-echo $ECHO_N "checking for SSL... $ECHO_C" >&6
+	echo "$as_me:$LINENO: checking for SSL headers" >&5
+echo $ECHO_N "checking for SSL headers... $ECHO_C" >&6
 	found_ssl=no
 	for dir in $ssl_inc_dir $ssl_dir /usr/local/openssl /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr /usr/freeware/lib/openssl; do
 		ssldir="$dir"
 		if test -f "$dir/include/openssl/ssl.h"; then
 			found_ssl=yes
 			CFLAGS="$CFLAGS -I$dir/include/openssl -I$ssldir/include"
+			sslincdir="$dir/include/openssl"
 		        break
 		fi
 		if test -f "$dir/include/ssl.h"; then
 			found_ssl=yes
 			CFLAGS="$CFLAGS -I$dir/include"
+			sslincdir="$dir/include"
 		        break
 		fi
 		if test -f "$dir/ssl.h"; then
 			found_ssl=yes
-			CFLAGS="$CFLAGS -I$dir/include"
+			CFLAGS="$CFLAGS -I$dir"
+			sslincdir="$dir"
 			ssldir="$dir/.."
 		        break
 		fi
 		if test -f "$dir/openssl/ssl.h"; then
 			found_ssl=yes
-			CFLAGS="$CFLAGS -I$dir/include"
+			CFLAGS="$CFLAGS -I$dir/openssl"
+			sslincdir="$dir/openssl"
 			ssldir="$dir/.."
 		        break
 		fi
 	done
 
 	if test x_$found_ssl != x_yes; then
-        	{ { echo "$as_me:$LINENO: error: Cannot find ssl libraries" >&5
-echo "$as_me: error: Cannot find ssl libraries" >&2;}
+        	{ { echo "$as_me:$LINENO: error: Cannot find ssl headers" >&5
+echo "$as_me: error: Cannot find ssl headers" >&2;}
    { (exit 1); exit 1; }; }
 	else
-	        printf "SSL found in $ssldir\n";
-	        LIBS="$LIBS -lssl -lcrypto";
-		if test x$ssl_lib_dir != x; then
-	        	LDFLAGS="$LDFLAGS -L$ssl_lib_dir";
+
+	        printf "SSL headers found in $ssldir\n";
+
+				echo "$as_me:$LINENO: checking for SSL libraries" >&5
+echo $ECHO_N "checking for SSL libraries... $ECHO_C" >&6
+		found_ssl=no
+		for dir in $ssl_lib_dir $ssl_dir /usr/lib64 /usr/lib /usr/local/lib /usr/lib/ssl /usr/ssl/lib /usr/openssl/lib /usr/pkg/lib  /usr/freeware/lib/openssl; do
+			ssllibdir="$dir"
+			if test -f "$dir/libssl.so"; then
+				found_ssl=yes
+			        break
+			fi
+		done
+
+		if test x_$found_ssl != x_yes; then
+        		{ { echo "$as_me:$LINENO: error: Cannot find ssl libraries" >&5
+echo "$as_me: error: Cannot find ssl libraries" >&2;}
+   { (exit 1); exit 1; }; }
 		else
-	        	LDFLAGS="$LDFLAGS -L$ssldir/lib";
-		fi
-		cat >>confdefs.h <<_ACEOF
+		        printf "SSL libraries found in $ssllibdir\n";
+
+			LDFLAGS="$LDFLAGS -L$ssllibdir";
+		        LIBS="$LIBS -lssl -lcrypto";
+
+			cat >>confdefs.h <<_ACEOF
 #define HAVE_SSL 1
 _ACEOF
 
 
 
-				echo ""
-		echo "*** Generating DH Parameters for SSL/TLS ***"
-		if test -f "$ssldir/sbin/openssl"; then
-			sslbin=$ssldir/sbin/openssl
-		else
-			sslbin=$ssldir/bin/openssl
+						echo ""
+			echo "*** Generating DH Parameters for SSL/TLS ***"
+			if test -f "$ssldir/sbin/openssl"; then
+				sslbin=$ssldir/sbin/openssl
+			else
+				sslbin=$ssldir/bin/openssl
+			fi
+			# awk to strip off meta data at bottom of dhparam output
+			$sslbin dhparam -C 512 | awk '/^-----/ {exit} {print}' > include/dh.h
 		fi
-		# awk to strip off meta data at bottom of dhparam output
-		$sslbin dhparam -C 512 | awk '/^-----/ {exit} {print}' > include/dh.h
 	fi
 
 		echo "$as_me:$LINENO: checking for Kerberos include files" >&5
@@ -6721,7 +6754,6 @@ else
 fi;
 
 
-echo "GROUP: $nrpe_group"
 NRPE_INSTALL_OPTS="-o $nrpe_user -g $nrpe_group"
 
 

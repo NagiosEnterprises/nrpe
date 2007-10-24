@@ -4,6 +4,12 @@ NRPE Changelog
 
 
 
+2.11 - ??/??/2007
+-----------------
+- Added lib64 library paths to configure script for 64-bit systems (John Maag)
+- Added --with-ssl-lib configure script option
+
+
 2.10 - 10/19/2007
 -----------------
 - Moved PDF docs to docs/ subdirectory, added OpenOffice source document
