@@ -1,8 +1,8 @@
 /************************************************************************
  *
  * NRPE.H - NRPE Include File
- * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 02-23-2006
+ * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
+ * Last Modified: 11-23-2007
  *
  * License:
  *
@@ -36,6 +36,7 @@ void wait_for_connections(void);
 void handle_connection(int);
 int read_config_file(char *);
 int read_config_dir(char *);
+int get_log_facility(char *);
 int add_command(char *,char *);
 command *find_command(char *);
 void sighandler(int);

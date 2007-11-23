@@ -2,7 +2,7 @@
  *
  * NRPE Common Header File
  * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 08-13-2007
+ * Last Modified: 11-23-2007
  *
  * License:
  *
@@ -29,6 +29,8 @@
 
 
 #define DEFAULT_SERVER_PORT	@nrpe_port@	/* default port to use */
+
+#define NRPE_LOG_FACILITY       @log_facility@
 
 #undef ENABLE_COMMAND_ARGUMENTS
 

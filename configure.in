@@ -340,6 +340,10 @@ if test x$check_for_ssl = xyes; then
 
 fi
 
+AC_ARG_WITH(log_facility,--with-log-facility=<facility> sets NRPE syslog facility,log_facility=$withval,log_facility=daemon)
+AC_SUBST(log_facility)
+AC_DEFINE_UNQUOTED(NRPE_LOG_FACILITY,["$log_facility"])
+
 AC_ARG_WITH(nrpe_user,--with-nrpe-user=<user> sets user name to run NRPE,nrpe_user=$withval,nrpe_user=nagios)
 AC_ARG_WITH(nrpe_group,--with-nrpe-group=<group> sets group name to run NRPE,nrpe_group=$withval,nrpe_group=nagios)
 AC_ARG_WITH(nrpe_port,--with-nrpe-port=<port> sets port number for NRPE to listen on,nrpe_port=$withval,nrpe_port=5666)

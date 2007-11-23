@@ -2,13 +2,20 @@
 # Sample NRPE Config File 
 # Written by: Ethan Galstad (nagios@nagios.org)
 # 
-# Last Modified: 03-09-2007
+# Last Modified: 11-23-2007
 #
 # NOTES:
 # This is a sample configuration file for the NRPE daemon.  It needs to be
 # located on the remote host that is running the NRPE daemon, not the host
 # from which the check_nrpe client is being executed.
 #############################################################################
+
+
+# LOG FACILITY
+# The syslog facility that should be used for logging purposes.
+
+log_facility=@log_facility@
+
 
 
 # PID FILE

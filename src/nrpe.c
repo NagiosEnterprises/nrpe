@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 10-19-2007
+ * Last Modified: 11-23-2007
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -48,6 +48,7 @@ char    *command_name=NULL;
 char    *macro_argv[MAX_COMMAND_ARGUMENTS];
 
 char    config_file[MAX_INPUT_BUFFER]="nrpe.cfg";
+int     log_facility=LOG_DAEMON;
 int     server_port=DEFAULT_SERVER_PORT;
 char    server_address[16]="0.0.0.0";
 int     socket_timeout=DEFAULT_SOCKET_TIMEOUT;
@@ -162,7 +163,9 @@ int main(int argc, char **argv){
 
 
 	/* open a connection to the syslog facility */
-        openlog("nrpe",LOG_PID,LOG_DAEMON); 
+	/* facility name may be overridden later */
+	get_log_facility(NRPE_LOG_FACILITY);
+        openlog("nrpe",LOG_PID,log_facility); 
 
 	/* make sure the config file uses an absolute path */
 	if(config_file[0]!='/'){
@@ -499,6 +502,16 @@ int read_config_file(char *filename){
 		else if(!strcmp(varname,"pid_file"))
 			pid_file=strdup(varvalue);
 
+		else if(!strcmp(varname,"log_facility")){
+			if((get_log_facility(varvalue))==OK){
+				/* re-open log using new facility */
+				closelog();
+				openlog("nrpe",LOG_PID,log_facility); 
+				}
+			else
+				syslog(LOG_WARNING,"Invalid log_facility specified in config file '%s' - Line %d\n",filename,line);
+			}
+
 		else{
 			syslog(LOG_WARNING,"Unknown option specified in config file '%s' - Line %d\n",filename,line);
 			continue;
@@ -574,6 +587,60 @@ int read_config_dir(char *dirname){
 
 	return result;
         }
+
+
+
+/* determines facility to use with syslog */
+int get_log_facility(char *varvalue){
+
+	if(!strcmp(varvalue,"kern"))
+		log_facility=LOG_KERN;
+	else if(!strcmp(varvalue,"user"))
+		log_facility=LOG_USER;
+	else if(!strcmp(varvalue,"mail"))
+		log_facility=LOG_MAIL;
+	else if(!strcmp(varvalue,"daemon"))
+		log_facility=LOG_DAEMON;
+	else if(!strcmp(varvalue,"auth"))
+		log_facility=LOG_AUTH;
+	else if(!strcmp(varvalue,"syslog"))
+		log_facility=LOG_SYSLOG;
+	else if(!strcmp(varvalue,"lrp"))
+		log_facility=LOG_LPR;
+	else if(!strcmp(varvalue,"news"))
+		log_facility=LOG_NEWS;
+	else if(!strcmp(varvalue,"uucp"))
+		log_facility=LOG_UUCP;
+	else if(!strcmp(varvalue,"cron"))
+		log_facility=LOG_CRON;
+	else if(!strcmp(varvalue,"authpriv"))
+		log_facility=LOG_AUTHPRIV;
+	else if(!strcmp(varvalue,"ftp"))
+		log_facility=LOG_FTP;
+	else if(!strcmp(varvalue,"local0"))
+		log_facility=LOG_LOCAL0;
+	else if(!strcmp(varvalue,"local1"))
+		log_facility=LOG_LOCAL1;
+	else if(!strcmp(varvalue,"local2"))
+		log_facility=LOG_LOCAL2;
+	else if(!strcmp(varvalue,"local3"))
+		log_facility=LOG_LOCAL3;
+	else if(!strcmp(varvalue,"local4"))
+		log_facility=LOG_LOCAL4;
+	else if(!strcmp(varvalue,"local5"))
+		log_facility=LOG_LOCAL5;
+	else if(!strcmp(varvalue,"local6"))
+		log_facility=LOG_LOCAL6;
+	else if(!strcmp(varvalue,"local7"))
+		log_facility=LOG_LOCAL7;
+	else{
+		log_facility=LOG_DAEMON;
+		return ERROR;
+		}
+
+	return OK;
+	}
+
 
 
 /* adds a new command definition from the config file to the list in memory */

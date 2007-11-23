@@ -310,7 +310,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA INSTALL build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT SET_MAKE CPP EGREP SNPRINTF_O OTHERLIBS SOCKETLIBS LIBWRAPLIBS HAVE_SSL nrpe_user nrpe_group NRPE_INSTALL_OPTS nrpe_port nagios_user nagios_group NAGIOS_INSTALL_OPTS PERL LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA INSTALL build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT SET_MAKE CPP EGREP SNPRINTF_O OTHERLIBS SOCKETLIBS LIBWRAPLIBS HAVE_SSL log_facility nrpe_user nrpe_group NRPE_INSTALL_OPTS nrpe_port nagios_user nagios_group NAGIOS_INSTALL_OPTS PERL LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -855,6 +855,7 @@ Optional Packages:
 --with-ssl-inc=DIR sets location of the SSL include files
 --with-ssl-lib=DIR sets location of the SSL libraries
 --with-kerberos-inc=DIR sets location of the Kerberos include files
+--with-log-facility=<facility> sets NRPE syslog facility
 --with-nrpe-user=<user> sets user name to run NRPE
 --with-nrpe-group=<group> sets group name to run NRPE
 --with-nrpe-port=<port> sets port number for NRPE to listen on
@@ -6729,6 +6730,20 @@ _ACEOF
 fi
 
 
+# Check whether --with-log_facility or --without-log_facility was given.
+if test "${with_log_facility+set}" = set; then
+  withval="$with_log_facility"
+  log_facility=$withval
+else
+  log_facility=daemon
+fi;
+
+cat >>confdefs.h <<_ACEOF
+#define NRPE_LOG_FACILITY "$log_facility"
+_ACEOF
+
+
+
 # Check whether --with-nrpe_user or --without-nrpe_user was given.
 if test "${with_nrpe_user+set}" = set; then
   withval="$with_nrpe_user"
@@ -7421,6 +7436,7 @@ s,@OTHERLIBS@,$OTHERLIBS,;t t
 s,@SOCKETLIBS@,$SOCKETLIBS,;t t
 s,@LIBWRAPLIBS@,$LIBWRAPLIBS,;t t
 s,@HAVE_SSL@,$HAVE_SSL,;t t
+s,@log_facility@,$log_facility,;t t
 s,@nrpe_user@,$nrpe_user,;t t
 s,@nrpe_group@,$nrpe_group,;t t
 s,@NRPE_INSTALL_OPTS@,$NRPE_INSTALL_OPTS,;t t

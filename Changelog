@@ -8,6 +8,7 @@ NRPE Changelog
 -----------------
 - Added lib64 library paths to configure script for 64-bit systems (John Maag)
 - Added --with-ssl-lib configure script option
+- Added --with-log-facility option to control syslog logging (Ryan Ordway and Brian Seklecki)
 
 
 2.10 - 10/19/2007
