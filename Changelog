@@ -4,7 +4,7 @@ NRPE Changelog
 
 
 
-2.11 - ??/??/2007
+2.11 - 12/26/2007
 -----------------
 - Added lib64 library paths to configure script for 64-bit systems (John Maag)
 - Added --with-ssl-lib configure script option
