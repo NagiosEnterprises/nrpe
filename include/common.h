@@ -1,7 +1,7 @@
 /************************************************************************
  *
  * COMMON.H - NRPE Common Include File
- * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
+ * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
  * Last Modified: 12-26-2007
  *
  * License:
@@ -56,7 +56,8 @@
 #define QUERY_PACKET		1		/* id code for a packet containing a query */
 #define	RESPONSE_PACKET		2		/* id code for a packet containing a response */
 
-#define NRPE_PACKET_VERSION_2   2               /* packet version identifier */
+#define NRPE_PACKET_VERSION_3   3               /* packet version identifier */
+#define NRPE_PACKET_VERSION_2   2               
 #define NRPE_PACKET_VERSION_1	1		/* older packet version identifiers (no longer supported) */
 
 #define MAX_PACKETBUFFER_LENGTH	1024		/* max amount of data we'll send in one query/response */

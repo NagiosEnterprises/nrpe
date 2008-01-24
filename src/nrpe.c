@@ -1,10 +1,10 @@
 /*******************************************************************************
  *
  * NRPE.C - Nagios Remote Plugin Executor
- * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
+ * Copyright (c) 1999-2008 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 12-26-2007
+ * Last Modified: 01-24-2008
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -106,7 +106,7 @@ int main(int argc, char **argv){
 
 		printf("\n");
 		printf("NRPE - Nagios Remote Plugin Executor\n");
-		printf("Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)\n");
+		printf("Copyright (c) 1999-2008 Ethan Galstad (nagios@nagios.org)\n");
 		printf("Version: %s\n",PROGRAM_VERSION);
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL v2 with exemptions (-l for more info)\n");
@@ -1322,7 +1322,6 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 	int result;
 	extern int errno;
 	char buffer[MAX_INPUT_BUFFER];
-	char temp_buffer[MAX_INPUT_BUFFER];
 	int fd[2];
 	FILE *fp;
 	int bytes_read=0;
@@ -1452,14 +1451,15 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 
 		/* try and read the results from the command output (retry if we encountered a signal) */
 		if(output!=NULL){
-			strcpy(output,"");
 			do{
-				bytes_read=read(fd[0],output,output_length-1);
-		                }while(bytes_read==-1 && errno==EINTR);
-		        }
+				bytes_read=read(fd[0], output, output_length-1);
+			}while (bytes_read==-1 && errno==EINTR);
 
-		if(bytes_read==-1 && output!=NULL)
-			strcpy(output,"");
+			if(bytes_read==-1)
+				*output='\0';
+			else
+				output[bytes_read]='\0';
+			}
 
 		/* if there was a critical return code and no output AND the command time exceeded the timeout thresholds, assume a timeout */
 		if(result==STATE_CRITICAL && bytes_read==-1 && (end_time-start_time)>=timeout){
@@ -1669,7 +1669,6 @@ int check_privileges(void){
 void sighandler(int sig){
 	static char *sigs[]={"EXIT","HUP","INT","QUIT","ILL","TRAP","ABRT","BUS","FPE","KILL","USR1","SEGV","USR2","PIPE","ALRM","TERM","STKFLT","CHLD","CONT","STOP","TSTP","TTIN","TTOU","URG","XCPU","XFSZ","VTALRM","PROF","WINCH","IO","PWR","UNUSED","ZERR","DEBUG",(char *)NULL};
 	int i;
-	char temp_buffer[MAX_INPUT_BUFFER];
 
 	if(sig<0)
 		sig=-sig;
