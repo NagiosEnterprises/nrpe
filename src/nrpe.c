@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2008 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 01-24-2008
+ * Last Modified: 03-10-2008
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *

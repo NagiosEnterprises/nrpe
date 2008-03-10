@@ -3,7 +3,7 @@ NRPE Changelog
 **************
 
 
-2.12 - ??/??/2008
+2.12 - 03/10/2008
 -----------------
 - Fix for unterminated multiline plugin (garbage) output (Krzysztof Oledzki)
 
