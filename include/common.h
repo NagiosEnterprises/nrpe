@@ -69,3 +69,16 @@ typedef struct packet_struct{
 	int16_t   result_code;
 	char      buffer[MAX_PACKETBUFFER_LENGTH];
         }packet;
+
+/**************** OPERATING SYSTEM SPECIFIC DEFINITIONS **********/
+#ifdef __sun
+
+#  ifndef LOG_AUTHPRIV
+#    define LOG_AUTHPRIV LOG_AUTH
+#  endif
+
+#  ifndef LOG_FTP
+#    define LOG_FTP LOG_DAEMON
+#  endif
+
+#endif
