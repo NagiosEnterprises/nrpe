@@ -310,7 +310,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA INSTALL build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT SET_MAKE CPP EGREP SNPRINTF_O OTHERLIBS SOCKETLIBS LIBWRAPLIBS HAVE_SSL log_facility nrpe_user nrpe_group NRPE_INSTALL_OPTS nrpe_port nagios_user nagios_group NAGIOS_INSTALL_OPTS PERL LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA INSTALL build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT SET_MAKE CPP EGREP SNPRINTF_O OTHERLIBS SOCKETLIBS LIBWRAPLIBS HAVE_SSL log_facility nrpe_user nrpe_group NRPE_INSTALL_OPTS nrpe_port nagios_user nagios_group NAGIOS_INSTALL_OPTS TARGET_VER TARGET_OS TARGET_ARCH PERL LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -6798,6 +6798,25 @@ fi;
 NAGIOS_INSTALL_OPTS="-o $nagios_user -g $nagios_group"
 
 
+# Determine target OS, version and architecture for package build macros
+if test "x$target_ver" = "x" ; then
+	TARGET_VER=`uname -r`
+else
+	TARGET_VER=$target_ver
+fi
+
+if test "x$target_os" = "x" ; then
+	TARGET_OS=`uname -s`
+else
+	TARGET_OS=$target_os
+fi
+
+if test "x$target_cpu" = "x" ; then
+	TARGET_ARCH=`uname -p`
+else
+	TARGET_ARCH=$target_cpu
+fi
+
 
 # Check whether --enable-command-args or --disable-command-args was given.
 if test "${enable_command_args+set}" = set; then
@@ -7444,6 +7463,9 @@ s,@nrpe_port@,$nrpe_port,;t t
 s,@nagios_user@,$nagios_user,;t t
 s,@nagios_group@,$nagios_group,;t t
 s,@NAGIOS_INSTALL_OPTS@,$NAGIOS_INSTALL_OPTS,;t t
+s,@TARGET_VER@,$TARGET_VER,;t t
+s,@TARGET_OS@,$TARGET_OS,;t t
+s,@TARGET_ARCH@,$TARGET_ARCH,;t t
 s,@PERL@,$PERL,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
