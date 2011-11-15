@@ -12,6 +12,10 @@ PKG_NAME=nrpe
 PKG_VERSION="2.13"
 PKG_HOME_URL="http://www.nagios.org/"
 PKG_REL_DATE="11-11-2011"
+AC_SUBST(PKG_NAME)
+AC_SUBST(PKG_VERSION)
+AC_SUBST(PKG_HOME_URL)
+AC_SUBST(PKG_REL_DATE)
 
 dnl Figure out how to invoke "install" and what install options to use.
 AC_PROG_INSTALL
