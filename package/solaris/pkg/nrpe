@@ -1,0 +1,32 @@
+#!/sbin/sh
+#
+
+NRPE=/opt/nagios/bin/nrpe
+CFGFILE=/etc/nagios/nrpe.cfg
+PIDFILE=/var/run/nrpe.pid
+
+case $1 in 
+'start')
+	$NRPE -c $CFGFILE -d
+	;;
+
+'restart')
+	if [ -f "$PIDFILE" ]; then
+		/usr/bin/kill -HUP `/usr/bin/cat $PIDFILE`
+	fi
+	;;
+
+'stop')
+	if [ -f "$PIDFILE" ]; then
+		/usr/bin/kill `/usr/bin/cat $PIDFILE`
+		/bin/rm -f $PIDFILE
+	fi
+	;;
+
+*)
+	echo "Usage: $0 { start | restart | stop }"
+	exit 1
+	;;
+esac	
+
+exit $?

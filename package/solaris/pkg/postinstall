@@ -1,0 +1,5 @@
+#!/usr/bin/sh
+
+echo "To begin using NRPE, first edit /etc/nagios/nrpe.cfg, update the"
+echo "allowed_hosts line and any command lines. Then start the nrpe service"
+echo "by running the command 'svcadm enable nrpe' as root."

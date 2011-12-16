@@ -62,13 +62,22 @@ install-daemon-config:
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(DESTDIR)$(CFGDIR)
 	$(INSTALL) -m 644 $(NRPE_INSTALL_OPTS) sample-config/nrpe.cfg $(DESTDIR)$(CFGDIR)
 
+solaris-package:
+	@if [ `uname -s` != "SunOS" ] ; then \
+		echo "It is recommended you be running on Solaris to build a Solaris package"; \
+	else \
+		cd package/solaris; $(MAKE) build ; $(MAKE) pkg ; cd ../..; \
+	fi
+
 clean:
 	cd $(SRC_BASE); $(MAKE) $@ ; cd ..
+	cd package/solaris; $(MAKE) $@ ; cd ../..
 	rm -f core
 	rm -f *~ */*~
 
 distclean: clean
 	cd $(SRC_BASE); $(MAKE) $@ ; cd ..
+	cd package/solaris; $(MAKE) $@ ; cd ../..
 	rm -f config.log config.status config.cache nrpe.cfg nrpe.xinetd subst $(SRC_INCLUDE)/config.h init-script init-script.debian init-script.freebsd init-script.suse
 	rm -f sample-config/*.cfg sample-config/*.xinetd
 	rm -f Makefile
