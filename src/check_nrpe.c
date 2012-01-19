@@ -17,9 +17,9 @@
  *
  ********************************************************************************************/
 
-#include "../include/common.h"
-#include "../include/config.h"
-#include "../include/utils.h"
+#include "config.h"
+#include "common.h"
+#include "utils.h"
 
 
 #define DEFAULT_NRPE_COMMAND	"_NRPE_CHECK"  /* check version of NRPE daemon */

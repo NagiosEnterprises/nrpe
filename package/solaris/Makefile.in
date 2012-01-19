@@ -9,7 +9,7 @@ TARGET_VER=@TARGET_VER@
 TARGET_ARCH=@TARGET_ARCH@
 TARGET_PLATFORM=@TARGET_PLATFORM@
 
-SOLARIS_CONFIG_OPTS=--prefix=/opt/nagios --sysconfdir=/etc/nagios
+SOLARIS_CONFIG_OPTS=--prefix=/opt/nagios --sysconfdir=/etc/nagios --enable-command-args
 
 PKG_NAME=NGOSnrpe
 PKG_VERSION=@PKG_VERSION@

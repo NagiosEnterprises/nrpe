@@ -24,11 +24,11 @@
  * now allowed_hosts is parsed by parse_allowed_hosts() from acl.c.
  */ 
 
-#include "../include/common.h"
-#include "../include/config.h"
-#include "../include/nrpe.h"
-#include "../include/utils.h"
-#include "../include/acl.h"
+#include "config.h"
+#include "common.h"
+#include "nrpe.h"
+#include "utils.h"
+#include "acl.h"
 
 #ifdef HAVE_SSL
 #include "../include/dh.h"

@@ -8,9 +8,10 @@ srcdir=@srcdir@
 
 # Source code directories
 SRC_INCLUDE=@srcdir@/../include
+CFG_INCLUDE=../include
 
 CC=@CC@
-CFLAGS=@CFLAGS@ @DEFS@
+CFLAGS=@CFLAGS@ @DEFS@ -I $(CFG_INCLUDE) -I $(SRC_INCLUDE)
 LDFLAGS=@LDFLAGS@ @LIBS@
 SOCKETLIBS=@SOCKETLIBS@
 LIBWRAPLIBS=@LIBWRAPLIBS@
@@ -34,10 +35,10 @@ SNPRINTF_O=@SNPRINTF_O@
 
 all: nrpe check_nrpe
 
-nrpe: $(srcdir)/nrpe.c $(srcdir)/utils.c $(srcdir)/acl.c $(SRC_INCLUDE)/nrpe.h $(SRC_INCLUDE)/utils.h $(SRC_INCLUDE)/common.h $(SRC_INCLUDE)/config.h $(SRC_INCLUDE)/acl.h $(SNPRINTF_O)
+nrpe: $(srcdir)/nrpe.c $(srcdir)/utils.c $(srcdir)/acl.c $(SRC_INCLUDE)/nrpe.h $(SRC_INCLUDE)/utils.h $(SRC_INCLUDE)/common.h $(CFG_INCLUDE)/config.h $(SRC_INCLUDE)/acl.h $(SNPRINTF_O)
 	$(CC) $(CFLAGS) -o $@ $(srcdir)/nrpe.c $(srcdir)/utils.c $(srcdir)/acl.c $(LDFLAGS) $(SOCKETLIBS) $(LIBWRAPLIBS) $(SNPRINTF_O) $(OTHERLIBS)
 
-check_nrpe: $(srcdir)/check_nrpe.c $(srcdir)/utils.c $(SRC_INCLUDE)/utils.h $(SRC_INCLUDE)/common.h $(SRC_INCLUDE)/config.h
+check_nrpe: $(srcdir)/check_nrpe.c $(srcdir)/utils.c $(SRC_INCLUDE)/utils.h $(SRC_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
 	$(CC) $(CFLAGS) -o $@ $(srcdir)/check_nrpe.c $(srcdir)/utils.c $(LDFLAGS) $(SOCKETLIBS) $(OTHERLIBS)
 
 install:
