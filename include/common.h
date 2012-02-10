@@ -81,4 +81,14 @@ typedef struct packet_struct{
 #    define LOG_FTP LOG_DAEMON
 #  endif
 
+#elif _AIX
+
+/*#  ifndef LOG_AUTHPRIV
+#    define LOG_AUTHPRIV LOG_AUTH
+#  endif */
+
+#  ifndef LOG_FTP
+#    define LOG_FTP LOG_DAEMON
+#  endif
+
 #endif

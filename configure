@@ -6700,7 +6700,7 @@ echo "$as_me: error: Cannot find ssl headers" >&2;}
 				echo "$as_me:$LINENO: checking for SSL libraries" >&5
 echo $ECHO_N "checking for SSL libraries... $ECHO_C" >&6
 		found_ssl=no
-		for dir in $ssl_lib_dir $ssl_dir /usr/lib64 /usr/lib /usr/local/lib /usr/lib/ssl /usr/ssl/lib /usr/openssl/lib /usr/pkg/lib  /usr/freeware/lib/openssl /usr/sfw/lib; do
+		for dir in $ssl_lib_dir $ssl_dir /usr/lib64 /usr/lib /usr/local/lib /usr/lib/ssl /usr/ssl/lib /usr/openssl/lib /usr/pkg/lib  /usr/freeware/lib/openssl /usr/sfw/lib /opt/freeware/lib; do
 			ssllibdir="$dir"
 			if test -f "$dir/libssl.so"; then
 				found_ssl=yes
