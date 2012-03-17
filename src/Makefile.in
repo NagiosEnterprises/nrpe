@@ -56,6 +56,7 @@ install-daemon:
 clean:
 	rm -f core nrpe check_nrpe $(SNPRINTF_O)
 	rm -f *~ */*~
+	rm -rf nrpe.dSYM check_nrpe.dSYM
 
 distclean: clean
 	rm -f Makefile
