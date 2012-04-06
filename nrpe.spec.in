@@ -3,7 +3,7 @@
 
 %if %{isaix}
 	%define _prefix	/opt/nagios
-	%define _docdir %{_prefix}/doc/nrpe-2.13
+	%define _docdir %{_prefix}/doc/@PACKAGE_NAME@-@PACKAGE_VERSION@
 	%define nshome /opt/nagios
 	%define _make gmake
 %endif
@@ -20,12 +20,12 @@
 %endif
 %define _sysconfdir /etc/nagios
 
-%define name nrpe
-%define version 2.13
-%define release 1
-%define nsusr nagios
-%define nsgrp nagios
-%define nsport 5666
+%define name @PACKAGE_NAME@
+%define version @PACKAGE_VERSION@
+%define release @RPM_RELEASE@
+%define nsusr @nrpe_user@
+%define nsgrp @nrpe_group@
+%define nsport @nrpe_port@
 
 # Reserve option to override port setting with:
 # rpm -ba|--rebuild --define 'nsport 5666'

@@ -85,6 +85,7 @@ int     show_license=FALSE;
 int     show_version=FALSE;
 int     use_inetd=TRUE;
 int     debug=FALSE;
+int     use_src=FALSE; /* Define parameter for SRC option */
 
 
 
@@ -153,6 +154,8 @@ int main(int argc, char **argv){
 		printf(" <mode>        = One of the following two operating modes:\n");  
 		printf("   -i          =    Run as a service under inetd or xinetd\n");
 		printf("   -d          =    Run as a standalone daemon\n");
+		/* Updates help section to indicate how to start under SRC on AIX */
+		printf("   -d -s       =    Run as a subsystem under AIX\n");        
 		printf("\n");
 		printf("Notes:\n");
 		printf("This program is designed to process requests from the check_nrpe\n");
@@ -273,6 +276,74 @@ int main(int argc, char **argv){
 		/* handle the connection */
 		handle_connection(0);
 	        }
+
+	/* if we're running under SRC... 
+	   we don't fork but does drop-privileges*/
+	else if (use_src==TRUE){
+
+		/* close standard file descriptors */
+		close(0);
+		close(1);
+		close(2);
+
+		/* redirect standard descriptors to /dev/null */
+		open("/dev/null",O_RDONLY);
+		open("/dev/null",O_WRONLY);
+		open("/dev/null",O_WRONLY);
+
+		chdir("/");
+		/*umask(0);*/
+
+		/* handle signals */
+		signal(SIGQUIT,sighandler);
+		signal(SIGTERM,sighandler);
+		signal(SIGHUP,sighandler);
+
+		/* log info to syslog facility */
+		syslog(LOG_NOTICE,"Starting up daemon");
+
+		/* write pid file */
+		if(write_pid_file()==ERROR)
+			return STATE_CRITICAL;
+
+		/* drop privileges */
+		drop_privileges(nrpe_user,nrpe_group);
+
+		/* make sure we're not root */
+		check_privileges();
+
+		do{
+
+			/* reset flags */
+			sigrestart=FALSE;
+			sigshutdown=FALSE;
+
+			/* wait for connections */
+			wait_for_connections();
+
+			/* free all memory we allocated */
+			free_memory();
+			
+			if(sigrestart==TRUE){
+
+				/* read the config file */
+				result=read_config_file(config_file);	
+
+				/* exit if there are errors... */
+				if(result==ERROR){
+					syslog(LOG_ERR,"Config file '%s' contained errors, bailing out...",config_file);
+					return STATE_CRITICAL;
+				        }
+			        }
+
+		        }while(sigrestart==TRUE && sigshutdown==FALSE);
+
+		/* remove pid file */
+		remove_pid_file();
+
+		syslog(LOG_NOTICE,"Daemon shutdown\n");
+	        }            
+
 
 	/* else daemonize and start listening for requests... */
 	else if(fork()==0){
@@ -1846,6 +1917,8 @@ int process_arguments(int argc, char **argv){
 	static struct option long_options[]={
 		{"config", required_argument, 0, 'c'},
 		{"inetd", no_argument, 0, 'i'},
+		/* To compatibility between short and long options but not used on AIX */
+		{"src", no_argument, 0, 's'},
 		{"daemon", no_argument, 0, 'd'},
 		{"no-ssl", no_argument, 0, 'n'},
 		{"help", no_argument, 0, 'h'},
@@ -1858,7 +1931,7 @@ int process_arguments(int argc, char **argv){
 	if(argc<2)
 		return ERROR;
 
-	snprintf(optchars,MAX_INPUT_BUFFER,"c:hVldin");
+	snprintf(optchars,MAX_INPUT_BUFFER,"c:hVldins");
 
 	while(1){
 #ifdef HAVE_GETOPT_LONG
@@ -1896,6 +1969,9 @@ int process_arguments(int argc, char **argv){
 			break;
 		case 'n':
 			use_ssl=FALSE;
+			break;
+		case 's':   /* Argument s to indicate SRC option*/
+			use_src=TRUE;
 			break;
 		default:
 			return ERROR;

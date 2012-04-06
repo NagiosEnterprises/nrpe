@@ -646,6 +646,7 @@ INSTALL
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
+RPM_RELEASE
 PKG_REL_DATE
 PKG_HOME_URL
 PKG_VERSION
@@ -2358,7 +2359,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 ac_config_headers="$ac_config_headers include/config.h"
 
-ac_config_files="$ac_config_files Makefile subst src/Makefile package/solaris/Makefile init-script init-script.debian init-script.suse sample-config/nrpe.cfg sample-config/nrpe.xinetd"
+ac_config_files="$ac_config_files Makefile subst src/Makefile package/solaris/Makefile init-script init-script.debian init-script.suse nrpe.spec sample-config/nrpe.cfg sample-config/nrpe.xinetd"
 
 
 
@@ -2366,6 +2367,8 @@ PKG_NAME=nrpe
 PKG_VERSION="2.13"
 PKG_HOME_URL="http://www.nagios.org/"
 PKG_REL_DATE="11-11-2011"
+RPM_RELEASE=1
+
 
 
 
@@ -5714,6 +5717,7 @@ do
     "init-script") CONFIG_FILES="$CONFIG_FILES init-script" ;;
     "init-script.debian") CONFIG_FILES="$CONFIG_FILES init-script.debian" ;;
     "init-script.suse") CONFIG_FILES="$CONFIG_FILES init-script.suse" ;;
+    "nrpe.spec") CONFIG_FILES="$CONFIG_FILES nrpe.spec" ;;
     "sample-config/nrpe.cfg") CONFIG_FILES="$CONFIG_FILES sample-config/nrpe.cfg" ;;
     "sample-config/nrpe.xinetd") CONFIG_FILES="$CONFIG_FILES sample-config/nrpe.xinetd" ;;
 

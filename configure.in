@@ -14,6 +14,7 @@ AC_CONFIG_FILES([Makefile
 	init-script
 	init-script.debian
 	init-script.suse
+	nrpe.spec
 	sample-config/nrpe.cfg
 	sample-config/nrpe.xinetd])
 AC_PREFIX_DEFAULT(/usr/local/nagios)
@@ -22,10 +23,12 @@ PKG_NAME=nrpe
 PKG_VERSION="2.13"
 PKG_HOME_URL="http://www.nagios.org/"
 PKG_REL_DATE="11-11-2011"
+RPM_RELEASE=1
 AC_SUBST(PKG_NAME)
 AC_SUBST(PKG_VERSION)
 AC_SUBST(PKG_HOME_URL)
 AC_SUBST(PKG_REL_DATE)
+AC_SUBST(RPM_RELEASE)
 
 dnl Figure out how to invoke "install" and what install options to use.
 AC_PROG_INSTALL

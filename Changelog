@@ -3,6 +3,12 @@ NRPE Changelog
 **************
 
 
+x.xx - xx/xx/xxxx
+-----------------
+- Added SRC support on AIX (Thierry Bertaud)
+- Updated RPM SPEC file to support creating RPMs on AIX (Eric Stanley)
+- Updated logging to support compiling on AIX (Eric Stanley)
+
 2.13 - 11/11/2011
 -----------------
 - Applied Kaspersky Labs supplied patch for extending allowed_hosts (Konstantin Malov)
