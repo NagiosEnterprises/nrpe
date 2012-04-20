@@ -88,6 +88,7 @@ int     debug=FALSE;
 int     use_src=FALSE; /* Define parameter for SRC option */
 
 
+void complete_SSL_shutdown( SSL *);
 
 
 int main(int argc, char **argv){
@@ -151,7 +152,7 @@ int main(int argc, char **argv){
 		printf("Options:\n");
 		printf(" -n            = Do not use SSL\n");
 		printf(" <config_file> = Name of config file to use\n");
-		printf(" <mode>        = One of the following two operating modes:\n");  
+		printf(" <mode>        = One of the following operating modes:\n");  
 		printf("   -i          =    Run as a service under inetd or xinetd\n");
 		printf("   -d          =    Run as a standalone daemon\n");
 		/* Updates help section to indicate how to start under SRC on AIX */
@@ -1114,7 +1115,7 @@ void handle_connection(int sock){
 
 #ifdef HAVE_SSL
 		if(ssl){
-			SSL_shutdown(ssl);
+			complete_SSL_shutdown( ssl);
 			SSL_free(ssl);
 			syslog(LOG_INFO,"INFO: SSL Socket Shutdown.\n");
 			}
@@ -1131,7 +1132,7 @@ void handle_connection(int sock){
 
 #ifdef HAVE_SSL
 		if(ssl){
-			SSL_shutdown(ssl);
+			complete_SSL_shutdown( ssl);
 			SSL_free(ssl);
 			}
 #endif
@@ -1163,7 +1164,7 @@ void handle_connection(int sock){
 
 #ifdef HAVE_SSL
 		if(ssl){
-			SSL_shutdown(ssl);
+			complete_SSL_shutdown( ssl);
 			SSL_free(ssl);
 			}
 #endif
@@ -1292,7 +1293,7 @@ void handle_connection(int sock){
 
 #ifdef HAVE_SSL
 	if(ssl){
-		SSL_shutdown(ssl);
+		complete_SSL_shutdown( ssl);
 		SSL_free(ssl);
 		}
 #endif
@@ -1660,7 +1661,26 @@ int remove_pid_file(void){
 	return OK;
         }
 
+void complete_SSL_shutdown( SSL *ssl) {
 
+	/*  
+		Thanks to Jari Takkala (jtakkala@gmail.com) for the following information.
+
+		We need to call SSL_shutdown() at least twice, otherwise we'll 
+		be left with data in the socket receive buffer, and the 
+		subsequent process termination will cause TCP RST's to be sent 
+		to the client.
+
+		See http://bugs.ruby-lang.org/projects/ruby-trunk/repository/revisions/32219/diff
+		for more information.
+	*/
+
+	int x;
+
+	for( x = 0; x < 4; x++) {
+		if( SSL_shutdown( ssl)) break;
+	}
+}
 
 /* bail if daemon is running as root */
 int check_privileges(void){

@@ -5,6 +5,7 @@ NRPE Changelog
 
 x.xx - xx/xx/xxxx
 -----------------
+- Patched to shutdown SSL connection completely (Jari Takkala)
 - Added SRC support on AIX (Thierry Bertaud)
 - Updated RPM SPEC file to support creating RPMs on AIX (Eric Stanley)
 - Updated logging to support compiling on AIX (Eric Stanley)
