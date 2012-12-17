@@ -233,7 +233,8 @@ dnl Stolen from Python code: loewis@users.sourceforge.net
 #	])
 
 dnl Does user want to check for SSL?
-AC_ARG_ENABLE(ssl,--enable-ssl enables native SSL support,[
+AC_ARG_ENABLE([ssl],
+	AS_HELP_STRING([--enable-ssl],[enables native SSL support]),[
 	if test x$enableval = xyes; then
 		check_for_ssl=yes
 	else
@@ -245,18 +246,20 @@ dnl Optional SSL library and include paths
 ssl_dir=
 ssl_inc_dir=
 ssl_lib_dir=
-AC_ARG_WITH(ssl,--with-ssl=DIR sets location of the SSL installation,[
-	ssl_dir=$withval
-	])
-AC_ARG_WITH(ssl-inc,--with-ssl-inc=DIR sets location of the SSL include files,[
-	ssl_inc_dir=$withval
-	])
-AC_ARG_WITH(ssl-lib,--with-ssl-lib=DIR sets location of the SSL libraries,[
-	ssl_lib_dir=$withval
-	])
-AC_ARG_WITH(kerberos-inc,--with-kerberos-inc=DIR sets location of the Kerberos include files,[
-	kerberos_inc_dir=$withval
-	])
+AC_ARG_WITH([ssl],
+	AS_HELP_STRING([--with-ssl=DIR],[sets location of the SSL installation]),
+	[ssl_dir=$withval])
+AC_ARG_WITH([ssl-inc],
+	AS_HELP_STRING([--with-ssl-inc=DIR],
+		[sets location of the SSL include files]),
+	[ ssl_inc_dir=$withval])
+AC_ARG_WITH([ssl-lib],
+	AS_HELP_STRING([--with-ssl-lib=DIR],[sets location of the SSL libraries]),
+	[ssl_lib_dir=$withval])
+AC_ARG_WITH([kerberos-inc],
+	AS_HELP_STRING([--with-kerberos-inc=DIR],
+		[sets location of the Kerberos include files]),
+	[kerberos_inc_dir=$withval])
 
 dnl Check for SSL support
 dnl Modified version of Mark Ethan Trostler's macro <trostler@juniper.net>
@@ -362,13 +365,29 @@ if test x$check_for_ssl = xyes; then
 
 fi
 
-AC_ARG_WITH(log_facility,--with-log-facility=<facility> sets NRPE syslog facility,log_facility=$withval,log_facility=daemon)
+AC_ARG_WITH([log_facility],
+	AS_HELP_STRING([--with-log-facility=<facility>],
+		[sets NRPE syslog facility]),
+	[log_facility=$withval],
+	[log_facility=daemon])
 AC_SUBST(log_facility)
 AC_DEFINE_UNQUOTED(NRPE_LOG_FACILITY,["$log_facility"],[NRPE syslog facility])
 
-AC_ARG_WITH(nrpe_user,--with-nrpe-user=<user> sets user name to run NRPE,nrpe_user=$withval,nrpe_user=nagios)
-AC_ARG_WITH(nrpe_group,--with-nrpe-group=<group> sets group name to run NRPE,nrpe_group=$withval,nrpe_group=nagios)
-AC_ARG_WITH(nrpe_port,--with-nrpe-port=<port> sets port number for NRPE to listen on,nrpe_port=$withval,nrpe_port=5666)
+AC_ARG_WITH([nrpe_user],
+	AS_HELP_STRING([--with-nrpe-user=<user>],[sets user name to run NRPE]),
+	[nrpe_user=$withval],
+	[nrpe_user=nagios])
+
+AC_ARG_WITH([nrpe_group],
+	AS_HELP_STRING([--with-nrpe-group=<group>],[sets group name to run NRPE]),
+	[nrpe_group=$withval],
+	[nrpe_group=nagios])
+
+AC_ARG_WITH([nrpe_port],
+	AS_HELP_STRING([--with-nrpe-port=<port>],
+		[sets port number for NRPE to listen on]),
+	[nrpe_port=$withval],
+	[nrpe_port=5666])
 AC_SUBST(nrpe_user)
 AC_SUBST(nrpe_group)
 NRPE_INSTALL_OPTS="-o $nrpe_user -g $nrpe_group"
@@ -376,8 +395,16 @@ AC_SUBST(NRPE_INSTALL_OPTS)
 AC_SUBST(nrpe_port)
 AC_DEFINE_UNQUOTED(DEFAULT_SERVER_PORT,$nrpe_port,[Default port for NRPE daemon])
 
-AC_ARG_WITH(nagios_user,--with-nagios-user=<user> sets user name for file permissions,nagios_user=$withval,nagios_user=nagios)
-AC_ARG_WITH(nagios_group,--with-nagios-group=<grp> sets group name file permissions,nagios_group=$withval,nagios_group=nagios)
+AC_ARG_WITH([nagios_user],
+	AS_HELP_STRING([--with-nagios-user=<user>],
+		[sets user name for file permissions]),
+	[nagios_user=$withval],
+	[nagios_user=nagios])
+AC_ARG_WITH([nagios_group],
+	AS_HELP_STRING([--with-nagios-group=<grp>],
+		[sets group name file permissions]),
+	[nagios_group=$withval],
+	[nagios_group=nagios])
 AC_SUBST(nagios_user)
 AC_SUBST(nagios_group)
 NAGIOS_INSTALL_OPTS="-o $nagios_user -g $nagios_group"
@@ -410,7 +437,13 @@ if test "x$TARGET_OS" = "xSunOS" ; then
 fi
 AC_SUBST(TARGET_PLATFORM)
 
-AC_ARG_ENABLE(command-args,--enable-command-args allows clients to specify command arguments.  *** THIS IS A SECURITY RISK! *** Read the SECURITY file before using this option!,AC_DEFINE_UNQUOTED(ENABLE_COMMAND_ARGUMENTS,[1],[Enable command-line arguments]))
+AC_ARG_ENABLE([command-args],
+	AS_HELP_STRING([--enable-command-args],[allows clients to specify command arguments.  *** THIS IS A SECURITY RISK! *** Read the SECURITY file before using this option!]),
+	AC_DEFINE_UNQUOTED(ENABLE_COMMAND_ARGUMENTS,[1],[Enable command-line arguments]))
+
+AC_ARG_ENABLE([bash-command-substitution],
+	AS_HELP_STRING([--enable-bash-command-substitution],[allows clients to pass bash command substitutions of the form $(command).  *** THIS IS A HIGH SECURITY RISK! *** Read the SECURITY file before using this option!]),
+	AC_DEFINE_UNQUOTED(ENABLE_BASH_COMMAND_SUBSTITUTION,[1],[Enable bash command substitution]))
 
 
 AC_PATH_PROG(PERL,perl)

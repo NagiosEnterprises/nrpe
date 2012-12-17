@@ -5,6 +5,7 @@ NRPE Changelog
 
 x.xx - xx/xx/xxxx
 -----------------
+- Added configure option to allow bash command substitutions, disabled by default [bug #400] (Eric Stanley)
 - Patched to shutdown SSL connection completely (Jari Takkala)
 - Added SRC support on AIX (Thierry Bertaud)
 - Updated RPM SPEC file to support creating RPMs on AIX (Eric Stanley)

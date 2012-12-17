@@ -34,6 +34,8 @@
 
 #undef ENABLE_COMMAND_ARGUMENTS
 
+#undef ENABLE_BASH_COMMAND_SUBSTITUTION
+
 #undef socklen_t
 
 #undef HAVE_GETOPT_LONG

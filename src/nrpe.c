@@ -74,6 +74,7 @@ char    *pid_file=NULL;
 int     wrote_pid_file=FALSE;
 
 int     allow_arguments=FALSE;
+int     allow_bash_command_substitution=FALSE;
 
 int     allow_weak_random_seed=FALSE;
 
@@ -559,6 +560,9 @@ int read_config_file(char *filename){
 		else if(!strcmp(varname,"dont_blame_nrpe"))
 			allow_arguments=(atoi(varvalue)==1)?TRUE:FALSE;
 
+		else if(!strcmp(varname,"allow_bash_command_substitution"))
+			allow_bash_command_substitution=(atoi(varvalue)==1)?TRUE:FALSE;
+
  		else if(!strcmp(varname,"command_timeout")){
 			command_timeout=atoi(varvalue);
 			if(command_timeout<1){
@@ -836,6 +840,14 @@ void wait_for_connections(void){
 #ifdef ENABLE_COMMAND_ARGUMENTS
 	if(allow_arguments==TRUE)
 		syslog(LOG_NOTICE,"Warning: Daemon is configured to accept command arguments from clients!");
+#ifdef ENABLE_BASH_COMMAND_SUBSTITUTION
+	if(TRUE==allow_bash_command_substitution) {
+		if(TRUE==allow_arguments)
+			syslog(LOG_NOTICE,"Warning: Daemon is configured to accept command arguments with bash command substitutions!");
+		else
+			syslog(LOG_NOTICE,"Warning: Daemon is configured to accept command arguments with bash command substitutions, but is not configured to accept command argements from clients. Enable command arguments if you wish to allow command arguments with bash command substitutions.");
+		}
+#endif
 #endif
 
 	syslog(LOG_INFO,"Listening for connections on port %d\n",htons(myname.sin_port));
@@ -1836,13 +1848,24 @@ int validate_request(packet *pkt){
 			if(!strcmp(macro_argv[x],"")){
 				syslog(LOG_ERR,"Error: Request contained an empty command argument");
 				return ERROR;
-		                }
-		        }
-	        }
+				}
+			if(strstr(macro_argv[x],"$(")) {
+#ifndef ENABLE_BASH_COMMAND_SUBSTITUTION
+				syslog(LOG_ERR,"Error: Request contained a bash command substitution!");
+				return ERROR;
+#else
+				if(FALSE==allow_bash_command_substitution) {
+					syslog(LOG_ERR,"Error: Request contained a bash command substitution, but they are disallowed!");
+					return ERROR;
+					}
+#endif
+				}
+			}
+		}
 #endif
 
 	return OK;
-        }
+	}
 
 
 

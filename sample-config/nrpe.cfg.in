@@ -98,6 +98,24 @@ dont_blame_nrpe=0
 
 
 
+# BASH COMMAND SUBTITUTION
+# This option determines whether or not the NRPE daemon will allow clients
+# to specify arguments that contain bash command substitutions of the form
+# $(...).  This option only works if the daemon was configured with both 
+# the --enable-command-args and --enable-bash-command-substitution configure 
+# script options.
+#
+# *** ENABLING THIS OPTION IS A HIGH SECURITY RISK! *** 
+# Read the SECURITY file for information on some of the security implications
+# of enabling this variable.
+#
+# Values: 0=do not allow bash command substitutions, 
+#         1=allow bash command substitutions
+
+allow_bash_command_substitution=0
+
+
+
 # COMMAND PREFIX
 # This option allows you to prefix all commands with a user-defined string.
 # A space is automatically added between the specified prefix string and the
