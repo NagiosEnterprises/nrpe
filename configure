@@ -1852,9 +1852,9 @@ ac_config_files="$ac_config_files Makefile subst src/Makefile package/solaris/Ma
 
 
 PKG_NAME=nrpe
-PKG_VERSION="2.13"
+PKG_VERSION="2.14"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="11-11-2011"
+PKG_REL_DATE="12-21-2012"
 RPM_RELEASE=1
 
 

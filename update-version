@@ -10,10 +10,10 @@ else
 fi
 
 # Current version number
-CURRENTVERSION=2.13
+CURRENTVERSION=2.14
 
 # Last date
-LASTDATE=11-11-2011
+LASTDATE=12-21-2012
 
 if [ "x$1" = "x" ]
 then

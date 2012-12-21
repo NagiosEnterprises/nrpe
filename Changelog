@@ -3,7 +3,7 @@ NRPE Changelog
 **************
 
 
-x.xx - xx/xx/xxxx
+2.14 - 12/21/2012
 -----------------
 - Added configure option to allow bash command substitutions, disabled by default [bug #400] (Eric Stanley)
 - Patched to shutdown SSL connection completely (Jari Takkala)
