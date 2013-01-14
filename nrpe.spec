@@ -3,7 +3,7 @@
 
 %if %{isaix}
 	%define _prefix	/opt/nagios
-	%define _docdir %{_prefix}/doc/nrpe-2.13
+	%define _docdir %{_prefix}/doc/nrpe-2.14
 	%define nshome /opt/nagios
 	%define _make gmake
 %endif
@@ -21,7 +21,7 @@
 %define _sysconfdir /etc/nagios
 
 %define name nrpe
-%define version 2.13
+%define version 2.14
 %define release 1
 %define nsusr nagios
 %define nsgrp nagios
