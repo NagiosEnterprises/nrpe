@@ -4,7 +4,7 @@ dnl Disable caching
 define([AC_CACHE_LOAD],)
 define([AC_CACHE_SAVE],)
 
-2.14([nrpe],[2.13],[nagios-users@lists.sourceforge.net],[nrpe],[http://www.nagios.org])
+AC_INIT([nrpe],[2.14],[nagios-users@lists.sourceforge.net],[nrpe],[http://www.nagios.org])
 AC_CONFIG_SRCDIR([src/nrpe.c])
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile

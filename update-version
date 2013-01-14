@@ -48,7 +48,7 @@ perl -i -p -e "s/Last Modified: [0-9].*/Last Modified: $SHORTDATE/;" src/check_n
 # Update version number and release date in configure script and configure.in
 perl -i -p -e "s/PKG_VERSION=.*/PKG_VERSION=\"$1\"/;" configure
 perl -i -p -e "s/PKG_REL_DATE=.*\"/PKG_REL_DATE=\"$SHORTDATE\"/;" configure
-perl -i -p -e "if( /^AC_INIT/) { s/$CURRENT_VERSION/$1/; }" configure.in
+perl -i -p -e "if( /^AC_INIT/) { s/$CURRENTVERSION/$1/; }" configure.in
 perl -i -p -e "s/PKG_VERSION=.*/PKG_VERSION=\"$1\"/;" configure.in
 perl -i -p -e "s/PKG_REL_DATE=.*\"/PKG_REL_DATE=\"$SHORTDATE\"/;" configure.in
 
