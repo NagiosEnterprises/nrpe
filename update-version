@@ -1,5 +1,23 @@
 #!/bin/sh
 
+# Make sure autoconf is installed and is the correct version
+min_autoconf_major=2
+min_autoconf_minor=59
+autoconf_error="Autoconf version $min_autoconf_major.$min_autoconf_minor or later must be installed to run this script."
+autoconf_version=`(autoconf -V 2> /dev/null) |\
+		grep "^autoconf (GNU Autoconf)" | gawk '{print $NF}'`
+if [ "$autoconf_version" != "" ] ; then
+	autoconf_major=`echo $autoconf_version | gawk -F '.' '{print $1}'`
+	autoconf_minor=`echo $autoconf_version | gawk -F '.' '{print $2}'`
+	if [ $autoconf_major -lt $min_autoconf_major -o $autoconf_minor -lt $min_autoconf_minor ] ; then
+		echo $autoconf_error
+		exit 1
+	fi
+else
+	echo $autoconf_error
+	exit 1
+fi
+
 # Get date (two formats)
 if [ -n "$2" ]; then
     LONGDATE=`date -d "$2" "+%B %d, %Y"`
@@ -45,12 +63,14 @@ perl -i -p -e "s/Last Modified: [0-9].*/Last Modified: $SHORTDATE/;" include/com
 perl -i -p -e "s/Last Modified: [0-9].*/Last Modified: $SHORTDATE/;" src/nrpe.c
 perl -i -p -e "s/Last Modified: [0-9].*/Last Modified: $SHORTDATE/;" src/check_nrpe.c
 
-# Update version number and release date in configure script and configure.in
-perl -i -p -e "s/PKG_VERSION=.*/PKG_VERSION=\"$1\"/;" configure
-perl -i -p -e "s/PKG_REL_DATE=.*\"/PKG_REL_DATE=\"$SHORTDATE\"/;" configure
+# Update version number and release date in configure.in
 perl -i -p -e "if( /^AC_INIT/) { s/$CURRENTVERSION/$1/; }" configure.in
 perl -i -p -e "s/PKG_VERSION=.*/PKG_VERSION=\"$1\"/;" configure.in
 perl -i -p -e "s/PKG_REL_DATE=.*\"/PKG_REL_DATE=\"$SHORTDATE\"/;" configure.in
+
+# Run autoconf to update configure (this is easier than updating every instance
+# of the version number in configure)
+autoconf
 
 # Update RPM spec file with version number
 perl -i -p -e "s/%define version .*/%define version $1/;" nrpe.spec
