@@ -24,7 +24,7 @@ ABSINSTALLDIR=@abs_builddir@/install
 build:
 	if [ ! -d build ] ; then mkdir build ; fi
 	if [ ! -d install ] ; then mkdir install ; fi
-	cd build; ../../../configure $(SOLARIS_CONFIG_OPTS); make all; DESTDIR=$(ABSINSTALLDIR) make install install-daemon-config
+	cd build; ../../../configure $(SOLARIS_CONFIG_OPTS); $(MAKE) all; DESTDIR=$(ABSINSTALLDIR) $(MAKE) install install-daemon-config
 
 prototype: $(PKGDIR)
 	@echo "i pkginfo" > $(PKGDIR)/prototype
