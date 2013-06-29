@@ -40,7 +40,11 @@ int deny_severity=LOG_WARNING;
 #endif
 
 #ifdef HAVE_SSL
+#ifdef __sun
+SSL_METHOD *meth;
+#else
 const SSL_METHOD *meth;
+#endif
 SSL_CTX *ctx;
 int use_ssl=TRUE;
 #else
@@ -840,7 +844,7 @@ void create_listener(struct addrinfo *ai) {
 	if (ai->ai_family == AF_INET6) {
 		if (setsockopt(listen_sock, IPPROTO_IPV6, IPV6_V6ONLY, &flag, 
 				sizeof(flag)) == -1) {
-			error("setsockopt IPV6_V6ONLY: %s", strerror(errno));
+			fprintf(stderr, "setsockopt IPV6_V6ONLY: %s", strerror(errno));
 			}
 		}
 #endif

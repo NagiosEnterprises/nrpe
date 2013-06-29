@@ -41,7 +41,11 @@ int show_license=FALSE;
 int show_version=FALSE;
 
 #ifdef HAVE_SSL
+#ifdef __sun
+SSL_METHOD *meth;
+#else
 const SSL_METHOD *meth;
+#endif
 SSL_CTX *ctx;
 SSL *ssl;
 int use_ssl=TRUE;
