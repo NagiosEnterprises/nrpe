@@ -40,9 +40,12 @@
 #define CHAR_TO_NUMBER(c)   ((c) - '0')
 
 struct ip_acl {
-        struct in_addr  addr;
-        struct in_addr  mask;
-        struct ip_acl   *next;
+	int				family;
+	struct in_addr	addr;
+	struct in_addr	mask;
+	struct in6_addr	addr6;
+	struct in6_addr	mask6;
+	struct ip_acl   *next;
 };
 
 struct dns_acl {
@@ -57,8 +60,10 @@ static struct dns_acl *dns_acl_head, *dns_acl_prev;
 /* Functions */
 void parse_allowed_hosts(char *allowed_hosts);
 int add_ipv4_to_acl(char *ipv4);
+int add_ipv6_to_acl(char *ipv6);
 int add_domain_to_acl(char *domain);
-int is_an_allowed_host(struct in_addr);
+//int is_an_allowed_host(struct in_addr);
+int is_an_allowed_host(int, void *);
 unsigned int prefix_from_mask(struct in_addr mask);
 void show_acl_lists(void);
 

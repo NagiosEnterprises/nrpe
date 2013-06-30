@@ -40,7 +40,7 @@ int deny_severity=LOG_WARNING;
 #endif
 
 #ifdef HAVE_SSL
-SSL_METHOD *meth;
+const SSL_METHOD *meth;
 SSL_CTX *ctx;
 int use_ssl=TRUE;
 #else
@@ -50,6 +50,9 @@ int use_ssl=FALSE;
 #define DEFAULT_COMMAND_TIMEOUT	60			/* default timeout for execution of plugins */
 #define MAXFD                   64
 #define NASTY_METACHARS         "|`&><'\"\\[]{};"
+#define howmany(x,y)	(((x)+((y)-1))/(y))
+#define MAX_LISTEN_SOCKS        16
+
 
 char    *command_name=NULL;
 char    *macro_argv[MAX_COMMAND_ARGUMENTS];
@@ -57,7 +60,11 @@ char    *macro_argv[MAX_COMMAND_ARGUMENTS];
 char    config_file[MAX_INPUT_BUFFER]="nrpe.cfg";
 int     log_facility=LOG_DAEMON;
 int     server_port=DEFAULT_SERVER_PORT;
-char    server_address[16]="0.0.0.0";
+char    server_address[NI_MAXHOST]="";
+struct addrinfo *listen_addrs=NULL;
+int		listen_socks[MAX_LISTEN_SOCKS];
+int		num_listen_socks = 0;
+int		address_family=AF_UNSPEC;
 int     socket_timeout=DEFAULT_SOCKET_TIMEOUT;
 int     command_timeout=DEFAULT_COMMAND_TIMEOUT;
 int     connection_timeout=DEFAULT_CONNECTION_TIMEOUT;
@@ -148,11 +155,13 @@ int main(int argc, char **argv){
 
 	else if(result!=OK || show_help==TRUE){
 
-		printf("Usage: nrpe [-n] -c <config_file> <mode>\n");
+		printf("Usage: nrpe [-n] -c <config_file> [-4|-6] <mode>\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" -n            = Do not use SSL\n");
 		printf(" <config_file> = Name of config file to use\n");
+		printf(" -4            = use ipv4 only\n");
+		printf(" -6            = use ipv6 only\n");
 		printf(" <mode>        = One of the following operating modes:\n");  
 		printf("   -i          =    Run as a service under inetd or xinetd\n");
 		printf("   -d          =    Run as a standalone daemon\n");
@@ -314,7 +323,7 @@ int main(int argc, char **argv){
 		/* make sure we're not root */
 		check_privileges();
 
-		do{
+		do {
 
 			/* reset flags */
 			sigrestart=FALSE;
@@ -338,7 +347,7 @@ int main(int argc, char **argv){
 				        }
 			        }
 
-		        }while(sigrestart==TRUE && sigshutdown==FALSE);
+			} while(sigrestart==TRUE && sigshutdown==FALSE);
 
 		/* remove pid file */
 		remove_pid_file();
@@ -384,7 +393,7 @@ int main(int argc, char **argv){
 		/* make sure we're not root */
 		check_privileges();
 
-		do{
+		do {
 
 			/* reset flags */
 			sigrestart=FALSE;
@@ -408,7 +417,7 @@ int main(int argc, char **argv){
 				        }
 			        }
 	
-		        }while(sigrestart==TRUE && sigshutdown==FALSE);
+			} while(sigrestart==TRUE && sigshutdown==FALSE);
 
 		/* remove pid file */
 		remove_pid_file();
@@ -774,17 +783,106 @@ command *find_command(char *command_name){
         }
 
 
+/*
+ * Close all listening sockets
+ */
+static void close_listen_socks(void) {
+	int i;
+
+	for (i = 0; i <= num_listen_socks; i++) {
+		close(listen_socks[i]);
+		num_listen_socks--;
+		}
+	}
+
+/* Start listen on a particular port */
+void create_listener(struct addrinfo *ai) {
+
+	int ret;
+	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
+	int listen_sock;
+	int flag=1;
+
+	if(ai->ai_family != AF_INET && ai->ai_family != AF_INET6) return;
+
+	if(num_listen_socks >= MAX_LISTEN_SOCKS) {
+		syslog(LOG_ERR, "Too many listen sockets. Enlarge MAX_LISTEN_SOCKS");
+		exit(1);
+		}
+
+	if((ret = getnameinfo(ai->ai_addr, ai->ai_addrlen, ntop, sizeof(ntop), 
+			strport, sizeof(strport), NI_NUMERICHOST|NI_NUMERICSERV)) != 0) {
+		syslog(LOG_ERR, "getnameinfo failed: %.100s", gai_strerror(ret));
+		return;
+		}
+
+	/* Create socket for listening. */
+	listen_sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+	if (listen_sock < 0) {
+		/* kernel may not support ipv6 */
+		syslog(LOG_ERR, "socket: %.100s", strerror(errno));
+		return;
+		}
+
+	/* socket should be non-blocking */
+	fcntl(listen_sock,F_SETFL,O_NONBLOCK);
+
+	/* set the reuse address flag so we don't get errors when 
+		restarting */
+	if(setsockopt(listen_sock, SOL_SOCKET,SO_REUSEADDR, &flag, 
+			sizeof(flag)) < 0) {
+		syslog(LOG_ERR, "setsockopt SO_REUSEADDR: %s", strerror(errno));
+		return;
+		}
+
+#ifdef IPV6_V6ONLY
+	/* Only communicate in IPv6 over AF_INET6 sockets. */
+	if (ai->ai_family == AF_INET6) {
+		if (setsockopt(listen_sock, IPPROTO_IPV6, IPV6_V6ONLY, &flag, 
+				sizeof(flag)) == -1) {
+			error("setsockopt IPV6_V6ONLY: %s", strerror(errno));
+			}
+		}
+#endif
+
+	/* Bind the socket to the desired port. */
+	if (bind(listen_sock, ai->ai_addr, ai->ai_addrlen) < 0) {
+		syslog(LOG_ERR, "Bind to port %s on %s failed: %.200s.", strport, 
+				ntop, strerror(errno)); close(listen_sock);
+		return;
+		}
+	listen_socks[num_listen_socks] = listen_sock;
+	num_listen_socks++;
+
+	/* Start listening on the port. */
+	if (listen(listen_sock, 5) < 0) {
+		syslog(LOG_ERR, "listen on [%s]:%s: %.100s", ntop, strport, 
+				strerror(errno));
+		exit(1);
+		}
+
+	syslog(LOG_INFO, "Server listening on %s port %s.", ntop, strport);
+	}
 
 /* wait for incoming connection requests */
 void wait_for_connections(void){
+	struct addrinfo *ai;
+	fd_set *fdset=NULL;
+	int maxfd=0;
+	struct sockaddr_storage from;
+	socklen_t fromlen;
+	char ipstr[INET6_ADDRSTRLEN];
+	int i;
+	int r;
+
 	struct sockaddr_in myname;
 	struct sockaddr_in *nptr;
-	struct sockaddr addr;
+	struct sockaddr_in6 *nptr6;
+	struct sockaddr_storage addr;
 	int rc;
 	int sock, new_sd;
 	socklen_t addrlen;
 	pid_t pid;
-	int flag=1;
 	fd_set fdread;
 	struct timeval timeout;
 	int retval;
@@ -792,48 +890,17 @@ void wait_for_connections(void){
 	struct request_info req;
 #endif
 
-	/* create a socket for listening */
-	sock=socket(AF_INET,SOCK_STREAM,0);
+	add_listen_addr(&listen_addrs, address_family, 
+			(strcmp(server_address, "") == 0) ? NULL : server_address, 
+			server_port);
 
-	/* exit if we couldn't create the socket */
-	if(sock<0){
-	        syslog(LOG_ERR,"Network server socket failure (%d: %s)",errno,strerror(errno));
-	        exit(STATE_CRITICAL);
+	for(ai = listen_addrs; ai; ai = ai->ai_next) {
+		create_listener(ai);
 		}
 
-	/* socket should be non-blocking */
-	fcntl(sock,F_SETFL,O_NONBLOCK);
-
-        /* set the reuse address flag so we don't get errors when restarting */
-        flag=1;
-        if(setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(char *)&flag,sizeof(flag))<0){
-		syslog(LOG_ERR,"Could not set reuse address option on socket!\n");
-		exit(STATE_UNKNOWN);
-	        }
-
-	myname.sin_family=AF_INET;
-	myname.sin_port=htons(server_port);
- 	bzero(&myname.sin_zero,8);
-
-	/* what address should we bind to? */
-        if(!strlen(server_address))
-		myname.sin_addr.s_addr=INADDR_ANY;
-
-	else if(!my_inet_aton(server_address,&myname.sin_addr)){
-		syslog(LOG_ERR,"Server address is not a valid IP address\n");
-		exit(STATE_CRITICAL);
-                }
-
-	/* bind the address to the Internet socket */
-	if(bind(sock,(struct sockaddr *)&myname,sizeof(myname))<0){
-		syslog(LOG_ERR,"Network server bind failure (%d: %s)\n",errno,strerror(errno));
-	        exit(STATE_CRITICAL);
-	        }
-
-	/* open the socket for listening */
-	if(listen(sock,5)<0){
-	    	syslog(LOG_ERR,"Network server listen failure (%d: %s)\n",errno,strerror(errno));
-	        exit(STATE_CRITICAL);
+	if (!num_listen_socks) {
+   		syslog(LOG_ERR, "Cannot bind to any address.");
+		exit(1);
 		}
 
 	/* log warning about command arguments */
@@ -858,26 +925,33 @@ void wait_for_connections(void){
 	/* listen for connection requests - fork() if we get one */
 	while(1){
 
-		/* wait for a connection request */
-	        while(1){
+		/* bail out if necessary */
+		if(sigrestart==TRUE || sigshutdown==TRUE) break;
 
-			/* wait until there's something to do */
-			FD_ZERO(&fdread);
-			FD_SET(sock,&fdread);
-			timeout.tv_sec=0;
-			timeout.tv_usec=500000;
-			retval=select(sock+1,&fdread,NULL,&fdread,&timeout);
+		for(i = 0; i < num_listen_socks; i++) {
+			if (listen_socks[i] > maxfd) maxfd = listen_socks[i];
+			}
 
-			/* bail out if necessary */
-			if(sigrestart==TRUE || sigshutdown==TRUE)
-				break;
+		if(fdset != NULL) free(fdset);
+		fdset = (fd_set *)calloc(howmany(maxfd + 1, NFDBITS), sizeof(fd_mask));
 
-			/* error */
-			if(retval<0)
-				continue;
+		for (i = 0; i < num_listen_socks; i++) FD_SET(listen_socks[i], fdset);
+
+		/* Wait in select until there is a connection. */
+		retval = select(maxfd+1, fdset, NULL, NULL, NULL);
+
+		/* bail out if necessary */
+		if(sigrestart==TRUE || sigshutdown==TRUE) break;
+
+		/* error */
+		if(retval<0) continue;
+
+		for (i = 0; i < num_listen_socks; i++) {
+       		if (!FD_ISSET(listen_socks[i], fdset)) continue;
+			fromlen = sizeof(from);
 
 			/* accept a new connection request */
-			new_sd=accept(sock,0,0);
+			new_sd = accept(listen_socks[i], (struct sockaddr *)&from, &fromlen);
 
 			/* some kind of error occurred... */
 			if(new_sd<0){
@@ -900,144 +974,189 @@ void wait_for_connections(void){
 
 				/* else handle the error later */
 				break;
-			        }
+				}
 
-			/* connection was good */
-			break;
-		        }
-
-		/* bail out if necessary */
-		if(sigrestart==TRUE || sigshutdown==TRUE)
-			break;
-
-		/* child process should handle the connection */
+			/* child process should handle the connection */
     		pid=fork();
-    		if(pid==0){
+    		if(pid==0) {
 
-			/* fork again so we don't create zombies */
-			pid=fork();
-			if(pid==0){
+				/* fork again so we don't create zombies */
+				pid=fork();
+				if(pid==0) {
 
-				/* hey, there was an error... */
-				if(new_sd<0){
+					/* hey, there was an error... */
+					if(new_sd<0) {
 
-					/* log error to syslog facility */
-					syslog(LOG_ERR,"Network server accept failure (%d: %s)",errno,strerror(errno));
+						/* log error to syslog facility */
+						syslog(LOG_ERR, "Network server accept failure (%d: %s)",
+								errno, strerror(errno));
 
-					/* close socket prioer to exiting */
-					close(sock);
+						/* close socket prioer to exiting */
+						close(sock);
 			
-					return;
-				        }
+						return;
+						}
 
-				/* handle signals */
-				signal(SIGQUIT,child_sighandler);
-				signal(SIGTERM,child_sighandler);
-				signal(SIGHUP,child_sighandler);
+					/* handle signals */
+					signal(SIGQUIT,child_sighandler);
+					signal(SIGTERM,child_sighandler);
+					signal(SIGHUP,child_sighandler);
 
-				/* grandchild does not need to listen for connections, so close the socket */
-				close(sock);  
+					/* grandchild does not need to listen for connections */
+					close_listen_socks();
 
-				/* find out who just connected... */
-				addrlen=sizeof(addr);
-				rc=getpeername(new_sd,&addr,&addrlen);
+					/* find out who just connected... */
+					addrlen=sizeof(addr);
+					rc=getpeername(new_sd, (struct sockaddr *)&addr, &addrlen);
 
-				if(rc<0){
+					if(rc<0) {
 
 				        /* log error to syslog facility */
-					syslog(LOG_ERR,"Error: Network server getpeername() failure (%d: %s)",errno,strerror(errno));
+						syslog(LOG_ERR, "Error: Network server getpeername() failure (%d: %s)", 
+								errno, strerror(errno));
 
 				        /* close socket prior to exiting */
-					close(new_sd);
+						close(new_sd);
 
-					return;
-		                        }
+						return;
+						}
 
-				nptr=(struct sockaddr_in *)&addr;
+					/* is this is a blessed machine? */
+					if(allowed_hosts) {
+						switch(addr.ss_family) {
+						case AF_INET:
+							nptr = (struct sockaddr_in *)&addr;
 
-				/* log info to syslog facility */
-				if(debug==TRUE)
-					syslog(LOG_DEBUG,"Connection from %s port %d",inet_ntoa(nptr->sin_addr),nptr->sin_port);
-
-				/* is this is a blessed machine? */
-				if(allowed_hosts){
-                	switch(nptr->sin_family) {
-                    	case AF_INET:
-                        	if(!is_an_allowed_host(nptr->sin_addr)) {
-                            	/* log error to syslog facility */
-                            	syslog(LOG_ERR,"Host %s is not allowed to talk to us!",inet_ntoa(nptr->sin_addr));
+							/* log info to syslog facility */
+							if(debug==TRUE) {
+								syslog(LOG_DEBUG, "Connection from %s port %d",
+										inet_ntoa(nptr->sin_addr), 
+										nptr->sin_port);
+								}
+							if(!is_an_allowed_host(AF_INET,
+									(void *)&(nptr->sin_addr))) {
+								/* log error to syslog facility */
+								syslog(LOG_ERR,
+										"Host %s is not allowed to talk to us!",
+										inet_ntoa(nptr->sin_addr));
 
 								/* log info to syslog facility */
-								if ( debug==TRUE )
-                                	syslog(LOG_DEBUG,"Connection from %s closed.",inet_ntoa(nptr->sin_addr));
+								if ( debug==TRUE ) {
+									syslog(LOG_DEBUG, 
+											"Connection from %s closed.",
+											inet_ntoa(nptr->sin_addr));
+									}
 
 								/* close socket prior to exiting */
 								close(new_sd);
 								exit(STATE_OK);
-								} else {
-									/* log info to syslog facility */
-									if(debug==TRUE)
-										syslog(LOG_DEBUG,"Host address is in allowed_hosts");
+								}
+							else {
+								/* log info to syslog facility */
+								if(debug==TRUE) {
+									syslog(LOG_DEBUG,
+											"Host address is in allowed_hosts");
+									}
 
 								}
 							break;
-                           
 						case AF_INET6:
-							syslog(LOG_DEBUG,"Connection from %s closed. We don't support AF_INET6 addreess family in ACL\n", inet_ntoa(nptr->sin_addr));
+							nptr6 = (struct sockaddr_in6 *)&addr;
+							if(inet_ntop(AF_INET6, 
+									(const void *)&(nptr6->sin6_addr), ipstr, 
+									sizeof(ipstr)) == NULL) {
+								strncpy(ipstr, "Unknown", sizeof(ipstr));
+								} 
+
+							/* log info to syslog facility */
+							if(debug==TRUE) {
+								syslog(LOG_DEBUG, "Connection from %s port %d",
+										ipstr, nptr6->sin6_port);
+								}
+							if(!is_an_allowed_host(AF_INET6, 
+									(void *)&(nptr6->sin6_addr))) {
+								/* log error to syslog facility */
+								syslog(LOG_ERR,
+										"Host %s is not allowed to talk to us!",
+										ipstr);
+
+								/* log info to syslog facility */
+								if ( debug==TRUE ) {
+									syslog(LOG_DEBUG, 
+											"Connection from %s closed.",
+											ipstr);
+									}
+
+								/* close socket prior to exiting */
+								close(new_sd);
+								exit(STATE_OK);
+								}
+							else {
+								/* log info to syslog facility */
+								if(debug==TRUE) {
+									syslog(LOG_DEBUG,
+											"Host address is in allowed_hosts");
+									}
+
+								}
 							break;
-					}
-				}
+							}
+						}
 
 #ifdef HAVE_LIBWRAP
+					/* Check whether or not connections are allowed from this host */
+					request_init(&req,RQ_DAEMON,"nrpe",RQ_FILE,new_sd,0);
+					fromhost(&req);
 
-				/* Check whether or not connections are allowed from this host */
-				request_init(&req,RQ_DAEMON,"nrpe",RQ_FILE,new_sd,0);
-				fromhost(&req);
+					if(!hosts_access(&req)){
 
-				if(!hosts_access(&req)){
+						syslog(LOG_DEBUG,"Connection refused by TCP wrapper");
 
-					syslog(LOG_DEBUG,"Connection refused by TCP wrapper");
+						/* refuse the connection */
+						refuse(&req);
+						close(new_sd);
 
-					/* refuse the connection */
-					refuse(&req);
-					close(new_sd);
-
-					/* should not be reached */
-					syslog(LOG_ERR,"libwrap refuse() returns!");
-					exit(STATE_CRITICAL);
-					}
+						/* should not be reached */
+						syslog(LOG_ERR,"libwrap refuse() returns!");
+						exit(STATE_CRITICAL);
+						}
 #endif
 
-				/* handle the client connection */
-				handle_connection(new_sd);
+					/* handle the client connection */
+					handle_connection(new_sd);
 
-				/* log info to syslog facility */
-				if(debug==TRUE)
-					syslog(LOG_DEBUG,"Connection from %s closed.",inet_ntoa(nptr->sin_addr));
+					/* log info to syslog facility */
+					if(debug==TRUE) {
+						syslog(LOG_DEBUG,"Connection from %s closed.",ipstr);
+						}
 
-				/* close socket prior to exiting */
+					/* close socket prior to exiting */
+					close(new_sd);
+
+					exit(STATE_OK);
+					}
+
+				/* first child returns immediately, grandchild is inherited by 
+					INIT process -> no zombies... */
+				else
+					exit(STATE_OK);
+				}
+		
+			/* parent ... */
+			else {
+				/* parent doesn't need the new connection */
 				close(new_sd);
 
-				exit(STATE_OK);
-    			        }
+				/* parent waits for first child to exit */
+				waitpid(pid,NULL,0);
+				}
+  			}
+		}
 
-			/* first child returns immediately, grandchild is inherited by INIT process -> no zombies... */
-			else
-				exit(STATE_OK);
-		        }
-		
-		/* parent ... */
-		else{
-			/* parent doesn't need the new connection */
-			close(new_sd);
-
-			/* parent waits for first child to exit */
-			waitpid(pid,NULL,0);
-		        }
-  		}
-
-	/* close the socket we're listening on */
-	close(sock);
+	/* close the sockets we're listening on */
+	close_listen_socks();
+	freeaddrinfo(listen_addrs);
+	listen_addrs=NULL;
 
 	return;
 	}
@@ -1962,6 +2081,8 @@ int process_arguments(int argc, char **argv){
 		{"inetd", no_argument, 0, 'i'},
 		/* To compatibility between short and long options but not used on AIX */
 		{"src", no_argument, 0, 's'},
+		{"4", no_argument, 0, '4'},
+		{"6", no_argument, 0, '4'},
 		{"daemon", no_argument, 0, 'd'},
 		{"no-ssl", no_argument, 0, 'n'},
 		{"help", no_argument, 0, 'h'},
@@ -1974,7 +2095,7 @@ int process_arguments(int argc, char **argv){
 	if(argc<2)
 		return ERROR;
 
-	snprintf(optchars,MAX_INPUT_BUFFER,"c:hVldins");
+	snprintf(optchars,MAX_INPUT_BUFFER,"c:hVldi46n");
 
 	while(1){
 #ifdef HAVE_GETOPT_LONG
@@ -2009,6 +2130,12 @@ int process_arguments(int argc, char **argv){
 		case 'i':
 			use_inetd=TRUE;
 			have_mode=TRUE;
+			break;
+		case '4':
+			address_family=AF_INET;
+			break;
+		case '6':
+			address_family=AF_INET6;
 			break;
 		case 'n':
 			use_ssl=FALSE;

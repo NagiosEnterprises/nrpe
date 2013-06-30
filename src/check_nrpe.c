@@ -24,8 +24,11 @@
 
 #define DEFAULT_NRPE_COMMAND	"_NRPE_CHECK"  /* check version of NRPE daemon */
 
-int server_port=DEFAULT_SERVER_PORT;
+u_short server_port=DEFAULT_SERVER_PORT;
 char *server_name=NULL;
+char *bind_address=NULL;
+struct sockaddr_storage hostaddr;
+int address_family=AF_UNSPEC;
 char *command_name=NULL;
 int socket_timeout=DEFAULT_SOCKET_TIMEOUT;
 int timeout_return_code=STATE_CRITICAL;
@@ -38,7 +41,7 @@ int show_license=FALSE;
 int show_version=FALSE;
 
 #ifdef HAVE_SSL
-SSL_METHOD *meth;
+const SSL_METHOD *meth;
 SSL_CTX *ctx;
 SSL *ssl;
 int use_ssl=TRUE;
@@ -84,12 +87,15 @@ int main(int argc, char **argv){
 
 	if(result!=OK || show_help==TRUE){
 
-		printf("Usage: check_nrpe -H <host> [-n] [-u] [-p <port>] [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
+		printf("Usage: check_nrpe -H <host> [ -b <bindaddr> ] [-4] [-6] [-n] [-u] [-p <port>] [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" -n         = Do no use SSL\n");
 		printf(" -u         = Make socket timeouts return an UNKNOWN state instead of CRITICAL\n");
 		printf(" <host>     = The address of the host running the NRPE daemon\n");
+		printf(" <bindaddr> = bind to local address\n");
+		printf(" -4         = user ipv4 only\n");
+		printf(" -6         = user ipv6 only\n");
 		printf(" [port]     = The port on which the daemon is running (default=%d)\n",DEFAULT_SERVER_PORT);
 		printf(" [timeout]  = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
 		printf(" [command]  = The name of the command that the remote daemon should run\n");
@@ -143,7 +149,13 @@ int main(int argc, char **argv){
 	alarm(socket_timeout);
 
 	/* try to connect to the host at the given port number */
-	result=my_tcp_connect(server_name,server_port,&sd);
+	if((sd=my_connect(server_name, &hostaddr, server_port, address_family, 
+			bind_address)) < 0 ) {
+		exit (255);
+		}
+	else {
+		result=STATE_OK;
+	}
 
 #ifdef HAVE_SSL
 	/* do SSL handshake */
@@ -320,10 +332,13 @@ int process_arguments(int argc, char **argv){
 	int option_index=0;
 	static struct option long_options[]={
 		{"host", required_argument, 0, 'H'},
+		{"bind", required_argument, 0, 'b'},
 		{"command", required_argument, 0, 'c'},
 		{"args", required_argument, 0, 'a'},
 		{"no-ssl", no_argument, 0, 'n'},
 		{"unknown-timeout", no_argument, 0, 'u'},
+		{"ipv4", no_argument, 0, '4'},
+		{"ipv6", no_argument, 0, '6'},
 		{"timeout", required_argument, 0, 't'},
 		{"port", required_argument, 0, 'p'},
 		{"help", no_argument, 0, 'h'},
@@ -336,7 +351,7 @@ int process_arguments(int argc, char **argv){
 	if(argc<2)
 		return ERROR;
 
-	snprintf(optchars,MAX_INPUT_BUFFER,"H:c:a:t:p:nuhl");
+	snprintf(optchars,MAX_INPUT_BUFFER,"H:b:c:a:t:p:nu46hl");
 
 	while(1){
 #ifdef HAVE_GETOPT_LONG
@@ -353,6 +368,9 @@ int process_arguments(int argc, char **argv){
 		case '?':
 		case 'h':
 			show_help=TRUE;
+			break;
+		case 'b':
+			bind_address=strdup(optarg);
 			break;
 		case 'V':
 			show_version=TRUE;
@@ -384,6 +402,12 @@ int process_arguments(int argc, char **argv){
 			break;
 		case 'u':
 			timeout_return_code=STATE_UNKNOWN;
+			break;
+		case '4':
+			address_family=AF_INET;
+			break;
+		case '6':
+			address_family=AF_INET6;
 			break;
 		default:
 			return ERROR;

@@ -234,6 +234,7 @@ int add_ipv4_to_acl(char *ipv4) {
         }
 
         /* Save result in ACL ip list */
+        ip_acl_curr->family = AF_INET;
         ip_acl_curr->addr.s_addr = ip;
         ip_acl_curr->mask.s_addr = mask;
         ip_acl_curr->next = NULL;
@@ -246,6 +247,107 @@ int add_ipv4_to_acl(char *ipv4) {
         ip_acl_prev = ip_acl_curr;
         return 1;
 }
+
+/*
+ * Add IPv6 host or network to IP ACL. Host will be added to ACL only if 
+ * it has passed IPv6 format check.
+ *
+ */
+
+int add_ipv6_to_acl(char *ipv6) {
+	char	*ipv6tmp;
+	char 	*addrtok;
+	char	*addrsave;
+	struct in6_addr addr;
+	struct in6_addr mask;
+	int		maskval;
+	int		byte, bit;
+	int		nbytes = sizeof(mask.s6_addr) / sizeof(mask.s6_addr[0]);
+	int		x;
+	struct ip_acl	*ip_acl_curr;
+
+	/* Save temporary copy of ipv6 so we can use the original in error 
+		messages if needed */
+	ipv6tmp = strdup(ipv6);
+	if(NULL == ipv6tmp) {
+		syslog(LOG_ERR, "Memory allocation failed for copy of address: %s\n", 
+				ipv6);
+		return 0;
+		}
+
+	/* Parse the address itself */
+	addrtok = strtok_r(ipv6tmp, "/", &addrsave);
+	if(inet_pton(AF_INET6, addrtok, &addr) <= 0) {
+		syslog(LOG_ERR, "Invalid IPv6 address in ACL: %s\n", ipv6);
+		free(ipv6tmp);
+		return 0;
+		}
+
+	/* Check whether there is a netmask */
+	addrtok = strtok_r(NULL, "/", &addrsave);
+	if(NULL != addrtok) {
+		/* If so, build a netmask */
+
+		/* Get the number of bits in the mask */
+		maskval = atoi(addrtok);
+		if(maskval < 0 || maskval > 128) {
+			syslog(LOG_ERR, "Invalid IPv6 netmask in ACL: %s\n", ipv6);
+			free(ipv6tmp);
+			return 0;
+			}
+
+		/* Initialize to zero */
+		for(x = 0; x < nbytes; x++) {
+			mask.s6_addr[x] = 0;
+			}
+
+		/* Set mask based on mask bits */
+		byte = 0;
+		bit = 7;
+		while(maskval > 0) {
+			mask.s6_addr[byte] |= 1 << bit;
+			bit -= 1;
+			if(bit < 0) {
+				bit = 7;
+				byte++;
+				}
+			maskval--;
+			}
+		}
+	else {
+		/* Otherwise, this is a single address */
+		for(x = 0; x < nbytes; x++) {
+			mask.s6_addr[x] = 0xFF;
+			}
+		}
+
+	/* Add address to ip_acl list */
+	ip_acl_curr = malloc(sizeof(*ip_acl_curr));
+	if(NULL == ip_acl_curr) {
+		syslog(LOG_ERR, "Memory allocation failed for ACL: %s\n", ipv6);
+		return 0;
+		}
+
+	/* Save result in ACL ip list */
+	ip_acl_curr->family = AF_INET6;
+	for(x = 0; x < nbytes; x++) {
+		ip_acl_curr->addr6.s6_addr[x] = 
+				addr.s6_addr[x] & mask.s6_addr[x];
+		ip_acl_curr->mask6.s6_addr[x] = mask.s6_addr[x];
+		}
+	ip_acl_curr->next = NULL;
+
+	if(NULL == ip_acl_head) {
+		ip_acl_head = ip_acl_curr;
+		}
+	else {
+		ip_acl_prev->next = ip_acl_curr;
+		}
+	ip_acl_prev = ip_acl_curr;
+
+	free(ipv6tmp);
+	return 1;
+	}
 
 /*
  * Add domain to DNS ACL list
@@ -356,33 +458,74 @@ int add_domain_to_acl(char *domain) {
  * 0 - on failure
  */
 
-int is_an_allowed_host(struct in_addr host) {
-        struct ip_acl *ip_acl_curr = ip_acl_head;
-        struct dns_acl *dns_acl_curr = dns_acl_head;
-        struct in_addr addr;
-        struct hostent *he;
+int is_an_allowed_host(int family, void *host) {
+	struct ip_acl *ip_acl_curr = ip_acl_head;
+	int		nbytes;
+	int		x;
+	struct dns_acl *dns_acl_curr = dns_acl_head;
+	struct in_addr addr;
+	struct in6_addr addr6;
+	struct hostent *he;
 
-        while (ip_acl_curr != NULL) {
-                if ( (host.s_addr & ip_acl_curr->mask.s_addr) == ip_acl_curr->addr.s_addr)
-                        return 1;
-
-                ip_acl_curr = ip_acl_curr->next;
+	while (ip_acl_curr != NULL) {
+		if(ip_acl_curr->family == family) {
+			switch(ip_acl_curr->family) {
+			case AF_INET:
+				if((((struct in_addr *)host)->s_addr & 
+						ip_acl_curr->mask.s_addr) == 
+						ip_acl_curr->addr.s_addr) {
+					return 1;
+					}
+				break;
+			case AF_INET6:
+				nbytes = sizeof(ip_acl_curr->mask6.s6_addr) / 
+						sizeof(ip_acl_curr->mask6.s6_addr[0]);
+				for(x = 0; x < nbytes; x++) {
+					if((((struct in6_addr *)host)->s6_addr[x] & 
+							ip_acl_curr->mask6.s6_addr[x]) != 
+							ip_acl_curr->addr6.s6_addr[x]) {
+						break;
+						}
+					}
+				if(x == nbytes) { 
+					/* All bytes in host's address pass the netmask mask */
+					return 1;
+					}
+				break;
+				}
+			}
+		ip_acl_curr = ip_acl_curr->next;
         }
 
-        while(dns_acl_curr != NULL) {
-        he = gethostbyname(dns_acl_curr->domain);
-        if (he == NULL)
-                        return 0;
+	while(dns_acl_curr != NULL) {
+   		he = gethostbyname(dns_acl_curr->domain);
+		if (he == NULL) return 0;
 
-                while (*he->h_addr_list) {
-                        memmove((char *)&addr,*he->h_addr_list++, sizeof(addr));
-                        if (addr.s_addr == host.s_addr)
-                                return 1;
-                }
-                dns_acl_curr = dns_acl_curr->next;
-        }
-        return 0;
-}
+		while (*he->h_addr_list) {
+			switch(he->h_addrtype) {
+			case AF_INET:
+				memmove((char *)&addr,*he->h_addr_list++, sizeof(addr));
+				if (addr.s_addr == ((struct in_addr *)host)->s_addr) return 1;
+				break;
+			case AF_INET6:
+				memcpy((char *)&addr6, *he->h_addr_list++, sizeof(addr6));
+				for(x = 0; x < nbytes; x++) {
+					if(addr6.s6_addr[x] != 
+							((struct in6_addr *)host)->s6_addr[x]) {
+						break;
+						}
+					}
+				if(x == nbytes) { 
+					/* All bytes in host's address match the ACL */
+					return 1;
+					}
+				break;
+				}
+			}
+		dns_acl_curr = dns_acl_curr->next;
+		}
+	return 0;
+	}
 
 /* The trim() function takes a source string and copies it to the destination string,
  * stripped of leading and training whitespace. The destination string must be 
@@ -420,7 +563,8 @@ void parse_allowed_hosts(char *allowed_hosts) {
 		trimmed_tok = malloc( sizeof( char) * ( strlen( tok) + 1));
 		trim( tok, trimmed_tok);
 		if( strlen( trimmed_tok) > 0) {
-			if (!add_ipv4_to_acl(trimmed_tok) && !add_domain_to_acl(trimmed_tok)) {
+			if (!add_ipv4_to_acl(trimmed_tok) && !add_ipv6_to_acl(trimmed_tok) 
+					&& !add_domain_to_acl(trimmed_tok)) {
 				syslog(LOG_ERR,"Can't add to ACL this record (%s). Check allowed_hosts option!\n",trimmed_tok);
 			}
 		}

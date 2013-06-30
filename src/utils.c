@@ -32,6 +32,14 @@
 #include "../include/common.h"
 #include "../include/utils.h"
 
+#ifndef NI_MAXSERV
+#define NI_MAXSERV 32
+#endif
+
+#ifndef NI_MAXHOST
+#define NI_MAXHOST 1025
+#endif
+
 static unsigned long crc32_table[256];
 
 
@@ -109,179 +117,120 @@ void randomize_buffer(char *buffer,int buffer_size){
         }
 
 
-/* opens a connection to a remote host/tcp port */
-int my_tcp_connect(char *host_name,int port,int *sd){
-	int result;
+/* opens a connection to a remote host */
+int my_connect(const char *host, struct sockaddr_storage * hostaddr, u_short port,
+		int address_family, const char *bind_address){
+	int gaierr;
+	int sock = -1;
+	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
+	struct addrinfo hints, *ai, *aitop;
 
-	result=my_connect(host_name,port,sd,"tcp");
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = address_family;
+	hints.ai_socktype = SOCK_STREAM;
+	snprintf(strport, sizeof strport, "%u", port);
+	if ((gaierr = getaddrinfo(host, strport, &hints, &aitop)) != 0) {
+		fprintf(stderr,"Could not resolve hostname %.100s: %s\n", host, 
+				gai_strerror(gaierr));
+		exit(1);
+		}
 
-	return result;
+	/*
+	* Loop through addresses for this host, and try each one in
+	* sequence until the connection succeeds.
+	*/
+	for (ai = aitop; ai; ai = ai->ai_next) {
+		if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6) continue;
+		if (getnameinfo(ai->ai_addr, ai->ai_addrlen, ntop, sizeof(ntop), 
+				strport, sizeof(strport), NI_NUMERICHOST|NI_NUMERICSERV) != 0) {
+			fprintf(stderr, "my_connect: getnameinfo failed\n");
+			continue;
+		}
+
+		/* Create a socket for connecting. */
+		sock = my_create_socket(ai, bind_address);
+		if (sock < 0) {
+			/* Any error is already output */
+			continue;
+			}
+
+		if (connect(sock, ai->ai_addr, ai->ai_addrlen) >= 0) {
+			/* Successful connection. */
+			memcpy(hostaddr, ai->ai_addr, ai->ai_addrlen);
+			break;
+			}
+		else {
+			fprintf(stderr,"connect to address %s port %s: %s\n", ntop, strport, 
+					strerror(errno));
+			close(sock);
+			sock = -1;
+			}
+		}
+
+	freeaddrinfo(aitop);
+
+	/* Return failure if we didn't get a successful connection. */
+	if (sock == -1) {
+		error("connect to host %s port %s: %s", host, strport, strerror(errno));
+		return -1;
+		}
+	return sock;
+	}
+
+/* Creates a socket for the connection. */
+int my_create_socket(struct addrinfo *ai, const char *bind_address) {
+	int sock, gaierr;
+	struct addrinfo hints, *res;
+
+	sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+	if (sock < 0) fprintf(stderr,"socket: %.100s\n", strerror(errno));
+
+	/* Bind the socket to an alternative local IP address */
+   	if (bind_address == NULL) return sock;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = ai->ai_family;
+	hints.ai_socktype = ai->ai_socktype;
+	hints.ai_protocol = ai->ai_protocol;
+	hints.ai_flags = AI_PASSIVE;
+	gaierr = getaddrinfo(bind_address, NULL, &hints, &res);
+	if(gaierr) {
+		fprintf(stderr, "getaddrinfo: %s: %s\n", bind_address, 
+				gai_strerror(gaierr));
+		close(sock);
+		return -1;
         }
+	if(bind(sock, res->ai_addr, res->ai_addrlen) < 0) {
+		fprintf(stderr, "bind: %s: %s\n", bind_address, strerror(errno));
+		close(sock);
+		freeaddrinfo(res);
+		return -1;
+		}
+	freeaddrinfo(res);
+	return sock;
+}
 
+void add_listen_addr(struct addrinfo **listen_addrs, int address_family, 
+		char *addr, int port) {
+	struct addrinfo hints, *ai, *aitop;
+	char strport[NI_MAXSERV];
+	int gaierr;
 
-/* opens a tcp or udp connection to a remote host */
-int my_connect(char *host_name,int port,int *sd,char *proto){
-	struct sockaddr_in servaddr;
-	struct hostent *hp;
-	struct protoent *ptrp;
-	int result;
-
-	bzero((char *)&servaddr,sizeof(servaddr));
-	servaddr.sin_family=AF_INET;
-	servaddr.sin_port=htons(port);
-
-	/* try to bypass using a DNS lookup if this is just an IP address */
-	if(!my_inet_aton(host_name,&servaddr.sin_addr)){
-
-		/* else do a DNS lookup */
-		hp=gethostbyname((const char *)host_name);
-		if(hp==NULL){
-			printf("Invalid host name '%s'\n",host_name);
-			return STATE_UNKNOWN;
-		        }
-
-		memcpy(&servaddr.sin_addr,hp->h_addr,hp->h_length);
-	        }
-
-	/* map transport protocol name to protocol number */
-	if(((ptrp=getprotobyname(proto)))==NULL){
-		printf("Cannot map \"%s\" to protocol number\n",proto);
-		return STATE_UNKNOWN;
-	        }
-
-	/* create a socket */
-	*sd=socket(PF_INET,(!strcmp(proto,"udp"))?SOCK_DGRAM:SOCK_STREAM,ptrp->p_proto);
-	if(*sd<0){
-		printf("Socket creation failed\n");
-		return STATE_UNKNOWN;
-	        }
-
-	/* open a connection */
-	result=connect(*sd,(struct sockaddr *)&servaddr,sizeof(servaddr));
-	if(result<0){
-		switch(errno){  
-		case ECONNREFUSED:
-			printf("Connection refused by host\n");
-			break;
-		case ETIMEDOUT:
-			printf("Timeout while attempting connection\n");
-			break;
-		case ENETUNREACH:
-			printf("Network is unreachable\n");
-			break;
-		default:
-			printf("Connection refused or timed out\n");
-		        }
-
-		return STATE_CRITICAL;
-	        }
-
-	return STATE_OK;
-        }
-
-
-
-/* This code was taken from Fyodor's nmap utility, which was originally taken from
-   the GLIBC 2.0.6 libraries because Solaris doesn't contain the inet_aton() funtion. */
-int my_inet_aton(register const char *cp, struct in_addr *addr){
-	register unsigned int val;	/* changed from u_long --david */
-	register int base, n;
-	register char c;
-	u_int parts[4];
-	register u_int *pp = parts;
-
-	c=*cp;
-
-	for(;;){
-
-		/*
-		 * Collect number up to ``.''.
-		 * Values are specified as for C:
-		 * 0x=hex, 0=octal, isdigit=decimal.
-		 */
-		if (!isdigit((int)c))
-			return (0);
-		val=0;
-		base=10;
-
-		if(c=='0'){
-			c=*++cp;
-			if(c=='x'||c=='X')
-				base=16,c=*++cp;
-			else
-				base=8;
-		        }
-
-		for(;;){
-			if(isascii((int)c) && isdigit((int)c)){
-				val=(val*base)+(c -'0');
-				c=*++cp;
-			        } 
-			else if(base==16 && isascii((int)c) && isxdigit((int)c)){
-				val=(val<<4) | (c+10-(islower((int)c)?'a':'A'));
-				c = *++cp;
-			        } 
-			else
-				break;
-		        }
-
-		if(c=='.'){
-
-			/*
-			 * Internet format:
-			 *	a.b.c.d
-			 *	a.b.c	(with c treated as 16 bits)
-			 *	a.b	(with b treated as 24 bits)
-			 */
-			if(pp>=parts+3)
-				return (0);
-			*pp++=val;
-			c=*++cp;
-		        } 
-		else
-			break;
-	        }
-
-	/* Check for trailing characters */
-	if(c!='\0' && (!isascii((int)c) || !isspace((int)c)))
-		return (0);
-
-	/* Concoct the address according to the number of parts specified */
-	n=pp-parts+1;
-	switch(n){
-
-	case 0:
-		return (0);		/* initial nondigit */
-
-	case 1:				/* a -- 32 bits */
-		break;
-
-	case 2:				/* a.b -- 8.24 bits */
-		if(val>0xffffff)
-			return (0);
-		val|=parts[0]<<24;
-		break;
-
-	case 3:				/* a.b.c -- 8.8.16 bits */
-		if(val>0xffff)
-			return (0);
-		val|=(parts[0]<< 24) | (parts[1]<<16);
-		break;
-
-	case 4:				/* a.b.c.d -- 8.8.8.8 bits */
-		if(val>0xff)
-			return (0);
-		val|=(parts[0]<<24) | (parts[1]<<16) | (parts[2]<<8);
-		break;
-	        }
-
-	if(addr)
-		addr->s_addr=htonl(val);
-
-	return (1);
-        }
-
-
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = address_family;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = (addr == NULL) ? AI_PASSIVE : 0;
+	snprintf(strport, sizeof strport, "%d", port);
+	if((gaierr = getaddrinfo(addr, strport, &hints, &aitop)) != 0) {
+		syslog(LOG_ERR,"bad addr or host: %s (%s)\n", addr ? addr : "<NULL>",
+				gai_strerror(gaierr));
+		exit(1);
+		}
+	for(ai = aitop; ai->ai_next; ai = ai->ai_next);
+	ai->ai_next = *listen_addrs;
+	*listen_addrs = aitop;
+	}
+ 
 void strip(char *buffer){
 	int x;
 	int index;
