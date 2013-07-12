@@ -83,9 +83,7 @@ typedef struct packet_struct{
 
 #elif _AIX
 
-/*#  ifndef LOG_AUTHPRIV
-#    define LOG_AUTHPRIV LOG_AUTH
-#  endif */
+#  include <sys/select.h>
 
 #  ifndef LOG_FTP
 #    define LOG_FTP LOG_DAEMON
