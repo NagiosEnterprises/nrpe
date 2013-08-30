@@ -4,6 +4,7 @@ NRPE Changelog
 
 2.15 - xx/xx/xxxx
 -----------------
+- Now compiles on HP-UX (Grant Byers)
 - Added support for IPv6 (Leo Baltus, Eric Stanley)
 
 2.14 - 12/21/2012

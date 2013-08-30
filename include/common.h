@@ -71,7 +71,7 @@ typedef struct packet_struct{
         }packet;
 
 /**************** OPERATING SYSTEM SPECIFIC DEFINITIONS **********/
-#ifdef __sun
+#if defined(__sun) || defined(__hpux)
 
 #  ifndef LOG_AUTHPRIV
 #    define LOG_AUTHPRIV LOG_AUTH
