@@ -56,6 +56,7 @@ int use_ssl=FALSE;
 #define NASTY_METACHARS         "|`&><'\"\\[]{};"
 #define howmany(x,y)	(((x)+((y)-1))/(y))
 #define MAX_LISTEN_SOCKS        16
+#define DEFAULT_LISTEN_QUEUE_SIZE	5
 
 
 char    *command_name=NULL;
@@ -98,6 +99,7 @@ int     show_version=FALSE;
 int     use_inetd=TRUE;
 int     debug=FALSE;
 int     use_src=FALSE; /* Define parameter for SRC option */
+int		listen_queue_size=DEFAULT_LISTEN_QUEUE_SIZE;
 
 
 void complete_SSL_shutdown( SSL *);
@@ -598,6 +600,14 @@ int read_config_file(char *filename){
 		else if(!strcmp(varname,"pid_file"))
 			pid_file=strdup(varvalue);
 
+		else if(!strcmp(varname,"listen_queue_size")){
+			listen_queue_size=atoi(varvalue);
+			if(listen_queue_size == 0){
+				syslog(LOG_ERR,"Invalid listen queue size specified in config file '%s' - Line %d\n",filename,line);
+				return ERROR;
+				}
+			}
+
 		else if(!strcmp(varname,"log_facility")){
 			if((get_log_facility(varvalue))==OK){
 				/* re-open log using new facility */
@@ -859,7 +869,7 @@ void create_listener(struct addrinfo *ai) {
 	num_listen_socks++;
 
 	/* Start listening on the port. */
-	if (listen(listen_sock, 5) < 0) {
+	if (listen(listen_sock, listen_queue_size) < 0) {
 		syslog(LOG_ERR, "listen on [%s]:%s: %.100s", ntop, strport, 
 				strerror(errno));
 		exit(1);
@@ -1131,7 +1141,16 @@ void wait_for_connections(void){
 
 					/* log info to syslog facility */
 					if(debug==TRUE) {
-						syslog(LOG_DEBUG,"Connection from %s closed.",ipstr);
+						switch(addr.ss_family) {
+						case AF_INET:
+							syslog(LOG_DEBUG,"Connection from %s closed.",
+									inet_ntoa(nptr->sin_addr));
+							break;
+						case AF_INET6:
+							syslog(LOG_DEBUG,"Connection from %s closed.",
+									ipstr);
+							break;
+							}
 						}
 
 					/* close socket prior to exiting */
@@ -1276,10 +1295,10 @@ void handle_connection(int sock){
 	        }
 
 #ifdef DEBUG
-	fp=fopen("/tmp/packet","w");
-	if(fp){
-		fwrite(&receive_packet,1,sizeof(receive_packet),fp);
-		fclose(fp);
+	errfp=fopen("/tmp/packet","w");
+	if(errfp){
+		fwrite(&receive_packet,1,sizeof(receive_packet),errfp);
+		fclose(errfp);
 	        }
 #endif
 

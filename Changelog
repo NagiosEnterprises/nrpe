@@ -2,6 +2,11 @@
 NRPE Changelog
 **************
 
+2.16 = xx/xx/xxxx
+-----------------
+ENHANCEMENTS
+- Added listen_queue_size as configuration option (Vadim Antipov, Kaspersky Lab)
+
 2.15 - 09/06/2013
 -----------------
 - Now compiles on HP-UX (Grant Byers)

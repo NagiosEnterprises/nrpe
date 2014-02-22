@@ -45,6 +45,14 @@ server_port=@nrpe_port@
 
 
 
+# LISTEN QUEUE SIZE
+# Listen queue size (backlog) for serving incoming connections.
+# You may want to increase this value under high load.
+
+#listen_queue_size=5
+
+
+
 # NRPE USER
 # This determines the effective user that the NRPE daemon should run as.  
 # You can either supply a username or a UID.
