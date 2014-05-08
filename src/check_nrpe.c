@@ -91,21 +91,28 @@ int main(int argc, char **argv){
 
 	if(result!=OK || show_help==TRUE){
 
-		printf("Usage: check_nrpe -H <host> [ -b <bindaddr> ] [-4] [-6] [-n] [-u] [-p <port>] [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
+		printf("Usage: check_nrpe -H <host> [ -b <bindaddr> ] [-4] [-6] [-n] [-u] [-p <port>] [-t <interval>:<state>] [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" -n         = Do no use SSL\n");
-		printf(" -u         = Make socket timeouts return an UNKNOWN state instead of CRITICAL\n");
+		printf(" -u         = (DEPRECATED) Make socket timeouts return an UNKNOWN state instead of CRITICAL\n");
 		printf(" <host>     = The address of the host running the NRPE daemon\n");
 		printf(" <bindaddr> = bind to local address\n");
 		printf(" -4         = user ipv4 only\n");
 		printf(" -6         = user ipv6 only\n");
 		printf(" [port]     = The port on which the daemon is running (default=%d)\n",DEFAULT_SERVER_PORT);
-		printf(" [timeout]  = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
 		printf(" [command]  = The name of the command that the remote daemon should run\n");
 		printf(" [arglist]  = Optional arguments that should be passed to the command.  Multiple\n");
 		printf("              arguments should be separated by a space.  If provided, this must be\n");
 		printf("              the last option supplied on the command line.\n");
+		printf("\n");
+		printf(" NEW TIMEOUT SYNTAX\n");
+		printf(" -t <interval>:<state>\n");
+		printf("    <interval> = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
+		printf("    <state> = Check state to exit with in the event of a timeout (default=CRITICAL)\n");
+		printf("\n");
+		printf("    Timeout state must be a valid state name (case-insensitive) or integer:\n");
+		printf("    (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3)\n");
 		printf("\n");
 		printf("Note:\n");
 		printf("This plugin requires that you have the NRPE daemon running on the remote host.\n");
@@ -472,7 +479,7 @@ int translate_state (char *state_text) {
 
 void set_timeout_state (char *state) {
         if ((timeout_return_code = translate_state(state)) == ERROR)
-                printf("Timeout result must be a valid state name (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3).");
+                printf("Timeout state must be a valid state name (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3).");
 }
 
 int parse_timeout_string (char *timeout_str)
