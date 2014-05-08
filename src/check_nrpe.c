@@ -572,7 +572,7 @@ int translate_state (char *state_text) {
 
 void set_timeout_state (char *state) {
         if ((timeout_return_code = translate_state(state)) == ERROR)
-                printf("Timeout result must be a valid state name (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3).");
+                printf("Timeout state must be a valid state name (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3).");
 }
 
 int parse_timeout_string (char *timeout_str)
@@ -628,8 +628,8 @@ void usage(int result)
 		printf("Usage: check_nrpe -H <host> [-2] [-4] [-6] [-n] [-u] [-V] [-l] [-d <num>]\n"
 			   "       [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n"
 			   "       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n"
-			   "       [-f <cfg-file>] [-p <port>] [-t <timeout>] [-c <command>]\n"
-			   "       [-a <arglist...>]\n");
+			   "       [-f <cfg-file>] [-p <port>] [-t <interval>:<state>]\n"
+			   "       [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" <host>       = The address of the host running the NRPE daemon\n");
@@ -663,12 +663,17 @@ void usage(int result)
 		printf(" <cfg-file>   = configuration file to use\n");
 		printf(" [port]       = The port on which the daemon is running (default=%d)\n",
 			   DEFAULT_SERVER_PORT);
-		printf(" [timeout]    = Number of seconds before connection times out (default=%d)\n",
-			   DEFAULT_SOCKET_TIMEOUT);
 		printf(" [command]    = The name of the command that the remote daemon should run\n");
 		printf(" [arglist]    = Optional arguments that should be passed to the command,\n");
 		printf("                separated by a space.  If provided, this must be the last\n");
 		printf("                option supplied on the command line.\n");
+		printf("\n");
+		printf(" NEW TIMEOUT SYNTAX\n");
+		printf(" -t <interval>:<state>\n");
+		printf("    <interval> = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
+		printf("    <state> = Check state to exit with in the event of a timeout (default=CRITICAL)\n");
+		printf("    Timeout state must be a valid state name (case-insensitive) or integer:\n");
+		printf("    (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3)\n");
 		printf("\n");
 		printf("Note:\n");
 		printf
