@@ -53,7 +53,7 @@ int use_ssl=FALSE;
 
 #define DEFAULT_COMMAND_TIMEOUT	60			/* default timeout for execution of plugins */
 #define MAXFD                   64
-#define NASTY_METACHARS         "|`&><'\"\\[]{};"
+#define NASTY_METACHARS         "|`&><'\\[]{};"
 #define howmany(x,y)	(((x)+((y)-1))/(y))
 #define MAX_LISTEN_SOCKS        16
 #define DEFAULT_LISTEN_QUEUE_SIZE	5
