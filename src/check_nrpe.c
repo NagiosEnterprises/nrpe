@@ -383,9 +383,7 @@ int process_arguments(int argc, char **argv){
 			show_license=TRUE;
 			break;
 		case 't':
-			socket_timeout=atoi(optarg);
-			if(socket_timeout<=0)
-				return ERROR;
+			socket_timeout=parse_timeout_string(optarg);
 			break;
 		case 'p':
 			server_port=atoi(optarg);
@@ -446,11 +444,73 @@ int process_arguments(int argc, char **argv){
 	return OK;
         }
 
+const char *state_text (int result)
+{
+	switch (result) {
+		case STATE_OK:
+			return "OK";
+		case STATE_WARNING:
+			return "WARNING";
+		case STATE_CRITICAL:
+			return "CRITICAL";
+		default:
+			return "UNKNOWN";
+	}
+}
 
+int translate_state (char *state_text) {
+       if (!strcasecmp(state_text,"OK") || !strcmp(state_text,"0"))
+               return STATE_OK;
+       if (!strcasecmp(state_text,"WARNING") || !strcmp(state_text,"1"))
+               return STATE_WARNING;
+       if (!strcasecmp(state_text,"CRITICAL") || !strcmp(state_text,"2"))
+               return STATE_CRITICAL;
+       if (!strcasecmp(state_text,"UNKNOWN") || !strcmp(state_text,"3"))
+               return STATE_UNKNOWN;
+       return ERROR;
+}
+
+void set_timeout_state (char *state) {
+        if ((timeout_return_code = translate_state(state)) == ERROR)
+                printf("Timeout result must be a valid state name (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3).");
+}
+
+int parse_timeout_string (char *timeout_str)
+{
+	char *seperated_str;
+        char *timeout_val = NULL;
+	char *timeout_sta = NULL;
+        if ( strstr(timeout_str, ":" ) == NULL) {
+		timeout_val = timeout_str;
+        } else if ( strncmp(timeout_str, ":", 1 ) == 0) {
+		seperated_str = strtok(timeout_str, ":");
+                if ( seperated_str != NULL ) {
+                	timeout_sta = seperated_str;
+		}
+        } else {
+		seperated_str = strtok(timeout_str, ":");
+                timeout_val = seperated_str;
+                seperated_str = strtok(NULL, ":");
+                if (seperated_str != NULL) {
+                        timeout_sta = seperated_str;
+                }
+        }
+        if ( timeout_sta != NULL ) {
+		set_timeout_state(timeout_sta);
+	}
+	if (( timeout_val == NULL ) || ( timeout_val[0] == '\0' )) {
+		return socket_timeout;
+	} else if (atoi(timeout_val) > 0) {
+		return atoi(timeout_val);
+	} else {
+		printf("Timeout value must be a positive integer");
+		exit (STATE_UNKNOWN);
+	}
+}
 
 void alarm_handler(int sig){
 
-	printf("CHECK_NRPE: Socket timeout after %d seconds.\n",socket_timeout);
+	printf("CHECK_NRPE STATE %s: Socket timeout after %d seconds.\n",state_text(timeout_return_code),socket_timeout);
 
 	exit(timeout_return_code);
         }
