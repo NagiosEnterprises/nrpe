@@ -237,6 +237,11 @@ int main(int argc, char **argv){
 			return STATE_UNKNOWN;
 		        }
 
+		/* Altinity patch: Allow multiple packets to be received */
+		/* Indentation not corrected to allow simpler patching */
+		/* START MULTI_PACKET LOOP */
+		do {
+
 		/* wait for the response packet */
 		bytes_to_recv=sizeof(receive_packet);
 		if(use_ssl==FALSE)
@@ -249,31 +254,24 @@ int main(int argc, char **argv){
 		/* reset timeout */
 		alarm(0);
 
-		/* close the connection */
-#ifdef HAVE_SSL
-		if(use_ssl==TRUE){
-			SSL_shutdown(ssl);
-			SSL_free(ssl);
-			SSL_CTX_free(ctx);
-	                }
-#endif
-		graceful_close(sd,1000);
-
 		/* recv() error */
 		if(rc<0){
 			printf("CHECK_NRPE: Error receiving data from daemon.\n");
+			graceful_close(sd,1000);
 			return STATE_UNKNOWN;
 		        }
 
 		/* server disconnected */
 		else if(rc==0){
 			printf("CHECK_NRPE: Received 0 bytes from daemon.  Check the remote server logs for error messages.\n");
+			graceful_close(sd,1000);
 			return STATE_UNKNOWN;
 		        }
 
 		/* receive underflow */
 		else if(bytes_to_recv<sizeof(receive_packet)){
 			printf("CHECK_NRPE: Receive underflow - only %d bytes received (%d expected).\n",bytes_to_recv,sizeof(receive_packet));
+			graceful_close(sd,1000);
 			return STATE_UNKNOWN;
 		        }
 
@@ -287,21 +285,21 @@ int main(int argc, char **argv){
 		calculated_crc32=calculate_crc32((char *)&receive_packet,sizeof(receive_packet));
 		if(packet_crc32!=calculated_crc32){
 			printf("CHECK_NRPE: Response packet had invalid CRC32.\n");
-			close(sd);
+			graceful_close(sd,1000);
 			return STATE_UNKNOWN;
                         }
 	
 		/* check packet version */
 		if(ntohs(receive_packet.packet_version)!=NRPE_PACKET_VERSION_2){
 			printf("CHECK_NRPE: Invalid packet version received from server.\n");
-			close(sd);
+			graceful_close(sd,1000);
 			return STATE_UNKNOWN;
 			}
 
 		/* check packet type */
-		if(ntohs(receive_packet.packet_type)!=RESPONSE_PACKET){
+		if(ntohs(receive_packet.packet_type)!=RESPONSE_PACKET && ntohs(receive_packet.packet_type)!=RESPONSE_PACKET_WITH_MORE){
 			printf("CHECK_NRPE: Invalid packet type received from server.\n");
-			close(sd);
+			graceful_close(sd,1000);
 			return STATE_UNKNOWN;
 			}
 
@@ -313,8 +311,18 @@ int main(int argc, char **argv){
 		if(!strcmp(receive_packet.buffer,""))
 			printf("CHECK_NRPE: No output returned from daemon.\n");
 		else
-			printf("%s\n",receive_packet.buffer);
-	        }
+			printf("%s",receive_packet.buffer);
+
+		} while (ntohs(receive_packet.packet_type)==RESPONSE_PACKET_WITH_MORE);
+		/* END MULTI_PACKET LOOP */
+
+		/* Finish output with newline */
+		printf("\n");
+
+		/* close the connection */
+		graceful_close(sd,1000);
+
+		}
 
 	/* reset the alarm */
 	else
@@ -461,6 +469,14 @@ int graceful_close(int sd, int timeout){
         fd_set in;
         struct timeval tv;
         char buf[1000];
+
+#ifdef HAVE_SSL
+	if(use_ssl==TRUE){
+		SSL_shutdown(ssl);
+		SSL_free(ssl);
+		SSL_CTX_free(ctx);
+		}
+#endif
 
 	/* send FIN packet */
         shutdown(sd,SHUT_WR);  

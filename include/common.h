@@ -41,7 +41,7 @@
 #define DEFAULT_SOCKET_TIMEOUT	10	/* timeout after 10 seconds */
 #define DEFAULT_CONNECTION_TIMEOUT 300	/* timeout if daemon is waiting for connection more than this time */
 
-#define MAX_INPUT_BUFFER	2048	/* max size of most buffers we use */
+#define MAX_INPUT_BUFFER	16384	/* max size of most buffers we use */
 #define MAX_FILENAME_LENGTH     256
 
 #define MAX_HOST_ADDRESS_LENGTH	256	/* max size of a host address */
@@ -55,12 +55,14 @@
 
 #define QUERY_PACKET		1		/* id code for a packet containing a query */
 #define	RESPONSE_PACKET		2		/* id code for a packet containing a response */
+#define	RESPONSE_PACKET_WITH_MORE	3	/* id code for a packet containing a response, with more data to follow */
 
 #define NRPE_PACKET_VERSION_3   3               /* packet version identifier */
 #define NRPE_PACKET_VERSION_2   2               
 #define NRPE_PACKET_VERSION_1	1		/* older packet version identifiers (no longer supported) */
 
-#define MAX_PACKETBUFFER_LENGTH	1024		/* max amount of data we'll send in one query/response */
+#define MAX_PACKETBUFFER_LENGTH	1024		/* max amount of data we'll send in one query/response. WARNING - do not change this
+						as older clients/servers will not work */
 
 typedef struct packet_struct{
 	int16_t   packet_version;
