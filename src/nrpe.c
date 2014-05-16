@@ -101,9 +101,9 @@ int     debug=FALSE;
 int     use_src=FALSE; /* Define parameter for SRC option */
 int		listen_queue_size=DEFAULT_LISTEN_QUEUE_SIZE;
 
-
+#ifdef HAVE_SSL
 void complete_SSL_shutdown( SSL *);
-
+#endif
 
 int main(int argc, char **argv){
 	int result=OK;
@@ -1815,6 +1815,7 @@ int remove_pid_file(void){
 	return OK;
         }
 
+#ifdef HAVE_SSL
 void complete_SSL_shutdown( SSL *ssl) {
 
 	/*  
@@ -1835,6 +1836,7 @@ void complete_SSL_shutdown( SSL *ssl) {
 		if( SSL_shutdown( ssl)) break;
 	}
 }
+#endif/*HAVE_SSL*/
 
 /* bail if daemon is running as root */
 int check_privileges(void){
