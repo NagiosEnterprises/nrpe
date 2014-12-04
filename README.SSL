@@ -21,7 +21,7 @@ that file with your own dhparam generated code.
 
 As of this time you will need to have the latest greatest version of
 OpenSSL (tested against version 0.9.7a) since not all versions have
-the AES algorythm in them.
+the AES algorithm in them.
 
 I am not aware that at this time this code is restricted under export 
 restrictions but I leave that verification process up to you.
