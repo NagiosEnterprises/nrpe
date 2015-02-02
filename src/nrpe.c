@@ -1198,6 +1198,8 @@ void handle_connection(int sock){
 	char processed_command[MAX_INPUT_BUFFER];
 	int result=STATE_OK;
 	int early_timeout=FALSE;
+	int bytes_copied=0;
+	char *pbuffer=&buffer[0];
 	int rc;
 	int x;
 #ifdef DEBUG
@@ -1414,6 +1416,14 @@ void handle_connection(int sock){
 	if(buffer[strlen(buffer)-1]=='\n')
 		buffer[strlen(buffer)-1]='\x0';
 
+	/* Altinity patch to allow multi packet responses */
+	/* Loop not indented to allow easier patching */
+	/* START MULTI_PACKET LOOP */
+	do {
+
+	if(debug==TRUE)
+		syslog(LOG_DEBUG,"Sending response - bytes left: %d", strlen(pbuffer));
+
 	/* clear the response packet buffer */
 	bzero(&send_packet,sizeof(send_packet));
 
@@ -1422,11 +1432,17 @@ void handle_connection(int sock){
 
 	/* initialize response packet data */
 	send_packet.packet_version=(int16_t)htons(NRPE_PACKET_VERSION_2);
-	send_packet.packet_type=(int16_t)htons(RESPONSE_PACKET);
 	send_packet.result_code=(int16_t)htons(result);
-	strncpy(&send_packet.buffer[0],buffer,MAX_PACKETBUFFER_LENGTH);
+	strncpy(&send_packet.buffer[0],pbuffer,MAX_PACKETBUFFER_LENGTH);
 	send_packet.buffer[MAX_PACKETBUFFER_LENGTH-1]='\x0';
 	
+	bytes_copied = strlen(&send_packet.buffer[0]);
+	pbuffer = pbuffer+bytes_copied;
+	if(strlen(pbuffer)>0)
+		send_packet.packet_type=(int16_t)htons(RESPONSE_PACKET_WITH_MORE);
+	else
+		send_packet.packet_type=(int16_t)htons(RESPONSE_PACKET);
+
 	/* calculate the crc 32 value of the packet */
 	send_packet.crc32_value=(u_int32_t)0L;
 	calculated_crc32=calculate_crc32((char *)&send_packet,sizeof(send_packet));
@@ -1444,6 +1460,9 @@ void handle_connection(int sock){
 	else
 		SSL_write(ssl,&send_packet,bytes_to_send);
 #endif
+
+	} while (strlen(pbuffer) > 0);
+	/* END MULTI_PACKET LOOP */
 
 #ifdef HAVE_SSL
 	if(ssl){
