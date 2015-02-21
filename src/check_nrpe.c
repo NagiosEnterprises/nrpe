@@ -91,21 +91,28 @@ int main(int argc, char **argv){
 
 	if(result!=OK || show_help==TRUE){
 
-		printf("Usage: check_nrpe -H <host> [ -b <bindaddr> ] [-4] [-6] [-n] [-u] [-p <port>] [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
+		printf("Usage: check_nrpe -H <host> [ -b <bindaddr> ] [-4] [-6] [-n] [-u] [-p <port>] [-t <interval>:<state>] [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" -n         = Do no use SSL\n");
-		printf(" -u         = Make socket timeouts return an UNKNOWN state instead of CRITICAL\n");
+		printf(" -u         = (DEPRECATED) Make socket timeouts return an UNKNOWN state instead of CRITICAL\n");
 		printf(" <host>     = The address of the host running the NRPE daemon\n");
 		printf(" <bindaddr> = bind to local address\n");
 		printf(" -4         = bind to ipv4 only\n");
 		printf(" -6         = bind to ipv6 only\n");
 		printf(" [port]     = The port on which the daemon is running (default=%d)\n",DEFAULT_SERVER_PORT);
-		printf(" [timeout]  = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
 		printf(" [command]  = The name of the command that the remote daemon should run\n");
 		printf(" [arglist]  = Optional arguments that should be passed to the command.  Multiple\n");
 		printf("              arguments should be separated by a space.  If provided, this must be\n");
 		printf("              the last option supplied on the command line.\n");
+		printf("\n");
+		printf(" NEW TIMEOUT SYNTAX\n");
+		printf(" -t <interval>:<state>\n");
+		printf("    <interval> = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
+		printf("    <state> = Check state to exit with in the event of a timeout (default=CRITICAL)\n");
+		printf("\n");
+		printf("    Timeout state must be a valid state name (case-insensitive) or integer:\n");
+		printf("    (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3)\n");
 		printf("\n");
 		printf("Note:\n");
 		printf("This plugin requires that you have the NRPE daemon running on the remote host.\n");
@@ -383,9 +390,7 @@ int process_arguments(int argc, char **argv){
 			show_license=TRUE;
 			break;
 		case 't':
-			socket_timeout=atoi(optarg);
-			if(socket_timeout<=0)
-				return ERROR;
+			socket_timeout=parse_timeout_string(optarg);
 			break;
 		case 'p':
 			server_port=atoi(optarg);
@@ -446,11 +451,73 @@ int process_arguments(int argc, char **argv){
 	return OK;
         }
 
+const char *state_text (int result)
+{
+	switch (result) {
+		case STATE_OK:
+			return "OK";
+		case STATE_WARNING:
+			return "WARNING";
+		case STATE_CRITICAL:
+			return "CRITICAL";
+		default:
+			return "UNKNOWN";
+	}
+}
 
+int translate_state (char *state_text) {
+       if (!strcasecmp(state_text,"OK") || !strcmp(state_text,"0"))
+               return STATE_OK;
+       if (!strcasecmp(state_text,"WARNING") || !strcmp(state_text,"1"))
+               return STATE_WARNING;
+       if (!strcasecmp(state_text,"CRITICAL") || !strcmp(state_text,"2"))
+               return STATE_CRITICAL;
+       if (!strcasecmp(state_text,"UNKNOWN") || !strcmp(state_text,"3"))
+               return STATE_UNKNOWN;
+       return ERROR;
+}
+
+void set_timeout_state (char *state) {
+        if ((timeout_return_code = translate_state(state)) == ERROR)
+                printf("Timeout state must be a valid state name (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3).");
+}
+
+int parse_timeout_string (char *timeout_str)
+{
+	char *seperated_str;
+        char *timeout_val = NULL;
+	char *timeout_sta = NULL;
+        if ( strstr(timeout_str, ":" ) == NULL) {
+		timeout_val = timeout_str;
+        } else if ( strncmp(timeout_str, ":", 1 ) == 0) {
+		seperated_str = strtok(timeout_str, ":");
+                if ( seperated_str != NULL ) {
+                	timeout_sta = seperated_str;
+		}
+        } else {
+		seperated_str = strtok(timeout_str, ":");
+                timeout_val = seperated_str;
+                seperated_str = strtok(NULL, ":");
+                if (seperated_str != NULL) {
+                        timeout_sta = seperated_str;
+                }
+        }
+        if ( timeout_sta != NULL ) {
+		set_timeout_state(timeout_sta);
+	}
+	if (( timeout_val == NULL ) || ( timeout_val[0] == '\0' )) {
+		return socket_timeout;
+	} else if (atoi(timeout_val) > 0) {
+		return atoi(timeout_val);
+	} else {
+		printf("Timeout value must be a positive integer");
+		exit (STATE_UNKNOWN);
+	}
+}
 
 void alarm_handler(int sig){
 
-	printf("CHECK_NRPE: Socket timeout after %d seconds.\n",socket_timeout);
+	printf("CHECK_NRPE STATE %s: Socket timeout after %d seconds.\n",state_text(timeout_return_code),socket_timeout);
 
 	exit(timeout_return_code);
         }
