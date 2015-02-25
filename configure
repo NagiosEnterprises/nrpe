@@ -6711,6 +6711,8 @@ echo $ECHO_N "checking for SSL libraries... $ECHO_C" >&6
 				soext="dylib"
 			elif test "`uname -s`" = "HP-UX" ; then
 				soext="sl"
+			elif test "`uname -s`" = "AIX" ; then
+                soext="a"
 			else
 				soext="so"
 			fi
