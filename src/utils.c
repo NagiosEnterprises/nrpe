@@ -91,7 +91,7 @@ void randomize_buffer(char *buffer,int buffer_size){
 	/**** FILL BUFFER WITH RANDOM ALPHA-NUMERIC CHARACTERS ****/
 
 	/***************************************************************
-	   Only use alpha-numeric characters becase plugins usually
+	   Only use alpha-numeric characters because plugins usually
 	   only generate numbers and letters in their output.  We
 	   want the buffer to contain the same set of characters as
 	   plugins, so its harder to distinguish where the real output
