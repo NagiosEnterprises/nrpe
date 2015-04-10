@@ -165,7 +165,7 @@ int main(int argc, char **argv){
 	/* do SSL handshake */
 	if(result==STATE_OK && use_ssl==TRUE){
 		if((ssl=SSL_new(ctx))!=NULL){
-			SSL_CTX_set_cipher_list(ctx,"ADH");
+			SSL_CTX_set_cipher_list(ctx,"AECDH:ADH");
 			SSL_set_fd(ssl,sd);
 			if((rc=SSL_connect(ssl))!=1){
 				printf("CHECK_NRPE: Error - Could not complete SSL handshake.\n");
