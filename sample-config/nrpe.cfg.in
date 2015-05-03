@@ -90,6 +90,14 @@ allowed_hosts=127.0.0.1
  
 
 
+# SSL CIPHERS
+# This directive allows you to set the SSL ciphers used when communicating
+# with remote clients.
+
+#ssl_ciphers=ALL:!LOW:!EXP:!MD5:@STRENGTH
+
+
+
 # COMMAND ARGUMENT PROCESSING
 # This option determines whether or not the NRPE daemon will allow clients
 # to specify arguments to commands that are executed.  This option only works

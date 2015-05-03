@@ -47,6 +47,7 @@ const SSL_METHOD *meth;
 #endif
 SSL_CTX *ctx;
 int use_ssl=TRUE;
+char *ssl_ciphers=NULL;
 #else
 int use_ssl=FALSE;
 #endif
@@ -266,8 +267,8 @@ int main(int argc, char **argv){
 		/* use only TLSv1 protocol */
 		SSL_CTX_set_options(ctx,SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
 
-		/* use anonymous DH ciphers */
-		SSL_CTX_set_cipher_list(ctx,"ADH");
+		/* set SSL ciphers */
+		SSL_CTX_set_cipher_list(ctx,ssl_ciphers ? ssl_ciphers : "ADH");
 		dh=get_dh512();
 		SSL_CTX_set_tmp_dh(ctx,dh);
 		DH_free(dh);
@@ -596,6 +597,11 @@ int read_config_file(char *filename){
 
 		else if(!strcmp(varname,"allow_weak_random_seed"))
 			allow_weak_random_seed=(atoi(varvalue)==1)?TRUE:FALSE;
+
+		#ifdef HAVE_SSL
+		else if(!strcmp(varname,"ssl_ciphers"))
+				ssl_ciphers=strdup(varvalue);
+		#endif
 
 		else if(!strcmp(varname,"pid_file"))
 			pid_file=strdup(varvalue);
