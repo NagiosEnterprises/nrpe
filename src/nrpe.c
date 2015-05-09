@@ -164,15 +164,15 @@ int main(int argc, char **argv){
 		printf("Usage: nrpe [-n] -c <config_file> [-4|-6] <mode>\n");
 		printf("\n");
 		printf("Options:\n");
-		printf(" -n            = Do not use SSL\n");
-		printf(" <config_file> = Name of config file to use\n");
-		printf(" -4            = use ipv4 only\n");
-		printf(" -6            = use ipv6 only\n");
-		printf(" <mode>        = One of the following operating modes:\n");  
-		printf("   -i          =    Run as a service under inetd or xinetd\n");
-		printf("   -d          =    Run as a standalone daemon\n");
+		printf(" -n               = Do not use SSL\n");
+		printf(" -c <config_file> = Name of config file to use\n");
+		printf(" -4               = use ipv4 only\n");
+		printf(" -6               = use ipv6 only\n");
+		printf(" <mode>           = One of the following operating modes:\n");  
+		printf("   -i             =    Run as a service under inetd or xinetd\n");
+		printf("   -d             =    Run as a standalone daemon\n");
 		/* Updates help section to indicate how to start under SRC on AIX */
-		printf("   -d -s       =    Run as a subsystem under AIX\n");        
+		printf("   -d -s          =    Run as a subsystem under AIX\n");        
 		printf("\n");
 		printf("Notes:\n");
 		printf("This program is designed to process requests from the check_nrpe\n");
