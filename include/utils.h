@@ -55,6 +55,10 @@ char *my_strsep(char **,const char *);
 
 void display_license(void);
 
+void trim(char *, char *);
+
+int parse_ssl_protocols(int, char*);
+
 #endif
 
 

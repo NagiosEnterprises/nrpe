@@ -47,6 +47,8 @@ const SSL_METHOD *meth;
 #endif
 SSL_CTX *ctx;
 int use_ssl=TRUE;
+char *ssl_protocol_options=NULL;
+int ssl_protocols=SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
 #else
 int use_ssl=FALSE;
 #endif
@@ -262,9 +264,8 @@ int main(int argc, char **argv){
 			exit(STATE_CRITICAL);
 		        }
 
-		/* ADDED 01/19/2004 */
-		/* use only TLSv1 protocol */
-		SSL_CTX_set_options(ctx,SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+		/* set SSL protocols */
+		SSL_CTX_set_options(ctx,ssl_protocols);
 
 		/* use anonymous DH ciphers */
 		SSL_CTX_set_cipher_list(ctx,"ADH");
@@ -596,6 +597,13 @@ int read_config_file(char *filename){
 
 		else if(!strcmp(varname,"allow_weak_random_seed"))
 			allow_weak_random_seed=(atoi(varvalue)==1)?TRUE:FALSE;
+
+		#ifdef HAVE_SSL
+		else if(!strcmp(varname,"ssl_protocols")){
+			ssl_protocol_options=strdup(varvalue);
+			ssl_protocols=parse_ssl_protocols(ssl_protocols, ssl_protocol_options);
+			}
+		#endif
 
 		else if(!strcmp(varname,"pid_file"))
 			pid_file=strdup(varvalue);
