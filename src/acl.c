@@ -527,24 +527,6 @@ int is_an_allowed_host(int family, void *host) {
 	return 0;
 	}
 
-/* The trim() function takes a source string and copies it to the destination string,
- * stripped of leading and training whitespace. The destination string must be 
- * allocated at least as large as the source string.
- */
-
-void trim( char *src, char *dest) {
-	char *sptr, *dptr;
-
-	for( sptr = src; isblank( *sptr) && *sptr; sptr++); /* Jump past leading spaces */
-	for( dptr = dest; !isblank( *sptr) && *sptr; ) {
-		*dptr = *sptr;
-		sptr++;
-		dptr++;
-	}
-	*dptr = '\0';
-	return;
-}
-
 /* This function splits allowed_hosts to substrings with comma(,) as a delimeter.
  * It doesn't check validness of ACL record (add_ipv4_to_acl() and add_domain_to_acl() do),
  * just trims spaces from ACL records.

@@ -364,6 +364,67 @@ char *my_strsep (char **stringp, const char *delim){
 	return begin;
 	}
 
+/* The trim() function takes a source string and copies it to the destination string,
+ * stripped of leading and training whitespace. The destination string must be 
+ * allocated at least as large as the source string.
+ */
+
+void trim( char *src, char *dest) {
+	char *sptr, *dptr;
+
+	for( sptr = src; isblank( *sptr) && *sptr; sptr++); /* Jump past leading spaces */
+	for( dptr = dest; !isblank( *sptr) && *sptr; ) {
+		*dptr = *sptr;
+		sptr++;
+		dptr++;
+	}
+	*dptr = '\0';
+	return;
+}
+
+int parse_ssl_protocols(int ssl_protocols, char *ssl_protocol_options) {
+	char *options = strdup(ssl_protocol_options);
+	int protocols = 0;
+	const char *delim = ",";
+	char *saveptr;
+	char *tok;
+	char *trimmed_tok;
+
+	tok = strtok_r(options, delim, &saveptr);
+
+	while(tok) {
+		trimmed_tok = malloc(sizeof(char) * (strlen(tok) + 1));
+		trim(tok, trimmed_tok);
+
+		if (!strcmp(trimmed_tok, "no-sslv2")) {
+			protocols |= SSL_OP_NO_SSLv2;
+		}
+		else if (!strcmp(trimmed_tok, "no-sslv3")) {
+			protocols |= SSL_OP_NO_SSLv3;
+		}
+		else if (!strcmp(trimmed_tok, "no-tlsv1")) {
+			protocols |= SSL_OP_NO_TLSv1;
+		}
+		#if OPENSSL_VERSION_NUMBER >= 0x10001000L
+		else if (!strcmp(trimmed_tok, "no-tlsv1_1")) {
+			protocols |= SSL_OP_NO_TLSv1_1;
+		}
+		else if (!strcmp(trimmed_tok, "no-tlsv1_2")) {
+			protocols |= SSL_OP_NO_TLSv1_2;
+		}
+		#endif
+
+		free(trimmed_tok);
+		tok = strtok_r(NULL, delim, &saveptr);
+	}
+
+	free(options);
+
+	if (protocols != 0)
+		ssl_protocols = protocols;
+
+	return(ssl_protocols);
+}
 
 /* show license */
 void display_license(void){

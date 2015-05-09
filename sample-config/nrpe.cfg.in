@@ -90,6 +90,15 @@ allowed_hosts=127.0.0.1
  
 
 
+# SSL PROTOCOLS
+# This directive allows you to set the SSL protocols used when communicating
+# with remote clients. Possible options are as follows (depending on OpenSSL
+# version): no-sslv2, no-sslv3, no-tlsv1, no-tlsv1_1, no-tlsv1_2
+
+#ssl_protocols=no-sslv2,no-sslv3
+
+
+
 # COMMAND ARGUMENT PROCESSING
 # This option determines whether or not the NRPE daemon will allow clients
 # to specify arguments to commands that are executed.  This option only works
