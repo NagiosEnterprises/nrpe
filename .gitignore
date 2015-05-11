@@ -13,3 +13,5 @@ src/Makefile
 src/check_nrpe
 src/nrpe
 subst
+*.swp
+*.swo
