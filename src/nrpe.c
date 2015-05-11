@@ -600,7 +600,7 @@ int read_config_file(char *filename){
 
 		#ifdef HAVE_SSL
 		else if(!strcmp(varname,"ssl_ciphers"))
-				ssl_ciphers=strdup(varvalue);
+			ssl_ciphers=strdup(varvalue);
 		#endif
 
 		else if(!strcmp(varname,"pid_file"))
