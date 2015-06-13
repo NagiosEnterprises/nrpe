@@ -272,7 +272,7 @@ int main(int argc, char **argv){
 		dh=get_dh1024();
 		SSL_CTX_set_tmp_dh(ctx,dh);
 		DH_free(dh);
-		ecdh = EC_KEY_new_by_curve_name(NID_secp256k1);
+		ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
 		SSL_CTX_set_tmp_ecdh(ctx, ecdh);
 		EC_KEY_free (ecdh);
 		if(debug==TRUE)
