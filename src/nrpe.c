@@ -112,6 +112,7 @@ int main(int argc, char **argv){
 	char *env_string=NULL;
 #ifdef HAVE_SSL
 	DH *dh;
+	EC_KEY *ecdh;
 	char seedfile[FILENAME_MAX];
 	int i,c;
 #endif
@@ -266,11 +267,14 @@ int main(int argc, char **argv){
 		/* use only TLSv1 protocol */
 		SSL_CTX_set_options(ctx,SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
 
-		/* use anonymous DH ciphers */
-		SSL_CTX_set_cipher_list(ctx,"ADH");
-		dh=get_dh512();
+		/* use anonymous DH and ECDH ciphers */
+		SSL_CTX_set_cipher_list(ctx,"AECDH:ADH");
+		dh=get_dh1024();
 		SSL_CTX_set_tmp_dh(ctx,dh);
 		DH_free(dh);
+		ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+		SSL_CTX_set_tmp_ecdh(ctx, ecdh);
+		EC_KEY_free (ecdh);
 		if(debug==TRUE)
 			syslog(LOG_INFO,"INFO: SSL/TLS initialized. All network traffic will be encrypted.");
 	        }
