@@ -115,6 +115,9 @@ int main(int argc, char **argv){
 	char seedfile[FILENAME_MAX];
 	int i,c;
 #endif
+#ifdef HAVE_SIGACTION
+	struct sigaction sig_action;
+#endif
 
 	/* set some environment variables */
 	asprintf(&env_string,"NRPE_MULTILINESUPPORT=1");
@@ -312,9 +315,19 @@ int main(int argc, char **argv){
 		/*umask(0);*/
 
 		/* handle signals */
+#ifdef HAVE_SIGACTION
+		sig_action.sa_sigaction = NULL;
+		sig_action.sa_handler = sighandler;
+		sigfillset(&sig_action.sa_mask);
+		sig_action.sa_flags = SA_NODEFER|SA_RESTART;
+		sigaction(SIGQUIT, &sig_action, NULL);
+		sigaction(SIGTERM, &sig_action, NULL);
+		sigaction(SIGHUP, &sig_action, NULL);
+#else /* HAVE_SIGACTION */
 		signal(SIGQUIT,sighandler);
 		signal(SIGTERM,sighandler);
 		signal(SIGHUP,sighandler);
+#endif /* HAVE_SIGACTION */
 
 		/* log info to syslog facility */
 		syslog(LOG_NOTICE,"Starting up daemon");
@@ -382,9 +395,19 @@ int main(int argc, char **argv){
 		/*umask(0);*/
 
 		/* handle signals */
+#ifdef HAVE_SIGACTION
+		sig_action.sa_sigaction = NULL;
+		sig_action.sa_handler = sighandler;
+		sigfillset(&sig_action.sa_mask);
+		sig_action.sa_flags = SA_NODEFER|SA_RESTART;
+		sigaction(SIGQUIT, &sig_action, NULL);
+		sigaction(SIGTERM, &sig_action, NULL);
+		sigaction(SIGHUP, &sig_action, NULL);
+#else /* HAVE_SIGACTION */
 		signal(SIGQUIT,sighandler);
 		signal(SIGTERM,sighandler);
 		signal(SIGHUP,sighandler);
+#endif /* HAVE_SIGACTION */
 
 		/* log info to syslog facility */
 		syslog(LOG_NOTICE,"Starting up daemon");
@@ -903,6 +926,9 @@ void wait_for_connections(void){
 #ifdef HAVE_LIBWRAP
 	struct request_info req;
 #endif
+#ifdef HAVE_SIGACTION
+	struct sigaction sig_action;
+#endif
 
 	add_listen_addr(&listen_addrs, address_family, 
 			(strcmp(server_address, "") == 0) ? NULL : server_address, 
@@ -1012,9 +1038,19 @@ void wait_for_connections(void){
 						}
 
 					/* handle signals */
+#ifdef HAVE_SIGACTION
+					sig_action.sa_sigaction = NULL;
+					sig_action.sa_handler = child_sighandler;
+					sigfillset(&sig_action.sa_mask);
+					sig_action.sa_flags = SA_NODEFER|SA_RESTART;
+					sigaction(SIGQUIT, &sig_action, NULL);
+					sigaction(SIGTERM, &sig_action, NULL);
+					sigaction(SIGHUP, &sig_action, NULL);
+#else /* HAVE_SIGACTION */
 					signal(SIGQUIT,child_sighandler);
 					signal(SIGTERM,child_sighandler);
 					signal(SIGHUP,child_sighandler);
+#endif /* HAVE_SIGACTION */
 
 					/* grandchild does not need to listen for connections */
 					close_listen_socks();
@@ -1206,6 +1242,9 @@ void handle_connection(int sock){
 #ifdef HAVE_SSL
 	SSL *ssl=NULL;
 #endif
+#ifdef HAVE_SIGACTION
+	struct sigaction sig_action;
+#endif
 
 
 	/* log info to syslog facility */
@@ -1218,7 +1257,15 @@ void handle_connection(int sock){
 #endif
 
 	/* set connection handler */
-	signal(SIGALRM,my_connection_sighandler);
+#ifdef HAVE_SIGACTION
+	sig_action.sa_sigaction = NULL;
+	sig_action.sa_handler = my_connection_sighandler;
+	sigfillset(&sig_action.sa_mask);
+	sig_action.sa_flags = SA_NODEFER|SA_RESTART;
+	sigaction(SIGALRM, &sig_action, NULL);
+#else
+	signal(SIGALRM, my_connection_sighandler);
+#endif /* HAVE_SIGACTION */
 	alarm(connection_timeout);
 
 #ifdef HAVE_SSL
@@ -1496,6 +1543,9 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 	FILE *fp;
 	int bytes_read=0;
 	time_t start_time,end_time;
+#ifdef HAVE_SIGACTION
+	struct sigaction sig_action;
+#endif
 
 	/* initialize return variables */
 	if(output!=NULL)
@@ -1547,7 +1597,15 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 		setpgid(0,0);
 
 		/* trap commands that timeout */
-		signal(SIGALRM,my_system_sighandler);
+#ifdef HAVE_SIGACTION
+		sig_action.sa_sigaction = NULL;
+		sig_action.sa_handler = my_system_sighandler;
+		sigfillset(&sig_action.sa_mask);
+		sig_action.sa_flags = SA_NODEFER|SA_RESTART;
+		sigaction(SIGALRM, &sig_action, NULL);
+#else
+		signal(SIGALRM, my_system_sighandler);
+#endif /* HAVE_SIGACTION */
 		alarm(timeout);
 
 		/* run the command */
@@ -1897,7 +1955,7 @@ void sighandler(int sig){
 void child_sighandler(int sig){
 
 	/* free all memory we allocated */
-	free_memory();
+	/* free_memory(); */
 
 	/* terminate */
 	exit(0);

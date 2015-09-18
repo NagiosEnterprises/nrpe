@@ -70,6 +70,9 @@ int main(int argc, char **argv){
 	packet receive_packet;
 	int bytes_to_send;
 	int bytes_to_recv;
+#ifdef HAVE_SIGACTION
+	struct sigaction sig_action;
+#endif
 
 	result=process_arguments(argc,argv);
 
@@ -147,10 +150,18 @@ int main(int argc, char **argv){
 #endif
 
 	/* initialize alarm signal handling */
-	signal(SIGALRM,alarm_handler);
+#ifdef HAVE_SIGACTION
+	sig_action.sa_sigaction = NULL;
+	sig_action.sa_handler = alarm_handler;
+	sigfillset(&sig_action.sa_mask);
+	sig_action.sa_flags = SA_NODEFER|SA_RESTART;
+	sigaction(SIGALRM, &sig_action, NULL);
+#else
+	signal(SIGALRM, alarm_handler);
+#endif /* HAVE_SIGACTION */
 
 	/* set socket timeout */
-	alarm(socket_timeout);
+//	alarm(socket_timeout);
 
 	/* try to connect to the host at the given port number */
 	if((sd=my_connect(server_name, &hostaddr, server_port, address_family, 
@@ -449,8 +460,9 @@ int process_arguments(int argc, char **argv){
 
 
 void alarm_handler(int sig){
-
-	printf("CHECK_NRPE: Socket timeout after %d seconds.\n",socket_timeout);
+	const char msg[] = "CHECK_NRPE: Socket timeout";
+	/* printf("CHECK_NRPE: Socket timeout after %d seconds.\n",socket_timeout); */
+	write(STDOUT_FILENO, msg, sizeof(msg) - 1);
 
 	exit(timeout_return_code);
         }

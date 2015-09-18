@@ -169,7 +169,7 @@ AC_CHECK_LIB(wrap,main,[
 	AC_DEFINE(HAVE_LIBWRAP,[1],[Have the TCP wrappers library])
 	])
 AC_SUBST(LIBWRAPLIBS)
-AC_CHECK_FUNCS(strdup strstr strtoul initgroups closesocket)
+AC_CHECK_FUNCS(strdup strstr strtoul initgroups closesocket sigaction)
 
 dnl socklen_t check - from curl
 AC_CHECK_TYPE([socklen_t], ,[
