@@ -11,6 +11,7 @@ FIXES
 - Added ifdefs for complete_SSL_shutdown to compile without SSL. (Matthew L. Daniel)
 - Renamed configure.in to configure.ac and added check for sigaction (John Frickson)
 - Replaced all instances of signal() with sigaction() + blocking (John Frickson)
+- check_nrpe does not parse passed arguments correctly (John Frickson)
 
 2.15 - 09/06/2013
 -----------------

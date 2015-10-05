@@ -374,7 +374,7 @@ int process_arguments(int argc, char **argv){
 #else
 		c=getopt(argc,argv,optchars);
 #endif
-		if(c==-1 || c==EOF)
+		if(c==-1 || c==EOF || argindex > 0)
 			break;
 
 		/* process all arguments */
