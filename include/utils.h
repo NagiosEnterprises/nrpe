@@ -29,8 +29,8 @@
  *
  ************************************************************************************************/
 
-#ifndef _UTILS_H
-#define _UTILS_H
+#ifndef NRPE_UTILS_H_INCLUDED
+#define NRPE_UTILS_H_INCLUDED
 
 #include "../include/config.h"
 
