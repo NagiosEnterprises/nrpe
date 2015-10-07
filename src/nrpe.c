@@ -1846,6 +1846,7 @@ int write_pid_file(void){
 	        }
 	else{
 		syslog(LOG_ERR,"Cannot write to pidfile '%s' - check your privileges.",pid_file);
+		return ERROR;
 	        }
 
 	return OK;
