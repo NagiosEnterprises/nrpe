@@ -4902,7 +4902,7 @@ $as_echo_n "checking for SSL headers... " >&6; }
 				{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL libraries" >&5
 $as_echo_n "checking for SSL libraries... " >&6; }
 		found_ssl=no
-		for dir in $ssl_lib_dir $ssl_dir /usr/lib64 /usr/lib /usr/local/lib /usr/lib/ssl /usr/ssl/lib /usr/openssl/lib /usr/pkg/lib  /usr/freeware/lib/openssl /usr/sfw/lib /opt/freeware/lib; do
+		for dir in $ssl_lib_dir $ssl_dir /usr/lib64 /usr/lib /usr/lib/x86_64-linux-gnu /usr/lib/i386-linux-gnu /usr/local/lib /usr/lib/ssl /usr/ssl/lib /usr/openssl/lib /usr/pkg/lib  /usr/freeware/lib/openssl /usr/sfw/lib /opt/freeware/lib; do
 			ssllibdir="$dir"
 			if test "`uname -s`" = "Darwin" ; then
 				soext="dylib"
