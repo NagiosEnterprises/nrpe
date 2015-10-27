@@ -57,6 +57,7 @@ int use_ssl=FALSE;
 #define howmany(x,y)	(((x)+((y)-1))/(y))
 #define MAX_LISTEN_SOCKS        16
 #define DEFAULT_LISTEN_QUEUE_SIZE	5
+#define DEFAULT_SSL_SHUTDOWN_TIMEOUT 15
 
 
 char    *command_name=NULL;
@@ -73,6 +74,7 @@ int		address_family=AF_UNSPEC;
 int     socket_timeout=DEFAULT_SOCKET_TIMEOUT;
 int     command_timeout=DEFAULT_COMMAND_TIMEOUT;
 int     connection_timeout=DEFAULT_CONNECTION_TIMEOUT;
+int     ssl_shutdown_timeout=DEFAULT_SSL_SHUTDOWN_TIMEOUT;
 char    *command_prefix=NULL;
 
 command *command_list=NULL;
@@ -616,6 +618,14 @@ int read_config_file(char *filename){
 				return ERROR;
 			        }
 		        }
+		        
+        else if(!strcmp(varname,"ssl_shutdown_timeout")){
+            ssl_shutdown_timeout=atoi(varvalue);
+            if(ssl_shutdown_timeout<1){
+                syslog(LOG_ERR,"Invalid ssl_shutdown_timeout specified in config file '%s' - Line %d\n",filename,line);
+                return ERROR;
+                    }
+                }
 
 		else if(!strcmp(varname,"allow_weak_random_seed"))
 			allow_weak_random_seed=(atoi(varvalue)==1)?TRUE:FALSE;
@@ -1873,8 +1883,12 @@ int remove_pid_file(void){
 
 	return OK;
         }
-
+        
 #ifdef HAVE_SSL
+void my_disconnect_sighandler(int sig) {
+    syslog(LOG_ERR,"SSL_shutdown() has taken too long to complete. Exiting now..");
+    exit(STATE_CRITICAL);
+}
 void complete_SSL_shutdown( SSL *ssl) {
 
 	/*  
@@ -1891,9 +1905,15 @@ void complete_SSL_shutdown( SSL *ssl) {
 
 	int x;
 
+    /* set disconnection handler */
+    signal(SIGALRM, my_disconnect_sighandler);
+    alarm(ssl_shutdown_timeout);
+    
 	for( x = 0; x < 4; x++) {
 		if( SSL_shutdown( ssl)) break;
 	}
+	
+	alarm(0);
 }
 #endif/*HAVE_SSL*/
 
