@@ -311,6 +311,8 @@ if test x$check_for_ssl = xyes; then
 				soext="dylib"
 			elif test "`uname -s`" = "HP-UX" ; then
 				soext="sl"
+			elif test "`uname -s`" = "AIX" ; then
+				soext="a"
 			else
 				soext="so"
 			fi
