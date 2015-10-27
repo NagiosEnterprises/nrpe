@@ -305,7 +305,10 @@ if test x$check_for_ssl = xyes; then
 		dnl Now try and find SSL libraries
 		AC_MSG_CHECKING(for SSL libraries)
 		found_ssl=no
-		for dir in $ssl_lib_dir $ssl_dir /usr/lib64 /usr/lib /usr/local/lib /usr/lib/ssl /usr/ssl/lib /usr/openssl/lib /usr/pkg/lib  /usr/freeware/lib/openssl /usr/sfw/lib /opt/freeware/lib; do
+		for dir in $ssl_lib_dir $ssl_dir /usr/lib64 /usr/lib /usr/lib/x86_64-linux-gnu \
+					/usr/lib/i386-linux-gnu /usr/local/lib /usr/lib/ssl /usr/ssl/lib \
+					/usr/openssl/lib /usr/pkg/lib /usr/freeware/lib/openssl \
+					/usr/sfw/lib /opt/freeware/lib; do
 			ssllibdir="$dir"
 			if test "`uname -s`" = "Darwin" ; then
 				soext="dylib"
