@@ -161,7 +161,7 @@ int main(int argc, char **argv){
 #endif /* HAVE_SIGACTION */
 
 	/* set socket timeout */
-//	alarm(socket_timeout);
+	alarm(socket_timeout);
 
 	/* try to connect to the host at the given port number */
 	if((sd=my_connect(server_name, &hostaddr, server_port, address_family, 
