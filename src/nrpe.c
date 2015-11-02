@@ -31,6 +31,7 @@
 #include "acl.h"
 
 #ifdef HAVE_SSL
+#include <ssl.h>
 #include "../include/dh.h"
 #endif
 
@@ -77,6 +78,25 @@ int     connection_timeout=DEFAULT_CONNECTION_TIMEOUT;
 int     ssl_shutdown_timeout=DEFAULT_SSL_SHUTDOWN_TIMEOUT;
 char    *command_prefix=NULL;
 
+/* SSL/TLS parameters */
+typedef enum _SSL_VER { SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus, TLSv1,
+					TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus
+				} SslVer;
+typedef enum _CLNT_CERTS {
+					Ask_For_Cert = 1, Require_Cert = 2, Log_Certs = 4
+				} ClntCerts;
+struct _SSL_PARMS {
+	char	*cert_file;
+	char	*cacert_file;
+	char	*privatekey_file;
+	char    cipher_list[MAX_FILENAME_LENGTH];
+	unsigned char	*adh_key;
+	int		adhk_len;
+	SslVer	ssl_min_ver;
+	int		allowDH;
+	int		client_certs;
+} sslprm = { NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", NULL, 0, TLSv1_plus, 1, 0 };
+
 command *command_list=NULL;
 
 char    *nrpe_user=NULL;
@@ -109,7 +129,7 @@ void complete_SSL_shutdown( SSL *);
 
 int main(int argc, char **argv){
 	int result=OK;
-	int x;
+	int x, ssl_opts = SSL_OP_ALL, vrfy;
 	char buffer[MAX_INPUT_BUFFER];
 	char *env_string=NULL;
 #ifdef HAVE_SSL
@@ -238,10 +258,10 @@ int main(int argc, char **argv){
 #ifdef HAVE_SSL
 	/* initialize SSL */
 	if(use_ssl==TRUE){
-		SSL_library_init();
-		SSLeay_add_ssl_algorithms();
-		meth=SSLv23_server_method();
 		SSL_load_error_strings();
+		SSL_library_init();
+
+		meth = SSLv23_server_method();
 
 		/* use week random seed if necessary */
 		if(allow_weak_random_seed && (RAND_status()==0)){
@@ -262,22 +282,96 @@ int main(int argc, char **argv){
 				}
 			}
 
-		if((ctx=SSL_CTX_new(meth))==NULL){
+#ifndef OPENSSL_NO_SSL2
+		if (sslprm.ssl_min_ver == SSLv2)
+			meth = SSLv2_server_method();
+#endif
+#ifndef OPENSSL_NO_SSL3
+		if (sslprm.ssl_min_ver == SSLv3)
+			meth = SSLv3_server_method();
+#endif
+		if (sslprm.ssl_min_ver == TLSv1)
+			meth = TLSv1_server_method();
+		if (sslprm.ssl_min_ver == TLSv1_1)
+			meth = TLSv1_1_server_method();
+		if (sslprm.ssl_min_ver == TLSv1_2)
+			meth = TLSv1_2_server_method();
+
+		ctx = SSL_CTX_new(meth);
+		if (ctx == NULL) {
 			syslog(LOG_ERR,"Error: could not create SSL context.\n");
+			SSL_CTX_free(ctx);
 			exit(STATE_CRITICAL);
-		        }
+		}
 
-		/* ADDED 01/19/2004 */
-		/* use only TLSv1 protocol */
-		SSL_CTX_set_options(ctx,SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+		if (sslprm.ssl_min_ver >= SSLv3) {
+			ssl_opts |= SSL_OP_NO_SSLv2;
+			if (sslprm.ssl_min_ver >= TLSv1)
+				ssl_opts |= SSL_OP_NO_SSLv3;
+		}
+		SSL_CTX_set_options(ctx, ssl_opts);
 
-		/* use anonymous DH ciphers */
-		SSL_CTX_set_cipher_list(ctx,"ADH");
-		dh=get_dh512();
-		SSL_CTX_set_tmp_dh(ctx,dh);
-		DH_free(dh);
+		if (sslprm.cert_file != NULL) {
+			if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
+				SSL_CTX_free(ctx);
+				syslog(LOG_ERR, "Error: could not use certificate file '%s'.\n", sslprm.cert_file);
+				exit(STATE_CRITICAL);
+			}
+			if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
+				SSL_CTX_free(ctx);
+				syslog(LOG_ERR, "Error: could not use private key file '%s'.\n", sslprm.privatekey_file);
+				exit(STATE_CRITICAL);
+			}
+		}
+
+		if (sslprm.client_certs != 0) {
+			vrfy = SSL_VERIFY_PEER|SSL_VERIFY_CLIENT_ONCE;
+			if ((sslprm.client_certs & Require_Cert) != 0)
+				vrfy |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+			SSL_CTX_set_verify(ctx, vrfy, NULL);
+			if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
+				SSL_CTX_free(ctx);
+				syslog(LOG_ERR, "Error: could not use CA certificate '%s'.\n", sslprm.cacert_file);
+				exit(STATE_CRITICAL);
+			}
+		}
+
+		if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
+			SSL_CTX_free(ctx);
+			syslog(LOG_ERR, "Error: Could not set SSL/TLS cipher list");
+			exit(STATE_CRITICAL);
+		}
+
+		if (sslprm.allowDH) {
+			/* use anonymous DH ciphers */
+			if (sslprm.allowDH == 2)
+				SSL_CTX_set_cipher_list(ctx, "ADH");
+			if (sslprm.adh_key != NULL && sslprm.adhk_len > 0) {
+				if ((dh=DH_new()) == NULL) {
+					syslog(LOG_ERR, "Error: could not create DH object\n");
+					exit(STATE_CRITICAL);
+				}
+				dh->p = BN_bin2bn(sslprm.adh_key, sslprm.adhk_len, NULL);
+				dh->g = BN_bin2bn("\2", 2, NULL);
+				if ((dh->p == NULL) || (dh->g == NULL)) {
+					DH_free(dh);
+					SSL_CTX_free(ctx);
+					syslog(LOG_ERR, "Error: could not create DH object\n");
+					exit(STATE_CRITICAL);
+				}
+				SSL_CTX_set_tmp_dh(ctx, dh);
+				DH_free(dh);
+			} else {
+				dh = get_dh512();
+				SSL_CTX_set_tmp_dh(ctx, dh);
+				DH_free(dh);
+			}
+
+		}
+		
 		if(debug==TRUE)
 			syslog(LOG_INFO,"INFO: SSL/TLS initialized. All network traffic will be encrypted.");
+
 	        }
 	else{
 		if(debug==TRUE)
@@ -481,6 +575,8 @@ int read_config_file(char *filename){
 	int line=0;
 	int len=0;
 	int x=0;
+	int pskfd;
+	struct stat st;
 
 
 	/* open the config file for reading */
@@ -640,6 +736,112 @@ int read_config_file(char *filename){
 				return ERROR;
 				}
 			}
+
+		else if (!strcmp(varname, "ssl_version")) {
+			if (!strcmp(varvalue, "SSLv2"))
+				sslprm.ssl_min_ver = SSLv2;
+			else if (!strcmp(varvalue, "SSLv2+"))
+				sslprm.ssl_min_ver = SSLv2_plus;
+			else if (!strcmp(varvalue, "SSLv3"))
+				sslprm.ssl_min_ver = SSLv3;
+			else if (!strcmp(varvalue, "SSLv3+"))
+				sslprm.ssl_min_ver = SSLv3_plus;
+			else if (!strcmp(varvalue, "TLSv1"))
+				sslprm.ssl_min_ver = TLSv1;
+			else if (!strcmp(varvalue, "TLSv1+"))
+				sslprm.ssl_min_ver = TLSv1_plus;
+			else if (!strcmp(varvalue, "TLSv1.1"))
+				sslprm.ssl_min_ver = TLSv1_1;
+			else if (!strcmp(varvalue, "TLSv1.1+"))
+				sslprm.ssl_min_ver = TLSv1_1_plus;
+			else if (!strcmp(varvalue, "TLSv1.2"))
+				sslprm.ssl_min_ver = TLSv1_2;
+			else if (!strcmp(varvalue, "TLSv1.2+"))
+				sslprm.ssl_min_ver = TLSv1_2_plus;
+			else {
+				syslog(LOG_ERR, "Invalid ssl version specified in config file '%s' - Line %d\n", filename, line);
+				return ERROR;
+			}
+		}
+
+		else if (!strcmp(varname, "ssl_use_adh")) {
+			sslprm.allowDH = atoi(varvalue);
+			if (sslprm.allowDH < 0 || sslprm.allowDH > 2) {
+				syslog(LOG_ERR, "Invalid use adh value specified in config file '%s' - Line %d\n", filename, line);
+				return ERROR;
+			}
+        }
+
+		else if (!strcmp(varname, "ssl_cipher_list")) {
+			strncpy(sslprm.cipher_list, varvalue, sizeof(sslprm.cipher_list) - 1);
+			sslprm.cipher_list[sizeof(sslprm.cipher_list)-1]='\0';
+		}
+
+		else if(!strcmp(varname, "ssl_cert_file"))
+			sslprm.cert_file = strdup(varvalue);
+		
+		else if(!strcmp(varname, "ssl_cacert_file"))
+			sslprm.cacert_file = strdup(varvalue);
+
+		else if(!strcmp(varname, "ssl_privatekey_file"))
+			sslprm.privatekey_file = strdup(varvalue);
+
+		else if (!strcmp(varname, "ssl_client_certs")) {
+			sslprm.client_certs = atoi(varvalue);
+			if (sslprm.client_certs < 0 || sslprm.client_certs > 7) {
+				syslog(LOG_ERR, "Invalid client certs value specified in config file '%s' - Line %d\n", filename, line);
+				return ERROR;
+			}
+			/* if requiring or logging client certs, make sure "Ask" is turned on */
+			if ((sslprm.client_certs & Require_Cert) || (sslprm.client_certs & Log_Certs))
+				sslprm.client_certs |= Ask_For_Cert;
+		}
+
+		else if (!strcmp(varname, "ssl_adh_key")) {
+			if (!strncmp(varvalue, "B64:", 4)) {
+				sslprm.adh_key = strdup(&varvalue[4]);
+				sslprm.adhk_len = b64_decode(sslprm.adh_key);
+			} else {
+				sslprm.adh_key = strdup(varvalue);
+				if (sslprm.adh_key[0] != '/' && sslprm.adh_key[0] != '\\' && strncmp(&sslprm.adh_key[1], ":\\", 2)) {
+					syslog(LOG_ERR, "Invalid ssl adh key value specified in config file '%s' - Line %d\n", filename, line);
+					return ERROR;
+				}
+				if ((pskfd = open(sslprm.adh_key, O_RDONLY)) < 0) {
+					syslog(LOG_ERR, "Unable to open adh key file '%s' for reading\n", pskfd);
+					return ERROR;
+				}
+				if (fstat(pskfd, &st) < 0) {
+					close(pskfd);
+					syslog(LOG_ERR, "Unable to stat adh key file '%s'\n", pskfd);
+					return ERROR;
+				}
+				if (st.st_mode != S_IFREG) {
+					close(pskfd);
+					syslog(LOG_ERR, "adh key file '%s' is not a regular file\n", pskfd);
+					return ERROR;
+				}
+				if (st.st_size == 0 || st.st_size > 4096) {
+					close(pskfd);
+					syslog(LOG_ERR, "adh key file '%s' is not a valid file\n", pskfd);
+					return ERROR;
+				}
+				if (st.st_size > strlen(sslprm.adh_key)) {
+					if ((sslprm.adh_key = realloc(sslprm.adh_key, st.st_size))  == NULL) {
+						close(pskfd);
+						syslog(LOG_ERR, "Memory allocation error\n");
+						return ERROR;
+					}
+				}
+				sslprm.adhk_len = st.st_size;
+				if (read(pskfd, sslprm.adh_key, sslprm.adhk_len) != sslprm.adhk_len) {
+					close(pskfd);
+					syslog(LOG_ERR, "Error reading adh key file '%s'\n", pskfd);
+					return ERROR;
+				}
+				close(pskfd);
+			}
+		}
 
 		else if(!strcmp(varname,"log_facility")){
 			if((get_log_facility(varvalue))==OK){
@@ -927,7 +1129,7 @@ void wait_for_connections(void){
 	struct sockaddr_in6 *nptr6;
 	struct sockaddr_storage addr;
 	int rc;
-	int sock, new_sd;
+	int sock, new_sd=0;
 	socklen_t addrlen;
 	pid_t pid;
 	fd_set fdread;
@@ -1314,7 +1516,7 @@ void handle_connection(int sock){
 		rc=recvall(sock,(char *)&receive_packet,&bytes_to_recv,socket_timeout);
 #ifdef HAVE_SSL
 	else{
-                while(((rc=SSL_read(ssl,&receive_packet,bytes_to_recv))<=0) && (SSL_get_error(ssl,rc)==SSL_ERROR_WANT_READ));
+	        while(((rc=SSL_read(ssl,&receive_packet,bytes_to_recv))<=0) && (SSL_get_error(ssl,rc)==SSL_ERROR_WANT_READ));
 		}
 #endif
 
@@ -1472,7 +1674,7 @@ void handle_connection(int sock){
 		buffer[strlen(buffer)-1]='\x0';
 
 	/* clear the response packet buffer */
-	bzero(&send_packet,sizeof(send_packet));
+	memset(&send_packet, 0, sizeof(send_packet));
 
 	/* fill the packet with semi-random data */
 	randomize_buffer((char *)&send_packet,sizeof(send_packet));
