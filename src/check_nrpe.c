@@ -53,6 +53,25 @@ int use_ssl=TRUE;
 int use_ssl=FALSE;
 #endif
 
+/* SSL/TLS parameters */
+typedef enum _SSL_VER { SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus, TLSv1,
+					TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus
+				} SslVer;
+typedef enum _CLNT_CERTS {
+					Ask_For_Cert = 1, Require_Cert = 2, Log_Certs = 4
+				} ClntCerts;
+struct _SSL_PARMS {
+	char	*cert_file;
+	char	*cacert_file;
+	char	*privatekey_file;
+	char    cipher_list[MAX_FILENAME_LENGTH];
+	unsigned char	*adh_key;
+	int		adhk_len;
+	SslVer	ssl_min_ver;
+	int		allowDH;
+	int		client_certs;
+} sslprm = { NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", NULL, 0, TLSv1_plus, TRUE, 0 };
+
 
 int process_arguments(int,char **);
 void alarm_handler(int);
@@ -65,7 +84,7 @@ int main(int argc, char **argv){
         u_int32_t packet_crc32;
         u_int32_t calculated_crc32;
 	int16_t result;
-	int rc;
+	int rc, ssl_opts = SSL_OP_ALL, vrfy;
 	packet send_packet;
 	packet receive_packet;
 	int bytes_to_send;
@@ -87,28 +106,45 @@ int main(int argc, char **argv){
 		printf("Last Modified: %s\n",MODIFICATION_DATE);
 		printf("License: GPL v2 with exemptions (-l for more info)\n");
 #ifdef HAVE_SSL
-		printf("SSL/TLS Available: Anonymous DH Mode, OpenSSL 0.9.6 or higher required\n");
+		printf("SSL/TLS Available: OpenSSL 0.9.6 or higher required\n");
 #endif
 		printf("\n");
 	        }
 
 	if(result!=OK || show_help==TRUE){
 
-		printf("Usage: check_nrpe -H <host> [ -b <bindaddr> ] [-4] [-6] [-n] [-u] [-p <port>] [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
+		printf("Usage: check_nrpe -H <host> [-4] [-6] [-n] [-u] [-V] [-l] [-d]\n"
+			"       [-D <adh-key>] [-S <ssl version>  [-L <cipherlist>] [-C <clientcert>]\n"
+			"       [-K <key>] [-A <ca-certificate>] [-b <bindaddr>] [-p <port>]\n"
+			"       [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
-		printf(" -n         = Do no use SSL\n");
-		printf(" -u         = Make socket timeouts return an UNKNOWN state instead of CRITICAL\n");
-		printf(" <host>     = The address of the host running the NRPE daemon\n");
-		printf(" <bindaddr> = bind to local address\n");
-		printf(" -4         = bind to ipv4 only\n");
-		printf(" -6         = bind to ipv6 only\n");
-		printf(" [port]     = The port on which the daemon is running (default=%d)\n",DEFAULT_SERVER_PORT);
-		printf(" [timeout]  = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
-		printf(" [command]  = The name of the command that the remote daemon should run\n");
-		printf(" [arglist]  = Optional arguments that should be passed to the command.  Multiple\n");
-		printf("              arguments should be separated by a space.  If provided, this must be\n");
-		printf("              the last option supplied on the command line.\n");
+		printf(" <host>       = The address of the host running the NRPE daemon\n");
+		printf(" -4           = bind to ipv4 only\n");
+		printf(" -6           = bind to ipv6 only\n");
+		printf(" -n           = Do no use SSL\n");
+		printf(" -u           = Make socket timeouts return UNKNOWN state instead of CRITICAL\n");
+		printf(" -V           = Show version\n");
+		printf(" -l           = Show license\n");
+		printf(" -d           = Don't use Anonymous Diffie Hellman\n");
+		printf("                (This will be the default in a future release.)\n");
+		printf(" <adh-key>    = Key to use for Anonymous Diffie Hellman\n");
+		printf(" <bindaddr>   = bind to local address\n");
+		printf(" <ssl ver>    = The SSL/TLS version to use. Can be any one of: SSLv2 (only),\n");
+		printf("                SSLv2+ (or above), SSLv3 (only), SSLv3+ (or above),\n");
+		printf("                TLSv1 (only), TLSv1+ (or above DEFAULT), TLSv1.1 (only),\n");
+		printf("                TLSv1.1+ (or above), TLSv1.2 (only), TLSv1.2+ (or above)\n");
+		printf(" <cipherlist> = The list of SSL ciphers to use (currently defaults\n");
+		printf("                to \"ALL:!MD5:@STRENGTH\". WILL change in a future release.)\n");
+		printf(" <clientcert> = The client certificate to use for PKI\n");
+		printf(" <key>        = The private key to use with the client certificate\n");
+		printf(" <ca-cert>    = The CA certificate to use for PKI\n");
+		printf(" [port]       = The port on which the daemon is running (default=%d)\n",DEFAULT_SERVER_PORT);
+		printf(" [timeout]    = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
+		printf(" [command]    = The name of the command that the remote daemon should run\n");
+		printf(" [arglist]    = Optional arguments that should be passed to the command,\n");
+		printf("                separated by a space.  If provided, this must be the last\n");
+		printf("                option supplied on the command line.\n");
 		printf("\n");
 		printf("Note:\n");
 		printf("This plugin requires that you have the NRPE daemon running on the remote host.\n");
@@ -133,20 +169,72 @@ int main(int argc, char **argv){
 
 #ifdef HAVE_SSL
 	/* initialize SSL */
-	if(use_ssl==TRUE){
-		SSL_library_init();
-		SSLeay_add_ssl_algorithms();
-		meth=SSLv23_client_method();
+	if(use_ssl==TRUE) {
 		SSL_load_error_strings();
-		if((ctx=SSL_CTX_new(meth))==NULL){
+		SSL_library_init();
+		meth = SSLv23_client_method();
+
+#ifndef OPENSSL_NO_SSL2
+		if (sslprm.ssl_min_ver == SSLv2)
+			meth = SSLv2_server_method();
+#endif
+#ifndef OPENSSL_NO_SSL3
+		if (sslprm.ssl_min_ver == SSLv3)
+			meth = SSLv3_server_method();
+#endif
+		if (sslprm.ssl_min_ver == TLSv1)
+			meth = TLSv1_server_method();
+		if (sslprm.ssl_min_ver == TLSv1_1)
+			meth = TLSv1_1_server_method();
+		if (sslprm.ssl_min_ver == TLSv1_2)
+			meth = TLSv1_2_server_method();
+
+		if ((ctx = SSL_CTX_new(meth)) == NULL) {
 			printf("CHECK_NRPE: Error - could not create SSL context.\n");
 			exit(STATE_CRITICAL);
-		        }
+        }
 
-		/* ADDED 01/19/2004 */
-		/* use only TLSv1 protocol */
-		SSL_CTX_set_options(ctx,SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
-                }
+		if (sslprm.ssl_min_ver >= SSLv3) {
+			ssl_opts |= SSL_OP_NO_SSLv2;
+			if (sslprm.ssl_min_ver >= TLSv1)
+				ssl_opts |= SSL_OP_NO_SSLv3;
+		}
+		SSL_CTX_set_options(ctx, ssl_opts);
+
+		if (sslprm.cert_file != NULL && sslprm.privatekey_file != NULL) {
+			if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
+				SSL_CTX_free(ctx);
+				syslog(LOG_ERR, "Error: could not use certificate file '%s'.\n", sslprm.cert_file);
+				exit(STATE_CRITICAL);
+			}
+			if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
+				SSL_CTX_free(ctx);
+				syslog(LOG_ERR, "Error: could not use private key file '%s'.\n", sslprm.privatekey_file);
+				exit(STATE_CRITICAL);
+			}
+		}
+
+		if (sslprm.cacert_file != NULL) {
+			if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
+				SSL_CTX_free(ctx);
+				syslog(LOG_ERR, "Error: could not use CA certificate '%s'.\n", sslprm.cacert_file);
+				exit(STATE_CRITICAL);
+			}
+			vrfy = SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+			SSL_CTX_set_verify(ctx, vrfy, NULL);
+		}
+
+		if (!sslprm.allowDH) {
+			if (strlen(sslprm.cipher_list) < sizeof(sslprm.cipher_list) - 6)
+				strcat(sslprm.cipher_list, ":!ADH");
+		}
+
+		if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
+			SSL_CTX_free(ctx);
+			syslog(LOG_ERR, "Error: Could not set SSL/TLS cipher list: %s", sslprm.cipher_list);
+			exit(STATE_CRITICAL);
+		}
+	}
 #endif
 
 	/* initialize alarm signal handling */
@@ -174,44 +262,47 @@ int main(int argc, char **argv){
 
 #ifdef HAVE_SSL
 	/* do SSL handshake */
-	if(result==STATE_OK && use_ssl==TRUE){
-		if((ssl=SSL_new(ctx))!=NULL){
-			SSL_CTX_set_cipher_list(ctx,"ADH");
-			SSL_set_fd(ssl,sd);
-			if((rc=SSL_connect(ssl))!=1){
+	if (result == STATE_OK && use_ssl==TRUE) {
+		if ((ssl = SSL_new(ctx)) != NULL) {
+			X509	*peer;
+			char	peer_cn[256];
+
+			SSL_set_fd(ssl, sd);
+			if ((rc = SSL_connect(ssl)) != 1) {
 				printf("CHECK_NRPE: Error - Could not complete SSL handshake.\n");
 #ifdef DEBUG
-				printf("SSL_connect=%d\n",rc);
+				printf("SSL_connect=%d\n", rc);
 				/*
-				rc=SSL_get_error(ssl,rc);
-				printf("SSL_get_error=%d\n",rc);
-				printf("ERR_get_error=%lu\n",ERR_get_error());
-				printf("%s\n",ERR_error_string(rc,NULL));
+				rc = SSL_get_error(ssl, rc);
+				printf("SSL_get_error=%d\n", rc);
+				printf("ERR_get_error=%lu\n", ERR_get_error());
+				printf("%s\n",ERR_error_string(rc, NULL));
 				*/
 				ERR_print_errors_fp(stdout);
 #endif
 				result=STATE_CRITICAL;
-			        }
-		        }
-		else{
+			}
+
+		} else {
+
 			printf("CHECK_NRPE: Error - Could not create SSL connection structure.\n");
 			result=STATE_CRITICAL;
-		        }
+		}
 
 		/* bail if we had errors */
-		if(result!=STATE_OK){
+		if (result != STATE_OK) {
 			SSL_CTX_free(ctx);
 			close(sd);
 			exit(result);
-		        }
-	        }
+        }
+	}
 #endif
 
 	/* we're connected and ready to go */
 	if(result==STATE_OK){
 
 		/* clear the packet buffer */
-		bzero(&send_packet,sizeof(send_packet));
+		memset(&send_packet, 0, sizeof(send_packet));
 
 		/* fill the packet with semi-random data */
 		randomize_buffer((char *)&send_packet,sizeof(send_packet));
@@ -271,22 +362,22 @@ int main(int argc, char **argv){
 		graceful_close(sd,1000);
 
 		/* recv() error */
-		if(rc<0){
+		if (rc < 0) {
 			printf("CHECK_NRPE: Error receiving data from daemon.\n");
 			return STATE_UNKNOWN;
-		        }
+		}
 
 		/* server disconnected */
-		else if(rc==0){
+		else if (rc == 0) {
 			printf("CHECK_NRPE: Received 0 bytes from daemon.  Check the remote server logs for error messages.\n");
 			return STATE_UNKNOWN;
-		        }
+		}
 
 		/* receive underflow */
-		else if(bytes_to_recv<sizeof(receive_packet)){
-			printf("CHECK_NRPE: Receive underflow - only %d bytes received (%d expected).\n",bytes_to_recv,sizeof(receive_packet));
+		else if(bytes_to_recv<sizeof(receive_packet)) {
+			printf("CHECK_NRPE: Receive underflow - only %d bytes received (%ld expected).\n", bytes_to_recv, sizeof(receive_packet));
 			return STATE_UNKNOWN;
-		        }
+		}
 
 		
 		/***** DECRYPT RESPONSE *****/
@@ -337,125 +428,151 @@ int main(int argc, char **argv){
 
 
 /* process command line arguments */
-int process_arguments(int argc, char **argv){
+int process_arguments(int argc, char **argv)
+{
 	char optchars[MAX_INPUT_BUFFER];
-	int argindex=0;
-	int c=1;
-	int i=1;
+	int argindex = 0;
+	int c = 1;
+	int i = 1;
+	int rc;
 
 #ifdef HAVE_GETOPT_LONG
-	int option_index=0;
-	static struct option long_options[]={
-		{"host", required_argument, 0, 'H'},
-		{"bind", required_argument, 0, 'b'},
-		{"command", required_argument, 0, 'c'},
-		{"args", required_argument, 0, 'a'},
-		{"no-ssl", no_argument, 0, 'n'},
-		{"unknown-timeout", no_argument, 0, 'u'},
-		{"ipv4", no_argument, 0, '4'},
-		{"ipv6", no_argument, 0, '6'},
-		{"timeout", required_argument, 0, 't'},
-		{"port", required_argument, 0, 'p'},
-		{"help", no_argument, 0, 'h'},
-		{"license", no_argument, 0, 'l'},
-		{0, 0, 0, 0}
-                };
+	int option_index = 0;
+	static struct option long_options[] = {
+		{ "host",			required_argument,	0, 'H'},
+		{ "bind",			required_argument,	0, 'b'},
+		{ "command",		required_argument,	0, 'c'},
+		{ "args",			required_argument,	0, 'a'},
+		{ "no-ssl",			no_argument,		0, 'n'},
+		{ "unknown-timeout",no_argument,		0, 'u'},
+		{ "ipv4",			no_argument,		0, '4'},
+		{ "ipv6",			no_argument,		0, '6'},
+		{ "no-adh",			no_argument,		0, 'd'},
+		{ "ssl-version",	required_argument,	0, 'S'},
+		{ "cipher-list",	required_argument,	0, 'L'},
+		{ "client-cert",	required_argument,	0, 'C'},
+		{ "key-file",		required_argument,	0, 'K'},
+		{ "ca-cert-file",	required_argument,	0, 'A'},
+		{ "timeout",		required_argument,	0, 't'},
+		{ "port",			required_argument,	0, 'p'},
+		{ "help",			no_argument,		0, 'h'},
+		{ "license",		no_argument,		0, 'l'},
+		{ 0, 0, 0, 0}
+	};
 #endif
 
 	/* no options were supplied */
-	if(argc<2)
+	if (argc < 2)
 		return ERROR;
 
-	snprintf(optchars,MAX_INPUT_BUFFER,"H:b:c:a:t:p:nu46hl");
+	snprintf(optchars, MAX_INPUT_BUFFER, "H:b:c:a:t:p:S:L:C:K:A:D:46dhlnuV");
 
-	while(1){
+	while(1) {
 #ifdef HAVE_GETOPT_LONG
-		c=getopt_long(argc,argv,optchars,long_options,&option_index);
+		c = getopt_long(argc, argv, optchars, long_options, &option_index);
 #else
-		c=getopt(argc,argv,optchars);
+		c = getopt(argc, argv, optchars);
 #endif
-		if(c==-1 || c==EOF || argindex > 0)
+		if (c == -1 || c == EOF || argindex > 0)
 			break;
 
+		rc = nssl_set_opt(prms, c, optarg);
+		if (rc == TRUE)
+			continue;
+		else if (rc == ERROR)
+			return ERROR;
+
 		/* process all arguments */
-		switch(c){
+		switch(c) {
 
 		case '?':
 		case 'h':
-			show_help=TRUE;
+			show_help = TRUE;
 			break;
+
 		case 'b':
-			bind_address=strdup(optarg);
+			bind_address = strdup(optarg);
 			break;
+
 		case 'V':
-			show_version=TRUE;
+			show_version = TRUE;
 			break;
+
 		case 'l':
-			show_license=TRUE;
+			show_license = TRUE;
 			break;
+
 		case 't':
-			socket_timeout=atoi(optarg);
-			if(socket_timeout<=0)
+			socket_timeout = atoi(optarg);
+			if(socket_timeout <= 0)
 				return ERROR;
 			break;
+
 		case 'p':
-			server_port=atoi(optarg);
-			if(server_port<=0)
+			server_port = atoi(optarg);
+			if(server_port <= 0)
 				return ERROR;
 			break;
+
 		case 'H':
-			server_name=strdup(optarg);
+			server_name = strdup(optarg);
 			break;
+
 		case 'c':
-			command_name=strdup(optarg);
+			command_name = strdup(optarg);
 			break;
+
 		case 'a':
-			argindex=optind;
+			argindex = optind;
 			break;
+
 		case 'n':
-			use_ssl=FALSE;
+			use_ssl = FALSE;
 			break;
+
 		case 'u':
-			timeout_return_code=STATE_UNKNOWN;
+			timeout_return_code = STATE_UNKNOWN;
 			break;
+
 		case '4':
-			address_family=AF_INET;
+			address_family = AF_INET;
 			break;
+
 		case '6':
-			address_family=AF_INET6;
+			address_family = AF_INET6;
 			break;
+
 		default:
 			return ERROR;
 			break;
-		        }
-	        }
+		}
+	}
 
 	/* determine (base) command query */
-	snprintf(query,sizeof(query),"%s",(command_name==NULL)?DEFAULT_NRPE_COMMAND:command_name);
-	query[sizeof(query)-1]='\x0';
+	snprintf(query, sizeof(query), "%s", (command_name == NULL) ? DEFAULT_NRPE_COMMAND : command_name);
+	query[sizeof(query)-1] = '\x0';
 
 	/* get the command args */
-	if(argindex>0){
+	if (argindex > 0) {
 
-		for(c=argindex-1;c<argc;c++){
+		for (c = argindex - 1; c < argc; c++) {
 
-			i=sizeof(query)-strlen(query)-2;
-			if(i<=0)
+			i = sizeof(query) - strlen(query) - 2;
+			if (i <= 0)
 				break;
 
-			strcat(query,"!");
-			strncat(query,argv[c],i);
-			query[sizeof(query)-1]='\x0';
-		        }
-	        }
+			strcat(query, "!");
+			strncat(query, argv[c], i);
+			query[sizeof(query) - 1] = '\x0';
+		}
+	}
 
 	/* make sure required args were supplied */
-	if(server_name==NULL && show_help==FALSE && show_version==FALSE  && show_license==FALSE)
+	if (server_name == NULL && show_help == FALSE && show_version == FALSE  && show_license == FALSE)
 		return ERROR;
 
-
 	return OK;
-        }
+}
 
 
 
