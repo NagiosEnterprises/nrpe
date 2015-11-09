@@ -80,13 +80,13 @@ char    *command_prefix=NULL;
 
 /* SSL/TLS parameters */
 typedef enum _SSL_VER { SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus, TLSv1,
-					TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus
+    	TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus
 				} SslVer;
 typedef enum _CLNT_CERTS {
-					Ask_For_Cert = 1, Require_Cert = 2
+		Ask_For_Cert = 1, Require_Cert = 2
 				} ClntCerts;
-typedef enum _SSL_LOGGING { SSL_NoLogging, SSL_LogStartup, SSL_LogVersion,
-					SSL_LogCipher, SSL_LogIfClientCert, SSL_LogCertDetails
+typedef enum _SSL_LOGGING { SSL_NoLogging, SSL_LogStartup, SSL_LogIpAddr,
+        SSL_LogVersion, SSL_LogCipher, SSL_LogIfClientCert, SSL_LogCertDetails
 				} SslLogging;
 struct _SSL_PARMS {
 	char		*cert_file;
@@ -100,6 +100,8 @@ struct _SSL_PARMS {
 	ClntCerts	client_certs;
 	SslLogging	log_opts;
 } sslprm = { NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", NULL, 0, TLSv1_plus, TRUE, 0, 0 };
+
+char	remote_host[MAX_HOST_ADDRESS_LENGTH];
 
 command *command_list=NULL;
 
@@ -134,7 +136,7 @@ static int verify_callback(int ok, X509_STORE_CTX *ctx);
 
 int main(int argc, char **argv){
 	int result=OK;
-	int x, ssl_opts = SSL_OP_ALL, vrfy;
+	int x, ssl_opts = SSL_OP_ALL|SSL_OP_SINGLE_DH_USE, vrfy;
 	char buffer[MAX_INPUT_BUFFER];
 	char *env_string=NULL;
 #ifdef HAVE_SSL
@@ -378,27 +380,9 @@ int main(int argc, char **argv){
 			/* use anonymous DH ciphers */
 			if (sslprm.allowDH == 2)
 				SSL_CTX_set_cipher_list(ctx, "ADH");
-			if (sslprm.adh_key != NULL && sslprm.adhk_len > 0) {
-				if ((dh=DH_new()) == NULL) {
-					syslog(LOG_ERR, "Error: could not create DH object");
-					exit(STATE_CRITICAL);
-				}
-				dh->p = BN_bin2bn(sslprm.adh_key, sslprm.adhk_len, NULL);
-				dh->g = BN_bin2bn("\2", 2, NULL);
-				if ((dh->p == NULL) || (dh->g == NULL)) {
-					DH_free(dh);
-					SSL_CTX_free(ctx);
-					syslog(LOG_ERR, "Error: could not create DH object");
-					exit(STATE_CRITICAL);
-				}
-				SSL_CTX_set_tmp_dh(ctx, dh);
-				DH_free(dh);
-			} else {
-				dh = get_dh2048();
-				SSL_CTX_set_tmp_dh(ctx, dh);
-				DH_free(dh);
-			}
-
+			dh = get_dh2048();
+			SSL_CTX_set_tmp_dh(ctx, dh);
+			DH_free(dh);
 		}
 		
 		if(debug==TRUE)
@@ -858,52 +842,6 @@ int read_config_file(char *filename){
 				sslprm.client_certs |= Ask_For_Cert;
 		}
 
-		else if (!strcmp(varname, "ssl_adh_key")) {
-			if (!strncmp(varvalue, "B64:", 4)) {
-				sslprm.adh_key = strdup(&varvalue[4]);
-				sslprm.adhk_len = b64_decode(sslprm.adh_key);
-			} else {
-				sslprm.adh_key = strdup(varvalue);
-				if (sslprm.adh_key[0] != '/' && sslprm.adh_key[0] != '\\' && strncmp(&sslprm.adh_key[1], ":\\", 2)) {
-					syslog(LOG_ERR, "Invalid ssl adh key value specified in config file '%s' - Line %d", filename, line);
-					return ERROR;
-				}
-				if ((pskfd = open(sslprm.adh_key, O_RDONLY)) < 0) {
-					syslog(LOG_ERR, "Unable to open adh key file '%s' for reading", pskfd);
-					return ERROR;
-				}
-				if (fstat(pskfd, &st) < 0) {
-					close(pskfd);
-					syslog(LOG_ERR, "Unable to stat adh key file '%s'", pskfd);
-					return ERROR;
-				}
-				if (st.st_mode != S_IFREG) {
-					close(pskfd);
-					syslog(LOG_ERR, "adh key file '%s' is not a regular file", pskfd);
-					return ERROR;
-				}
-				if (st.st_size == 0 || st.st_size > 4096) {
-					close(pskfd);
-					syslog(LOG_ERR, "adh key file '%s' is not a valid file", pskfd);
-					return ERROR;
-				}
-				if (st.st_size > strlen(sslprm.adh_key)) {
-					if ((sslprm.adh_key = realloc(sslprm.adh_key, st.st_size))  == NULL) {
-						close(pskfd);
-						syslog(LOG_ERR, "Memory allocation error");
-						return ERROR;
-					}
-				}
-				sslprm.adhk_len = st.st_size;
-				if (read(pskfd, sslprm.adh_key, sslprm.adhk_len) != sslprm.adhk_len) {
-					close(pskfd);
-					syslog(LOG_ERR, "Error reading adh key file '%s'", pskfd);
-					return ERROR;
-				}
-				close(pskfd);
-			}
-		}
-
 		else if(!strcmp(varname,"log_facility")){
 			if((get_log_facility(varvalue))==OK){
 				/* re-open log using new facility */
@@ -1351,11 +1289,12 @@ void wait_for_connections(void){
 							nptr = (struct sockaddr_in *)&addr;
 
 							/* log info to syslog facility */
-							if(debug==TRUE) {
+							strncpy(remote_host, inet_ntoa(nptr->sin_addr), sizeof(remote_host) - 1);
+							remote_host[MAX_HOST_ADDRESS_LENGTH - 1] = '\0';
+							if (debug == TRUE || (sslprm.log_opts & SSL_LogIpAddr)) {
 								syslog(LOG_DEBUG, "Connection from %s port %d",
-										inet_ntoa(nptr->sin_addr), 
-										nptr->sin_port);
-								}
+										remote_host,  nptr->sin_port);
+							}
 							if(!is_an_allowed_host(AF_INET,
 									(void *)&(nptr->sin_addr))) {
 								/* log error to syslog facility */
@@ -1392,10 +1331,11 @@ void wait_for_connections(void){
 								} 
 
 							/* log info to syslog facility */
-							if(debug==TRUE) {
+							strcpy(remote_host, ipstr);
+							if (debug == TRUE || (sslprm.log_opts & SSL_LogIpAddr)) {
 								syslog(LOG_DEBUG, "Connection from %s port %d",
 										ipstr, nptr6->sin6_port);
-								}
+							}
 							if(!is_an_allowed_host(AF_INET6, 
 									(void *)&(nptr6->sin6_addr))) {
 								/* log error to syslog facility */
@@ -1548,16 +1488,25 @@ void handle_connection(int sock){
 	if (result == STATE_OK && use_ssl == TRUE) {
 		if ((ssl = SSL_new(ctx)) != NULL) {
 			SSL_set_fd(ssl,sock);
-
+ 
 			/* keep attempting the request if needed */
 			while (((rc = SSL_accept(ssl)) != 1) && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ));
 
 			if (rc != 1) {
 				if (sslprm.log_opts & (SSL_LogCertDetails|SSL_LogIfClientCert)) {
-					while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0)
-						syslog(LOG_ERR, "Error: Could not complete SSL handshake: %s", ERR_reason_error_string(x));
+					int	nerrs = 0;
+					rc = 0;
+					while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+						syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
+								remote_host, ERR_reason_error_string(x));
+						++nerrs;
+					}
+					if (nerrs == 0)
+						syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
+								remote_host, SSL_get_error(ssl,rc));
 				} else
-					syslog(LOG_ERR, "Error: Could not complete SSL handshake. %d", SSL_get_error(ssl,rc));
+					syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
+							remote_host, SSL_get_error(ssl,rc));
 #ifdef DEBUG
 				errfp = fopen("/tmp/err.log", "a");
 				ERR_print_errors_fp(errfp);
@@ -1566,27 +1515,31 @@ void handle_connection(int sock){
 				return;
 			}
 			if (sslprm.log_opts & SSL_LogVersion)
-				syslog(LOG_NOTICE, "SSL Version: %s", SSL_get_version(ssl));
+				syslog(LOG_NOTICE, "Remote %s - SSL Version: %s",
+						remote_host, SSL_get_version(ssl));
 			if (sslprm.log_opts & SSL_LogCipher) {
 				c = SSL_get_current_cipher(ssl);
-				syslog(LOG_NOTICE, "%s, Cipher is %s",
+				syslog(LOG_NOTICE, "Remote %s - %s, Cipher is %s", remote_host,
 					   SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
 			}
 			if ((sslprm.log_opts & SSL_LogIfClientCert) || (sslprm.log_opts & SSL_LogCertDetails)) {
 				peer = SSL_get_peer_certificate(ssl);
 				if (peer) {
 					if (sslprm.log_opts & SSL_LogIfClientCert)
-						syslog(LOG_NOTICE, "SSL Client has %s certificate",
-								peer->valid ? "a valid" : "an invalid");
+						syslog(LOG_NOTICE, "SSL Client %s has %s certificate",
+								remote_host, peer->valid ? "a valid" : "an invalid");
 					if (sslprm.log_opts & SSL_LogCertDetails) {
-						syslog(LOG_NOTICE, "SSL Client Cert Name: %s", peer->name);
+						syslog(LOG_NOTICE, "SSL Client %s Cert Name: %s",
+								remote_host, peer->name);
 						X509_NAME_oneline(X509_get_issuer_name(peer), buffer, sizeof(buffer));
-						syslog(LOG_NOTICE, "SSL Client Cert Issuer: %s", buffer);
+						syslog(LOG_NOTICE, "SSL Client %s Cert Issuer: %s",
+								remote_host, buffer);
 					}
 				} else if (sslprm.client_certs == 0)
 					syslog(LOG_NOTICE, "SSL Not asking for client certification");
 				else
-					syslog(LOG_NOTICE, "SSL Client did not present a certificate");
+					syslog(LOG_NOTICE, "SSL Client %s did not present a certificate",
+							remote_host);
 			}
 		}
 		else {
@@ -1614,7 +1567,7 @@ void handle_connection(int sock){
 	if(rc<=0){
 
 		/* log error to syslog facility */
-		syslog(LOG_ERR,"Could not read request from client, bailing out...");
+		syslog(LOG_ERR,"Could not read request from client %s, bailing out...", remote_host);
 
 #ifdef HAVE_SSL
 		if(ssl){
@@ -1631,7 +1584,7 @@ void handle_connection(int sock){
 	else if(bytes_to_recv!=sizeof(receive_packet)){
 
 		/* log error to syslog facility */
-		syslog(LOG_ERR,"Data packet from client was too short, bailing out...");
+		syslog(LOG_ERR,"Data packet from client (%s) was too short, bailing out...", remote_host);
 
 #ifdef HAVE_SSL
 		if(ssl){
@@ -1655,7 +1608,7 @@ void handle_connection(int sock){
 	if(validate_request(&receive_packet)==ERROR){
 
 		/* log an error */
-		syslog(LOG_ERR,"Client request was invalid, bailing out...");
+		syslog(LOG_ERR,"Client request from %s was invalid, bailing out...", remote_host);
 
 		/* free memory */
 		free(command_name);
@@ -1677,7 +1630,8 @@ void handle_connection(int sock){
 
 	/* log info to syslog facility */
 	if(debug==TRUE)
-		syslog(LOG_DEBUG,"Host is asking for command '%s' to be run...",receive_packet.buffer);
+		syslog(LOG_DEBUG,"Host %s is asking for command '%s' to be run...",
+				remote_host, receive_packet.buffer);
 
 	/* disable connection alarm - a new alarm will be setup during my_system */
 	alarm(0);
@@ -1690,7 +1644,7 @@ void handle_connection(int sock){
 
 		/* log info to syslog facility */
 		if(debug==TRUE)
-			syslog(LOG_DEBUG,"Response: %s",buffer);
+			syslog(LOG_DEBUG,"Response to %s: %s", remote_host, buffer);
 
 		result=STATE_OK;
 	        }
