@@ -434,7 +434,8 @@ int process_arguments(int argc, char **argv)
 	int argindex = 0;
 	int c = 1;
 	int i = 1;
-	int rc;
+	int pskfd;
+	struct stat st;
 
 #ifdef HAVE_GETOPT_LONG
 	int option_index = 0;
@@ -475,12 +476,6 @@ int process_arguments(int argc, char **argv)
 #endif
 		if (c == -1 || c == EOF || argindex > 0)
 			break;
-
-		rc = nssl_set_opt(prms, c, optarg);
-		if (rc == TRUE)
-			continue;
-		else if (rc == ERROR)
-			return ERROR;
 
 		/* process all arguments */
 		switch(c) {
@@ -540,6 +535,52 @@ int process_arguments(int argc, char **argv)
 
 		case '6':
 			address_family = AF_INET6;
+			break;
+
+		case 'd':
+			sslprm.allowDH = FALSE;
+			break;
+
+		case 'A':
+			sslprm.cacert_file = strdup(optarg);
+			break;
+
+		case 'C':
+			sslprm.cert_file = strdup(optarg);
+			break;
+
+		case 'K':
+			sslprm.privatekey_file = strdup(optarg);
+			break;
+
+		case 'S':
+			if (!strcmp(optarg, "SSLv2"))
+				sslprm.ssl_min_ver = SSLv2;
+			else if (!strcmp(optarg, "SSLv2+"))
+				sslprm.ssl_min_ver = SSLv2_plus;
+			else if (!strcmp(optarg, "SSLv3"))
+				sslprm.ssl_min_ver = SSLv3;
+			else if (!strcmp(optarg, "SSLv3+"))
+				sslprm.ssl_min_ver = SSLv3_plus;
+			else if (!strcmp(optarg, "TLSv1"))
+				sslprm.ssl_min_ver = TLSv1;
+			else if (!strcmp(optarg, "TLSv1+"))
+				sslprm.ssl_min_ver = TLSv1_plus;
+			else if (!strcmp(optarg, "TLSv1.1"))
+				sslprm.ssl_min_ver = TLSv1_1;
+			else if (!strcmp(optarg, "TLSv1.1+"))
+				sslprm.ssl_min_ver = TLSv1_1_plus;
+			else if (!strcmp(optarg, "TLSv1.2"))
+				sslprm.ssl_min_ver = TLSv1_2;
+			else if (!strcmp(optarg, "TLSv1.2+"))
+				sslprm.ssl_min_ver = TLSv1_2_plus;
+			else
+				return ERROR;
+			break;
+
+		case 'L':
+			strncpy(sslprm.cipher_list, optarg, sizeof(sslprm.cipher_list) - 1);
+			sslprm.cipher_list[sizeof(sslprm.cipher_list)-1]='\0';
 			break;
 
 		default:
