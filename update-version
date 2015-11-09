@@ -28,10 +28,10 @@ else
 fi
 
 # Current version number
-CURRENTVERSION=2.15
+CURRENTVERSION=2.16RC2
 
 # Last date
-LASTDATE=09-06-2013
+LASTDATE=11-09-2015
 
 if [ "x$1" = "x" ]
 then
@@ -64,9 +64,9 @@ perl -i -p -e "s/Last Modified: [0-9].*/Last Modified: $SHORTDATE/;" src/nrpe.c
 perl -i -p -e "s/Last Modified: [0-9].*/Last Modified: $SHORTDATE/;" src/check_nrpe.c
 
 # Update version number and release date in configure.in
-perl -i -p -e "if( /^AC_INIT/) { s/$CURRENTVERSION/$1/; }" configure.in
-perl -i -p -e "s/PKG_VERSION=.*/PKG_VERSION=\"$1\"/;" configure.in
-perl -i -p -e "s/PKG_REL_DATE=.*\"/PKG_REL_DATE=\"$SHORTDATE\"/;" configure.in
+perl -i -p -e "if( /^AC_INIT/) { s/$CURRENTVERSION/$1/; }" configure.ac
+perl -i -p -e "s/PKG_VERSION=.*/PKG_VERSION=\"$1\"/;" configure.ac
+perl -i -p -e "s/PKG_REL_DATE=.*\"/PKG_REL_DATE=\"$SHORTDATE\"/;" configure.ac
 
 # Run autoconf to update configure (this is easier than updating every instance
 # of the version number in configure)

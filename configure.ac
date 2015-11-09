@@ -4,7 +4,7 @@ dnl Disable caching
 define([AC_CACHE_LOAD],)
 define([AC_CACHE_SAVE],)
 
-AC_INIT([nrpe],[2.15],[nagios-users@lists.sourceforge.net],[nrpe],[http://www.nagios.org])
+AC_INIT([nrpe],[2.16RC2],[nagios-users@lists.sourceforge.net],[nrpe],[http://www.nagios.org])
 AC_CONFIG_SRCDIR([src/nrpe.c])
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
@@ -20,9 +20,9 @@ AC_CONFIG_FILES([Makefile
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
 PKG_NAME=nrpe
-PKG_VERSION="2.15"
+PKG_VERSION="2.16RC2"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="09-06-2013"
+PKG_REL_DATE="11-09-2015"
 RPM_RELEASE=1
 AC_SUBST(PKG_NAME)
 AC_SUBST(PKG_VERSION)
