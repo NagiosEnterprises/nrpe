@@ -243,17 +243,6 @@ connection_timeout=300
 
 #ssl_logging=0
 
-# SSL ADH KEY
-# Set this option to use a different Diffie-Hellman key. The argument is either
-# a path to a file containing the key, or a base-64 encoded key. The key from the
-# file or the base-64 decoded key must be a 512, 1024, 2048 or 4096-bit binary
-# key. Recent versions of openSSL require 2048 or 4096 bit keys or it will refuse
-# to use DH. This directive is DEPRECATED and will be removed in a new version.
-# The sample in the second example is a 512-bit key. DO NOT USE THE SAMPLE KEY!
-
-#ssl_adh_key=@sharedstatedir@/ssl/nrpe_adh.key
-#ssl_adh_key=B64:MEYCQQDGl8SHFLW//3CY9H6R3ZnbB68UAHv59aGwatTT0KHrfono/StMIcPtqSsjjioWWugxt91tECG+GTMgBADLiXZTAgEC  DON'T USE THIS ONE!
-
 
 
 # INCLUDE CONFIG FILE

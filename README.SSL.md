@@ -24,7 +24,10 @@ the changes to the check_nrpe client.
 Running `./configure` will now create a 2048-bit DH key instead
 of the old 512-bit key. The most current versions of openSSL will
 still not allow it. In my testing, openSSL 1.0.1e allowed DH keys
-of 512 bits, and 1.0.1k would not allow 2048 bit keys.
+of 512 bits, and 1.0.1k would not allow 2048 bit keys. In addition
+we now call `SSL_CTX_set_options(ctx, SSL_OP_SINGLE_DH_USE)` so a
+new key is generated on each connection, based on the 2048-bit
+key generated.
 
 The NRPE configuration file has added new SSL/TLS options. The
 defaults currently will allow old check_nrpe clients to continue to
@@ -86,12 +89,6 @@ being used for the connection, `8` to log if client has a cert, and
 This can be especially helpful during client migration, so you can
 tell which clients have certificates, what SSL/TLS version is being
 used, and which ciphers are being used.
-
-The `ssl_adh_key` directive is **DEPRECATED**, even though it's new. It
-should be used (if at all) during client migration. This will allow
-you to change the ADH key without having to recompile the NRPE
-daemon. It can either contain the path to a key file, or it can
-contain a base-64 encoded key. See the examples in the nrpe.cfg file.
 
 
 ------------------------------------------------
