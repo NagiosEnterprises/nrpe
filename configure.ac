@@ -345,7 +345,7 @@ if test x$check_for_ssl = xyes; then
 				sslbin=$ssldir/bin/openssl
 			fi
 			# awk to strip off meta data at bottom of dhparam output
-			$sslbin dhparam -C 512 | awk '/^-----/ {exit} {print}' > include/dh.h
+			$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
 		fi
 	fi
 

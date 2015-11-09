@@ -31,6 +31,7 @@
 #include "acl.h"
 
 #ifdef HAVE_SSL
+#include <ssl.h>
 #include "../include/dh.h"
 #endif
 
@@ -77,6 +78,29 @@ int     connection_timeout=DEFAULT_CONNECTION_TIMEOUT;
 int     ssl_shutdown_timeout=DEFAULT_SSL_SHUTDOWN_TIMEOUT;
 char    *command_prefix=NULL;
 
+/* SSL/TLS parameters */
+typedef enum _SSL_VER { SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus, TLSv1,
+    	TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus
+				} SslVer;
+typedef enum _CLNT_CERTS {
+		Ask_For_Cert = 1, Require_Cert = 2
+				} ClntCerts;
+typedef enum _SSL_LOGGING { SSL_NoLogging, SSL_LogStartup, SSL_LogIpAddr,
+        SSL_LogVersion, SSL_LogCipher, SSL_LogIfClientCert, SSL_LogCertDetails
+				} SslLogging;
+struct _SSL_PARMS {
+	char		*cert_file;
+	char		*cacert_file;
+	char		*privatekey_file;
+	char		cipher_list[MAX_FILENAME_LENGTH];
+	SslVer		ssl_min_ver;
+	int			allowDH;
+	ClntCerts	client_certs;
+	SslLogging	log_opts;
+} sslprm = { NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", TLSv1_plus, TRUE, 0, SSL_NoLogging };
+
+char	remote_host[MAX_HOST_ADDRESS_LENGTH];
+
 command *command_list=NULL;
 
 char    *nrpe_user=NULL;
@@ -104,12 +128,13 @@ int     use_src=FALSE; /* Define parameter for SRC option */
 int		listen_queue_size=DEFAULT_LISTEN_QUEUE_SIZE;
 
 #ifdef HAVE_SSL
-void complete_SSL_shutdown( SSL *);
+static void complete_SSL_shutdown( SSL *);
+static int verify_callback(int ok, X509_STORE_CTX *ctx);
 #endif
 
 int main(int argc, char **argv){
 	int result=OK;
-	int x;
+	int x, ssl_opts = SSL_OP_ALL|SSL_OP_SINGLE_DH_USE, vrfy;
 	char buffer[MAX_INPUT_BUFFER];
 	char *env_string=NULL;
 #ifdef HAVE_SSL
@@ -197,7 +222,7 @@ int main(int argc, char **argv){
 	/* open a connection to the syslog facility */
 	/* facility name may be overridden later */
 	get_log_facility(NRPE_LOG_FACILITY);
-        openlog("nrpe",LOG_PID,log_facility); 
+	openlog("nrpe",LOG_PID,log_facility); 
 
 	/* make sure the config file uses an absolute path */
 	if(config_file[0]!='/'){
@@ -236,12 +261,41 @@ int main(int argc, char **argv){
 		macro_argv[x]=NULL;
 
 #ifdef HAVE_SSL
+	if (sslprm.log_opts & SSL_LogStartup) {
+		syslog(LOG_INFO, "SSL Certificate File: %s", sslprm.cert_file);
+		syslog(LOG_INFO, "SSL Private Key File: %s", sslprm.privatekey_file);
+		syslog(LOG_INFO, "SSL CA Certificate File: %s", sslprm.cacert_file);
+		if (sslprm.allowDH < 2)
+			syslog(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
+		else
+			syslog(LOG_INFO, "SSL Cipher List: ADH");
+		syslog(LOG_INFO, "SSL Allow ADH: %s",
+				sslprm.allowDH == 0 ? "No" : (sslprm.allowDH == 1 ? "Allow" : "Require"));
+		syslog(LOG_INFO, "SSL Client Certs: %s",
+				sslprm.client_certs == 0 ? "Don't Ask" : (sslprm.client_certs == 1 ? "Accept" : "Require"));
+		syslog(LOG_INFO, "SSL Log Options: 0x%02x", sslprm.log_opts);
+		switch (sslprm.ssl_min_ver) {
+			case SSLv2:			env_string = "SSLv2";					break;
+			case SSLv2_plus:	env_string = "SSLv2 And Above";			break;
+			case SSLv3:			env_string = "SSLv3";					break;
+			case SSLv3_plus:	env_string = "SSLv3_plus And Above";	break;
+			case TLSv1:			env_string = "TLSv1";					break;
+			case TLSv1_plus:	env_string = "TLSv1_plus And Above";	break;
+			case TLSv1_1:		env_string = "TLSv1_1";					break;
+			case TLSv1_1_plus:	env_string = "TLSv1_1_plus And Above";	break;
+			case TLSv1_2:		env_string = "TLSv1_2";					break;
+			case TLSv1_2_plus:	env_string = "TLSv1_2_plus And Above";	break;
+			defualt:			env_string = "INVALID VALUE!";			break;
+		}
+		syslog(LOG_INFO, "SSL Version: %s", env_string);
+	}
+
 	/* initialize SSL */
 	if(use_ssl==TRUE){
-		SSL_library_init();
-		SSLeay_add_ssl_algorithms();
-		meth=SSLv23_server_method();
 		SSL_load_error_strings();
+		SSL_library_init();
+
+		meth = SSLv23_server_method();
 
 		/* use week random seed if necessary */
 		if(allow_weak_random_seed && (RAND_status()==0)){
@@ -262,22 +316,78 @@ int main(int argc, char **argv){
 				}
 			}
 
-		if((ctx=SSL_CTX_new(meth))==NULL){
-			syslog(LOG_ERR,"Error: could not create SSL context.\n");
+#ifndef OPENSSL_NO_SSL2
+		if (sslprm.ssl_min_ver == SSLv2)
+			meth = SSLv2_server_method();
+#endif
+#ifndef OPENSSL_NO_SSL3
+		if (sslprm.ssl_min_ver == SSLv3)
+			meth = SSLv3_server_method();
+#endif
+		if (sslprm.ssl_min_ver == TLSv1)
+			meth = TLSv1_server_method();
+		if (sslprm.ssl_min_ver == TLSv1_1)
+			meth = TLSv1_1_server_method();
+		if (sslprm.ssl_min_ver == TLSv1_2)
+			meth = TLSv1_2_server_method();
+
+		ctx = SSL_CTX_new(meth);
+		if (ctx == NULL) {
+			syslog(LOG_ERR,"Error: could not create SSL context");
+			SSL_CTX_free(ctx);
 			exit(STATE_CRITICAL);
-		        }
+		}
 
-		/* ADDED 01/19/2004 */
-		/* use only TLSv1 protocol */
-		SSL_CTX_set_options(ctx,SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+		if (sslprm.ssl_min_ver >= SSLv3) {
+			ssl_opts |= SSL_OP_NO_SSLv2;
+			if (sslprm.ssl_min_ver >= TLSv1)
+				ssl_opts |= SSL_OP_NO_SSLv3;
+		}
+		SSL_CTX_set_options(ctx, ssl_opts);
 
-		/* use anonymous DH ciphers */
-		SSL_CTX_set_cipher_list(ctx,"ADH");
-		dh=get_dh512();
-		SSL_CTX_set_tmp_dh(ctx,dh);
-		DH_free(dh);
+		if (sslprm.cert_file != NULL) {
+			if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
+				SSL_CTX_free(ctx);
+				syslog(LOG_ERR, "Error: could not use certificate file '%s'", sslprm.cert_file);
+				exit(STATE_CRITICAL);
+			}
+			if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
+				SSL_CTX_free(ctx);
+				syslog(LOG_ERR, "Error: could not use private key file '%s'", sslprm.privatekey_file);
+				exit(STATE_CRITICAL);
+			}
+		}
+
+		if (sslprm.client_certs != 0) {
+			vrfy = SSL_VERIFY_PEER|SSL_VERIFY_CLIENT_ONCE;
+			if ((sslprm.client_certs & Require_Cert) != 0)
+				vrfy |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+			SSL_CTX_set_verify(ctx, vrfy, verify_callback);
+			if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
+				SSL_CTX_free(ctx);
+				syslog(LOG_ERR, "Error: could not use CA certificate '%s'", sslprm.cacert_file);
+				exit(STATE_CRITICAL);
+			}
+		}
+
+		if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
+			SSL_CTX_free(ctx);
+			syslog(LOG_ERR, "Error: Could not set SSL/TLS cipher list");
+			exit(STATE_CRITICAL);
+		}
+
+		if (sslprm.allowDH) {
+			/* use anonymous DH ciphers */
+			if (sslprm.allowDH == 2)
+				SSL_CTX_set_cipher_list(ctx, "ADH");
+			dh = get_dh2048();
+			SSL_CTX_set_tmp_dh(ctx, dh);
+			DH_free(dh);
+		}
+		
 		if(debug==TRUE)
 			syslog(LOG_INFO,"INFO: SSL/TLS initialized. All network traffic will be encrypted.");
+
 	        }
 	else{
 		if(debug==TRUE)
@@ -467,6 +577,32 @@ int main(int argc, char **argv){
 	}
 
 
+int verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
+{
+	char		name[256], issuer[256];
+	X509		*err_cert;
+	int			err;
+	SSL			*ssl;
+
+	if (preverify_ok || (sslprm.log_opts & SSL_LogCertDetails == 0))
+		return preverify_ok;
+
+	err_cert = X509_STORE_CTX_get_current_cert(ctx);
+	err = X509_STORE_CTX_get_error(ctx);
+
+	/* Get the pointer to the SSL of the current connection */
+	ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
+
+	X509_NAME_oneline(X509_get_subject_name(err_cert), name, 256);
+	X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert), issuer, 256);
+
+	if (!preverify_ok && (sslprm.log_opts & SSL_LogCertDetails)) {
+		syslog(LOG_ERR, "SSL Client has an invalid certificate: %s (issuer=%s) err=%d:%s",
+				name, issuer, err, X509_verify_cert_error_string(err));
+	}
+
+	return preverify_ok;
+}
 
 
 /* read in the configuration file */
@@ -481,6 +617,8 @@ int read_config_file(char *filename){
 	int line=0;
 	int len=0;
 	int x=0;
+	int pskfd;
+	struct stat st;
 
 
 	/* open the config file for reading */
@@ -640,6 +778,69 @@ int read_config_file(char *filename){
 				return ERROR;
 				}
 			}
+
+		else if (!strcmp(varname, "ssl_version")) {
+			if (!strcmp(varvalue, "SSLv2"))
+				sslprm.ssl_min_ver = SSLv2;
+			else if (!strcmp(varvalue, "SSLv2+"))
+				sslprm.ssl_min_ver = SSLv2_plus;
+			else if (!strcmp(varvalue, "SSLv3"))
+				sslprm.ssl_min_ver = SSLv3;
+			else if (!strcmp(varvalue, "SSLv3+"))
+				sslprm.ssl_min_ver = SSLv3_plus;
+			else if (!strcmp(varvalue, "TLSv1"))
+				sslprm.ssl_min_ver = TLSv1;
+			else if (!strcmp(varvalue, "TLSv1+"))
+				sslprm.ssl_min_ver = TLSv1_plus;
+			else if (!strcmp(varvalue, "TLSv1.1"))
+				sslprm.ssl_min_ver = TLSv1_1;
+			else if (!strcmp(varvalue, "TLSv1.1+"))
+				sslprm.ssl_min_ver = TLSv1_1_plus;
+			else if (!strcmp(varvalue, "TLSv1.2"))
+				sslprm.ssl_min_ver = TLSv1_2;
+			else if (!strcmp(varvalue, "TLSv1.2+"))
+				sslprm.ssl_min_ver = TLSv1_2_plus;
+			else {
+				syslog(LOG_ERR, "Invalid ssl version specified in config file '%s' - Line %d", filename, line);
+				return ERROR;
+			}
+		}
+
+		else if (!strcmp(varname, "ssl_use_adh")) {
+			sslprm.allowDH = atoi(varvalue);
+			if (sslprm.allowDH < 0 || sslprm.allowDH > 2) {
+				syslog(LOG_ERR, "Invalid use adh value specified in config file '%s' - Line %d", filename, line);
+				return ERROR;
+			}
+        }
+
+		else if (!strcmp(varname, "ssl_logging"))
+			sslprm.log_opts = strtol(varvalue, NULL, 0);
+
+		else if (!strcmp(varname, "ssl_cipher_list")) {
+			strncpy(sslprm.cipher_list, varvalue, sizeof(sslprm.cipher_list) - 1);
+			sslprm.cipher_list[sizeof(sslprm.cipher_list)-1]='\0';
+		}
+
+		else if(!strcmp(varname, "ssl_cert_file"))
+			sslprm.cert_file = strdup(varvalue);
+		
+		else if(!strcmp(varname, "ssl_cacert_file"))
+			sslprm.cacert_file = strdup(varvalue);
+
+		else if(!strcmp(varname, "ssl_privatekey_file"))
+			sslprm.privatekey_file = strdup(varvalue);
+
+		else if (!strcmp(varname, "ssl_client_certs")) {
+			sslprm.client_certs = atoi(varvalue);
+			if (sslprm.client_certs < 0 || sslprm.client_certs > 7) {
+				syslog(LOG_ERR, "Invalid client certs value specified in config file '%s' - Line %d", filename, line);
+				return ERROR;
+			}
+			/* if requiring or logging client certs, make sure "Ask" is turned on */
+			if (sslprm.client_certs & Require_Cert)
+				sslprm.client_certs |= Ask_For_Cert;
+		}
 
 		else if(!strcmp(varname,"log_facility")){
 			if((get_log_facility(varvalue))==OK){
@@ -927,7 +1128,7 @@ void wait_for_connections(void){
 	struct sockaddr_in6 *nptr6;
 	struct sockaddr_storage addr;
 	int rc;
-	int sock, new_sd;
+	int sock, new_sd=0;
 	socklen_t addrlen;
 	pid_t pid;
 	fd_set fdread;
@@ -967,7 +1168,7 @@ void wait_for_connections(void){
 #endif
 #endif
 
-	syslog(LOG_INFO,"Listening for connections on port %d\n",htons(myname.sin_port));
+	syslog(LOG_INFO, "Listening for connections on port %d", server_port);
 
 	if(allowed_hosts)
 		syslog(LOG_INFO,"Allowing connections from: %s\n",allowed_hosts);
@@ -1088,11 +1289,12 @@ void wait_for_connections(void){
 							nptr = (struct sockaddr_in *)&addr;
 
 							/* log info to syslog facility */
-							if(debug==TRUE) {
+							strncpy(remote_host, inet_ntoa(nptr->sin_addr), sizeof(remote_host) - 1);
+							remote_host[MAX_HOST_ADDRESS_LENGTH - 1] = '\0';
+							if (debug == TRUE || (sslprm.log_opts & SSL_LogIpAddr)) {
 								syslog(LOG_DEBUG, "Connection from %s port %d",
-										inet_ntoa(nptr->sin_addr), 
-										nptr->sin_port);
-								}
+										remote_host,  nptr->sin_port);
+							}
 							if(!is_an_allowed_host(AF_INET,
 									(void *)&(nptr->sin_addr))) {
 								/* log error to syslog facility */
@@ -1129,10 +1331,11 @@ void wait_for_connections(void){
 								} 
 
 							/* log info to syslog facility */
-							if(debug==TRUE) {
+							strcpy(remote_host, ipstr);
+							if (debug == TRUE || (sslprm.log_opts & SSL_LogIpAddr)) {
 								syslog(LOG_DEBUG, "Connection from %s port %d",
 										ipstr, nptr6->sin6_port);
-								}
+							}
 							if(!is_an_allowed_host(AF_INET6, 
 									(void *)&(nptr6->sin6_addr))) {
 								/* log error to syslog facility */
@@ -1251,6 +1454,8 @@ void handle_connection(int sock){
 #endif
 #ifdef HAVE_SSL
 	SSL *ssl=NULL;
+	const SSL_CIPHER *c;
+	X509 *peer;
 #endif
 #ifdef HAVE_SIGACTION
 	struct sigaction sig_action;
@@ -1280,33 +1485,73 @@ void handle_connection(int sock){
 
 #ifdef HAVE_SSL
 	/* do SSL handshake */
-	if(result==STATE_OK && use_ssl==TRUE){
-		if((ssl=SSL_new(ctx))!=NULL){
+	if (result == STATE_OK && use_ssl == TRUE) {
+		if ((ssl = SSL_new(ctx)) != NULL) {
 			SSL_set_fd(ssl,sock);
-
+ 
 			/* keep attempting the request if needed */
-                        while(((rc=SSL_accept(ssl))!=1) && (SSL_get_error(ssl,rc)==SSL_ERROR_WANT_READ));
+			while (((rc = SSL_accept(ssl)) != 1) && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ));
 
-			if(rc!=1){
-				syslog(LOG_ERR,"Error: Could not complete SSL handshake. %d\n",SSL_get_error(ssl,rc));
+			if (rc != 1) {
+				if (sslprm.log_opts & (SSL_LogCertDetails|SSL_LogIfClientCert)) {
+					int	nerrs = 0;
+					rc = 0;
+					while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+						syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
+								remote_host, ERR_reason_error_string(x));
+						++nerrs;
+					}
+					if (nerrs == 0)
+						syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
+								remote_host, SSL_get_error(ssl,rc));
+				} else
+					syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
+							remote_host, SSL_get_error(ssl,rc));
 #ifdef DEBUG
-				errfp=fopen("/tmp/err.log","w");
+				errfp = fopen("/tmp/err.log", "a");
 				ERR_print_errors_fp(errfp);
 				fclose(errfp);
 #endif
 				return;
-			        }
-		        }
-		else{
-			syslog(LOG_ERR,"Error: Could not create SSL connection structure.\n");
+			}
+			if (sslprm.log_opts & SSL_LogVersion)
+				syslog(LOG_NOTICE, "Remote %s - SSL Version: %s",
+						remote_host, SSL_get_version(ssl));
+			if (sslprm.log_opts & SSL_LogCipher) {
+				c = SSL_get_current_cipher(ssl);
+				syslog(LOG_NOTICE, "Remote %s - %s, Cipher is %s", remote_host,
+					   SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
+			}
+			if ((sslprm.log_opts & SSL_LogIfClientCert) || (sslprm.log_opts & SSL_LogCertDetails)) {
+				peer = SSL_get_peer_certificate(ssl);
+				if (peer) {
+					if (sslprm.log_opts & SSL_LogIfClientCert)
+						syslog(LOG_NOTICE, "SSL Client %s has %s certificate",
+								remote_host, peer->valid ? "a valid" : "an invalid");
+					if (sslprm.log_opts & SSL_LogCertDetails) {
+						syslog(LOG_NOTICE, "SSL Client %s Cert Name: %s",
+								remote_host, peer->name);
+						X509_NAME_oneline(X509_get_issuer_name(peer), buffer, sizeof(buffer));
+						syslog(LOG_NOTICE, "SSL Client %s Cert Issuer: %s",
+								remote_host, buffer);
+					}
+				} else if (sslprm.client_certs == 0)
+					syslog(LOG_NOTICE, "SSL Not asking for client certification");
+				else
+					syslog(LOG_NOTICE, "SSL Client %s did not present a certificate",
+							remote_host);
+			}
+		}
+		else {
+			syslog(LOG_ERR, "Error: Could not create SSL connection structure.");
 #ifdef DEBUG
-			errfp=fopen("/tmp/err.log","w");
+			errfp = fopen("/tmp/err.log", "a");
 			ERR_print_errors_fp(errfp);
 			fclose(errfp);
 #endif
 			return;
-		        }
-	        }
+		}
+	}
 #endif
 
 	bytes_to_recv=sizeof(receive_packet);
@@ -1314,7 +1559,7 @@ void handle_connection(int sock){
 		rc=recvall(sock,(char *)&receive_packet,&bytes_to_recv,socket_timeout);
 #ifdef HAVE_SSL
 	else{
-                while(((rc=SSL_read(ssl,&receive_packet,bytes_to_recv))<=0) && (SSL_get_error(ssl,rc)==SSL_ERROR_WANT_READ));
+	        while(((rc=SSL_read(ssl,&receive_packet,bytes_to_recv))<=0) && (SSL_get_error(ssl,rc)==SSL_ERROR_WANT_READ));
 		}
 #endif
 
@@ -1322,7 +1567,7 @@ void handle_connection(int sock){
 	if(rc<=0){
 
 		/* log error to syslog facility */
-		syslog(LOG_ERR,"Could not read request from client, bailing out...");
+		syslog(LOG_ERR,"Could not read request from client %s, bailing out...", remote_host);
 
 #ifdef HAVE_SSL
 		if(ssl){
@@ -1339,7 +1584,7 @@ void handle_connection(int sock){
 	else if(bytes_to_recv!=sizeof(receive_packet)){
 
 		/* log error to syslog facility */
-		syslog(LOG_ERR,"Data packet from client was too short, bailing out...");
+		syslog(LOG_ERR,"Data packet from client (%s) was too short, bailing out...", remote_host);
 
 #ifdef HAVE_SSL
 		if(ssl){
@@ -1363,7 +1608,7 @@ void handle_connection(int sock){
 	if(validate_request(&receive_packet)==ERROR){
 
 		/* log an error */
-		syslog(LOG_ERR,"Client request was invalid, bailing out...");
+		syslog(LOG_ERR,"Client request from %s was invalid, bailing out...", remote_host);
 
 		/* free memory */
 		free(command_name);
@@ -1385,7 +1630,8 @@ void handle_connection(int sock){
 
 	/* log info to syslog facility */
 	if(debug==TRUE)
-		syslog(LOG_DEBUG,"Host is asking for command '%s' to be run...",receive_packet.buffer);
+		syslog(LOG_DEBUG,"Host %s is asking for command '%s' to be run...",
+				remote_host, receive_packet.buffer);
 
 	/* disable connection alarm - a new alarm will be setup during my_system */
 	alarm(0);
@@ -1398,7 +1644,7 @@ void handle_connection(int sock){
 
 		/* log info to syslog facility */
 		if(debug==TRUE)
-			syslog(LOG_DEBUG,"Response: %s",buffer);
+			syslog(LOG_DEBUG,"Response to %s: %s", remote_host, buffer);
 
 		result=STATE_OK;
 	        }
@@ -1472,7 +1718,7 @@ void handle_connection(int sock){
 		buffer[strlen(buffer)-1]='\x0';
 
 	/* clear the response packet buffer */
-	bzero(&send_packet,sizeof(send_packet));
+	memset(&send_packet, 0, sizeof(send_packet));
 
 	/* fill the packet with semi-random data */
 	randomize_buffer((char *)&send_packet,sizeof(send_packet));
