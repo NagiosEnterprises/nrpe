@@ -65,12 +65,10 @@ struct _SSL_PARMS {
 	char	*cacert_file;
 	char	*privatekey_file;
 	char    cipher_list[MAX_FILENAME_LENGTH];
-	unsigned char	*adh_key;
-	int		adhk_len;
 	SslVer	ssl_min_ver;
 	int		allowDH;
 	int		client_certs;
-} sslprm = { NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", NULL, 0, TLSv1_plus, TRUE, 0 };
+} sslprm = { NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", TLSv1_plus, TRUE, 0 };
 
 
 int process_arguments(int,char **);
@@ -114,7 +112,7 @@ int main(int argc, char **argv){
 	if(result!=OK || show_help==TRUE){
 
 		printf("Usage: check_nrpe -H <host> [-4] [-6] [-n] [-u] [-V] [-l] [-d]\n"
-			"       [-D <adh-key>] [-S <ssl version>  [-L <cipherlist>] [-C <clientcert>]\n"
+			"       [-S <ssl version>  [-L <cipherlist>] [-C <clientcert>]\n"
 			"       [-K <key>] [-A <ca-certificate>] [-b <bindaddr>] [-p <port>]\n"
 			"       [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
@@ -128,7 +126,6 @@ int main(int argc, char **argv){
 		printf(" -l           = Show license\n");
 		printf(" -d           = Don't use Anonymous Diffie Hellman\n");
 		printf("                (This will be the default in a future release.)\n");
-		printf(" <adh-key>    = Key to use for Anonymous Diffie Hellman\n");
 		printf(" <bindaddr>   = bind to local address\n");
 		printf(" <ssl ver>    = The SSL/TLS version to use. Can be any one of: SSLv2 (only),\n");
 		printf("                SSLv2+ (or above), SSLv3 (only), SSLv3+ (or above),\n");
@@ -466,7 +463,7 @@ int process_arguments(int argc, char **argv)
 	if (argc < 2)
 		return ERROR;
 
-	snprintf(optchars, MAX_INPUT_BUFFER, "H:b:c:a:t:p:S:L:C:K:A:D:46dhlnuV");
+	snprintf(optchars, MAX_INPUT_BUFFER, "H:b:c:a:t:p:S:L:C:K:A:46dhlnuV");
 
 	while(1) {
 #ifdef HAVE_GETOPT_LONG

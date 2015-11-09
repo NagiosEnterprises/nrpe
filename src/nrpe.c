@@ -93,13 +93,11 @@ struct _SSL_PARMS {
 	char		*cacert_file;
 	char		*privatekey_file;
 	char		cipher_list[MAX_FILENAME_LENGTH];
-	unsigned char	*adh_key;
-	int			adhk_len;
 	SslVer		ssl_min_ver;
 	int			allowDH;
 	ClntCerts	client_certs;
 	SslLogging	log_opts;
-} sslprm = { NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", NULL, 0, TLSv1_plus, TRUE, 0, 0 };
+} sslprm = { NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", TLSv1_plus, TRUE, 0, SSL_NoLogging };
 
 char	remote_host[MAX_HOST_ADDRESS_LENGTH];
 
@@ -267,13 +265,15 @@ int main(int argc, char **argv){
 		syslog(LOG_INFO, "SSL Certificate File: %s", sslprm.cert_file);
 		syslog(LOG_INFO, "SSL Private Key File: %s", sslprm.privatekey_file);
 		syslog(LOG_INFO, "SSL CA Certificate File: %s", sslprm.cacert_file);
-		syslog(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
+		if (sslprm.allowDH < 2)
+			syslog(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
+		else
+			syslog(LOG_INFO, "SSL Cipher List: ADH");
 		syslog(LOG_INFO, "SSL Allow ADH: %s",
 				sslprm.allowDH == 0 ? "No" : (sslprm.allowDH == 1 ? "Allow" : "Require"));
-		syslog(LOG_INFO, "SSL ADH Key: %s", sslprm.adh_key);
 		syslog(LOG_INFO, "SSL Client Certs: %s",
 				sslprm.client_certs == 0 ? "Don't Ask" : (sslprm.client_certs == 1 ? "Accept" : "Require"));
-		syslog(LOG_INFO, "SSL Log Options: %d", sslprm.log_opts);
+		syslog(LOG_INFO, "SSL Log Options: 0x%02x", sslprm.log_opts);
 		switch (sslprm.ssl_min_ver) {
 			case SSLv2:			env_string = "SSLv2";					break;
 			case SSLv2_plus:	env_string = "SSLv2 And Above";			break;
@@ -815,7 +815,7 @@ int read_config_file(char *filename){
         }
 
 		else if (!strcmp(varname, "ssl_logging"))
-			sslprm.log_opts = atoi(varvalue);
+			sslprm.log_opts = strtol(varvalue, NULL, 0);
 
 		else if (!strcmp(varname, "ssl_cipher_list")) {
 			strncpy(sslprm.cipher_list, varvalue, sizeof(sslprm.cipher_list) - 1);
@@ -1168,7 +1168,7 @@ void wait_for_connections(void){
 #endif
 #endif
 
-	syslog(LOG_INFO,"Listening for connections on port %d\n",htons(myname.sin_port));
+	syslog(LOG_INFO, "Listening for connections on port %d", server_port);
 
 	if(allowed_hosts)
 		syslog(LOG_INFO,"Allowing connections from: %s\n",allowed_hosts);
