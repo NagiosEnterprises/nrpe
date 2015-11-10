@@ -251,7 +251,7 @@ int main(int argc, char **argv){
 	/* try to connect to the host at the given port number */
 	if((sd=my_connect(server_name, &hostaddr, server_port, address_family, 
 			bind_address)) < 0 ) {
-		exit (255);
+		exit (STATE_CRITICAL);
 		}
 	else {
 		result=STATE_OK;

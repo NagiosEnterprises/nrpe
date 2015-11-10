@@ -13,6 +13,7 @@ FIXES
 - Replaced all instances of signal() with sigaction() + blocking (John Frickson)
 - check_nrpe does not parse passed arguments correctly (John Frickson)
 - NRPE should not start if cannot write pid file (John Frickson)
+- Fixed out-of-bounds error (return code 255) for some failures (John Frickson)
 
 2.15 - 09/06/2013
 -----------------
