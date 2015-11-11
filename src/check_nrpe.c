@@ -22,10 +22,6 @@
 #include "utils.h"
 
 
-/* TODO: REMOVE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-#undef HAVE_SSL
-#define HAVE_SSL
-
 #define DEFAULT_NRPE_COMMAND	"_NRPE_CHECK"  /* check version of NRPE daemon */
 
 u_short server_port=DEFAULT_SERVER_PORT;
