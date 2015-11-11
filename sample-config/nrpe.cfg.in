@@ -233,13 +233,14 @@ connection_timeout=300
 # This option determines which SSL messages are send to syslog. OR values
 # together to specify multiple options.
 
-# Values: 0  = No additional logging (default)
-#         1  = Log startup SSL/TLS parameters
-#         2  = Log SSL/TLS version of connections
-#         4  = Log which cipher is being used for the connection
-#         8  = Log if client has a certificate
-#         16 = Log details of client's certificate if it has one
-#         -1 = All of the above
+# Values: 0x00 (0)  = No additional logging (default)
+#         0x01 (1)  = Log startup SSL/TLS parameters
+#         0x02 (2)  = Log remote IP address
+#         0x04 (4)  = Log SSL/TLS version of connections
+#         0x08 (8)  = Log which cipher is being used for the connection
+#         0x10 (16) = Log if client has a certificate
+#         0x20 (32) = Log details of client's certificate if it has one
+#         -1 or 0xff or 0x2f = All of the above
 
 #ssl_logging=0
 

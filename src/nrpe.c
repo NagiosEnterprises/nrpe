@@ -85,8 +85,9 @@ typedef enum _SSL_VER { SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus, TLSv1,
 typedef enum _CLNT_CERTS {
 		Ask_For_Cert = 1, Require_Cert = 2
 				} ClntCerts;
-typedef enum _SSL_LOGGING { SSL_NoLogging, SSL_LogStartup, SSL_LogIpAddr,
-        SSL_LogVersion, SSL_LogCipher, SSL_LogIfClientCert, SSL_LogCertDetails
+typedef enum _SSL_LOGGING { SSL_NoLogging = 0, SSL_LogStartup = 1,
+		SSL_LogIpAddr = 2, SSL_LogVersion = 4, SSL_LogCipher = 8,
+		SSL_LogIfClientCert = 16, SSL_LogCertDetails = 32
 				} SslLogging;
 struct _SSL_PARMS {
 	char		*cert_file;
@@ -262,9 +263,9 @@ int main(int argc, char **argv){
 
 #ifdef HAVE_SSL
 	if (sslprm.log_opts & SSL_LogStartup) {
-		syslog(LOG_INFO, "SSL Certificate File: %s", sslprm.cert_file);
-		syslog(LOG_INFO, "SSL Private Key File: %s", sslprm.privatekey_file);
-		syslog(LOG_INFO, "SSL CA Certificate File: %s", sslprm.cacert_file);
+		syslog(LOG_INFO, "SSL Certificate File: %s", sslprm.cert_file ? sslprm.cert_file : "None");
+		syslog(LOG_INFO, "SSL Private Key File: %s", sslprm.privatekey_file ? sslprm.privatekey_file : "None");
+		syslog(LOG_INFO, "SSL CA Certificate File: %s", sslprm.cacert_file ? sslprm.cacert_file : "None");
 		if (sslprm.allowDH < 2)
 			syslog(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
 		else
@@ -370,21 +371,24 @@ int main(int argc, char **argv){
 			}
 		}
 
+		if (!sslprm.allowDH) {
+			if (strlen(sslprm.cipher_list) < sizeof(sslprm.cipher_list) - 6)
+				strcat(sslprm.cipher_list, ":!ADH");
+		} else {
+			/* use anonymous DH ciphers */
+			if (sslprm.allowDH == 2)
+				strcpy(sslprm.cipher_list, "ADH");
+			dh = get_dh2048();
+			SSL_CTX_set_tmp_dh(ctx, dh);
+			DH_free(dh);
+		}
+
 		if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
 			SSL_CTX_free(ctx);
 			syslog(LOG_ERR, "Error: Could not set SSL/TLS cipher list");
 			exit(STATE_CRITICAL);
 		}
-
-		if (sslprm.allowDH) {
-			/* use anonymous DH ciphers */
-			if (sslprm.allowDH == 2)
-				SSL_CTX_set_cipher_list(ctx, "ADH");
-			dh = get_dh2048();
-			SSL_CTX_set_tmp_dh(ctx, dh);
-			DH_free(dh);
-		}
-		
+	
 		if(debug==TRUE)
 			syslog(LOG_INFO,"INFO: SSL/TLS initialized. All network traffic will be encrypted.");
 
@@ -815,7 +819,7 @@ int read_config_file(char *filename){
         }
 
 		else if (!strcmp(varname, "ssl_logging"))
-			sslprm.log_opts = strtol(varvalue, NULL, 0);
+			sslprm.log_opts = strtoul(varvalue, NULL, 0);
 
 		else if (!strcmp(varname, "ssl_cipher_list")) {
 			strncpy(sslprm.cipher_list, varvalue, sizeof(sslprm.cipher_list) - 1);

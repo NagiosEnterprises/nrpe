@@ -118,3 +118,14 @@ key file to use. This goes along with `--client-cert` above.
 
 `--ca-cert-file=<path>` or `-A <path>` specifies the CA certificate
 to use in order to validate the nrpe daemon's public key.
+
+`--no-adh` or `-d` is **DEPRECATED**
+
+`--use-adh` or `-d [num]` is **DEPRECATED**, even though it is new.
+If you use `-d` or `-d 0` it acts the same way as as the old `-d`.
+Otherwise, use `1` to allow ADH, and `2` to require ADH.
+
+`--ssl-logging=<num>` or `-s <num>` allows you to log some additional
+data to syslog. OR (or add) values together to have more than one option
+enabled. See the description of the `ssl_logging` directive from NRPE
+above.

@@ -22,6 +22,10 @@
 #include "utils.h"
 
 
+/* TODO: REMOVE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+#undef HAVE_SSL
+#define HAVE_SSL
+
 #define DEFAULT_NRPE_COMMAND	"_NRPE_CHECK"  /* check version of NRPE daemon */
 
 u_short server_port=DEFAULT_SERVER_PORT;
@@ -49,26 +53,32 @@ const SSL_METHOD *meth;
 SSL_CTX *ctx;
 SSL *ssl;
 int use_ssl=TRUE;
+static int verify_callback(int ok, X509_STORE_CTX *ctx);
 #else
 int use_ssl=FALSE;
 #endif
 
 /* SSL/TLS parameters */
 typedef enum _SSL_VER { SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus, TLSv1,
-					TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus
+    	TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus
 				} SslVer;
 typedef enum _CLNT_CERTS {
-					Ask_For_Cert = 1, Require_Cert = 2, Log_Certs = 4
+		Ask_For_Cert = 1, Require_Cert = 2
 				} ClntCerts;
+typedef enum _SSL_LOGGING { SSL_NoLogging = 0, SSL_LogStartup = 1,
+		SSL_LogIpAddr = 2, SSL_LogVersion = 4, SSL_LogCipher = 8,
+		SSL_LogIfClientCert = 16, SSL_LogCertDetails = 32
+				} SslLogging;
 struct _SSL_PARMS {
-	char	*cert_file;
-	char	*cacert_file;
-	char	*privatekey_file;
-	char    cipher_list[MAX_FILENAME_LENGTH];
-	SslVer	ssl_min_ver;
-	int		allowDH;
-	int		client_certs;
-} sslprm = { NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", TLSv1_plus, TRUE, 0 };
+	char		*cert_file;
+	char		*cacert_file;
+	char		*privatekey_file;
+	char		cipher_list[MAX_FILENAME_LENGTH];
+	SslVer		ssl_min_ver;
+	int			allowDH;
+	ClntCerts	client_certs;
+	SslLogging	log_opts;
+} sslprm = { NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", TLSv1_plus, TRUE, 0, SSL_NoLogging };
 
 
 int process_arguments(int,char **);
@@ -78,9 +88,10 @@ int graceful_close(int,int);
 
 
 
-int main(int argc, char **argv){
-        u_int32_t packet_crc32;
-        u_int32_t calculated_crc32;
+int main(int argc, char **argv)
+{
+	u_int32_t packet_crc32;
+	u_int32_t calculated_crc32;
 	int16_t result;
 	int rc, ssl_opts = SSL_OP_ALL, vrfy;
 	packet send_packet;
@@ -90,10 +101,11 @@ int main(int argc, char **argv){
 #ifdef HAVE_SIGACTION
 	struct sigaction sig_action;
 #endif
+	char rem_host[MAX_HOST_ADDRESS_LENGTH];
 
 	result=process_arguments(argc,argv);
 
-        if(result!=OK || show_help==TRUE || show_license==TRUE || show_version==TRUE){
+	if (result != OK || show_help == TRUE || show_license == TRUE || show_version == TRUE) {
 
 		if(result!=OK)
 			printf("Incorrect command line arguments supplied\n");
@@ -107,14 +119,14 @@ int main(int argc, char **argv){
 		printf("SSL/TLS Available: OpenSSL 0.9.6 or higher required\n");
 #endif
 		printf("\n");
-	        }
+	}
 
-	if(result!=OK || show_help==TRUE){
+	if (result != OK || show_help == TRUE) {
 
-		printf("Usage: check_nrpe -H <host> [-4] [-6] [-n] [-u] [-V] [-l] [-d]\n"
+		printf("Usage: check_nrpe -H <host> [-4] [-6] [-n] [-u] [-V] [-l] [-d [0|1|2]]\n"
 			"       [-S <ssl version>  [-L <cipherlist>] [-C <clientcert>]\n"
-			"       [-K <key>] [-A <ca-certificate>] [-b <bindaddr>] [-p <port>]\n"
-			"       [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
+			"       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n"
+			"       [-p <port>] [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" <host>       = The address of the host running the NRPE daemon\n");
@@ -124,7 +136,9 @@ int main(int argc, char **argv){
 		printf(" -u           = Make socket timeouts return UNKNOWN state instead of CRITICAL\n");
 		printf(" -V           = Show version\n");
 		printf(" -l           = Show license\n");
-		printf(" -d           = Don't use Anonymous Diffie Hellman\n");
+		printf(" -d or -d0    = Don't use Anonymous Diffie Hellman\n");
+		printf(" -d1          = Allow Anonymous Diffie Hellman\n");
+		printf(" -d2          = Force Anonymous Diffie Hellman\n");
 		printf("                (This will be the default in a future release.)\n");
 		printf(" <bindaddr>   = bind to local address\n");
 		printf(" <ssl ver>    = The SSL/TLS version to use. Can be any one of: SSLv2 (only),\n");
@@ -136,6 +150,7 @@ int main(int argc, char **argv){
 		printf(" <clientcert> = The client certificate to use for PKI\n");
 		printf(" <key>        = The private key to use with the client certificate\n");
 		printf(" <ca-cert>    = The CA certificate to use for PKI\n");
+		printf(" <logopts>    = SSL Logging Options\n");
 		printf(" [port]       = The port on which the daemon is running (default=%d)\n",DEFAULT_SERVER_PORT);
 		printf(" [timeout]    = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
 		printf(" [command]    = The name of the command that the remote daemon should run\n");
@@ -152,19 +167,48 @@ int main(int argc, char **argv){
 		printf("to execute plugins on remote hosts and 'fake' the results to make Nagios think\n");
 		printf("the plugin is being run locally.\n");
 		printf("\n");
-	        }
+	}
 
 	if(show_license==TRUE)
 		display_license();
 
-        if(result!=OK || show_help==TRUE || show_license==TRUE || show_version==TRUE)
+	if(result!=OK || show_help==TRUE || show_license==TRUE || show_version==TRUE)
 		exit(STATE_UNKNOWN);
 
 
-        /* generate the CRC 32 table */
-        generate_crc32_table();
+	/* generate the CRC 32 table */
+	generate_crc32_table();
 
 #ifdef HAVE_SSL
+	if (sslprm.log_opts & SSL_LogStartup) {
+		char	*val;
+
+		syslog(LOG_INFO, "SSL Certificate File: %s", sslprm.cert_file ? sslprm.cert_file : "None");
+		syslog(LOG_INFO, "SSL Private Key File: %s", sslprm.privatekey_file ? sslprm.privatekey_file : "None");
+		syslog(LOG_INFO, "SSL CA Certificate File: %s", sslprm.cacert_file ? sslprm.cacert_file : "None");
+		if (sslprm.allowDH < 2)
+			syslog(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
+		else
+			syslog(LOG_INFO, "SSL Cipher List: ADH");
+		syslog(LOG_INFO, "SSL Allow ADH: %s",
+				sslprm.allowDH == 0 ? "No" : (sslprm.allowDH == 1 ? "Allow" : "Require"));
+		syslog(LOG_INFO, "SSL Log Options: 0x%02x", sslprm.log_opts);
+		switch (sslprm.ssl_min_ver) {
+			case SSLv2:			val = "SSLv2";					break;
+			case SSLv2_plus:	val = "SSLv2 And Above";		break;
+			case SSLv3:			val = "SSLv3";					break;
+			case SSLv3_plus:	val = "SSLv3_plus And Above";	break;
+			case TLSv1:			val = "TLSv1";					break;
+			case TLSv1_plus:	val = "TLSv1_plus And Above";	break;
+			case TLSv1_1:		val = "TLSv1_1";				break;
+			case TLSv1_1_plus:	val = "TLSv1_1_plus And Above";	break;
+			case TLSv1_2:		val = "TLSv1_2";				break;
+			case TLSv1_2_plus:	val = "TLSv1_2_plus And Above";	break;
+			defualt:			val = "INVALID VALUE!";			break;
+		}
+		syslog(LOG_INFO, "SSL Version: %s", val);
+	}
+
 	/* initialize SSL */
 	if(use_ssl==TRUE) {
 		SSL_load_error_strings();
@@ -212,18 +256,22 @@ int main(int argc, char **argv){
 		}
 
 		if (sslprm.cacert_file != NULL) {
+			vrfy = SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+			SSL_CTX_set_verify(ctx, vrfy, verify_callback);
 			if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
 				SSL_CTX_free(ctx);
 				syslog(LOG_ERR, "Error: could not use CA certificate '%s'.\n", sslprm.cacert_file);
 				exit(STATE_CRITICAL);
 			}
-			vrfy = SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-			SSL_CTX_set_verify(ctx, vrfy, NULL);
 		}
 
 		if (!sslprm.allowDH) {
 			if (strlen(sslprm.cipher_list) < sizeof(sslprm.cipher_list) - 6)
 				strcat(sslprm.cipher_list, ":!ADH");
+		} else {
+			/* use anonymous DH ciphers */
+			if (sslprm.allowDH == 2)
+				strcpy(sslprm.cipher_list, "ADH");
 		}
 
 		if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
@@ -252,21 +300,51 @@ int main(int argc, char **argv){
 	if((sd=my_connect(server_name, &hostaddr, server_port, address_family, 
 			bind_address)) < 0 ) {
 		exit (STATE_CRITICAL);
-		}
+	}
 	else {
-		result=STATE_OK;
+		struct sockaddr addr;
+		struct in_addr *inaddr;
+		socklen_t addrlen;
+
+		result = STATE_OK;
+		addrlen=sizeof(addr);
+		rc = getpeername(sd, (struct sockaddr*)&addr, &addrlen);
+		if (addr.sa_family == AF_INET) {
+			struct sockaddr_in *addrin = (struct sockaddr_in*)&addr;
+			inaddr = &addrin->sin_addr;
+		} else {
+			struct sockaddr_in6 *addrin = (struct sockaddr_in6*)&addr;
+			inaddr = (struct in_addr*)&addrin->sin6_addr;
+		}
+		if (inet_ntop(addr.sa_family, inaddr, rem_host,  sizeof(rem_host)) == NULL)
+			strncpy(rem_host, "Unknown", sizeof(rem_host));
+		rem_host[MAX_HOST_ADDRESS_LENGTH - 1] = '\0';
+		if (sslprm.log_opts & SSL_LogIpAddr != 0)
+			syslog(LOG_DEBUG, "Connection from %s port %d", rem_host);
 	}
 
 #ifdef HAVE_SSL
 	/* do SSL handshake */
 	if (result == STATE_OK && use_ssl==TRUE) {
 		if ((ssl = SSL_new(ctx)) != NULL) {
-			X509	*peer;
-			char	peer_cn[256];
-
 			SSL_set_fd(ssl, sd);
 			if ((rc = SSL_connect(ssl)) != 1) {
-				printf("CHECK_NRPE: Error - Could not complete SSL handshake.\n");
+				if (sslprm.log_opts & (SSL_LogCertDetails|SSL_LogIfClientCert)) {
+					int	x, nerrs = 0;
+					rc = 0;
+					while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+						syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
+								rem_host, ERR_reason_error_string(x));
+						++nerrs;
+					}
+					if (nerrs == 0)
+						syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
+								rem_host, SSL_get_error(ssl,rc));
+				} else
+					syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
+							rem_host, SSL_get_error(ssl,rc));
+				printf("CHECK_NRPE: Error - Could not complete SSL handshake with %s: %d\n",
+							rem_host, SSL_get_error(ssl,rc));
 #ifdef DEBUG
 				printf("SSL_connect=%d\n", rc);
 				/*
@@ -278,8 +356,33 @@ int main(int argc, char **argv){
 				ERR_print_errors_fp(stdout);
 #endif
 				result=STATE_CRITICAL;
+			} else {
+				if (sslprm.log_opts & SSL_LogVersion)
+					syslog(LOG_NOTICE, "Remote %s - SSL Version: %s",
+							rem_host, SSL_get_version(ssl));
+				if (sslprm.log_opts & SSL_LogCipher) {
+					const SSL_CIPHER *c = SSL_get_current_cipher(ssl);
+					syslog(LOG_NOTICE, "Remote %s - %s, Cipher is %s", rem_host,
+						   SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
+				}
+				if ((sslprm.log_opts & SSL_LogIfClientCert) || (sslprm.log_opts & SSL_LogCertDetails)) {
+					char	peer_cn[256], buffer[2048];
+					X509	*peer = SSL_get_peer_certificate(ssl);
+					if (peer) {
+						if (sslprm.log_opts & SSL_LogIfClientCert)
+							syslog(LOG_NOTICE, "SSL %s has %s certificate",
+									rem_host, peer->valid ? "a valid" : "an invalid");
+						if (sslprm.log_opts & SSL_LogCertDetails) {
+							syslog(LOG_NOTICE, "SSL %s Cert Name: %s",
+									rem_host, peer->name);
+							X509_NAME_oneline(X509_get_issuer_name(peer), buffer, sizeof(buffer));
+							syslog(LOG_NOTICE, "SSL %s Cert Issuer: %s",
+									rem_host, buffer);
+						}
+					} else
+						syslog(LOG_NOTICE, "SSL Did not get certificate from %s", rem_host);
+				}
 			}
-
 		} else {
 
 			printf("CHECK_NRPE: Error - Could not create SSL connection structure.\n");
@@ -291,7 +394,7 @@ int main(int argc, char **argv){
 			SSL_CTX_free(ctx);
 			close(sd);
 			exit(result);
-        }
+		}
 	}
 #endif
 
@@ -446,11 +549,13 @@ int process_arguments(int argc, char **argv)
 		{ "ipv4",			no_argument,		0, '4'},
 		{ "ipv6",			no_argument,		0, '6'},
 		{ "no-adh",			no_argument,		0, 'd'},
+		{ "use-adh",		optional_argument,	0, 'd'},
 		{ "ssl-version",	required_argument,	0, 'S'},
 		{ "cipher-list",	required_argument,	0, 'L'},
 		{ "client-cert",	required_argument,	0, 'C'},
 		{ "key-file",		required_argument,	0, 'K'},
 		{ "ca-cert-file",	required_argument,	0, 'A'},
+		{ "ssl-logging",	required_argument,	0, 's'},
 		{ "timeout",		required_argument,	0, 't'},
 		{ "port",			required_argument,	0, 'p'},
 		{ "help",			no_argument,		0, 'h'},
@@ -463,7 +568,7 @@ int process_arguments(int argc, char **argv)
 	if (argc < 2)
 		return ERROR;
 
-	snprintf(optchars, MAX_INPUT_BUFFER, "H:b:c:a:t:p:S:L:C:K:A:46dhlnuV");
+	snprintf(optchars, MAX_INPUT_BUFFER, "H:b:c:a:t:p:S:L:C:K:A:d::s:46hlnuV");
 
 	while(1) {
 #ifdef HAVE_GETOPT_LONG
@@ -535,7 +640,12 @@ int process_arguments(int argc, char **argv)
 			break;
 
 		case 'd':
-			sslprm.allowDH = FALSE;
+			if (optarg)
+				sslprm.allowDH = atoi(optarg);
+			else
+				sslprm.allowDH = 0;
+			if (sslprm.allowDH < 0 || sslprm.allowDH > 2)
+				return ERROR;
 			break;
 
 		case 'A':
@@ -580,6 +690,10 @@ int process_arguments(int argc, char **argv)
 			sslprm.cipher_list[sizeof(sslprm.cipher_list)-1]='\0';
 			break;
 
+		case 's':
+			sslprm.log_opts = strtoul(optarg, NULL, 0);
+			break;
+
 		default:
 			return ERROR;
 			break;
@@ -610,6 +724,35 @@ int process_arguments(int argc, char **argv)
 		return ERROR;
 
 	return OK;
+}
+
+
+
+int verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
+{
+	char		name[256], issuer[256];
+	X509		*err_cert;
+	int			err;
+	SSL			*ssl;
+
+	if (preverify_ok || (sslprm.log_opts & SSL_LogCertDetails == 0))
+		return preverify_ok;
+
+	err_cert = X509_STORE_CTX_get_current_cert(ctx);
+	err = X509_STORE_CTX_get_error(ctx);
+
+	/* Get the pointer to the SSL of the current connection */
+	ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
+
+	X509_NAME_oneline(X509_get_subject_name(err_cert), name, 256);
+	X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert), issuer, 256);
+
+	if (!preverify_ok && (sslprm.log_opts & SSL_LogCertDetails)) {
+		syslog(LOG_ERR, "SSL Client has an invalid certificate: %s (issuer=%s) err=%d:%s",
+				name, issuer, err, X509_verify_cert_error_string(err));
+	}
+
+	return preverify_ok;
 }
 
 
