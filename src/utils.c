@@ -76,7 +76,7 @@ unsigned long calculate_crc32(char *buffer, int buffer_size){
 	for(current_index=0;current_index<buffer_size;current_index++){
 		this_char=(int)buffer[current_index];
 		crc=((crc>>8) & 0x00FFFFFF) ^ crc32_table[(crc ^ this_char) & 0xFF];
-	        }
+	}
 
 	return (crc ^ 0xFFFFFFFF);
         }

@@ -7,6 +7,10 @@ NRPE Changelog
 ENHANCEMENTS
 - Added listen_queue_size as configuration option (Vadim Antipov, Kaspersky Lab)
 - Reworked SSL/TLS. See the README.SSL.md file for full info. (John Frickson)
+- Added support for version 3 variable sized packets up to 64KB. nrpe will
+  accept either version from check_nrpe. check_nrpe will try to send a
+  version 3 packet first, and fall back to version 2. check_nrpe can be forced
+  to only send version 2 packets if the switch `-2` is used. (John Frickson)
 
 FIXES
 - Added ifdefs for complete_SSL_shutdown to compile without SSL. (Matthew L. Daniel)

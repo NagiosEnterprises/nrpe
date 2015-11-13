@@ -51,11 +51,12 @@ int check_privileges(void);
 int write_pid_file(void);
 int remove_pid_file(void);
 
+int read_packet(int sock, void *ssl_ptr, v2_packet *v2_pkt, v3_packet **v3_pkt);
 void free_memory(void);
-int validate_request(packet *);
+int validate_request(v2_packet *, v3_packet *);
 int contains_nasty_metachars(char *);
 int process_macros(char *,char *,int);
-int my_system(char *,int,int *,char *,int);            	/* executes a command via popen(), but also protects against timeouts */
+int my_system(char*, int, int*, char**);	/* executes a command via popen(), but also protects against timeouts */
 void my_system_sighandler(int);				/* handles timeouts when executing commands via my_system() */
 void my_connection_sighandler(int);			/* handles timeouts of connection */
 
