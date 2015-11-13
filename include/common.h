@@ -62,13 +62,22 @@
 
 #define MAX_PACKETBUFFER_LENGTH	1024		/* max amount of data we'll send in one query/response */
 
-typedef struct packet_struct{
-	int16_t   packet_version;
-	int16_t   packet_type;
-	u_int32_t crc32_value;
-	int16_t   result_code;
-	char      buffer[MAX_PACKETBUFFER_LENGTH];
-        }packet;
+typedef struct _v2_packet {
+	int16_t		packet_version;
+	int16_t		packet_type;
+	u_int32_t	crc32_value;
+	int16_t		result_code;
+	char		buffer[MAX_PACKETBUFFER_LENGTH];
+} v2_packet;
+typedef struct _v3_packet {
+	int16_t		packet_version;
+	int16_t		packet_type;
+	u_int32_t	crc32_value;
+	int16_t		result_code;
+	int16_t		alignment;
+	int32_t		buffer_length;
+	char		buffer[1];
+} v3_packet;
 
 /**************** OPERATING SYSTEM SPECIFIC DEFINITIONS **********/
 #if defined(__sun) || defined(__hpux)

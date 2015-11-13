@@ -77,6 +77,7 @@ int     command_timeout=DEFAULT_COMMAND_TIMEOUT;
 int     connection_timeout=DEFAULT_CONNECTION_TIMEOUT;
 int     ssl_shutdown_timeout=DEFAULT_SSL_SHUTDOWN_TIMEOUT;
 char    *command_prefix=NULL;
+int     packet_ver = 0;
 
 /* SSL/TLS parameters */
 typedef enum _SSL_VER { SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus, TLSv1,
@@ -1442,17 +1443,17 @@ void wait_for_connections(void){
 void handle_connection(int sock){
         u_int32_t calculated_crc32;
 	command *temp_command;
-	packet receive_packet;
-	packet send_packet;
+	v2_packet receive_packet, send_packet;
+	v3_packet *v3_receive_packet = NULL, *v3_send_packet = NULL;
 	int bytes_to_send;
-	int bytes_to_recv;
-	char buffer[MAX_INPUT_BUFFER];
+	char buffer[MAX_INPUT_BUFFER], *send_buff = NULL, *send_pkt;
 	char raw_command[MAX_INPUT_BUFFER];
 	char processed_command[MAX_INPUT_BUFFER];
 	int result=STATE_OK;
 	int early_timeout=FALSE;
 	int rc;
 	int x;
+	int32_t pkt_size;
 #ifdef DEBUG
 	FILE *errfp;
 #endif
@@ -1558,213 +1559,365 @@ void handle_connection(int sock){
 	}
 #endif
 
-	bytes_to_recv=sizeof(receive_packet);
-	if(use_ssl==FALSE)
-		rc=recvall(sock,(char *)&receive_packet,&bytes_to_recv,socket_timeout);
 #ifdef HAVE_SSL
-	else{
-	        while(((rc=SSL_read(ssl,&receive_packet,bytes_to_recv))<=0) && (SSL_get_error(ssl,rc)==SSL_ERROR_WANT_READ));
-		}
+	rc = read_packet(sock, ssl, &receive_packet, &v3_receive_packet);
+#else
+	rc = read_packet(sock, NULL, &receive_packet, &v3_receive_packet);
 #endif
+
+	/* disable connection alarm - a new alarm will be setup during my_system */
+	alarm(0);
 
 	/* recv() error or client disconnect */
-	if(rc<=0){
-
+	if (rc <= 0) {
 		/* log error to syslog facility */
 		syslog(LOG_ERR,"Could not read request from client %s, bailing out...", remote_host);
-
+		if (v3_receive_packet)
+			free(v3_receive_packet);
 #ifdef HAVE_SSL
-		if(ssl){
-			complete_SSL_shutdown( ssl);
+		if (ssl) {
+			complete_SSL_shutdown(ssl);
 			SSL_free(ssl);
 			syslog(LOG_INFO,"INFO: SSL Socket Shutdown.\n");
-			}
+		}
 #endif
-
 		return;
-                }
-
-	/* we couldn't read the correct amount of data, so bail out */
-	else if(bytes_to_recv!=sizeof(receive_packet)){
-
-		/* log error to syslog facility */
-		syslog(LOG_ERR,"Data packet from client (%s) was too short, bailing out...", remote_host);
-
-#ifdef HAVE_SSL
-		if(ssl){
-			complete_SSL_shutdown( ssl);
-			SSL_free(ssl);
-			}
-#endif
-
-		return;
-	        }
-
-#ifdef DEBUG
-	errfp=fopen("/tmp/packet","w");
-	if(errfp){
-		fwrite(&receive_packet,1,sizeof(receive_packet),errfp);
-		fclose(errfp);
-	        }
-#endif
+	}
 
 	/* make sure the request is valid */
-	if(validate_request(&receive_packet)==ERROR){
-
+	if (validate_request(&receive_packet, v3_receive_packet) == ERROR) {
 		/* log an error */
 		syslog(LOG_ERR,"Client request from %s was invalid, bailing out...", remote_host);
 
 		/* free memory */
 		free(command_name);
 		command_name=NULL;
-		for(x=0;x<MAX_COMMAND_ARGUMENTS;x++){
+		for (x = 0; x < MAX_COMMAND_ARGUMENTS; x++) {
 			free(macro_argv[x]);
 			macro_argv[x]=NULL;
-	                }
+		}
+		if (v3_receive_packet)
+			free(v3_receive_packet);
 
 #ifdef HAVE_SSL
-		if(ssl){
-			complete_SSL_shutdown( ssl);
+		if (ssl) {
+			complete_SSL_shutdown(ssl);
 			SSL_free(ssl);
-			}
-#endif
-
-		return;
-	        }
-
-	/* log info to syslog facility */
-	if(debug==TRUE)
-		syslog(LOG_DEBUG,"Host %s is asking for command '%s' to be run...",
-				remote_host, receive_packet.buffer);
-
-	/* disable connection alarm - a new alarm will be setup during my_system */
-	alarm(0);
-
-	/* if this is the version check command, just spew it out */
-	if(!strcmp(command_name,NRPE_HELLO_COMMAND)){
-
-		snprintf(buffer,sizeof(buffer),"NRPE v%s",PROGRAM_VERSION);
-		buffer[sizeof(buffer)-1]='\x0';
-
-		/* log info to syslog facility */
-		if(debug==TRUE)
-			syslog(LOG_DEBUG,"Response to %s: %s", remote_host, buffer);
-
-		result=STATE_OK;
-	        }
-
-	/* find the command we're supposed to run */
-	else{
-		temp_command=find_command(command_name);
-		if(temp_command==NULL){
-
-			snprintf(buffer,sizeof(buffer),"NRPE: Command '%s' not defined",command_name);
-			buffer[sizeof(buffer)-1]='\x0';
-
-			/* log error to syslog facility */
-			if(debug==TRUE)
-				syslog(LOG_DEBUG,"%s",buffer);
-
-			result=STATE_CRITICAL;
-	                }
-
-		else{
-
-			/* process command line */
-			if(command_prefix==NULL)
-				strncpy(raw_command,temp_command->command_line,sizeof(raw_command)-1);
-			else
-				snprintf(raw_command,sizeof(raw_command)-1,"%s %s",command_prefix,temp_command->command_line);
-			raw_command[sizeof(raw_command)-1]='\x0';
-			process_macros(raw_command,processed_command,sizeof(processed_command));
-
-			/* log info to syslog facility */
-			if(debug==TRUE)
-				syslog(LOG_DEBUG,"Running command: %s",processed_command);
-
-			/* run the command */
-			strcpy(buffer,"");
-			result=my_system(processed_command,command_timeout,&early_timeout,buffer,sizeof(buffer));
-
-			/* log debug info */
-			if(debug==TRUE)
-				syslog(LOG_DEBUG,"Command completed with return code %d and output: %s",result,buffer);
-
-			/* see if the command timed out */
-			if(early_timeout==TRUE)
-				snprintf(buffer,sizeof(buffer)-1,"NRPE: Command timed out after %d seconds\n",command_timeout);
-			else if(!strcmp(buffer,""))
-				snprintf(buffer,sizeof(buffer)-1,"NRPE: Unable to read output\n");
-
-			buffer[sizeof(buffer)-1]='\x0';
-
-			/* check return code bounds */
-			if((result<0) || (result>3)){
-
-				/* log error to syslog facility */
-				syslog(LOG_ERR,"Bad return code for [%s]: %d", buffer,result);
-
-				result=STATE_UNKNOWN;
-			        }
-		        }
-	        }
-
-	/* free memory */
-	free(command_name);
-	command_name=NULL;
-	for(x=0;x<MAX_COMMAND_ARGUMENTS;x++){
-		free(macro_argv[x]);
-		macro_argv[x]=NULL;
-	        }
-
-	/* strip newline character from end of output buffer */
-	if(buffer[strlen(buffer)-1]=='\n')
-		buffer[strlen(buffer)-1]='\x0';
-
-	/* clear the response packet buffer */
-	memset(&send_packet, 0, sizeof(send_packet));
-
-	/* fill the packet with semi-random data */
-	randomize_buffer((char *)&send_packet,sizeof(send_packet));
-
-	/* initialize response packet data */
-	send_packet.packet_version=(int16_t)htons(NRPE_PACKET_VERSION_2);
-	send_packet.packet_type=(int16_t)htons(RESPONSE_PACKET);
-	send_packet.result_code=(int16_t)htons(result);
-	strncpy(&send_packet.buffer[0],buffer,MAX_PACKETBUFFER_LENGTH);
-	send_packet.buffer[MAX_PACKETBUFFER_LENGTH-1]='\x0';
-	
-	/* calculate the crc 32 value of the packet */
-	send_packet.crc32_value=(u_int32_t)0L;
-	calculated_crc32=calculate_crc32((char *)&send_packet,sizeof(send_packet));
-	send_packet.crc32_value=(u_int32_t)htonl(calculated_crc32);
-
-
-	/***** ENCRYPT RESPONSE *****/
-
-
-	/* send the response back to the client */
-	bytes_to_send=sizeof(send_packet);
-	if(use_ssl==FALSE)
-		sendall(sock,(char *)&send_packet,&bytes_to_send);
-#ifdef HAVE_SSL
-	else
-		SSL_write(ssl,&send_packet,bytes_to_send);
-#endif
-
-#ifdef HAVE_SSL
-	if(ssl){
-		complete_SSL_shutdown( ssl);
-		SSL_free(ssl);
 		}
 #endif
 
+		return;
+	}
+
 	/* log info to syslog facility */
-	if(debug==TRUE)
-		syslog(LOG_DEBUG,"Return Code: %d, Output: %s",result,buffer);
+	if (debug == TRUE)
+		syslog(LOG_DEBUG, "Host %s is asking for command '%s' to be run...",
+				remote_host, receive_packet.buffer);
+
+	/* if this is the version check command, just spew it out */
+	if (!strcmp(command_name, NRPE_HELLO_COMMAND)) {
+		snprintf(buffer, sizeof(buffer), "NRPE v%s", PROGRAM_VERSION);
+		buffer[sizeof(buffer) - 1] = '\x0';
+
+		/* log info to syslog facility */
+		if (debug == TRUE)
+			syslog(LOG_DEBUG, "Response to %s: %s", remote_host, buffer);
+
+		if (v3_receive_packet)
+			send_buff = strdup(buffer);
+		else {
+			send_buff = calloc(1, sizeof(buffer));
+			strcpy(send_buff, buffer);
+		}
+
+		result = STATE_OK;
+	}
+
+	/* find the command we're supposed to run */
+	else {
+
+		temp_command = find_command(command_name);
+		if (temp_command == NULL) {
+			snprintf(buffer, sizeof(buffer), "NRPE: Command '%s' not defined", command_name);
+			buffer[sizeof(buffer) - 1] = '\x0';
+
+			/* log error to syslog facility */
+			if (debug == TRUE)
+				syslog(LOG_DEBUG, "%s", buffer);
+
+			if (v3_receive_packet)
+				send_buff = strdup(buffer);
+			else {
+				send_buff = calloc(1, sizeof(buffer));
+				strcpy(send_buff, buffer);
+			}
+
+			result=STATE_CRITICAL;
+		}
+
+		else {
+
+			/* process command line */
+			if (command_prefix == NULL)
+				strncpy(raw_command, temp_command->command_line, sizeof(raw_command) - 1);
+			else
+				snprintf(raw_command, sizeof(raw_command) - 1, "%s %s", command_prefix, temp_command->command_line);
+			raw_command[sizeof(raw_command) - 1] = '\x0';
+			process_macros(raw_command, processed_command, sizeof(processed_command));
+
+			/* log info to syslog facility */
+			if (debug == TRUE)
+				syslog(LOG_DEBUG, "Running command: %s", processed_command);
+
+			/* run the command */
+			strcpy(buffer,"");
+			result = my_system(processed_command, command_timeout, &early_timeout, &send_buff);
+
+			/* log debug info */
+			if (debug == TRUE)
+				syslog(LOG_DEBUG, "Command completed with return code %d and output: %s", result, send_buff);
+
+			/* see if the command timed out */
+			if (early_timeout == TRUE)
+				sprintf(send_buff, "NRPE: Command timed out after %d seconds\n", command_timeout);
+			else if(!strcmp(send_buff,""))
+				sprintf(send_buff, "NRPE: Unable to read output\n");
+
+			/* check return code bounds */
+			if ((result < 0) || (result > 3)) {
+				/* log error to syslog facility */
+				syslog(LOG_ERR,"Bad return code for [%s]: %d", send_buff, result);
+				result=STATE_UNKNOWN;
+			}
+		}
+	}
+
+	/* free memory */
+	free(command_name);
+	command_name = NULL;
+	for (x = 0; x < MAX_COMMAND_ARGUMENTS; x++) {
+		free(macro_argv[x]);
+		macro_argv[x]=NULL;
+	}
+	if (v3_receive_packet)
+		free(v3_receive_packet);
+pkt_size = strlen(send_buff);
+	/* strip newline character from end of output buffer */
+	if (send_buff[strlen(send_buff) - 1] == '\n')
+		send_buff[strlen(send_buff) - 1] = '\x0';
+
+	if (packet_ver == NRPE_PACKET_VERSION_2) {
+		pkt_size = sizeof(v2_packet);
+		send_pkt = (char*)&send_packet;
+
+		/* clear the response packet buffer */
+		memset(&send_packet, 0, sizeof(send_packet));
+		/* fill the packet with semi-random data */
+		randomize_buffer((char*)&send_packet, sizeof(send_packet));
+
+		/* initialize response packet data */
+		send_packet.packet_version = htons(packet_ver);
+		send_packet.packet_type = htons(RESPONSE_PACKET);
+		send_packet.result_code = htons(result);
+		strncpy(&send_packet.buffer[0], send_buff, MAX_PACKETBUFFER_LENGTH);
+		send_packet.buffer[MAX_PACKETBUFFER_LENGTH - 1] = '\x0';
+	
+		/* calculate the crc 32 value of the packet */
+		send_packet.crc32_value = 0;
+		calculated_crc32 = calculate_crc32((char*)&send_packet, sizeof(send_packet));
+		send_packet.crc32_value = htonl(calculated_crc32);
+
+	} else {
+
+		pkt_size = (sizeof(v3_packet) - 1) + strlen(send_buff);
+		v3_send_packet = calloc(1, pkt_size);
+		send_pkt = (char*)v3_send_packet;
+		/* initialize response packet data */
+		v3_send_packet->packet_version = htons(packet_ver);
+		v3_send_packet->packet_type = htons(RESPONSE_PACKET);
+		v3_send_packet->result_code = htons(result);
+		v3_send_packet->alignment = 0;
+		v3_send_packet->buffer_length = htonl(strlen(send_buff));
+		strcpy(&v3_send_packet->buffer[0], send_buff);
+	
+		/* calculate the crc 32 value of the packet */
+		v3_send_packet->crc32_value = 0;
+		calculated_crc32 = calculate_crc32((char*)v3_send_packet, pkt_size);
+		v3_send_packet->crc32_value = htonl(calculated_crc32);
+	}
+
+	/* send the response back to the client */
+	bytes_to_send = pkt_size;
+	if (use_ssl == FALSE)
+		sendall(sock, send_pkt, &bytes_to_send);
+#ifdef HAVE_SSL
+	else
+		SSL_write(ssl, send_pkt, bytes_to_send);
+#endif
+
+#ifdef HAVE_SSL
+	if (ssl) {
+		complete_SSL_shutdown(ssl);
+		SSL_free(ssl);
+	}
+#endif
+
+	if (v3_send_packet)
+		free(v3_send_packet);
+
+	/* log info to syslog facility */
+	if (debug == TRUE)
+		syslog(LOG_DEBUG,"Return Code: %d, Output: %s", result, send_buff);
+
+	free(send_buff);
 
 	return;
-        }
+}
+
+
+
+int read_packet(int sock, void *ssl_ptr, v2_packet *v2_pkt, v3_packet **v3_pkt)
+{
+	int32_t	common_size, tot_bytes, bytes_to_recv, buffer_size;
+	int rc;
+	char *buff_ptr;
+// TODO: Remove sleep(10)
+//sleep(10);
+	/* Read only the part that's common between versions 2 & 3 */
+	common_size = tot_bytes = bytes_to_recv = (char*)&v2_pkt->buffer - (char*)v2_pkt;
+
+	if (use_ssl == FALSE) {
+		rc = recvall(sock, (char*)v2_pkt, &tot_bytes, socket_timeout);
+
+		if (rc <= 0 || rc != bytes_to_recv)
+			return -1;
+
+		packet_ver = ntohs(v2_pkt->packet_version);
+		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
+			syslog(LOG_ERR,"Error: Request packet version was invalid!");
+			return -1;
+		}
+
+		if (packet_ver == NRPE_PACKET_VERSION_2) {
+			buffer_size = sizeof(v2_packet) - common_size;
+			buff_ptr = (char*)v2_pkt + common_size;
+		}
+		else {
+			int32_t	pkt_size = sizeof(v3_packet) - 1;
+
+			/* Read the alignment filler */
+			bytes_to_recv = sizeof(int16_t);
+			rc = recvall(sock, (char*)&buffer_size, &bytes_to_recv, socket_timeout);
+			if (rc <= 0 || bytes_to_recv != sizeof(int16_t))
+				return -1;
+			tot_bytes += rc;
+
+			/* Read the buffer size */
+			bytes_to_recv = sizeof(buffer_size);
+			rc = recvall(sock, (char*)&buffer_size, &bytes_to_recv, socket_timeout);
+			if (rc <= 0 || bytes_to_recv != sizeof(buffer_size))
+				return -1;
+			tot_bytes += rc;
+
+			buffer_size = ntohl(buffer_size);
+			pkt_size += buffer_size;
+			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
+				syslog(LOG_ERR, "Error: Could not allocate memory for packet");
+				return -1;
+			}
+
+			memcpy(*v3_pkt, v2_pkt, common_size);
+			(*v3_pkt)->buffer_length = htonl(buffer_size);
+			buff_ptr = (*v3_pkt)->buffer;
+		}
+
+		bytes_to_recv = buffer_size;
+		rc = recvall(sock, buff_ptr, &bytes_to_recv, socket_timeout);
+
+		if (rc <= 0 || rc != buffer_size) {
+			if (packet_ver == NRPE_PACKET_VERSION_3) {
+				free(*v3_pkt);
+				*v3_pkt = NULL;
+			}
+			return -1;
+		} else
+			tot_bytes += rc;
+	}
+
+#ifdef HAVE_SSL
+	else {
+		SSL *ssl = (SSL*)ssl_ptr;
+
+		while (((rc = SSL_read(ssl, v2_pkt, bytes_to_recv)) <= 0)
+		&& (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ))
+		{}
+
+		if (rc <= 0 || rc != bytes_to_recv)
+			return -1;
+
+		packet_ver = ntohs(v2_pkt->packet_version);
+		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
+			syslog(LOG_ERR,"Error: Request packet version was invalid!");
+			return -1;
+		}
+
+		if (packet_ver == NRPE_PACKET_VERSION_2) {
+			buffer_size = sizeof(v2_packet) - common_size;
+			buff_ptr = (char*)v2_pkt + common_size;
+		}
+		else {
+			int32_t	pkt_size = sizeof(v3_packet) - 1;
+
+			/* Read the alignment filler */
+			bytes_to_recv = sizeof(int16_t);
+			while (((rc = SSL_read(ssl, &buffer_size, bytes_to_recv)) <= 0)
+			&& (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ))
+			{}
+
+			if (rc <= 0 || bytes_to_recv != sizeof(int16_t))
+				return -1;
+			tot_bytes += rc;
+
+			/* Read the buffer size */
+			bytes_to_recv = sizeof(buffer_size);
+			while (((rc = SSL_read(ssl, &buffer_size, bytes_to_recv)) <= 0)
+			&& (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ))
+			{}
+
+			if (rc <= 0 || bytes_to_recv != sizeof(buffer_size))
+				return -1;
+			tot_bytes += rc;
+
+			buffer_size = ntohl(buffer_size);
+			pkt_size += buffer_size;
+			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
+				syslog(LOG_ERR, "Error: Could not allocate memory for packet");
+				return -1;
+			}
+
+			memcpy(*v3_pkt, v2_pkt, common_size);
+			(*v3_pkt)->buffer_length = htonl(buffer_size);
+			buff_ptr = (*v3_pkt)->buffer;
+		}
+
+		bytes_to_recv = buffer_size;
+		while (((rc = SSL_read(ssl, buff_ptr, bytes_to_recv)) <= 0)
+		&& (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ))
+		{}
+
+		if (rc <= 0 || rc != buffer_size) {
+			if (packet_ver == NRPE_PACKET_VERSION_3) {
+				free(*v3_pkt);
+				*v3_pkt = NULL;
+			}
+			return -1;
+		} else
+			tot_bytes += rc;
+	}
+#endif
+
+	return tot_bytes;
+}
 
 
 
@@ -1793,68 +1946,71 @@ void free_memory(void){
 
 
 /* executes a system command via popen(), but protects against timeouts */
-int my_system(char *command,int timeout,int *early_timeout,char *output,int output_length){
-        pid_t pid;
+int my_system(char *command, int timeout, int *early_timeout, char **output)
+{
+	pid_t pid;
 	int status;
 	int result;
 	extern int errno;
 	char buffer[MAX_INPUT_BUFFER];
 	int fd[2];
 	FILE *fp;
-	int bytes_read=0;
+	int bytes_read = 0, tot_bytes = 0;
+	int output_size;
 	time_t start_time,end_time;
 #ifdef HAVE_SIGACTION
 	struct sigaction sig_action;
 #endif
 
 	/* initialize return variables */
-	if(output!=NULL)
-		strcpy(output,"");
-	*early_timeout=FALSE;
+	*early_timeout = FALSE;
 
 	/* if no command was passed, return with no error */
-	if(command==NULL)
-	        return STATE_OK;
+	if (command == NULL)
+		return STATE_OK;
 
 	/* create a pipe */
 	pipe(fd);
 
 	/* make the pipe non-blocking */
-	fcntl(fd[0],F_SETFL,O_NONBLOCK);
-	fcntl(fd[1],F_SETFL,O_NONBLOCK);
+	fcntl(fd[0], F_SETFL, O_NONBLOCK);
+	fcntl(fd[1], F_SETFL, O_NONBLOCK);
 
 	/* get the command start time */
 	time(&start_time);
 
 	/* fork */
-	pid=fork();
+	pid = fork();
 
 	/* return an error if we couldn't fork */
-	if(pid==-1){
+	if (pid == -1) {
 
 		snprintf(buffer,sizeof(buffer)-1,"NRPE: Call to fork() failed\n");
 		buffer[sizeof(buffer)-1]='\x0';
 
-		if(output!=NULL){
-			strncpy(output,buffer,output_length-1);
-			output[output_length-1]='\x0';
-		        }
+		if (packet_ver == NRPE_PACKET_VERSION_2) {
+			int output_size = sizeof(v2_packet);
+			*output = calloc(1, output_size);
+			strncpy(*output, buffer, output_size - 1);
+			*output[output_size - 1]= '\0';
+		} else
+			*output = strdup(buffer);
 
 		/* close both ends of the pipe */
 		close(fd[0]);
 		close(fd[1]);
 		
-	        return STATE_UNKNOWN;  
-	        }
+		return STATE_UNKNOWN;  
+	}
 
 	/* execute the command in the child process */
-        if(pid==0){
+	if (pid == 0) {
 
 		/* close pipe for reading */
 		close(fd[0]);
 
 		/* become process group leader */
-		setpgid(0,0);
+		setpgid(0, 0);
 
 		/* trap commands that timeout */
 #ifdef HAVE_SIGACTION
@@ -1869,40 +2025,39 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 		alarm(timeout);
 
 		/* run the command */
-		fp=popen(command,"r");
+		fp = popen(command, "r");
 		
 		/* report an error if we couldn't run the command */
-		if(fp==NULL){
+		if (fp == NULL) {
 
-			strncpy(buffer,"NRPE: Call to popen() failed\n",sizeof(buffer)-1);
-			buffer[sizeof(buffer)-1]='\x0';
+			strncpy(buffer, "NRPE: Call to popen() failed\n", sizeof(buffer) - 1);
+			buffer[sizeof(buffer) - 1] = '\x0';
 
 			/* write the error back to the parent process */
-			write(fd[1],buffer,strlen(buffer)+1);
+			write(fd[1], buffer, strlen(buffer) + 1);
 
 			result=STATE_CRITICAL;
-		        }
-		else{
+		}
+		else {
 
 			/* read all lines of output - supports Nagios 3.x multiline output */
-			while((bytes_read=fread(buffer,1,sizeof(buffer)-1,fp))>0){
-
+			while ((bytes_read = fread(buffer, 1, sizeof(buffer) - 1, fp)) > 0) {
 				/* write the output back to the parent process */
-				write(fd[1],buffer,bytes_read);
-				}
+				write(fd[1], buffer, bytes_read);
+			}
 
 			/* close the command and get termination status */
-			status=pclose(fp);
+			status = pclose(fp);
 
 			/* report an error if we couldn't close the command */
-			if(status==-1)
-				result=STATE_CRITICAL;
+			if (status == -1)
+				result = STATE_CRITICAL;
 			/* report an error if child died due to signal (Klas Lindfors) */
-			else if(!WIFEXITED(status))
-				result=STATE_CRITICAL;
+			else if (!WIFEXITED(status))
+				result = STATE_CRITICAL;
 			else
-				result=WEXITSTATUS(status);
-		        }
+				result = WEXITSTATUS(status);
+		}
 
 		/* close pipe for writing */
 		close(fd[1]);
@@ -1912,7 +2067,7 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 
 		/* return plugin exit code to parent process */
 		exit(result);
-	        }
+	}
 
 	/* parent waits for child to finish executing command */
 	else{
@@ -1921,53 +2076,67 @@ int my_system(char *command,int timeout,int *early_timeout,char *output,int outp
 		close(fd[1]);
 
 		/* wait for child to exit */
-		waitpid(pid,&status,0);
+		waitpid(pid, &status, 0);
 
 		/* get the end time for running the command */
 		time(&end_time);
 
 		/* get the exit code returned from the program */
-		result=WEXITSTATUS(status);
+		result = WEXITSTATUS(status);
 
 		/* because of my idiotic idea of having UNKNOWN states be equivalent to -1, I must hack things a bit... */
-		if(result==255)
-			result=STATE_UNKNOWN;
+		if (result == 255)
+			result = STATE_UNKNOWN;
 
 		/* check bounds on the return value */
-		if(result<0 || result>3)
-			result=STATE_UNKNOWN;
+		if (result < 0 || result > 3)
+			result = STATE_UNKNOWN;
+
+		if (packet_ver == NRPE_PACKET_VERSION_2) {
+			output_size = sizeof(v2_packet);
+			*output = calloc(1, output_size);
+		} else {
+			output_size = 1024 * 64;		/* Maximum buffer is 64K */
+			*output = calloc(1, output_size);
+		}
 
 		/* try and read the results from the command output (retry if we encountered a signal) */
-		if(output!=NULL){
-			do{
-				bytes_read=read(fd[0], output, output_length-1);
-			}while (bytes_read==-1 && errno==EINTR);
-
-			if(bytes_read==-1)
-				*output='\0';
-			else
-				output[bytes_read]='\0';
+		for (;;) {
+			bytes_read = read(fd[0], buffer, sizeof(buffer) - 1);
+			if (bytes_read == 0)
+				break;
+			if (bytes_read == -1) {
+				if (errno == EINTR)
+					continue;
+				else
+					break;
 			}
+			if (tot_bytes < output_size)	/* If buffer is full, discard the rest */
+				strncat(*output, buffer, output_size - tot_bytes);
+			tot_bytes += bytes_read;
+		}
+
+		(*output)[output_size - 1] = '\0';
 
 		/* if there was a critical return code and no output AND the command time exceeded the timeout thresholds, assume a timeout */
-		if(result==STATE_CRITICAL && bytes_read==-1 && (end_time-start_time)>=timeout){
+		if (result == STATE_CRITICAL && bytes_read == -1 && (end_time - start_time) >= timeout) {
 			*early_timeout=TRUE;
 
 			/* send termination signal to child process group */
-			kill((pid_t)(-pid),SIGTERM);
-			kill((pid_t)(-pid),SIGKILL);
-		        }
+			kill((pid_t)(-pid), SIGTERM);
+			kill((pid_t)(-pid), SIGKILL);
+		}
 
 		/* close the pipe for reading */
 		close(fd[0]);
-	        }
+	}
 
 #ifdef DEBUG
 	printf("my_system() end\n");
 #endif
 
 	return result;
-        }
+}
 
 
 
@@ -2053,7 +2222,7 @@ int drop_privileges(char *user, char *group){
 	                        }
 #endif
 
-			if(setuid(uid)==-1)
+			if(seteuid(uid)==-1)
 				syslog(LOG_ERR,"Warning: Could not set effective UID=%d",(int)uid);
 		        }
 	        }
@@ -2124,6 +2293,9 @@ int remove_pid_file(void){
 	/* pid file was not written */
 	if(wrote_pid_file==FALSE)
 		return OK;
+
+	/* get root back so we can delete the pid file */
+	seteuid(0);
 
 	/* remove existing pid file */
 	if(unlink(pid_file)==-1){
@@ -2238,107 +2410,119 @@ void child_sighandler(int sig){
 
 
 /* tests whether or not a client request is valid */
-int validate_request(packet *pkt){
-        u_int32_t packet_crc32;
-        u_int32_t calculated_crc32;
-	char *ptr;
+int validate_request(v2_packet *v2pkt, v3_packet *v3pkt)
+{
+	u_int32_t packet_crc32;
+	u_int32_t calculated_crc32;
+	char *buff, *ptr;
 #ifdef ENABLE_COMMAND_ARGUMENTS
 	int x;
 #endif
 
+	/* check the crc 32 value */
+	if (packet_ver == NRPE_PACKET_VERSION_3) {
+		int32_t	pkt_size = (sizeof(v3_packet) - 1) + ntohl(v3pkt->buffer_length);
+		packet_crc32 = ntohl(v3pkt->crc32_value);
+		v3pkt->crc32_value = 0L;
+		v3pkt->alignment = 0;
+		calculated_crc32 = calculate_crc32((char*)v3pkt, pkt_size);
+	} else {
+		packet_crc32 = ntohl(v2pkt->crc32_value);
+		v2pkt->crc32_value = 0L;
+		calculated_crc32 = calculate_crc32((char*)v2pkt, sizeof(v2_packet));
+	}
 
-	/***** DECRYPT REQUEST ******/
-
-
-        /* check the crc 32 value */
-        packet_crc32=ntohl(pkt->crc32_value);
-        pkt->crc32_value=0L;
-        calculated_crc32=calculate_crc32((char *)pkt,sizeof(packet));
-        if(packet_crc32!=calculated_crc32){
-                syslog(LOG_ERR,"Error: Request packet had invalid CRC32.");
-                return ERROR;
-                }
+	if (packet_crc32 != calculated_crc32) {
+		syslog(LOG_ERR, "Error: Request packet had invalid CRC32.");
+		return ERROR;
+	}
 
 	/* make sure this is the right type of packet */
-	if(ntohs(pkt->packet_type)!=QUERY_PACKET || ntohs(pkt->packet_version)!=NRPE_PACKET_VERSION_2){
-		syslog(LOG_ERR,"Error: Request packet type/version was invalid!");
+	if (ntohs(v2pkt->packet_type) != QUERY_PACKET) {
+		syslog(LOG_ERR, "Error: Request packet type was invalid!");
 		return ERROR;
-	        }
+	}
 
 	/* make sure buffer is terminated */
-	pkt->buffer[MAX_PACKETBUFFER_LENGTH-1]='\x0';
+	if (packet_ver == NRPE_PACKET_VERSION_3) {
+        int32_t l = ntohs(v3pkt->buffer_length);
+		v3pkt->buffer[l - 1] = '\x0';
+		buff = v3pkt->buffer;
+	} else {
+		v2pkt->buffer[MAX_PACKETBUFFER_LENGTH-1] = '\x0';
+		buff = v2pkt->buffer;
+	}
 
 	/* client must send some kind of request */
-	if(!strcmp(pkt->buffer,"")){
-		syslog(LOG_ERR,"Error: Request contained no query!");
+	if (buff[0] == '\0') {
+		syslog(LOG_ERR, "Error: Request contained no query!");
 		return ERROR;
-	        }
+	}
 
 	/* make sure request doesn't contain nasties */
-	if(contains_nasty_metachars(pkt->buffer)==TRUE){
-		syslog(LOG_ERR,"Error: Request contained illegal metachars!");
+	if (contains_nasty_metachars(v2pkt->buffer) == TRUE) {
+		syslog(LOG_ERR, "Error: Request contained illegal metachars!");
 		return ERROR;
-	        }
+	}
 
 	/* make sure the request doesn't contain arguments */
-	if(strchr(pkt->buffer,'!')){
+	if (strchr(v2pkt->buffer, '!')) {
 #ifdef ENABLE_COMMAND_ARGUMENTS
-		if(allow_arguments==FALSE){
+		if (allow_arguments == FALSE) {
 			syslog(LOG_ERR,"Error: Request contained command arguments, but argument option is not enabled!");
 			return ERROR;
-	                }
+		}
 #else
-		syslog(LOG_ERR,"Error: Request contained command arguments!");
+		syslog(LOG_ERR, "Error: Request contained command arguments!");
 		return ERROR;
 #endif
 	        }
 
 	/* get command name */
 #ifdef ENABLE_COMMAND_ARGUMENTS
-	ptr=strtok(pkt->buffer,"!");
+	ptr = strtok(buff, "!");
 #else
-	ptr=pkt->buffer;
+	ptr = buff;
 #endif	
-	command_name=strdup(ptr);
-	if(command_name==NULL){
+	command_name = strdup(ptr);
+	if (command_name == NULL) {
 		syslog(LOG_ERR,"Error: Memory allocation failed");
 		return ERROR;
-	        }
+	}
 
 #ifdef ENABLE_COMMAND_ARGUMENTS
 	/* get command arguments */
-	if(allow_arguments==TRUE){
+	if (allow_arguments == TRUE) {
 
-		for(x=0;x<MAX_COMMAND_ARGUMENTS;x++){
-			ptr=strtok(NULL,"!");
-			if(ptr==NULL)
+		for (x = 0; x < MAX_COMMAND_ARGUMENTS; x++) {
+			ptr = strtok(NULL, "!");
+			if (ptr == NULL)
 				break;
-			macro_argv[x]=strdup(ptr);
-			if(macro_argv[x]==NULL){
-				syslog(LOG_ERR,"Error: Memory allocation failed");
+			macro_argv[x] = strdup(ptr);
+			if (macro_argv[x] == NULL) {
+				syslog(LOG_ERR, "Error: Memory allocation failed");
 				return ERROR;
-			        }
-			if(!strcmp(macro_argv[x],"")){
+			}
+			if (!strcmp(macro_argv[x], "")){
 				syslog(LOG_ERR,"Error: Request contained an empty command argument");
 				return ERROR;
-				}
-			if(strstr(macro_argv[x],"$(")) {
+			}
+			if (strstr(macro_argv[x], "$(")) {
 #ifndef ENABLE_BASH_COMMAND_SUBSTITUTION
 				syslog(LOG_ERR,"Error: Request contained a bash command substitution!");
 				return ERROR;
 #else
-				if(FALSE==allow_bash_command_substitution) {
+				if (FALSE == allow_bash_command_substitution) {
 					syslog(LOG_ERR,"Error: Request contained a bash command substitution, but they are disallowed!");
 					return ERROR;
-					}
-#endif
 				}
+#endif
 			}
 		}
-#endif
-
-	return OK;
 	}
+#endif
+	return OK;
+}
 
 
 
