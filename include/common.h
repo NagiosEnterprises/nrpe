@@ -57,10 +57,10 @@
 #define	RESPONSE_PACKET		2		/* id code for a packet containing a response */
 
 #define NRPE_PACKET_VERSION_3   3               /* packet version identifier */
-#define NRPE_PACKET_VERSION_2   2
+#define NRPE_PACKET_VERSION_2   2               
 #define NRPE_PACKET_VERSION_1	1		/* older packet version identifiers (no longer supported) */
 
-#define MAX_PACKETBUFFER_LENGTH	8192    /* max amount of data we'll send in one query/response */
+#define MAX_PACKETBUFFER_LENGTH	1024		/* max amount of data we'll send in one query/response */
 
 typedef struct packet_struct{
 	int16_t   packet_version;
