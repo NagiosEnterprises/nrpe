@@ -98,8 +98,8 @@ int main(int argc, char **argv){
 		printf(" -u         = Make socket timeouts return an UNKNOWN state instead of CRITICAL\n");
 		printf(" <host>     = The address of the host running the NRPE daemon\n");
 		printf(" <bindaddr> = bind to local address\n");
-		printf(" -4         = user ipv4 only\n");
-		printf(" -6         = user ipv6 only\n");
+		printf(" -4         = bind to ipv4 only\n");
+		printf(" -6         = bind to ipv6 only\n");
 		printf(" [port]     = The port on which the daemon is running (default=%d)\n",DEFAULT_SERVER_PORT);
 		printf(" [timeout]  = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
 		printf(" [command]  = The name of the command that the remote daemon should run\n");
