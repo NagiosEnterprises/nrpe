@@ -171,7 +171,7 @@ int my_connect(const char *host, struct sockaddr_storage * hostaddr, u_short por
 
 	/* Return failure if we didn't get a successful connection. */
 	if (sock == -1) {
-		fprintf(stderr, "connect to host %s port %s: %s", host, strport, 
+		fprintf(stderr, "connect to host %s port %s: %s\n", host, strport, 
 				strerror(errno));
 		return -1;
 		}
