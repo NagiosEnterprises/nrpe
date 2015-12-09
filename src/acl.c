@@ -499,9 +499,8 @@ int is_an_allowed_host(int family, void *host) {
 
 	while(dns_acl_curr != NULL) {
    		he = gethostbyname(dns_acl_curr->domain);
-		if (he == NULL) return 0;
 
-		while (*he->h_addr_list) {
+		while (he && *he->h_addr_list) {
 			switch(he->h_addrtype) {
 			case AF_INET:
 				memmove((char *)&addr,*he->h_addr_list++, sizeof(addr));
