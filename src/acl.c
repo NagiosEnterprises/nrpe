@@ -458,14 +458,15 @@ int add_domain_to_acl(char *domain) {
  * 0 - on failure
  */
 
-int is_an_allowed_host(int family, void *host) {
-	struct ip_acl *ip_acl_curr = ip_acl_head;
-	int		nbytes;
-	int		x;
-	struct dns_acl *dns_acl_curr = dns_acl_head;
-	struct in_addr addr;
-	struct in6_addr addr6;
-	struct hostent *he;
+int is_an_allowed_host(int family, void *host)
+{
+	struct ip_acl		*ip_acl_curr = ip_acl_head;
+	int					nbytes;
+	int					x;
+	struct dns_acl		*dns_acl_curr = dns_acl_head;
+	struct sockaddr_in	*addr;
+	struct sockaddr_in6	addr6;
+	struct addrinfo		*res, *ai;
 
 	while (ip_acl_curr != NULL) {
 		if(ip_acl_curr->family == family) {
@@ -498,33 +499,31 @@ int is_an_allowed_host(int family, void *host) {
         }
 
 	while(dns_acl_curr != NULL) {
-   		he = gethostbyname(dns_acl_curr->domain);
+		if (!getaddrinfo(dns_acl_curr->domain, NULL, NULL, &res)) {
 
-		while (he && *he->h_addr_list) {
-			switch(he->h_addrtype) {
-			case AF_INET:
-				memmove((char *)&addr,*he->h_addr_list++, sizeof(addr));
-				if (addr.s_addr == ((struct in_addr *)host)->s_addr) return 1;
-				break;
-			case AF_INET6:
-				memcpy((char *)&addr6, *he->h_addr_list++, sizeof(addr6));
-				for(x = 0; x < nbytes; x++) {
-					if(addr6.s6_addr[x] != 
-							((struct in6_addr *)host)->s6_addr[x]) {
-						break;
-						}
-					}
-				if(x == nbytes) { 
-					/* All bytes in host's address match the ACL */
-					return 1;
-					}
-				break;
+			for (ai = res; ai; ai = ai->ai_next) {
+
+				switch(ai->ai_family) {
+
+				case AF_INET:
+					addr = (struct sockaddr_in*)(ai->ai_addr);
+					if (addr->sin_addr.s_addr == ((struct in_addr*)host)->s_addr)
+						return 1;
+					break;
+
+				case AF_INET6:
+					memcpy((char*)&addr6, ai->ai_addr, sizeof(addr6));
+					if (!memcmp(&addr6.sin6_addr, &host, sizeof(addr6.sin6_addr)))
+						return 1;
+					break;
 				}
 			}
-		dns_acl_curr = dns_acl_curr->next;
+
+			dns_acl_curr = dns_acl_curr->next;
 		}
-	return 0;
 	}
+	return 0;
+}
 
 /* The trim() function takes a source string and copies it to the destination string,
  * stripped of leading and training whitespace. The destination string must be 

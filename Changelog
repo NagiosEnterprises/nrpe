@@ -21,6 +21,7 @@ FIXES
 - Fixed out-of-bounds error (return code 255) for some failures (John Frickson)
 - Connection Timeout and Connection Refused messages need a new line (Andrew Widdersheim)
 - allowed_hosts doesn't work, if one of the hostnames can't be resolved by dns (John Frickson)
+- allowed_hosts doesn't work with a hostname resolving to an IPv6 address (John Frickson)
 
 2.15 - 09/06/2013
 -----------------
