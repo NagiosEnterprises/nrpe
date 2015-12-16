@@ -1688,10 +1688,13 @@ void handle_connection(int sock){
 				syslog(LOG_DEBUG, "Command completed with return code %d and output: %s", result, send_buff);
 
 			/* see if the command timed out */
-			if (early_timeout == TRUE)
+			if (early_timeout == TRUE) {
 				sprintf(send_buff, "NRPE: Command timed out after %d seconds\n", command_timeout);
-			else if(!strcmp(send_buff,""))
+				result=STATE_UNKNOWN;
+			} else if(!strcmp(send_buff,"")) {
 				sprintf(send_buff, "NRPE: Unable to read output\n");
+				result=STATE_UNKNOWN;
+			}
 
 			/* check return code bounds */
 			if ((result < 0) || (result > 3)) {
