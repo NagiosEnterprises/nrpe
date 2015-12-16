@@ -25,8 +25,8 @@ it if you know what you're doing!
 #### BASH COMMAND SUBSTITUTION ####
 
 Even with the metacharacter restrictions below, if command arguments 
-are enabled, it is still possible to send bash command substitions 
-in the form `$(...)` as an agrument. This is explicity disabled by 
+are enabled, it is still possible to send bash command substitutions 
+in the form `$(...)` as an argument. This is explicitly disabled by 
 default, but can be enabled by a configure-time option and a
 configuration file option. Enabling this option is **VERY RISKY**
 and its use is **HIGHLY DISCOURAGED**.

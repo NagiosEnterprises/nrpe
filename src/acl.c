@@ -543,14 +543,14 @@ void trim( char *src, char *dest) {
 	return;
 }
 
-/* This function splits allowed_hosts to substrings with comma(,) as a delimeter.
+/* This function splits allowed_hosts to substrings with comma(,) as a delimiter.
  * It doesn't check validness of ACL record (add_ipv4_to_acl() and add_domain_to_acl() do),
  * just trims spaces from ACL records.
  * After this it sends ACL records to add_ipv4_to_acl() or add_domain_to_acl().
  */
 
 void parse_allowed_hosts(char *allowed_hosts) {
-	char *hosts = strdup( allowed_hosts);	/* Copy since strtok* modifes original */
+	char *hosts = strdup( allowed_hosts);	/* Copy since strtok* modifies original */
 	char *saveptr;
 	char *tok;
 	const char *delim = ",";
