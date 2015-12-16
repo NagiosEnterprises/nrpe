@@ -474,18 +474,18 @@ void setup_ssl()
 
 #ifndef OPENSSL_NO_SSL2
 		if (sslprm.ssl_min_ver == SSLv2)
-			meth = SSLv2_server_method();
+			meth = SSLv2_client_method();
 #endif
 #ifndef OPENSSL_NO_SSL3
 		if (sslprm.ssl_min_ver == SSLv3)
-			meth = SSLv3_server_method();
+			meth = SSLv3_client_method();
 #endif
 		if (sslprm.ssl_min_ver == TLSv1)
-			meth = TLSv1_server_method();
+			meth = TLSv1_client_method();
 		if (sslprm.ssl_min_ver == TLSv1_1)
-			meth = TLSv1_1_server_method();
+			meth = TLSv1_1_client_method();
 		if (sslprm.ssl_min_ver == TLSv1_2)
-			meth = TLSv1_2_server_method();
+			meth = TLSv1_2_client_method();
 
 		if ((ctx = SSL_CTX_new(meth)) == NULL) {
 			printf("CHECK_NRPE: Error - could not create SSL context.\n");
@@ -1038,7 +1038,7 @@ int verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 	X509_NAME_oneline(X509_get_subject_name(err_cert), name, 256);
 	X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert), issuer, 256);
 
-	if (!preverify_ok && (sslprm.log_opts & SSL_LogCertDetails)) {
+	if (!preverify_ok && sslprm.client_certs >= Ask_For_Cert && (sslprm.log_opts & SSL_LogCertDetails)) {
 		syslog(LOG_ERR, "SSL Client has an invalid certificate: %s (issuer=%s) err=%d:%s",
 				name, issuer, err, X509_verify_cert_error_string(err));
 	}

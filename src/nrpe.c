@@ -277,17 +277,17 @@ int main(int argc, char **argv){
 				sslprm.client_certs == 0 ? "Don't Ask" : (sslprm.client_certs == 1 ? "Accept" : "Require"));
 		syslog(LOG_INFO, "SSL Log Options: 0x%02x", sslprm.log_opts);
 		switch (sslprm.ssl_min_ver) {
-			case SSLv2:			env_string = "SSLv2";					break;
-			case SSLv2_plus:	env_string = "SSLv2 And Above";			break;
-			case SSLv3:			env_string = "SSLv3";					break;
-			case SSLv3_plus:	env_string = "SSLv3_plus And Above";	break;
-			case TLSv1:			env_string = "TLSv1";					break;
-			case TLSv1_plus:	env_string = "TLSv1_plus And Above";	break;
-			case TLSv1_1:		env_string = "TLSv1_1";					break;
-			case TLSv1_1_plus:	env_string = "TLSv1_1_plus And Above";	break;
-			case TLSv1_2:		env_string = "TLSv1_2";					break;
-			case TLSv1_2_plus:	env_string = "TLSv1_2_plus And Above";	break;
-			defualt:			env_string = "INVALID VALUE!";			break;
+			case SSLv2:			env_string = "SSLv2";				break;
+			case SSLv2_plus:	env_string = "SSLv2 And Above";		break;
+			case SSLv3:			env_string = "SSLv3";				break;
+			case SSLv3_plus:	env_string = "SSLv3 And Above";		break;
+			case TLSv1:			env_string = "TLSv1";				break;
+			case TLSv1_plus:	env_string = "TLSv1 And Above";		break;
+			case TLSv1_1:		env_string = "TLSv1_1";				break;
+			case TLSv1_1_plus:	env_string = "TLSv1_1 And Above";	break;
+			case TLSv1_2:		env_string = "TLSv1_2";				break;
+			case TLSv1_2_plus:	env_string = "TLSv1_2 And Above";	break;
+			defualt:			env_string = "INVALID VALUE!";		break;
 		}
 		syslog(LOG_INFO, "SSL Version: %s", env_string);
 	}
@@ -1287,15 +1287,31 @@ void wait_for_connections(void){
 						return;
 						}
 
+					switch(addr.ss_family) {
+						case AF_INET:
+							nptr = (struct sockaddr_in*)&addr;
+							strncpy(remote_host, inet_ntoa(nptr->sin_addr), sizeof(remote_host) - 1);
+							remote_host[MAX_HOST_ADDRESS_LENGTH - 1] = '\0';
+							break;
+						case AF_INET6:
+							nptr6 = (struct sockaddr_in6*)&addr;
+							if (inet_ntop(AF_INET6, (const void *)&(nptr6->sin6_addr),
+									ipstr,  sizeof(ipstr)) == NULL)
+							{
+								strncpy(ipstr, "Unknown", sizeof(ipstr));
+							} 
+							break;
+					}
+
+
+
+
 					/* is this is a blessed machine? */
 					if(allowed_hosts) {
 						switch(addr.ss_family) {
-						case AF_INET:
-							nptr = (struct sockaddr_in *)&addr;
 
+						case AF_INET:
 							/* log info to syslog facility */
-							strncpy(remote_host, inet_ntoa(nptr->sin_addr), sizeof(remote_host) - 1);
-							remote_host[MAX_HOST_ADDRESS_LENGTH - 1] = '\0';
 							if (debug == TRUE || (sslprm.log_opts & SSL_LogIpAddr)) {
 								syslog(LOG_DEBUG, "Connection from %s port %d",
 										remote_host,  nptr->sin_port);
@@ -1327,14 +1343,8 @@ void wait_for_connections(void){
 
 								}
 							break;
-						case AF_INET6:
-							nptr6 = (struct sockaddr_in6 *)&addr;
-							if(inet_ntop(AF_INET6, 
-									(const void *)&(nptr6->sin6_addr), ipstr, 
-									sizeof(ipstr)) == NULL) {
-								strncpy(ipstr, "Unknown", sizeof(ipstr));
-								} 
 
+							case AF_INET6:
 							/* log info to syslog facility */
 							strcpy(remote_host, ipstr);
 							if (debug == TRUE || (sslprm.log_opts & SSL_LogIpAddr)) {
