@@ -1,6 +1,18 @@
 NRPE With SSL/TLS
 =================
 
+##Contents
+1. [Introduction](#intro)
+2. [NRPE Changes](#nrpe)
+3. [check_nrpe Changes](#chk)
+4. [Certificate Generation Example](#xmp)
+
+<a id=intro></a>
+
+------------
+###Introduction
+------------
+
 NRPE has had basic support for SSL/TLS for some time now, but it was
 severely lacking. It only allowed anonymous Diffie Hellman (ADH) key
 exchange, it used a fixed 512-bit key (generated at `./configure`
@@ -13,12 +25,10 @@ compatible way, allowing you to migrate to the newer versions
 without having to do it all at once, and possibly miss updating some
 machines, causing lost reporting.
 
-The changes to the NRPE daemon are outlined below first, followed by
-the changes to the check_nrpe client.
-
+<a id=nrpe></a>
 
 ------------------------------------------
-####CHANGES IN THE CURRENT VERSION OF NRPE
+###CHANGES IN THE CURRENT VERSION OF NRPE
 ------------------------------------------
 
 Running `./configure` will now create a 2048-bit DH key instead
@@ -90,9 +100,10 @@ This can be especially helpful during client migration, so you can
 tell which clients have certificates, what SSL/TLS version is being
 used, and which ciphers are being used.
 
+<a id=chk></a>
 
 ------------------------------------------------
-####CHANGES IN THE CURRENT VERSION OF CHECK_NRPE
+###CHANGES IN THE CURRENT VERSION OF CHECK_NRPE
 ------------------------------------------------
 
 The check_nrpe client has also been updated to provide more secure
@@ -100,8 +111,9 @@ encryption and allow the use of client certificates. The command line
 has several new options, which are outlined below. Both the long and
 short arguments are presented.
 
-`--no-adh` or `-d` will disable the use of ADH. This option is **DEPRECATED**,
-even though it's new. It will be removed in a future version.
+`--no-adh` or `-d` will disable the use of ADH. This option is
+**DEPRECATED**, even though it's new. It will be removed in a
+future version.
 
 `--ssl-version=<ver>` or `-S <ver>` specifies minimum SSL/TLS version
 to use. See the `ssl_version` directive above for possible values.
@@ -126,6 +138,143 @@ If you use `-d` or `-d 0` it acts the same way as as the old `-d`.
 Otherwise, use `1` to allow ADH, and `2` to require ADH.
 
 `--ssl-logging=<num>` or `-s <num>` allows you to log some additional
-data to syslog. OR (or add) values together to have more than one option
-enabled. See the description of the `ssl_logging` directive from NRPE
-above.
+data to syslog. OR (or add) values together to have more than one
+option enabled. See the description of the `ssl_logging` directive
+from NRPE above.
+
+<a id=xmp></a>
+
+----------------------------------
+###Certificate Generation Example
+----------------------------------
+
+**Note** _The following example does not follow best practice for
+creating and running a CA or creating certificates. It is for testing
+or possibly for use in a small environment. Sloppy security is as bad
+as no security._
+
+In this example, we are going to put everything in the
+`/usr/local/nagios/etc/ssl` directory. You may want to use the more
+common `/etc/ssl` directory, or somewhere else entirely.
+
+We are going to assume your company name is Foo Widgets, LLC; the
+server running the nagios process (and thus the check_nrpe program)
+is called `nag_serv`; and there are two Linux machines that will
+run the nrpe daemon: `db_server` and `bobs_workstation`.
+
+
+####Set up the directories
+
+As root, do the following:
+
+        mkdir -p -m 750 /usr/local/nagios/etc/ssl
+        chown root.nagios /usr/local/nagios/etc/ssl
+        cd /usr/local/nagios/etc/ssl
+        mkdir -m 750 ca
+        chown root.root ca
+        mkdir -m 750 server_certs
+        chown root.nagios server_certs
+        mkdir -m 750 client_certs
+        chown root.nagios client_certs
+
+
+####Create Certificate Authority
+
+If you want to validate client or server certificates, you will need
+to create a Certificate Authority (CA) that will sign all client and
+server certificates. If your organization already has a CA, you can
+use that.
+
+As root, do the following:
+
+        cd /usr/local/nagios/etc/ssl/ca
+        openssl req -x509 -newkey rsa:4096 -keyout ca_key.pem \
+           -out ca_cert.pem -utf8 -days 3650
+
+When asked, enter a passphrase. Then follow the prompts. You will
+probably want to include `CA` or `Certificate Authority` in for
+`Organizational Unit Name` and `Common Name`. For example:
+
+        Organization Name (eg, company) []:Foo Widgets LLC
+        Organizational Unit Name (eg, section) []:Foo Certificate Authority
+        Common Name (e.g. server FQDN or YOUR name) []:Foo Nagios CA
+
+
+####Create NRPE Server Certificate Requests
+
+For each of the hosts that will be running the nrpe daemon, you will
+need a server certificate. You can create a key, and the CSR
+(Certificate Signing Request) separately, but the following commands
+will do both with one command. As root, do the following:
+
+        cd /usr/local/nagios/etc/ssl/server_certs
+        openssl req -new -newkey rsa:2048 -keyout db_server.key \
+           -out db_server.csr -nodes
+        openssl req -new -newkey rsa:2048 -keyout bobs_workstation.key \
+           -out bobs_workstation.csr -nodes
+
+Follow the prompts. The `-nodes` at the end of the lines tells
+openssl to generate the key without a passphrase. Leave it off if you
+want someone to enter a passphrase whenever the machine boots.
+
+Now you need to sign the CSRs with your CA key.
+
+If you have the default `/etc/openssl.cnf`, either change it, or as root, do:
+
+        cd /usr/local/nagios/etc/ssl
+        mkdir demoCA
+        mkdir demoCA/newcerts
+        touch index.txt
+		echo "01" > demoCA/serial
+        chown -R root.root demoCA
+        chmod 700 demoCA
+        chmod 700 demoCA/newcerts
+        chmod 600 demoCA/serial
+        chmod 600 demoCA/index.txt
+
+Now, sign the CRSs. As root, do the following:
+
+        cd /usr/local/nagios/etc/ssl
+        openssl ca -days 365 -notext -md sha256 \
+           -keyfile ca/ca_key.pem -cert ca/ca_cert.pem \
+           -in server_certs/db_server.csr \
+           -out server_certs/db_server.pem \
+        chown root.nagios server_certs/db_server.pem
+        chmod 440 server_certs/db_server.pem
+        openssl ca -days 365 -notext -md sha256
+           -keyfile ca/ca_key.pem -cert ca/ca_cert.pem \
+           -in server_certs/bobs_workstation.csr \
+           -out server_certs/bobs_workstation.pem
+        chown root.nagios server_certs/bobs_workstation.pem
+        chmod 440 server_certs/bobs_workstation.pem
+
+Now, copy the `db_server.pem` and `db_server.key` files to the
+db_server machine, and the `bobs_workstation.pem` and
+`bobs_workstation.key` files to bobs_workstation. Copy the
+`ca/ca_cert.pem` file to both machines.
+
+
+####Create NRPE Client Certificate Requests
+
+Now you need to do the same thing for the machine that will be
+running the check_nrpe program.
+
+        cd /usr/local/nagios/etc/ssl/client_certs
+        openssl req -new -newkey rsa:2048 -keyout nag_serv.key \
+           -out nag_serv.csr -nodes
+
+        cd /usr/local/nagios/etc/ssl
+        openssl ca -extension usr_cert -days 365 -notext -md sha256 \
+           -keyfile ca/ca_key.pem -cert ca/ca_cert.pem \
+           -in client_certs/nag_serv.csr \
+           -out client_certs/nag_serv.pem \
+        chown root.nagios client_certs/nag_serv.pem
+        chmod 440 client_certs/nag_serv.pem
+
+Now, copy the `nag_serv.pem`, `nag_serv.key` and `ca/ca_cert.pem`
+files to the nag_serv machine, if you did the above on a different
+computer.
+
+Put the location of each computers' three files in the `nrpe.cfg`
+file or in the check_nrpe command line. You should now have
+encryption and, if desired, key validation.
