@@ -533,8 +533,8 @@ int is_an_allowed_host(int family, void *host)
 void trim( char *src, char *dest) {
 	char *sptr, *dptr;
 
-	for( sptr = src; isblank( *sptr) && *sptr; sptr++); /* Jump past leading spaces */
-	for( dptr = dest; !isblank( *sptr) && *sptr; ) {
+	for( sptr = src; isspace( *sptr) && *sptr; sptr++); /* Jump past leading spaces */
+	for( dptr = dest; !isspace( *sptr) && *sptr; ) {
 		*dptr = *sptr;
 		sptr++;
 		dptr++;

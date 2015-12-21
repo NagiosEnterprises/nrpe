@@ -23,11 +23,18 @@ FIXES
 - allowed_hosts doesn't work, if one of the hostnames can't be resolved by dns (John Frickson)
 - allowed_hosts doesn't work with a hostname resolving to an IPv6 address (John Frickson)
 - Return UNKNOWN when issues occur (Andrew Widdersheim)
+- NRPE returns OK if check can't be executed (Andrew Widdersheim)
+- nrpe 2.15 [regression in Added SRC support on AIX - 2.14] (frphoebus)
+- compile nrpe - Solaris 9 doesn't have isblank() (lilo, John Frickson)
+
+
 
 2.15 - 09/06/2013
 -----------------
 - Now compiles on HP-UX (Grant Byers)
 - Added support for IPv6 (Leo Baltus, Eric Stanley)
+
+
 
 2.14 - 12/21/2012
 -----------------
@@ -37,11 +44,14 @@ FIXES
 - Updated RPM SPEC file to support creating RPMs on AIX (Eric Stanley)
 - Updated logging to support compiling on AIX (Eric Stanley)
 
+
+
 2.13 - 11/11/2011
 -----------------
 - Applied Kaspersky Labs supplied patch for extending allowed_hosts (Konstantin Malov)
 - Fixed bug in allowed_hosts parsing (Eric Stanley)
 - Updated to support compiling on Solaris 10 (thanks to Kevin Pendleton)
+
 
 
 2.12 - 03/10/2008
@@ -55,6 +65,7 @@ FIXES
 - Added lib64 library paths to configure script for 64-bit systems (John Maag)
 - Added --with-ssl-lib configure script option
 - Added --with-log-facility option to control syslog logging (Ryan Ordway and Brian Seklecki)
+
 
 
 2.10 - 10/19/2007
