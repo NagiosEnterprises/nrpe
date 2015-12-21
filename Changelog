@@ -26,6 +26,7 @@ FIXES
 - NRPE returns OK if check can't be executed (Andrew Widdersheim)
 - nrpe 2.15 [regression in Added SRC support on AIX - 2.14] (frphoebus)
 - compile nrpe - Solaris 9 doesn't have isblank() (lilo, John Frickson)
+- sample configuration for check_load has crazy sample load avg (ernestoongaro)
 
 
 
