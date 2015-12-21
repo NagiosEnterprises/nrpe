@@ -224,7 +224,7 @@ If you have the default `/etc/openssl.cnf`, either change it, or as root, do:
         cd /usr/local/nagios/etc/ssl
         mkdir demoCA
         mkdir demoCA/newcerts
-        touch index.txt
+        touch demoCA/index.txt
 		echo "01" > demoCA/serial
         chown -R root.root demoCA
         chmod 700 demoCA
@@ -232,13 +232,13 @@ If you have the default `/etc/openssl.cnf`, either change it, or as root, do:
         chmod 600 demoCA/serial
         chmod 600 demoCA/index.txt
 
-Now, sign the CRSs. As root, do the following:
+Now, sign the CSRs. As root, do the following:
 
         cd /usr/local/nagios/etc/ssl
         openssl ca -days 365 -notext -md sha256 \
            -keyfile ca/ca_key.pem -cert ca/ca_cert.pem \
            -in server_certs/db_server.csr \
-           -out server_certs/db_server.pem \
+           -out server_certs/db_server.pem
         chown root.nagios server_certs/db_server.pem
         chmod 440 server_certs/db_server.pem
         openssl ca -days 365 -notext -md sha256

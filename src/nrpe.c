@@ -350,7 +350,9 @@ int main(int argc, char **argv){
 		if (sslprm.cert_file != NULL) {
 			if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
 				SSL_CTX_free(ctx);
-				syslog(LOG_ERR, "Error: could not use certificate file '%s'", sslprm.cert_file);
+				while ((x = ERR_get_error()) != 0)
+					syslog(LOG_ERR, "Error: could not use certificate file %s : %s",
+						sslprm.cert_file, ERR_error_string(x, NULL));
 				exit(STATE_CRITICAL);
 			}
 			if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
