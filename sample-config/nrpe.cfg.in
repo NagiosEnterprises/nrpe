@@ -216,9 +216,9 @@ connection_timeout=300
 
 # SSL Certificate and Private Key Files
 
-#ssl_cacert_file=@sharedstatedir@/ssl/ca-cert.pem
-#ssl_cert_file=@sharedstatedir@/ssl/nagios-cert.pem
-#ssl_privatekey_file=@sharedstatedir@/ssl/nagios-key.pem
+#ssl_cacert_file=@sysconfdir@/ssl/ca-cert.pem
+#ssl_cert_file=@sysconfdir@/ssl/nagios-cert.pem
+#ssl_privatekey_file=@sysconfdir@/ssl/nagios-key.pem
 
 
 # SSL CLIENT CERTS
