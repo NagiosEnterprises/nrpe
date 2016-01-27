@@ -173,7 +173,7 @@ connection_timeout=300
 
 
 
-# WEEK RANDOM SEED OPTION
+# WEAK RANDOM SEED OPTION
 # This directive allows you to use SSL even if your system does not have
 # a /dev/random or /dev/urandom (on purpose or because the necessary patches
 # were not applied). The random number generator will be seeded from a file
