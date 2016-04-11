@@ -26,41 +26,37 @@
 #define PROGRAM_VERSION "2.16RC2"
 #define MODIFICATION_DATE "11-09-2015"
 
-#define OK		0
-#define ERROR		-1
+#define OK							0
+#define ERROR						-1
 
-#define TRUE		1
-#define FALSE		0
+#define TRUE						1
+#define FALSE						0
 
-#define STATE_UNKNOWN  	3	/* service state return codes */
-#define	STATE_CRITICAL 	2
-#define STATE_WARNING 	1
-#define STATE_OK       	0
+#define STATE_UNKNOWN				3		/* service state return codes */
+#define	STATE_CRITICAL				2
+#define STATE_WARNING				1
+#define STATE_OK					0
 
 
-#define DEFAULT_SOCKET_TIMEOUT	10	/* timeout after 10 seconds */
-#define DEFAULT_CONNECTION_TIMEOUT 300	/* timeout if daemon is waiting for connection more than this time */
+#define DEFAULT_SOCKET_TIMEOUT		10		/* timeout after 10 seconds */
+#define DEFAULT_CONNECTION_TIMEOUT	300		/* timeout if daemon is waiting for connection more than this time */
 
-#define MAX_INPUT_BUFFER	2048	/* max size of most buffers we use */
-#define MAX_FILENAME_LENGTH     256
+#define MAX_INPUT_BUFFER			2048	/* max size of most buffers we use */
+#define MAX_FILENAME_LENGTH			256
+#define MAX_HOST_ADDRESS_LENGTH		256		/* max size of a host address */
+#define MAX_COMMAND_ARGUMENTS		16
 
-#define MAX_HOST_ADDRESS_LENGTH	256	/* max size of a host address */
-
-#define NRPE_HELLO_COMMAND      "_NRPE_CHECK"
-
-#define MAX_COMMAND_ARGUMENTS   16
-
+#define NRPE_HELLO_COMMAND			"_NRPE_CHECK"
 
 /**************** PACKET STRUCTURE DEFINITION **********/
 
-#define QUERY_PACKET		1		/* id code for a packet containing a query */
-#define	RESPONSE_PACKET		2		/* id code for a packet containing a response */
+#define QUERY_PACKET				1		/* id code for a packet containing a query */
+#define	RESPONSE_PACKET				2		/* id code for a packet containing a response */
+#define NRPE_PACKET_VERSION_3		3		/* packet version identifier */
+#define NRPE_PACKET_VERSION_2		2
+#define NRPE_PACKET_VERSION_1		1		/* older packet version identifiers (no longer supported) */
 
-#define NRPE_PACKET_VERSION_3   3               /* packet version identifier */
-#define NRPE_PACKET_VERSION_2   2               
-#define NRPE_PACKET_VERSION_1	1		/* older packet version identifiers (no longer supported) */
-
-#define MAX_PACKETBUFFER_LENGTH	1024		/* max amount of data we'll send in one query/response */
+#define MAX_PACKETBUFFER_LENGTH		1024	/* amount of data to send in one query/response vor version 2 */
 
 typedef struct _v2_packet {
 	int16_t		packet_version;
@@ -82,20 +78,15 @@ typedef struct _v3_packet {
 /**************** OPERATING SYSTEM SPECIFIC DEFINITIONS **********/
 #if defined(__sun) || defined(__hpux)
 
-#  ifndef LOG_AUTHPRIV
-#    define LOG_AUTHPRIV LOG_AUTH
-#  endif
-
-#  ifndef LOG_FTP
-#    define LOG_FTP LOG_DAEMON
-#  endif
-
-#elif _AIX
-
-#  include <sys/select.h>
-
-#  ifndef LOG_FTP
-#    define LOG_FTP LOG_DAEMON
-#  endif
-
+# ifndef LOG_AUTHPRIV
+#  define LOG_AUTHPRIV LOG_AUTH
+# endif
+# ifndef LOG_FTP
+#  define LOG_FTP LOG_DAEMON
+# endif
+#elif defined(_AIX)
+# include <sys/select.h>
+# ifndef LOG_FTP
+#  define LOG_FTP LOG_DAEMON
+# endif
 #endif

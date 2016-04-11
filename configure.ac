@@ -45,7 +45,11 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h tcpd.h unistd.h arpa/inet.h netinet/in.h socket.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h)
+AC_CHECK_HEADERS(ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h)
+AC_CHECK_HEADERS(netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h)
+AC_CHECK_HEADERS(tcpd.h unistd.h arpa/inet.h netinet/in.h socket.h sys/types.h)
+AC_CHECK_HEADERS(sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h)
+AC_CHECK_HEADERS(paths.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

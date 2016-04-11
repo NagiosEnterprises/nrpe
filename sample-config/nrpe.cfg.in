@@ -262,6 +262,17 @@ connection_timeout=300
 
 
 
+# KEEP ENVIRONMENT VARIABLES
+# As of NRPE v3.0, the environment is being sanitized. HOME, IFS, LOGNAME,
+# USER, PATH and SHELL will be set. Everything else will be removed. This
+# directive is a comma-separated list that allows you to indicate which
+# environment variables should be kept, possibly including any of the
+# 6 mentioned above. USE WITH CAUTION
+
+#keep_env_vars=TERM,POSIXLY_CORRECT,TZ
+
+
+
 # COMMAND DEFINITIONS
 # Command definitions that this daemon will run.  Definitions
 # are in the following format:

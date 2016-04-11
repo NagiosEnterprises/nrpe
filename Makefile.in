@@ -28,7 +28,7 @@ INIT_OPTS=-o root -g root
 
 
 all:
-	cd $(SRC_BASE); $(MAKE) ; cd ..
+	$(MAKE) -C $(SRC_BASE)
 
 	@echo ""
 	@echo "*** Compile finished ***"
@@ -39,24 +39,24 @@ all:
 	@echo "Read the PDF documentation (NRPE.pdf) for information on the next"
 	@echo "steps you should take to complete the installation or upgrade."
 	@echo ""
+
 nrpe:
-	cd $(SRC_BASE); $(MAKE) ; cd ..
+	$(MAKE) -C $(SRC_BASE)
 
 check_nrpe:
-	cd $(SRC_BASE); $(MAKE) ; cd ..
-
+	$(MAKE) -C $(SRC_BASE)
 
 install-plugin:
-	cd $(SRC_BASE) && $(MAKE) $@
+	$(MAKE) -C $(SRC_BASE) $@
 
 install-daemon:
-	cd $(SRC_BASE) && $(MAKE) $@
+	$(MAKE) -C $(SRC_BASE) $@
 
 install:
-	cd $(SRC_BASE) && $(MAKE) $@
+	$(MAKE) -C $(SRC_BASE) $@
 
 install-xinetd:
-	$(INSTALL) -m 644 sample-config/nrpe.xinetd /etc/xinetd.d/nrpe 
+	$(INSTALL) -m 644 sample-config/nrpe.xinetd /etc/xinetd.d/nrpe
 
 install-daemon-config:
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(DESTDIR)$(CFGDIR)
@@ -70,14 +70,14 @@ solaris-package:
 	fi
 
 clean:
-	cd $(SRC_BASE); $(MAKE) $@ ; cd ..
-	cd package/solaris; $(MAKE) $@ ; cd ../..
+	$(MAKE) -C $(SRC_BASE) $@
+	$(MAKE) -C package/solaris $@
 	rm -f core
 	rm -f *~ */*~
 
 distclean: clean
-	cd $(SRC_BASE); $(MAKE) $@ ; cd ..
-	cd package/solaris; $(MAKE) $@ ; cd ../..
+	$(MAKE) -C $(SRC_BASE) $@
+	$(MAKE) -C package/solaris $@
 	rm -f config.log config.status config.cache nrpe.cfg nrpe.xinetd subst $(SRC_INCLUDE)/config.h init-script init-script.debian init-script.freebsd init-script.suse
 	rm -f sample-config/*.cfg sample-config/*.xinetd
 	rm -f Makefile

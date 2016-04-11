@@ -22,45 +22,48 @@
  *
  ************************************************************************/
 
- /*
-  * 08-10-2011 IPv4 subnetworks support added.
-  * Main change in nrpe.c is that is_an_allowed_host() moved to acl.c
-  *
-  */
-
 /**************** COMMAND STRUCTURE DEFINITION **********/
 
-typedef struct command_struct{
-	char *command_name;
-	char *command_line;
-	struct command_struct *next;
-        }command;
+typedef struct command_struct {
+	char					*command_name;
+	char					*command_line;
+	struct command_struct	*next;
+} command;
 
-int process_arguments(int,char **);
-void wait_for_connections(void);
-void handle_connection(int);
+int init(void);
+void init_ssl(void);
+void log_ssl_startup(void);
+void usage(int);
+void run_inetd(void);
+void run_src(void);
+void run_daemon(void);
+void set_stdio_sigs(void);
+void cleanup(void);
 int read_config_file(char *);
 int read_config_dir(char *);
 int get_log_facility(char *);
 int add_command(char *,char *);
 command *find_command(char *);
-void sighandler(int);
-int drop_privileges(char *,char *);
-int check_privileges(void);
-
-int write_pid_file(void);
-int remove_pid_file(void);
-
+void create_listener(struct addrinfo *ai);
+void wait_for_connections(void);
+void setup_wait_conn(void);
+int wait_conn_fork(int sock);
+void conn_check_peer(int sock);
+void handle_connection(int);
+void init_handle_conn(void);
+int handle_conn_ssl(int sock);
 int read_packet(int sock, void *ssl_ptr, v2_packet *v2_pkt, v3_packet **v3_pkt);
 void free_memory(void);
-int validate_request(v2_packet *, v3_packet *);
-int contains_nasty_metachars(char *);
-int process_macros(char *,char *,int);
 int my_system(char*, int, int*, char**);	/* executes a command via popen(), but also protects against timeouts */
 void my_system_sighandler(int);				/* handles timeouts when executing commands via my_system() */
 void my_connection_sighandler(int);			/* handles timeouts of connection */
-
+int drop_privileges(char *,char *);
+int write_pid_file(void);
+int remove_pid_file(void);
+int check_privileges(void);
 void sighandler(int);
 void child_sighandler(int);
-
-
+int validate_request(v2_packet *, v3_packet *);
+int contains_nasty_metachars(char *);
+int process_macros(char *,char *,int);
+int process_arguments(int,char **);
