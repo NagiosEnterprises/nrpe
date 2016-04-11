@@ -97,6 +97,7 @@ int       show_version = FALSE;
 int       use_inetd = TRUE;
 int       debug = FALSE;
 int       use_src = FALSE;		/* Define parameter for SRC option */
+int       no_forking = FALSE;
 int       listen_queue_size = DEFAULT_LISTEN_QUEUE_SIZE;
 
 /* SSL/TLS parameters */
@@ -186,7 +187,7 @@ int main(int argc, char **argv)
 	if (use_inetd == TRUE)
 		run_inetd();
 
-	else if (use_src == TRUE)
+	else if (use_src == TRUE || no_forking == TRUE)
 		run_src();
 
 	else
@@ -2555,6 +2556,7 @@ int process_arguments(int argc, char **argv)
 		{"inetd", no_argument, 0, 'i'},
 		/* To compatibility between short and long options but not used on AIX */
 		{"src", no_argument, 0, 's'},
+		{"no-forking", no_argument, 0, 'f'},
 		{"4", no_argument, 0, '4'},
 		{"6", no_argument, 0, '4'},
 		{"daemon", no_argument, 0, 'd'},
@@ -2625,6 +2627,10 @@ int process_arguments(int argc, char **argv)
 
 		case 's':				/* Argument s to indicate SRC option */
 			use_src = TRUE;
+			break;
+
+		case 'f':
+			no_forking = TRUE;
 			break;
 
 		default:
