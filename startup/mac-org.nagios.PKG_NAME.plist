@@ -9,7 +9,7 @@
 	<key>GroupName</key>
 	<string>nagios</string>
 	<key>Program</key>
-	<string>${exec_prefix}/sbin/nrpe</string>
+	<string>/usr/sbin/nrpe</string>
 	<key>ProgramArguments</key>
 	<array>
 		<string>-c</string>

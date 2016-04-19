@@ -59,7 +59,7 @@ nrpe: $(srcdir)/nrpe.c $(srcdir)/utils.c $(srcdir)/acl.c $(SRC_INCLUDE)/nrpe.h $
 	$(CC) $(CFLAGS) -o $@ $(srcdir)/nrpe.c $(srcdir)/utils.c $(srcdir)/acl.c $(LDFLAGS) $(SOCKETLIBS) $(LIBWRAPLIBS) $(SNPRINTF_O) $(OTHERLIBS)
 
 check_nrpe: $(srcdir)/check_nrpe.c $(srcdir)/utils.c $(SRC_INCLUDE)/utils.h $(SRC_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
-	$(CC) $(CFLAGS) -o $@ $(srcdir)/check_nrpe.c $(srcdir)/utils.c $(LDFLAGS) $(SOCKETLIBS) $(OTHERLIBS)
+	$(CC) $(CFLAGS) -o $@ $(srcdir)/check_nrpe.c $(srcdir)/utils.c $(LDFLAGS) $(SOCKETLIBS) $(SNPRINTF_O) $(OTHERLIBS)
 
 install:
 	$(MAKE) install-plugin

@@ -20,7 +20,7 @@
 sig_reload=HUP
 
 nrpe_enable=${nrpe_enable:-"NO"}
-command=${nrpe_program:-"${exec_prefix}/sbin/nrpe"}
+command=${nrpe_program:-"/usr/sbin/nrpe"}
 command_args="-c ${nrpe_configfile} -d"
 extra_commands=reload
 pidfile=${pidfile:-"/var/run/nrpe.pid"}

@@ -41,7 +41,7 @@ int       deny_severity = LOG_WARNING;
 #endif
 
 #ifdef HAVE_SSL
-# ifdef __sun
+# if defined(__sun) || defined(_AIX)
 SSL_METHOD *meth;
 # else
 const SSL_METHOD *meth;
@@ -276,10 +276,14 @@ void init_ssl(void)
 # endif
 	if (sslprm.ssl_min_ver == TLSv1)
 		meth = TLSv1_server_method();
+# ifdef SSL_TXT_TLSV1_1
 	if (sslprm.ssl_min_ver == TLSv1_1)
 		meth = TLSv1_1_server_method();
+#  ifdef SSL_TXT_TLSV1_2
 	if (sslprm.ssl_min_ver == TLSv1_2)
 		meth = TLSv1_2_server_method();
+#  endif
+# endif
 
 	ctx = SSL_CTX_new(meth);
 	if (ctx == NULL) {
@@ -330,7 +334,8 @@ void init_ssl(void)
 		/* use anonymous DH ciphers */
 		if (sslprm.allowDH == 2)
 			strcpy(sslprm.cipher_list, "ADH");
-		dh = get_dh2048();
+		/*dh = get_dh2048();*/
+		dh = get_dh1024();
 		SSL_CTX_set_tmp_dh(ctx, dh);
 		DH_free(dh);
 	}

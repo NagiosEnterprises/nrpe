@@ -4,7 +4,7 @@
 #
 # Start/stop the nrpe daemon.
 
-NRPE_BIN=${exec_prefix}/sbin/nrpe
+NRPE_BIN=/usr/sbin/nrpe
 NRPE_CFG=/etc/nagios/nrpe.cfg
 PID_FILE=/var/run/nrpe/nrpe.pid
 

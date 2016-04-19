@@ -9,7 +9,7 @@
 opts="reload"
 # extra_started_commands="reload"		use this if OpenRC >= 0.9.4
 
-NRPE_BIN="${exec_prefix}/sbin/nrpe"
+NRPE_BIN="/usr/sbin/nrpe"
 NRPE_PID="/var/run/nrpe/nrpe.pid"
 
 depend() {

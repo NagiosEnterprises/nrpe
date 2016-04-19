@@ -51,7 +51,7 @@ if test x$DBG_PATHS != x; then
 	echo
 	echo Incoming paths:
 	echo "    prefix        $prefix"
-	echo "    execprefix    $execprefix"
+	echo "    exec_prefix   $exec_prefix"
 	echo "    bindir        $bindir"
 	echo "    sbindir       $sbindir"
 	echo "    libexecdir    $libexecdir"
@@ -226,7 +226,7 @@ else
 	if test x"$sysconfdir" = x'${prefix}/etc'; then AS_UNSET(sysconfdir); fi
 
 	if test x"$prefix" = "xNONE"; then prefix="/usr"; fi
-	if test x"$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
+	if test x"$exec_prefix" = "xNONE"; then exec_prefix=$prefix; fi
 	if test x"$localstatedir" = x'${prefix}/var'; then
 		if test $opsys = "osx"; then
 			localstatedir="/private/var"
@@ -486,6 +486,20 @@ else
 	cgibindir=unknown
 
 fi
+
+eval prefix=$prefix
+eval exec_prefix=$exec_prefix
+eval bindir=$bindir
+eval sbindir=$sbindir
+eval datarootdir=$datarootdir
+eval datadir=$datadir
+eval libexecdir=$libexecdir
+eval brokersdir=$brokersdir
+eval pluginsdir=$pluginsdir
+eval cgibindir=$cgibindir
+eval pkglocalstatedir=$pkglocalstatedir
+eval webdir=$webdir
+eval localedir=$localedir
 
 #
 # Init scripts/files

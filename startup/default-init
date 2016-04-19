@@ -18,7 +18,7 @@
 ### END INIT INFO
 
 
-NRPE_BIN=${exec_prefix}/sbin/nrpe
+NRPE_BIN=/usr/sbin/nrpe
 NRPE_CFG=/etc/nagios/nrpe.cfg
 LOCK_DIR=/var/lock/subsys
 LOCK_FILE=/var/lock/subsys/nrpe

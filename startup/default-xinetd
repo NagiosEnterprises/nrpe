@@ -8,7 +8,7 @@ service nrpe
     wait            = no
     user            = nagios
     group           = nagios
-    server          = ${exec_prefix}/sbin/nrpe
+    server          = /usr/sbin/nrpe
     server_args     = -c /etc/nagios/nrpe.cfg --inetd
     only_from       = 127.0.0.1
     log_on_failure  += USERID
