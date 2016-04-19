@@ -42,7 +42,7 @@ int show_version = FALSE;
 int packet_ver = NRPE_PACKET_VERSION_3;
 
 #ifdef HAVE_SSL
-# ifdef __sun
+# if defined(__sun) || defined(_AIX)
 SSL_METHOD *meth;
 # else
 const SSL_METHOD *meth;
@@ -506,10 +506,14 @@ void setup_ssl()
 # endif
 		if (sslprm.ssl_min_ver == TLSv1)
 			meth = TLSv1_client_method();
+# ifdef SSL_TXT_TLSV1_1
 		if (sslprm.ssl_min_ver == TLSv1_1)
 			meth = TLSv1_1_client_method();
+#  ifdef SSL_TXT_TLSV1_2
 		if (sslprm.ssl_min_ver == TLSv1_2)
 			meth = TLSv1_2_client_method();
+#  endif
+# endif
 
 		if ((ctx = SSL_CTX_new(meth)) == NULL) {
 			printf("CHECK_NRPE: Error - could not create SSL context.\n");

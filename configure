@@ -3050,7 +3050,7 @@ esac
 				fi
 			fi
 
-			if test -n $inetd_disabled; then
+			if test -n "$inetd_disabled"; then
 				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $inetd_type $inetd_disabled" >&5
 $as_echo "$inetd_type $inetd_disabled" >&6; }
 			else

@@ -133,7 +133,7 @@ AC_DEFUN([AX_NAGIOS_GET_INETD],
 				fi
 			fi
 
-			if test -n $inetd_disabled; then
+			if test -n "$inetd_disabled"; then
 				AC_MSG_RESULT($inetd_type $inetd_disabled)
 			else
 				AC_MSG_RESULT($inetd_type)
