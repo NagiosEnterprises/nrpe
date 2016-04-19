@@ -583,7 +583,7 @@ PACKAGE_TARNAME='nrpe'
 PACKAGE_VERSION='2.16RC2'
 PACKAGE_STRING='nrpe 2.16RC2'
 PACKAGE_BUGREPORT='nagios-users@lists.sourceforge.net'
-PACKAGE_URL='http://www.nagios.org'
+PACKAGE_URL='https://www.nagios.org/downloads/nagios-core-addons/'
 
 ac_unique_file="src/nrpe.c"
 ac_default_prefix=/usr/local/nagios
@@ -623,26 +623,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='LTLIBOBJS
-LIBOBJS
-PERL
-TARGET_PLATFORM
-TARGET_ARCH
-TARGET_OS
-TARGET_VER
-NAGIOS_INSTALL_OPTS
-nagios_group
-nagios_user
-nrpe_port
-NRPE_INSTALL_OPTS
-nrpe_group
-nrpe_user
-log_facility
-HAVE_SSL
-LIBWRAPLIBS
-SOCKETLIBS
-OTHERLIBS
-SNPRINTF_O
+ac_subst_vars='PERL
 EGREP
 GREP
 CPP
@@ -654,18 +635,50 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
-host_os
-host_vendor
-host_cpu
-host
-build_os
-build_vendor
-build_cpu
-build
-INSTALL
+LTLIBOBJS
+LIBOBJS
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
+src_inetd
+src_init
+subsyslockfile
+subsyslockdir
+tmpfilesd
+inetddir
+initdir
+spooldir
+pipedir
+piddir
+logdir
+pkglocalstatedir
+privatesysconfdir
+webdir
+cgibindir
+brokersdir
+pluginsdir
+inetdname
+initname
+objsysconfdir
+pkgsysconfdir
+TARGET_PLATFORM
+TARGET_ARCH
+TARGET_OS
+TARGET_VER
+NAGIOS_INSTALL_OPTS
+nagios_group
+nagios_user
+nrpe_port
+nrpe_group
+nrpe_user
+log_facility
+NRPE_INSTALL_OPTS
+HAVE_SSL
+LIBWRAPLIBS
+SOCKETLIBS
+OTHERLIBS
+SNPRINTF_O
+INSTALL
 RPM_RELEASE
 PKG_REL_DATE
 PKG_HOME_URL
@@ -712,6 +725,22 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+with_opsys
+with_dist_type
+with_init_type
+with_inetd_type
+enable_install_method
+enable_showdirs_only
+with_pkgsysconfdir
+with_objsysconfdir
+with_privatesysconfdir
+with_webdir
+with_pluginsdir
+with_brokersdir
+with_cgibindir
+with_logdir
+with_piddir
+with_pipedir
 enable_ssl
 with_ssl
 with_ssl_inc
@@ -1297,44 +1326,29 @@ Configuration:
 
 Installation directories:
   --prefix=PREFIX         install architecture-independent files in PREFIX
-                          [$ac_default_prefix]
+                          [/usr/local/nagios]
   --exec-prefix=EPREFIX   install architecture-dependent files in EPREFIX
                           [PREFIX]
 
 By default, \`make install' will install all the files in
-\`$ac_default_prefix/bin', \`$ac_default_prefix/lib' etc.  You can specify
-an installation prefix other than \`$ac_default_prefix' using \`--prefix',
-for instance \`--prefix=\$HOME'.
+\`/usr/local/nagios/bin', \`/usr/local/nagios/lib' etc.  You can specify
+an installation prefix other than \`/usr/local/nagios' using \`--prefix',
+for instance \`--prefix=$HOME'.
 
 For better control, use the options below.
 
 Fine tuning of the installation directories:
   --bindir=DIR            user executables [EPREFIX/bin]
   --sbindir=DIR           system admin executables [EPREFIX/sbin]
-  --libexecdir=DIR        program executables [EPREFIX/libexec]
+  --libexecdir=DIR        plugins, brokers, CGI [EPREFIX/libexec]
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
-  --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --libdir=DIR            object code libraries [EPREFIX/lib]
-  --includedir=DIR        C header files [PREFIX/include]
-  --oldincludedir=DIR     C header files for non-gcc [/usr/include]
   --datarootdir=DIR       read-only arch.-independent data root [PREFIX/share]
-  --datadir=DIR           read-only architecture-independent data [DATAROOTDIR]
-  --infodir=DIR           info documentation [DATAROOTDIR/info]
+  --datadir=DIR           r/o arch.-independent data [DATAROOTDIR/PKG_NAME]
   --localedir=DIR         locale-dependent data [DATAROOTDIR/locale]
-  --mandir=DIR            man documentation [DATAROOTDIR/man]
-  --docdir=DIR            documentation root [DATAROOTDIR/doc/nrpe]
-  --htmldir=DIR           html documentation [DOCDIR]
-  --dvidir=DIR            dvi documentation [DOCDIR]
-  --pdfdir=DIR            pdf documentation [DOCDIR]
-  --psdir=DIR             ps documentation [DOCDIR]
 _ACEOF
 
   cat <<\_ACEOF
-
-System types:
-  --build=BUILD     configure for building on BUILD [guessed]
-  --host=HOST       cross-compile to build programs to run on HOST [BUILD]
 _ACEOF
 fi
 
@@ -1348,6 +1362,20 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-install-method=<method>
+                          sets the install method to use: 'default' (the
+                          default) will install to /usr/local/nagios, 'opt'
+                          will be like 'default', except will install to
+                          /opt/nagios instead, 'os' will try to determine
+                          which method to use based on OS type and
+                          distribution. Fine tuning using the '--bindir', etc.
+                          overrides above will still work
+  --enable-showdirs-only=yes
+                          This option will cause 'configure' to stop after
+                          determining the install locations based on
+                          '--enable-install-method', so you can see the
+                          destinations before a full './configure', 'make',
+                          'make install' process.
   --enable-ssl            enables native SSL support
   --enable-command-args   allows clients to specify command arguments. ***
                           THIS IS A SECURITY RISK! *** Read the SECURITY file
@@ -1361,6 +1389,26 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-opsys=OS         specify operating system (linux, osx, bsd, solaris,
+                          irix, cygwin, aix, hp-ux, etc.)
+  --with-dist-type=type   specify distribution type (suse, rh, debian, etc.)
+  --with-init-type=type   specify init type (bsd, sysv, systemd, launchd,
+                          smf10, smf11, upstart, openrc, etc.)
+  --with-inetd-type=type  which super-server the system runs (inetd, xinetd,
+                          systemd, launchd, smf10, smf11, etc.)
+  --with-pkgsysconfdir=DIR
+                          where configuration files should be placed
+  --with-objsysconfdir=DIR
+                          where object configuration files should be placed
+  --with-privatesysconfdir=DIR
+                          where private configuration files should be placed
+  --with-webdir=DIR       where the website files should be placed
+  --with-pluginsdir=DIR   where the plugins should be placed
+  --with-brokersdir=DIR   where the broker modules should be placed
+  --with-cgibindir=DIR    where the CGI programs should be placed
+  --with-logdir=DIR       where log files should be placed
+  --with-piddir=DIR       where the PID file should be placed
+  --with-pipedir=DIR      where socket and pipe files should be placed
   --with-ssl=DIR          sets location of the SSL installation
   --with-ssl-inc=DIR      sets location of the SSL include files
   --with-ssl-lib=DIR      sets location of the SSL libraries
@@ -1390,7 +1438,7 @@ Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
 
 Report bugs to <nagios-users@lists.sourceforge.net>.
-nrpe home page: <http://www.nagios.org>.
+nrpe home page: <https://www.nagios.org/downloads/nagios-core-addons/>.
 _ACEOF
 ac_status=$?
 fi
@@ -2392,25 +2440,8 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-ac_config_headers="$ac_config_headers include/config.h"
-
-ac_config_files="$ac_config_files Makefile subst src/Makefile package/solaris/Makefile init-script init-script.debian init-script.suse nrpe.spec sample-config/nrpe.cfg sample-config/nrpe.xinetd"
-
-
-
-PKG_NAME=nrpe
-PKG_VERSION="2.16RC2"
-PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="11-09-2015"
-RPM_RELEASE=1
-
-
-
-
-
-
 ac_aux_dir=
-for ac_dir in "$srcdir" "$srcdir/.." "$srcdir/../.."; do
+for ac_dir in build-aux "$srcdir"/build-aux; do
   if test -f "$ac_dir/install-sh"; then
     ac_aux_dir=$ac_dir
     ac_install_sh="$ac_aux_dir/install-sh -c"
@@ -2426,7 +2457,7 @@ for ac_dir in "$srcdir" "$srcdir/.." "$srcdir/../.."; do
   fi
 done
 if test -z "$ac_aux_dir"; then
-  as_fn_error $? "cannot find install-sh, install.sh, or shtool in \"$srcdir\" \"$srcdir/..\" \"$srcdir/../..\"" "$LINENO" 5
+  as_fn_error $? "cannot find install-sh, install.sh, or shtool in build-aux \"$srcdir\"/build-aux" "$LINENO" 5
 fi
 
 # These three variables are undocumented and unsupported,
@@ -2436,6 +2467,69 @@ fi
 ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
 ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
 ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
+
+
+
+
+PKG_NAME=nrpe
+PKG_VERSION="2.16RC2"
+PKG_HOME_URL="http://www.nagios.org/"
+PKG_REL_DATE="11-09-2015"
+RPM_RELEASE=1
+
+LANG=C
+LC_ALL=C
+LC_COLLATE=C
+LC_CTYPE=C
+LC_MESSAGES=C
+LC_MONETARY=C
+LC_NUMERIC=C
+LC_TIME=C
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Find a good install program.  We prefer a C program (faster),
@@ -2533,77 +2627,2180 @@ test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 
 
-# Make sure we can run config.sub.
-$SHELL "$ac_aux_dir/config.sub" sun4 >/dev/null 2>&1 ||
-  as_fn_error $? "cannot run $SHELL $ac_aux_dir/config.sub" "$LINENO" 5
+#
+# Get user hints
+#
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what the operating system is " >&5
+$as_echo_n "checking what the operating system is ... " >&6; }
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking build system type" >&5
-$as_echo_n "checking build system type... " >&6; }
-if ${ac_cv_build+:} false; then :
-  $as_echo_n "(cached) " >&6
+# Check whether --with-opsys was given.
+if test "${with_opsys+set}" = set; then :
+  withval=$with_opsys;
+			#
+			# Run this if --with was specified
+			#
+			if test "x$withval" = x -o x$withval = xno; then
+				opsys_wanted=yes
+			else
+				opsys_wanted=no
+				opsys="$withval"
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $opsys" >&5
+$as_echo "$opsys" >&6; }
+			fi
+
 else
-  ac_build_alias=$build_alias
-test "x$ac_build_alias" = x &&
-  ac_build_alias=`$SHELL "$ac_aux_dir/config.guess"`
-test "x$ac_build_alias" = x &&
-  as_fn_error $? "cannot guess build type; you must specify one" "$LINENO" 5
-ac_cv_build=`$SHELL "$ac_aux_dir/config.sub" $ac_build_alias` ||
-  as_fn_error $? "$SHELL $ac_aux_dir/config.sub $ac_build_alias failed" "$LINENO" 5
+
+			#
+			# Run this if --with was not specified
+			#
+			opsys_wanted=yes
 
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_build" >&5
-$as_echo "$ac_cv_build" >&6; }
-case $ac_cv_build in
-*-*-*) ;;
-*) as_fn_error $? "invalid value of canonical build" "$LINENO" 5;;
+
+
+		if test x$opsys = xno; then
+			opsys=""
+			opsys_wanted=yes
+		elif test x$opsys = xyes; then
+			as_fn_error $? "you must enter an O/S type if '--with-opsys' is specified" "$LINENO" 5
+		fi
+
+		#
+		# Determine operating system if it wasn't supplied
+		#
+		if test $opsys_wanted=yes; then
+			opsys=`uname -s | tr "[A-Z]" "[a-z]"`
+			if test x"$opsys" = "x"; then opsys="unknown"; fi
+			case $opsys in #(
+  darwin*) :
+    opsys="osx" ;; #(
+  *bsd*) :
+    opsys="bsd" ;; #(
+  dragonfly) :
+    opsys="bsd" ;; #(
+  sunos) :
+    opsys="solaris" ;; #(
+  gnu/hurd) :
+    opsys="linux" ;; #(
+  irix*) :
+    opsys="irix" ;; #(
+  cygwin*) :
+    opsys="cygwin" ;; #(
+  mingw*) :
+    opsys="mingw" ;; #(
+  msys*) :
+    opsys="msys" ;; #(
+  *) :
+     ;;
 esac
-build=$ac_cv_build
-ac_save_IFS=$IFS; IFS='-'
-set x $ac_cv_build
-shift
-build_cpu=$1
-build_vendor=$2
-shift; shift
-# Remember, the first character of IFS is used to create $*,
-# except with old shells:
-build_os=$*
-IFS=$ac_save_IFS
-case $build_os in *\ *) build_os=`echo "$build_os" | sed 's/ /-/g'`;; esac
+		fi
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $opsys" >&5
+$as_echo "$opsys" >&6; }
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking host system type" >&5
-$as_echo_n "checking host system type... " >&6; }
-if ${ac_cv_host+:} false; then :
-  $as_echo_n "(cached) " >&6
+#
+# Get user hints for possible cross-compile
+#
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what the distribution type is " >&5
+$as_echo_n "checking what the distribution type is ... " >&6; }
+
+# Check whether --with-dist-type was given.
+if test "${with_dist_type+set}" = set; then :
+  withval=$with_dist_type;
+			#
+			# Run this if --with was specified
+			#
+			if test "x$withval" = x -o x$withval = xno; then
+				dist_type_wanted=yes
+			else
+				dist_type_wanted=no
+				dist_type="$withval"
+				dist_ver="unknown"
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $dist_type" >&5
+$as_echo "$dist_type" >&6; }
+			fi
+
 else
-  if test "x$host_alias" = x; then
-  ac_cv_host=$ac_cv_build
-else
-  ac_cv_host=`$SHELL "$ac_aux_dir/config.sub" $host_alias` ||
-    as_fn_error $? "$SHELL $ac_aux_dir/config.sub $host_alias failed" "$LINENO" 5
+
+			#
+			# Run this if --with was not specified
+			#
+			dist_type_wanted=yes
+
 fi
 
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_host" >&5
-$as_echo "$ac_cv_host" >&6; }
-case $ac_cv_host in
-*-*-*) ;;
-*) as_fn_error $? "invalid value of canonical host" "$LINENO" 5;;
+
+		if test x$dist_type = xno; then
+			dist_type_wanted=yes
+		elif test x$dist_type = xyes; then
+			as_fn_error $? "you must enter a distribution type if '--with-dist-type' is specified" "$LINENO" 5
+		fi
+
+		#
+		# Determine distribution type if it wasn't supplied
+		#
+		dist_ver="unknown"
+
+		if test $dist_type_wanted=yes; then
+			dist_type="unknown"
+
+			if test "$opsys" != "linux"; then
+				dist_type="$opsys"
+				case $opsys in #(
+  bsd) :
+    dist_type=`uname -s | tr "A-Z" "a-z"`
+						dist_ver=`uname -r` ;; #(
+  aix|hp-ux) :
+    dist_ver=$OSTYPE ;; #(
+  solaris) :
+    dist_ver=`echo $OSTYPE | cut -d'.' -f2` ;; #(
+  *) :
+    dist_ver=$OSTYPE
+				 ;; #(
+  *) :
+     ;;
 esac
-host=$ac_cv_host
-ac_save_IFS=$IFS; IFS='-'
-set x $ac_cv_host
+
+			else
+
+				if test -r "/etc/gentoo-release"; then
+					dist_type="gentoo"
+					dist_ver=`cat /etc/gentoo-release`
+
+				elif test -r "/etc/os-release"; then
+					. /etc/os-release
+					if test x"$ID_LIKE" != x; then
+						dist_type=`echo $ID_LIKE | cut -d' ' -f1 | tr "[A-Z]" "[a-z]"`
+					else
+						dist_type=`echo $ID | tr "[A-Z]" "[a-z]"`
+					fi
+					if test x"$VERSION_ID" != x; then
+						dist_ver=$VERSION_ID
+					elif test x"$VERSION" != x; then
+						dist_ver=`echo $VERSION | cut -d'.' -f1 | tr -d :alpha::blank::punct:`
+					fi
+
+				elif test -r "/etc/redhat-release"; then
+					dist_type=rh
+					dist_ver=`cat /etc/redhat-release`
+
+				elif test -r "/etc/debian_version"; then
+					dist_type="debian"
+					if test -r "/etc/lsb-release"; then
+						. /etc/lsb_release
+						dist_ver=`echo "$DISTRIB_RELEASE"`
+					else
+						dist_ver=`cat /etc/debian_version`
+					fi
+
+				elif test -r "/etc/SuSE-release"; then
+					dist_type=suse
+					dist_ver=`grep VERSION /etc/SuSE-release`
+
+				fi
+
+			fi
+
+			if test $dist_ver != "unknown"; then
+				dist_ver=`echo $dist_ver | cut -d'.' -f1 | tr -d :alpha::blank::punct:`
+			fi
+		fi
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $dist_type" >&5
+$as_echo "$dist_type" >&6; }
+
+
+#
+# Get user hints for possible cross-compile
+#
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what init system is being used " >&5
+$as_echo_n "checking what init system is being used ... " >&6; }
+
+# Check whether --with-init_type was given.
+if test "${with_init_type+set}" = set; then :
+  withval=$with_init_type;
+			#
+			# Run this if --with was specified
+			#
+			if test "x$withval" = x -o x$withval = xno; then
+					init_type_wanted=yes
+			else
+					init_type_wanted=no
+					init_type="$withval"
+					{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $init_type" >&5
+$as_echo "$init_type" >&6; }
+			fi
+
+else
+
+			#
+			# Run this if --with was not specified
+			#
+			init_type_wanted=yes
+
+fi
+
+
+		if test x$init_type = xno; then
+			init_type_wanted=yes
+		elif test x$init_type = xyes; then
+			as_fn_error $? "you must enter an init type if '--with-init-type' is specified" "$LINENO" 5
+		fi
+
+		#
+		# Determine init type if it wasn't supplied
+		#
+		if test $init_type_wanted = yes; then
+			init_type=""
+
+			if test x"$opsys" = x; then
+				init_type="unknown"
+				init_type_wanted=no
+			elif test x"$dist_type" = x; then
+				init_type="unknown"
+				init_type_wanted=no
+			elif test "$opsys" = "osx"; then
+				init_type="launchd"
+				init_type_wanted=no
+			elif test "$opsys" = "bsd"; then
+				init_type="newbsd"
+				init_type_wanted=no
+			elif test "$dist_type" = "solaris"; then
+				if test -d "/lib/svc/manifest"; then
+					init_type="smf11"
+					init_type_wanted=no
+				elif test -d "/lib/svc/monitor"; then
+					init_type="smf10"
+					init_type_wanted=no
+				else
+					init_type="sysv"
+					init_type_wanted=no
+				fi
+			elif test "$dist_type" = "slackware"; then
+				init_type="bsd"
+				init_type_wanted=no
+			fi
+		fi
+
+		PSCMD="ps -p1 -o args"
+		case $dist_type in #(
+  aix) :
+    PSCMD="env UNIX95=1; ps -p1 -o args" ;; #(
+  solaris) :
+    PSCMD="env UNIX95=1; ps -p1 -o args" ;; #(
+  hp-ux) :
+    PSCMD="env UNIX95=1; ps -p1 -o args" ;; #(
+  *) :
+     ;;
+esac
+
+		if test "$init_type_wanted" = yes; then
+			pid1=`$PSCMD | grep -vi COMMAND | cut -d' ' -f1`
+			if test x"$pid1" = "x"; then
+				init_type="unknown"
+				init_type_wanted=no
+			fi
+			if `echo $pid1 | grep "systemd" > /dev/null`; then
+				init_type="systemd"
+				init_type_wanted=no
+			fi
+
+			if test "$init_type_wanted" = yes; then
+				if test "$pid1" = "init"; then
+					if test -e "/sbin/init"; then
+						pid1="/sbin/init";
+					elif test -e "/usr/sbin/init"; then
+						pid1="/usr/sbin/init"
+					else
+						init_type="unknown"
+						init_type_wanted=no
+					fi
+				fi
+				if test -L "$pid1"; then
+					pid1=`readlink "$pid1"`
+				fi
+			fi
+
+			if test "$init_type_wanted" = yes; then
+				if `echo $pid1 | grep "systemd" > /dev/null`; then
+					init_type="systemd"
+					init_type_wanted=no
+				elif test -f "/sbin/rc"; then
+					if test -f /sbin/runscript; then
+						init_type_wanted=no
+						if `/sbin/start-stop-daemon -V | grep "OpenRC" > /dev/null`; then
+							init_type="openrc"
+						else
+							init_type="gentoo"
+						fi
+					fi
+				fi
+			fi
+
+			if test "$init_type_wanted" = yes; then
+				if test "$pid1" = "/sbin/init" -o "$pid1" = "/usr/sbin/init"; then
+					if `/sbin/init --version 2>/dev/null | grep "upstart" >/dev/null`; then
+						init_type="upstart"
+						init_type_wanted=no
+					elif test -f "/etc/rc"; then
+						init_type="newbsd"
+						init_type_wanted=no
+					else
+						init_type="sysv"
+						init_type_wanted=no
+					fi
+				fi
+			fi
+
+			if test "$init_type_wanted" = yes; then
+				init_type="unknown"
+			fi
+		fi
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $init_type" >&5
+$as_echo "$init_type" >&6; }
+
+
+#
+# Get user hints for possible cross-compile
+#
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what inetd is being used " >&5
+$as_echo_n "checking what inetd is being used ... " >&6; }
+
+# Check whether --with-inetd_type was given.
+if test "${with_inetd_type+set}" = set; then :
+  withval=$with_inetd_type;
+			inetd_type_wanted=yes
+			#
+			# Run this if --with was specified
+			#
+			if test "x$withval" = x -o x$withval = xno; then
+				inetd_type_wanted=yes
+			else
+				inetd_type_wanted=no
+				inetd_type="$withval"
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $inetd_type" >&5
+$as_echo "$inetd_type" >&6; }
+			fi
+
+else
+
+			#
+			# Run this if --with was not specified
+			#
+			inetd_type_wanted=yes
+
+fi
+
+
+		if test x$inetd_type = xno; then
+			inetd_type_wanted=yes
+		elif test x$inetd_type = xyes; then
+			as_fn_error $? "you must enter an inetd type if '--with-inetd-type' is specified" "$LINENO" 5
+		fi
+
+		#
+		# Determine inetd type if it wasn't supplied
+		#
+		if test $inetd_type_wanted = yes; then
+
+			inetd_disabled=""
+
+			if test x"$init_type" = "xupstart"; then
+				inetd_type="upstart"
+			elif test "$opsys" = "osx"; then
+				inetd_type="launchd"
+			fi
+
+			if test x"$inetd_type" = x; then
+				case $dist_type in #(
+  solaris) :
+    if test x"$init_type" = "xsmf10" -o x"$init_type" = "xsmf11"; then
+							inetd_type="$init_type"
+						else
+							inetd_type="inetd"
+						fi ;; #(
+  *bsd*) :
+    inetd_type=`ps -A -o comm -c | grep inetd` ;; #(
+  aix|hp-ux) :
+    inetd_type=`UNIX95= ps -A -o comm | grep inetd | head -1` ;; #(
+  *) :
+    inetd_type=`ps -C "inetd,xinetd" -o fname | grep -vi COMMAND` ;; #(
+  *) :
+     ;;
+esac
+			fi
+
+			if test x"$inetd_type" = x; then
+				if test -f /etc/xinetd.conf -a -d /etc/xinetd.d; then
+					inetd_disabled="(Not running)"
+					inetd_type=xinetd
+				elif test -f /etc/inetd.conf; then
+					inetd_type=inetd
+					inetd_disabled="(Not running)"
+				fi
+			fi
+
+			if test x"$inetd_type" = x; then
+				if test x"$init_type" = "xsystemd"; then
+					inetd_type="systemd"
+				else
+					inetd_type="unknown"
+				fi
+			fi
+
+			if test -n $inetd_disabled; then
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $inetd_type $inetd_disabled" >&5
+$as_echo "$inetd_type $inetd_disabled" >&6; }
+			else
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $inetd_type" >&5
+$as_echo "$inetd_type" >&6; }
+			fi
+		fi
+
+
+
+if test x$DBG_PATHS != x; then
+	echo
+	echo Incoming paths:
+	echo "    prefix        $prefix"
+	echo "    execprefix    $execprefix"
+	echo "    bindir        $bindir"
+	echo "    sbindir       $sbindir"
+	echo "    libexecdir    $libexecdir"
+	echo "    sysconfdir    $sysconfdir"
+	echo "    localstatedir $localstatedir"
+	echo "    datarootdir   $datarootdir"
+	echo "    datadir       $datadir"
+	echo "    localedir     $localedir"
+	echo
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for which paths to use " >&5
+$as_echo_n "checking for which paths to use ... " >&6; }
+
+# Check whether --enable-install_method was given.
+if test "${enable_install_method+set}" = set; then :
+  enableval=$enable_install_method; install_method=$enableval
+else
+  install_method=default
+
+fi
+
+
+# Check whether --enable-showdirs_only was given.
+if test "${enable_showdirs_only+set}" = set; then :
+  enableval=$enable_showdirs_only; showdirs_only=$enableval
+else
+  showdirs_only=no
+
+fi
+
+
+case $install_method in #(
+  yes) :
+    install_method="os" ;; #(
+  no) :
+    install_method="default" ;; #(
+  opt|default|os) :
+    : ;; #(
+  *) :
+    echo >&6; as_fn_error $? "'--enable-install-method=$install_method' is invalid" "$LINENO" 5
+ ;; #(
+  *) :
+     ;;
+esac
+
+if test $showdirs_only != "no"; then showdirs_only="yes"; fi
+
+case $dist_type in #(
+  *solaris*|*hp-ux*|*aix*|*osx*) :
+    opsys=unix ;; #(
+  *) :
+     ;;
+esac
+
+
+need_cgi=no
+need_web=no
+need_brk=no
+need_plg=no
+need_pipe=no
+need_spl=no
+need_loc=no
+need_log_subdir=no
+need_etc_subdir=no
+need_pls_dir=no
+
+case $PKG_NAME in #(
+  nagios) :
+    need_log_subdir=yes
+		need_etc_subdir=yes
+		need_pls_dir=yes
+		need_brk=yes
+		need_pipe=yes
+		need_spl=yes
+		need_loc=yes
+		need_cgi=yes
+		need_web=yes ;; #(
+  ndoutils) :
+    need_spl=yes ;; #(
+  nrpe) :
+    need_plg=yes ;; #(
+  nsca) :
+    need_cgi=no ;; #(
+  plugins) :
+    need_loc=yes
+		need_plg=yes
+ ;; #(
+  *) :
+     ;;
+esac
+
+
+# Check whether --with-pkgsysconfdir was given.
+if test "${with_pkgsysconfdir+set}" = set; then :
+  withval=$with_pkgsysconfdir; if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
+		pkgsysconfdir="$withval"
+	fi
+fi
+
+
+# Check whether --with-objsysconfdir was given.
+if test "${with_objsysconfdir+set}" = set; then :
+  withval=$with_objsysconfdir; if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
+		objsysconfdir="$withval"
+	fi
+fi
+
+
+# Check whether --with-privatesysconfdir was given.
+if test "${with_privatesysconfdir+set}" = set; then :
+  withval=$with_privatesysconfdir; if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
+		privatesysconfdir="$withval"
+	fi
+fi
+
+
+# Check whether --with-webdir was given.
+if test "${with_webdir+set}" = set; then :
+  withval=$with_webdir; if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
+		webdir="$withval"
+	fi
+fi
+
+
+# Check whether --with-pluginsdir was given.
+if test "${with_pluginsdir+set}" = set; then :
+  withval=$with_pluginsdir; if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
+		pluginsdir="$withval"
+	fi
+fi
+
+
+# Check whether --with-brokersdir was given.
+if test "${with_brokersdir+set}" = set; then :
+  withval=$with_brokersdir; if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
+		brokersdir="$withval"
+	fi
+fi
+
+
+# Check whether --with-cgibindir was given.
+if test "${with_cgibindir+set}" = set; then :
+  withval=$with_cgibindir; if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
+		cgibindir="$withval"
+	fi
+fi
+
+
+# Check whether --with-logdir was given.
+if test "${with_logdir+set}" = set; then :
+  withval=$with_logdir; if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
+		logdir="$withval"
+	fi
+fi
+
+
+# Check whether --with-piddir was given.
+if test "${with_piddir+set}" = set; then :
+  withval=$with_piddir; if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
+		piddir="$withval"
+	fi
+fi
+
+
+# Check whether --with-pipedir was given.
+if test "${with_pipedir+set}" = set; then :
+  withval=$with_pipedir; if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
+		pipedir="$withval"
+	fi
+fi
+
+
+
+#AC_SUBST(sbindir)
+#AC_SUBST(initname)
+#AC_SUBST(inetdname)
+#AC_SUBST(pkglocalstatedir)
+#AC_SUBST(spooldir)
+#AC_SUBST(initdir)
+#AC_SUBST(inetddir)
+#AC_SUBST(tmpfilesd)
+#AC_SUBST(subsyslockdir)
+
+
+
+
+# docdir ??
+# includedir ??
+# mandir ??
+# pdfdir ??
+
+#
+# Setup the base directory
+#
+
+if test $install_method = "default"; then
+	if test $opsys = "unix"; then
+		if test x"$prefix" = "xNONE"; then prefix="/usr/local/$PKG_NAME"; fi
+	else
+		if test x"$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
+	fi
+	datarootdir=${datarootdir="$prefix"}
+
+elif test $install_method = "opt"; then
+	if test x"$prefix" = "xNONE"; then prefix="/opt/$PKG_NAME"; fi
+
+else
+	if test x"$datadir" = x'${datarootdir}'; then { datadir=; unset datadir;}; fi
+	if test x"$sysconfdir" = x'${prefix}/etc'; then { sysconfdir=; unset sysconfdir;}; fi
+
+	if test x"$prefix" = "xNONE"; then prefix="/usr"; fi
+	if test x"$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
+	if test x"$localstatedir" = x'${prefix}/var'; then
+		if test $opsys = "osx"; then
+			localstatedir="/private/var"
+		else
+			localstatedir="/var"
+		fi
+	fi
+
+	if test $opsys = "unix"; then
+		if test x"$datarootdir" = x'${prefix}/share'; then
+			if test $dist_type = "hp-ux"; then
+				datarootdir="/usr/local/share"
+				if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
+					libexecdir="/usr/nagios"
+				fi
+			elif test x"$libexecdir" = x'${exec_prefix}/libexec'; then
+				libexecdir="/usr/lib/nagios"
+			fi
+		fi
+	elif test $opsys = "osx"; then
+		if test x"$sbindir" = x'${exec_prefix}/sbin'; then
+			sbindir="$libexecdir"
+		fi
+		if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
+			libexecdir="/usr/libexec/nagios"
+		fi
+	elif test x"$libexecdir" = x'${exec_prefix}/lib'; then
+		libexecdir=${libexecdir}/nagios;
+	fi
+
+fi
+
+if test x"$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
+
+tmpfilesd=${tmpfilesd="/var/lib/tmpfiles.d"}
+if test ! -d "$tmpfilesd"; then
+	tmpfilesd="N/A"
+else
+	tmpfilesd="$tmpfilesd/$PKG_NAME.conf"
+fi
+subsyslockdir=${subsyslockdir="/var/lock/subsys"}
+if test ! -d "$subsyslockdir"; then
+	subsyslockdir="N/A"
+	subsyslockfile="N/A"
+else
+	subsyslockfile="$subsyslockdir/$PKG_NAME"
+fi
+if test "$need_loc" = no; then
+	localedir="N/A"
+fi
+
+if test $install_method = "default" -o $install_method = "opt"; then
+	#
+	# Do the default setup
+	#
+	sbindir=${bindir}
+	datadir=${datadir="$datarootdir"}
+	if test $need_web = yes; then
+		webdir=${webdir="$datadir"}
+	else
+		webdir="N/A"
+	fi
+	if test $opsys = "unix"; then
+		sysconfdir=${sysconfdir="/etc/opt"}
+	fi
+	pkgsysconfdir=${pkgsysconfdir="$sysconfdir"}
+	if test $need_etc_subdir = yes; then
+		objsysconfdir=${objsysconfdir="$pkgsysconfdir/objects"}
+	else
+		objsysconfdir="N/A"
+	fi
+	privatesysconfdir=${privatesysconfdir="$pkgsysconfdir"}
+	logdir=${logdir="$localstatedir"}
+	piddir=${piddir="$localstatedir"}
+	if test "$need_pipe" = yes; then
+		pipedir=${pipedir="$localstatedir/rw"}
+	else
+		pipedir="N/A"
+	fi
+	if test "$need_pls_dir" = yes; then
+		pkglocalstatedir=${pkglocalstatedir="$localstatedir"}
+	else
+		pkglocalstatedir="N/A"
+	fi
+	if test "$need_spl" = yes; then
+		spooldir=${spooldir="$localstatedir/var"}
+	else
+		spooldir="N/A"
+	fi
+	if test $need_brk = yes; then
+		brokersdir=${brokersdir="$bindir"}
+	else
+		brokersdir="N/A"
+	fi
+	if test $need_plg = yes; then
+		pluginsdir=${pluginsdir="$libexecdir"}
+	else
+		pluginsdir="N/A"
+	fi
+	if test $need_cgi = yes; then
+		cgibindir=${cgibindir="$prefix/sbin"}
+	else
+		cgibindir="N/A"
+	fi
+
+elif test $opsys = "linux"; then
+
+	#
+	# Linux "Standard" install
+	#
+	install_method="$install_method : FHS"
+	datadir=${datadir="$datarootdir/nagios"}
+	if test $need_web = yes; then
+		webdir=${webdir="$datadir/html"}
+	else
+		webdir="N/A"
+	fi
+	sysconfdir=${sysconfdir="/etc"}
+	pkgsysconfdir=${pkgsysconfdir="$sysconfdir/nagios"}
+#																		  --pkgsysconfdir=DIR     read-only pakcage-specific data [PREFIX/etc/PKG_NAME]
+	if test $need_etc_subdir = yes; then
+		objsysconfdir=${objsysconfdir="$pkgsysconfdir/objects"}
+	else
+		objsysconfdir="N/A"
+	fi
+	privatesysconfdir=${privatesysconfdir="$pkgsysconfdir/private"}
+	if test $need_log_subdir = yes; then
+		logdir=${logdir="$localstatedir/log/$PKG_NAME"}
+	else
+		logdir=${logdir="$localstatedir/log"}
+	fi
+	piddir=${piddir="$localstatedir/run/${PKG_NAME}"}
+	if test "$need_pipe" = yes; then
+		pipedir=${pipedir="$localstatedir/run/${PKG_NAME}"}
+	else
+		pipedir="N/A"
+	fi
+	if test "$need_pls_dir" = yes; then
+		pkglocalstatedir=${pkglocalstatedir="$localstatedir/lib/$PKG_NAME"}
+	else
+		pkglocalstatedir="N/A"
+	fi
+	if test "$need_spl" = yes; then
+		spooldir=${spooldir="$localstatedir/spool/$PKG_NAME"}
+	else
+		spooldir="N/A"
+	fi
+	if test $need_brk = yes; then
+		brokersdir=${brokersdir="$libexecdir/brokers"}
+	else
+		brokersdir="N/A"
+	fi
+	if test $need_plg = yes; then
+		pluginsdir=${pluginsdir="$libexecdir/plugins"}
+	else
+		pluginsdir="N/A"
+	fi
+	if test $need_cgi = yes; then
+		cgibindir=${cgibindir="$libexecdir/cgi-bin"}
+	else
+		cgibindir="N/A"
+	fi
+
+elif test $opsys = "unix"; then
+
+	#
+	# "Standard" Unix install
+	#
+	install_method="$install_method : Unix Standard"
+	if test $dist_type = osx; then
+		install_method="$install_method : OS X Standard"
+		sbindir=${sbindir="/usr/libexec"}
+	fi
+	datadir=${datadir="$datarootdir/nagios"}
+	if test $need_web = yes; then
+		webdir=${webdir="$datadir/html"}
+	else
+		webdir="N/A"
+	fi
+	if test $dist_type = osx; then
+		sysconfdir=${sysconfdir="/private/etc"}
+	else
+		sysconfdir=${sysconfdir="/etc"}
+	fi
+	pkgsysconfdir=${pkgsysconfdir="$sysconfdir/nagios"}
+	if test $need_etc_subdir = yes; then
+		objsysconfdir=${objsysconfdir="$pkgsysconfdir/objects"}
+	else
+		objsysconfdir="N/A"
+	fi
+	privatesysconfdir=${privatesysconfdir="$pkgsysconfdir/private"}
+	if test "$need_pls_dir" = yes; then
+		pkglocalstatedir=${pkglocalstatedir="$localstatedir/lib/$PKG_NAME"}
+	else
+		pkglocalstatedir="N/A"
+	fi
+	if test "$need_loc" = yes; then
+		localedir=${localedir="/usr/local/share/locale/<lang>/LC_MESSAGES/nagios-plugins.mo"}
+	fi
+	if test "$need_spl" = yes; then
+		spooldir=${spooldir="$localstatedir/spool/$PKG_NAME"}
+	else
+		spooldir="N/A"
+	fi
+	if test $need_brk = yes; then
+		brokersdir=${brokersdir="$libexecdir/brokers"}
+	else
+		brokersdir="N/A"
+	fi
+	if test $need_plg = yes; then
+		pluginsdir=${pluginsdir="$libexecdir/plugins"}
+	else
+		pluginsdir="N/A"
+	fi
+	if test $need_cgi = yes; then
+		cgibindir=${cgibindir="$libexecdir/cgi-bin"}
+	else
+		cgibindir="N/A"
+	fi
+	case $dist_type in #(
+  *hp-ux*) :
+    piddir=${piddir="$pkgsysconfdir"}
+			pipedir=${pipedir="$pkglocalstatedir"}
+			logdir=${logdir="$pkglocalstatedir/log"} ;; #(
+  *) :
+    piddir=${piddir="$localstatedir/run/${PKG_NAME}"}
+			if test "$need_pipe" = yes; then
+				pipedir=${pipedir="$localstatedir/run/${PKG_NAME}"}
+			else
+				pipedir="N/A"
+			fi
+			if test $need_log_subdir = yes; then
+				logdir=${logdir="$localstatedir/log/$PKG_NAME"}
+			else
+				logdir=${logdir="$localstatedir/log"}
+			fi
+	 ;; #(
+  *) :
+     ;;
+esac
+
+else
+
+	#
+	# Unknown install
+	#
+	install_method="unknown"
+	webdir=unknown
+	pkgsysconfdir=unknown
+	objsysconfdir=unknown
+	privatesysconfdir=unknown
+	logdir=unknown
+	piddir=unknown
+	pipedir=unknown
+	pkglocalstatedir=unknown
+	spooldir=unknown
+	brokersdir=unknown
+	pluginsdir=unknown
+	cgibindir=unknown
+
+fi
+
+#
+# Init scripts/files
+#
+case $init_type in #(
+  sysv) :
+    if test $dist_type = "hp-ux"; then
+			initdir=${initdir="/sbin/init.d"}
+		else
+			initdir=${initdir="/etc/init.d"}
+		fi
+		initname=${initname="$PKG_NAME"}
+		initconfdir=${initconfdir="/etc/conf.d"}
+		initconf=${initconf="$initconfdir/$PKG_NAME"} ;; #(
+  systemd) :
+    if test $dist_type = "debian"; then
+			initdir=${initdir="/lib/systemd/system"}
+		else
+			initdir=${initdir="/usr/lib/systemd/system"}
+		fi
+		initname=${initname="$PKG_NAME.service"} ;; #(
+  *bsd) :
+    initdir=${initdir="/etc/rc.d"}
+		initname=${initname="$PKG_NAME"} ;; #(
+  gentoo) :
+    initdir=${initdir="/etc/init.d"}
+		initname=${initname="$PKG_NAME"}
+		initconfdir=${initconfdir="/etc/init.d"}
+		initconf=${initconf="$initconfdir/$PKG_NAME"} ;; #(
+  openrc) :
+    initdir=${initdir="/etc/init.d"}
+		initname=${initname="$PKG_NAME"}
+		initconfdir=${initconfdir="/etc/conf.d"}
+		initconf=${initconf="$initconfdir/$PKG_NAME"} ;; #(
+  smf*) :
+    if test $init_type = smf10; then
+			initdir=${initdir="/var/svc/manifest/network"}
+		else
+			initdir=${initdir="/lib/svc/manifest/network"}
+		fi
+		initname=${initname="$PKG_NAME.xml"}
+		initconfdir=unknown
+		initconf=unknown ;; #(
+  upstart) :
+    initdir=${initdir="/etc/init"}
+		initname=${initname="$PKG_NAME"}
+		initconfdir=${initconfdir="/etc/default"}
+		initconf=${initconf="$initconfdir/$PKG_NAME"} ;; #(
+  launchd) :
+    initdir=${initdir="/System/Library/LaunchDaemons"}
+		initname=${initname="org.nagios.$PKG_NAME.plist"} ;; #(
+  #		initconfdir=${initconfdir="/private/etc"}
+#		initconf=${initconf="$initconfdir/$PKG_NAME"},
+
+
+	*) :
+    initdir=unknown
+		initname=unknown ;; #(
+  *) :
+     ;;
+esac
+
+#
+# Inetd (per connection) scripts/files
+#
+case $inetd_type in #(
+  inetd) :
+    inetddir=${inetddir="/etc"}
+		inetdname=${inetdname="inetd.conf"} ;; #(
+  xinetd) :
+    inetddir=${inetddir="/etc/xinetd.d"}
+		inetdname=${inetdname="$PKG_NAME"} ;; #(
+  systemd) :
+    if test $dist_type = "debian"; then
+			inetddir=${inetddir="/lib/systemd/system"}
+		else
+			inetddir=${inetddir="/usr/lib/systemd/system"}
+		fi
+		netdname=${inetdname="$PKG_NAME.socket"} ;; #(
+  smf*) :
+    if test $init_type = smf10; then
+			inetddir=${inetddir="/var/svc/manifest/network"}
+		else
+			inetddir=${inetddir="/lib/svc/manifest/network"}
+		fi
+		inetdname=${inetdname="$PKG_NAME.xml"} ;; #(
+  upstart) :
+    inetddir=${inetddir="/etc/init"}
+		inetdname=${inetdname="$PKG_NAME"} ;; #(
+  launchd) :
+    inetddir=${inetddir="/System/Library/LaunchDaemons"}
+		inetdname=${inetdname="org.nagios.$PKG_NAME.plist"} ;; #(
+  *) :
+    inetddir=${inetddir="unknown"}
+		inetdname=${inetdname="unknown"} ;; #(
+  *) :
+     ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $install_method" >&5
+$as_echo "$install_method" >&6; }
+
+
+
+src_inetd=""
+src_init=""
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for which init file to use " >&5
+$as_echo_n "checking for which init file to use ... " >&6; }
+
+case $init_type in #(
+  sysv) :
+    if test $dist_type = debian; then
+			src_init=debian-init.in
+		else
+			src_init=default-init.in
+		fi ;; #(
+  systemd) :
+    src_init=default-service.in
+		src_inetd=default-service.in ;; #(
+  #	[*bsd],
+
+#	[gentoo],
+
+	openrc) :
+    src_init=openrc-init.in ;; #(
+  smf*) :
+    src_init="solaris-@PKG_NAME@.xml.in"
+		src_inetd="solaris-@PKG_NAME@.xml.in" ;; #(
+  #	[upstart],
+
+	launchd) :
+    src_init="mac-org.nagios.@PKG_NAME@.plist.in"
+		src_inetd="mac-org.nagios.@PKG_NAME@.plist.in" ;; #(
+  *) :
+    src_init="unknown"
+ ;; #(
+  *) :
+     ;;
+esac
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $src_init" >&5
+$as_echo "$src_init" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for which inetd files to use " >&5
+$as_echo_n "checking for which inetd files to use ... " >&6; }
+
+if test x$src_inetd = x; then
+
+	case $inetd_type in #(
+  inetd) :
+    src_inetd=default-inetd.in ;; #(
+  xinetd) :
+    src_inetd=default-xinetd.in ;; #(
+  #		[upstart],
+
+		*) :
+    src_inetd="unknown"
+	 ;; #(
+  *) :
+     ;;
+esac
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $src_inetd" >&5
+$as_echo "$src_inetd" >&6; }
+
+
+
+if test x${showdirs_only} = xyes; then
+	ac_config_files="$ac_config_files paths"
+
+
+
+test "x$prefix" = xNONE && prefix=$ac_default_prefix
+# Let make expand exec_prefix.
+test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
+
+# Transform confdefs.h into DEFS.
+# Protect against shell expansion while executing Makefile rules.
+# Protect against Makefile macro expansion.
+#
+# If the first sed substitution is executed (which looks for macros that
+# take arguments), then branch to the quote section.  Otherwise,
+# look for a macro that doesn't take arguments.
+ac_script='
+:mline
+/\\$/{
+ N
+ s,\\\n,,
+ b mline
+}
+t clear
+:clear
+s/^[	 ]*#[	 ]*define[	 ][	 ]*\([^	 (][^	 (]*([^)]*)\)[	 ]*\(.*\)/-D\1=\2/g
+t quote
+s/^[	 ]*#[	 ]*define[	 ][	 ]*\([^	 ][^	 ]*\)[	 ]*\(.*\)/-D\1=\2/g
+t quote
+b any
+:quote
+s/[	 `~#$^&*(){}\\|;'\''"<>?]/\\&/g
+s/\[/\\&/g
+s/\]/\\&/g
+s/\$/$$/g
+H
+:any
+${
+	g
+	s/^\n//
+	s/\n/ /g
+	p
+}
+'
+DEFS=`sed -n "$ac_script" confdefs.h`
+
+
+ac_libobjs=
+ac_ltlibobjs=
+U=
+for ac_i in : $LIBOBJS; do test "x$ac_i" = x: && continue
+  # 1. Remove the extension, and $U if already installed.
+  ac_script='s/\$U\././;s/\.o$//;s/\.obj$//'
+  ac_i=`$as_echo "$ac_i" | sed "$ac_script"`
+  # 2. Prepend LIBOBJDIR.  When used with automake>=1.10 LIBOBJDIR
+  #    will be set to the directory where LIBOBJS objects are built.
+  as_fn_append ac_libobjs " \${LIBOBJDIR}$ac_i\$U.$ac_objext"
+  as_fn_append ac_ltlibobjs " \${LIBOBJDIR}$ac_i"'$U.lo'
+done
+LIBOBJS=$ac_libobjs
+
+LTLIBOBJS=$ac_ltlibobjs
+
+
+
+: "${CONFIG_STATUS=./config.status}"
+ac_write_fail=0
+ac_clean_files_save=$ac_clean_files
+ac_clean_files="$ac_clean_files $CONFIG_STATUS"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: creating $CONFIG_STATUS" >&5
+$as_echo "$as_me: creating $CONFIG_STATUS" >&6;}
+as_write_fail=0
+cat >$CONFIG_STATUS <<_ASEOF || as_write_fail=1
+#! $SHELL
+# Generated by $as_me.
+# Run this file to recreate the current configuration.
+# Compiler output produced by configure, useful for debugging
+# configure, is in config.log if it exists.
+
+debug=false
+ac_cs_recheck=false
+ac_cs_silent=false
+
+SHELL=\${CONFIG_SHELL-$SHELL}
+export SHELL
+_ASEOF
+cat >>$CONFIG_STATUS <<\_ASEOF || as_write_fail=1
+## -------------------- ##
+## M4sh Initialization. ##
+## -------------------- ##
+
+# Be more Bourne compatible
+DUALCASE=1; export DUALCASE # for MKS sh
+if test -n "${ZSH_VERSION+set}" && (emulate sh) >/dev/null 2>&1; then :
+  emulate sh
+  NULLCMD=:
+  # Pre-4.2 versions of Zsh do word splitting on ${1+"$@"}, which
+  # is contrary to our usage.  Disable this feature.
+  alias -g '${1+"$@"}'='"$@"'
+  setopt NO_GLOB_SUBST
+else
+  case `(set -o) 2>/dev/null` in #(
+  *posix*) :
+    set -o posix ;; #(
+  *) :
+     ;;
+esac
+fi
+
+
+as_nl='
+'
+export as_nl
+# Printing a long string crashes Solaris 7 /usr/bin/printf.
+as_echo='\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\'
+as_echo=$as_echo$as_echo$as_echo$as_echo$as_echo
+as_echo=$as_echo$as_echo$as_echo$as_echo$as_echo$as_echo
+# Prefer a ksh shell builtin over an external printf program on Solaris,
+# but without wasting forks for bash or zsh.
+if test -z "$BASH_VERSION$ZSH_VERSION" \
+    && (test "X`print -r -- $as_echo`" = "X$as_echo") 2>/dev/null; then
+  as_echo='print -r --'
+  as_echo_n='print -rn --'
+elif (test "X`printf %s $as_echo`" = "X$as_echo") 2>/dev/null; then
+  as_echo='printf %s\n'
+  as_echo_n='printf %s'
+else
+  if test "X`(/usr/ucb/echo -n -n $as_echo) 2>/dev/null`" = "X-n $as_echo"; then
+    as_echo_body='eval /usr/ucb/echo -n "$1$as_nl"'
+    as_echo_n='/usr/ucb/echo -n'
+  else
+    as_echo_body='eval expr "X$1" : "X\\(.*\\)"'
+    as_echo_n_body='eval
+      arg=$1;
+      case $arg in #(
+      *"$as_nl"*)
+	expr "X$arg" : "X\\(.*\\)$as_nl";
+	arg=`expr "X$arg" : ".*$as_nl\\(.*\\)"`;;
+      esac;
+      expr "X$arg" : "X\\(.*\\)" | tr -d "$as_nl"
+    '
+    export as_echo_n_body
+    as_echo_n='sh -c $as_echo_n_body as_echo'
+  fi
+  export as_echo_body
+  as_echo='sh -c $as_echo_body as_echo'
+fi
+
+# The user is always right.
+if test "${PATH_SEPARATOR+set}" != set; then
+  PATH_SEPARATOR=:
+  (PATH='/bin;/bin'; FPATH=$PATH; sh -c :) >/dev/null 2>&1 && {
+    (PATH='/bin:/bin'; FPATH=$PATH; sh -c :) >/dev/null 2>&1 ||
+      PATH_SEPARATOR=';'
+  }
+fi
+
+
+# IFS
+# We need space, tab and new line, in precisely that order.  Quoting is
+# there to prevent editors from complaining about space-tab.
+# (If _AS_PATH_WALK were called with IFS unset, it would disable word
+# splitting by setting IFS to empty value.)
+IFS=" ""	$as_nl"
+
+# Find who we are.  Look in the path if we contain no directory separator.
+as_myself=
+case $0 in #((
+  *[\\/]* ) as_myself=$0 ;;
+  *) as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    test -r "$as_dir/$0" && as_myself=$as_dir/$0 && break
+  done
+IFS=$as_save_IFS
+
+     ;;
+esac
+# We did not find ourselves, most probably we were run as `sh COMMAND'
+# in which case we are not to be found in the path.
+if test "x$as_myself" = x; then
+  as_myself=$0
+fi
+if test ! -f "$as_myself"; then
+  $as_echo "$as_myself: error: cannot find myself; rerun with an absolute file name" >&2
+  exit 1
+fi
+
+# Unset variables that we do not need and which cause bugs (e.g. in
+# pre-3.0 UWIN ksh).  But do not cause bugs in bash 2.01; the "|| exit 1"
+# suppresses any "Segmentation fault" message there.  '((' could
+# trigger a bug in pdksh 5.2.14.
+for as_var in BASH_ENV ENV MAIL MAILPATH
+do eval test x\${$as_var+set} = xset \
+  && ( (unset $as_var) || exit 1) >/dev/null 2>&1 && unset $as_var || :
+done
+PS1='$ '
+PS2='> '
+PS4='+ '
+
+# NLS nuisances.
+LC_ALL=C
+export LC_ALL
+LANGUAGE=C
+export LANGUAGE
+
+# CDPATH.
+(unset CDPATH) >/dev/null 2>&1 && unset CDPATH
+
+
+# as_fn_error STATUS ERROR [LINENO LOG_FD]
+# ----------------------------------------
+# Output "`basename $0`: error: ERROR" to stderr. If LINENO and LOG_FD are
+# provided, also output the error to LOG_FD, referencing LINENO. Then exit the
+# script with STATUS, using 1 if that was 0.
+as_fn_error ()
+{
+  as_status=$1; test $as_status -eq 0 && as_status=1
+  if test "$4"; then
+    as_lineno=${as_lineno-"$3"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+    $as_echo "$as_me:${as_lineno-$LINENO}: error: $2" >&$4
+  fi
+  $as_echo "$as_me: error: $2" >&2
+  as_fn_exit $as_status
+} # as_fn_error
+
+
+# as_fn_set_status STATUS
+# -----------------------
+# Set $? to STATUS, without forking.
+as_fn_set_status ()
+{
+  return $1
+} # as_fn_set_status
+
+# as_fn_exit STATUS
+# -----------------
+# Exit the shell with STATUS, even in a "trap 0" or "set -e" context.
+as_fn_exit ()
+{
+  set +e
+  as_fn_set_status $1
+  exit $1
+} # as_fn_exit
+
+# as_fn_unset VAR
+# ---------------
+# Portably unset VAR.
+as_fn_unset ()
+{
+  { eval $1=; unset $1;}
+}
+as_unset=as_fn_unset
+# as_fn_append VAR VALUE
+# ----------------------
+# Append the text in VALUE to the end of the definition contained in VAR. Take
+# advantage of any shell optimizations that allow amortized linear growth over
+# repeated appends, instead of the typical quadratic growth present in naive
+# implementations.
+if (eval "as_var=1; as_var+=2; test x\$as_var = x12") 2>/dev/null; then :
+  eval 'as_fn_append ()
+  {
+    eval $1+=\$2
+  }'
+else
+  as_fn_append ()
+  {
+    eval $1=\$$1\$2
+  }
+fi # as_fn_append
+
+# as_fn_arith ARG...
+# ------------------
+# Perform arithmetic evaluation on the ARGs, and store the result in the
+# global $as_val. Take advantage of shells that can avoid forks. The arguments
+# must be portable across $(()) and expr.
+if (eval "test \$(( 1 + 1 )) = 2") 2>/dev/null; then :
+  eval 'as_fn_arith ()
+  {
+    as_val=$(( $* ))
+  }'
+else
+  as_fn_arith ()
+  {
+    as_val=`expr "$@" || test $? -eq 1`
+  }
+fi # as_fn_arith
+
+
+if expr a : '\(a\)' >/dev/null 2>&1 &&
+   test "X`expr 00001 : '.*\(...\)'`" = X001; then
+  as_expr=expr
+else
+  as_expr=false
+fi
+
+if (basename -- /) >/dev/null 2>&1 && test "X`basename -- / 2>&1`" = "X/"; then
+  as_basename=basename
+else
+  as_basename=false
+fi
+
+if (as_dir=`dirname -- /` && test "X$as_dir" = X/) >/dev/null 2>&1; then
+  as_dirname=dirname
+else
+  as_dirname=false
+fi
+
+as_me=`$as_basename -- "$0" ||
+$as_expr X/"$0" : '.*/\([^/][^/]*\)/*$' \| \
+	 X"$0" : 'X\(//\)$' \| \
+	 X"$0" : 'X\(/\)' \| . 2>/dev/null ||
+$as_echo X/"$0" |
+    sed '/^.*\/\([^/][^/]*\)\/*$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\/\(\/\/\)$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\/\(\/\).*/{
+	    s//\1/
+	    q
+	  }
+	  s/.*/./; q'`
+
+# Avoid depending upon Character Ranges.
+as_cr_letters='abcdefghijklmnopqrstuvwxyz'
+as_cr_LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+as_cr_Letters=$as_cr_letters$as_cr_LETTERS
+as_cr_digits='0123456789'
+as_cr_alnum=$as_cr_Letters$as_cr_digits
+
+ECHO_C= ECHO_N= ECHO_T=
+case `echo -n x` in #(((((
+-n*)
+  case `echo 'xy\c'` in
+  *c*) ECHO_T='	';;	# ECHO_T is single tab character.
+  xy)  ECHO_C='\c';;
+  *)   echo `echo ksh88 bug on AIX 6.1` > /dev/null
+       ECHO_T='	';;
+  esac;;
+*)
+  ECHO_N='-n';;
+esac
+
+rm -f conf$$ conf$$.exe conf$$.file
+if test -d conf$$.dir; then
+  rm -f conf$$.dir/conf$$.file
+else
+  rm -f conf$$.dir
+  mkdir conf$$.dir 2>/dev/null
+fi
+if (echo >conf$$.file) 2>/dev/null; then
+  if ln -s conf$$.file conf$$ 2>/dev/null; then
+    as_ln_s='ln -s'
+    # ... but there are two gotchas:
+    # 1) On MSYS, both `ln -s file dir' and `ln file dir' fail.
+    # 2) DJGPP < 2.04 has no symlinks; `ln -s' creates a wrapper executable.
+    # In both cases, we have to default to `cp -pR'.
+    ln -s conf$$.file conf$$.dir 2>/dev/null && test ! -f conf$$.exe ||
+      as_ln_s='cp -pR'
+  elif ln conf$$.file conf$$ 2>/dev/null; then
+    as_ln_s=ln
+  else
+    as_ln_s='cp -pR'
+  fi
+else
+  as_ln_s='cp -pR'
+fi
+rm -f conf$$ conf$$.exe conf$$.dir/conf$$.file conf$$.file
+rmdir conf$$.dir 2>/dev/null
+
+
+# as_fn_mkdir_p
+# -------------
+# Create "$as_dir" as a directory, including parents if necessary.
+as_fn_mkdir_p ()
+{
+
+  case $as_dir in #(
+  -*) as_dir=./$as_dir;;
+  esac
+  test -d "$as_dir" || eval $as_mkdir_p || {
+    as_dirs=
+    while :; do
+      case $as_dir in #(
+      *\'*) as_qdir=`$as_echo "$as_dir" | sed "s/'/'\\\\\\\\''/g"`;; #'(
+      *) as_qdir=$as_dir;;
+      esac
+      as_dirs="'$as_qdir' $as_dirs"
+      as_dir=`$as_dirname -- "$as_dir" ||
+$as_expr X"$as_dir" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+	 X"$as_dir" : 'X\(//\)[^/]' \| \
+	 X"$as_dir" : 'X\(//\)$' \| \
+	 X"$as_dir" : 'X\(/\)' \| . 2>/dev/null ||
+$as_echo X"$as_dir" |
+    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\/\)[^/].*/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\/\)$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\).*/{
+	    s//\1/
+	    q
+	  }
+	  s/.*/./; q'`
+      test -d "$as_dir" && break
+    done
+    test -z "$as_dirs" || eval "mkdir $as_dirs"
+  } || test -d "$as_dir" || as_fn_error $? "cannot create directory $as_dir"
+
+
+} # as_fn_mkdir_p
+if mkdir -p . 2>/dev/null; then
+  as_mkdir_p='mkdir -p "$as_dir"'
+else
+  test -d ./-p && rmdir ./-p
+  as_mkdir_p=false
+fi
+
+
+# as_fn_executable_p FILE
+# -----------------------
+# Test if FILE is an executable regular file.
+as_fn_executable_p ()
+{
+  test -f "$1" && test -x "$1"
+} # as_fn_executable_p
+as_test_x='test -x'
+as_executable_p=as_fn_executable_p
+
+# Sed expression to map a string onto a valid CPP name.
+as_tr_cpp="eval sed 'y%*$as_cr_letters%P$as_cr_LETTERS%;s%[^_$as_cr_alnum]%_%g'"
+
+# Sed expression to map a string onto a valid variable name.
+as_tr_sh="eval sed 'y%*+%pp%;s%[^_$as_cr_alnum]%_%g'"
+
+
+exec 6>&1
+## ----------------------------------- ##
+## Main body of $CONFIG_STATUS script. ##
+## ----------------------------------- ##
+_ASEOF
+test $as_write_fail = 0 && chmod +x $CONFIG_STATUS || ac_write_fail=1
+
+cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
+# Save the log message, to keep $0 and so on meaningful, and to
+# report actual input values of CONFIG_FILES etc. instead of their
+# values after options handling.
+ac_log="
+This file was extended by nrpe $as_me 2.16RC2, which was
+generated by GNU Autoconf 2.69.  Invocation command line was
+
+  CONFIG_FILES    = $CONFIG_FILES
+  CONFIG_HEADERS  = $CONFIG_HEADERS
+  CONFIG_LINKS    = $CONFIG_LINKS
+  CONFIG_COMMANDS = $CONFIG_COMMANDS
+  $ $0 $@
+
+on `(hostname || uname -n) 2>/dev/null | sed 1q`
+"
+
+_ACEOF
+
+case $ac_config_files in *"
+"*) set x $ac_config_files; shift; ac_config_files=$*;;
+esac
+
+
+
+cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
+# Files that config.status was made for.
+config_files="$ac_config_files"
+
+_ACEOF
+
+cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
+ac_cs_usage="\
+\`$as_me' instantiates files and other configuration actions
+from templates according to the current configuration.  Unless the files
+and actions are specified as TAGs, all are instantiated by default.
+
+Usage: $0 [OPTION]... [TAG]...
+
+  -h, --help       print this help, then exit
+  -V, --version    print version number and configuration settings, then exit
+      --config     print configuration, then exit
+  -q, --quiet, --silent
+                   do not print progress messages
+  -d, --debug      don't remove temporary files
+      --recheck    update $as_me by reconfiguring in the same conditions
+      --file=FILE[:TEMPLATE]
+                   instantiate the configuration file FILE
+
+Configuration files:
+$config_files
+
+Report bugs to <nagios-users@lists.sourceforge.net>.
+nrpe home page: <https://www.nagios.org/downloads/nagios-core-addons/>."
+
+_ACEOF
+cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
+ac_cs_config="`$as_echo "$ac_configure_args" | sed 's/^ //; s/[\\""\`\$]/\\\\&/g'`"
+ac_cs_version="\\
+nrpe config.status 2.16RC2
+configured by $0, generated by GNU Autoconf 2.69,
+  with options \\"\$ac_cs_config\\"
+
+Copyright (C) 2012 Free Software Foundation, Inc.
+This config.status script is free software; the Free Software Foundation
+gives unlimited permission to copy, distribute and modify it."
+
+ac_pwd='$ac_pwd'
+srcdir='$srcdir'
+INSTALL='$INSTALL'
+test -n "\$AWK" || AWK=awk
+_ACEOF
+
+cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
+# The default lists apply if the user does not specify any file.
+ac_need_defaults=:
+while test $# != 0
+do
+  case $1 in
+  --*=?*)
+    ac_option=`expr "X$1" : 'X\([^=]*\)='`
+    ac_optarg=`expr "X$1" : 'X[^=]*=\(.*\)'`
+    ac_shift=:
+    ;;
+  --*=)
+    ac_option=`expr "X$1" : 'X\([^=]*\)='`
+    ac_optarg=
+    ac_shift=:
+    ;;
+  *)
+    ac_option=$1
+    ac_optarg=$2
+    ac_shift=shift
+    ;;
+  esac
+
+  case $ac_option in
+  # Handling of the options.
+  -recheck | --recheck | --rechec | --reche | --rech | --rec | --re | --r)
+    ac_cs_recheck=: ;;
+  --version | --versio | --versi | --vers | --ver | --ve | --v | -V )
+    $as_echo "$ac_cs_version"; exit ;;
+  --config | --confi | --conf | --con | --co | --c )
+    $as_echo "$ac_cs_config"; exit ;;
+  --debug | --debu | --deb | --de | --d | -d )
+    debug=: ;;
+  --file | --fil | --fi | --f )
+    $ac_shift
+    case $ac_optarg in
+    *\'*) ac_optarg=`$as_echo "$ac_optarg" | sed "s/'/'\\\\\\\\''/g"` ;;
+    '') as_fn_error $? "missing file argument" ;;
+    esac
+    as_fn_append CONFIG_FILES " '$ac_optarg'"
+    ac_need_defaults=false;;
+  --he | --h |  --help | --hel | -h )
+    $as_echo "$ac_cs_usage"; exit ;;
+  -q | -quiet | --quiet | --quie | --qui | --qu | --q \
+  | -silent | --silent | --silen | --sile | --sil | --si | --s)
+    ac_cs_silent=: ;;
+
+  # This is an error.
+  -*) as_fn_error $? "unrecognized option: \`$1'
+Try \`$0 --help' for more information." ;;
+
+  *) as_fn_append ac_config_targets " $1"
+     ac_need_defaults=false ;;
+
+  esac
+  shift
+done
+
+ac_configure_extra_args=
+
+if $ac_cs_silent; then
+  exec 6>/dev/null
+  ac_configure_extra_args="$ac_configure_extra_args --silent"
+fi
+
+_ACEOF
+cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
+if \$ac_cs_recheck; then
+  set X $SHELL '$0' $ac_configure_args \$ac_configure_extra_args --no-create --no-recursion
+  shift
+  \$as_echo "running CONFIG_SHELL=$SHELL \$*" >&6
+  CONFIG_SHELL='$SHELL'
+  export CONFIG_SHELL
+  exec "\$@"
+fi
+
+_ACEOF
+cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
+exec 5>>config.log
+{
+  echo
+  sed 'h;s/./-/g;s/^.../## /;s/...$/ ##/;p;x;p;x' <<_ASBOX
+## Running $as_me. ##
+_ASBOX
+  $as_echo "$ac_log"
+} >&5
+
+_ACEOF
+cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
+_ACEOF
+
+cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
+
+# Handling of arguments.
+for ac_config_target in $ac_config_targets
+do
+  case $ac_config_target in
+    "paths") CONFIG_FILES="$CONFIG_FILES paths" ;;
+
+  *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
+  esac
+done
+
+
+# If the user did not use the arguments to specify the items to instantiate,
+# then the envvar interface is used.  Set only those that are not.
+# We use the long form for the default assignment because of an extremely
+# bizarre bug on SunOS 4.1.3.
+if $ac_need_defaults; then
+  test "${CONFIG_FILES+set}" = set || CONFIG_FILES=$config_files
+fi
+
+# Have a temporary directory for convenience.  Make it in the build tree
+# simply because there is no reason against having it here, and in addition,
+# creating and moving files from /tmp can sometimes cause problems.
+# Hook for its removal unless debugging.
+# Note that there is a small window in which the directory will not be cleaned:
+# after its creation but before its name has been assigned to `$tmp'.
+$debug ||
+{
+  tmp= ac_tmp=
+  trap 'exit_status=$?
+  : "${ac_tmp:=$tmp}"
+  { test ! -d "$ac_tmp" || rm -fr "$ac_tmp"; } && exit $exit_status
+' 0
+  trap 'as_fn_exit 1' 1 2 13 15
+}
+# Create a (secure) tmp directory for tmp files.
+
+{
+  tmp=`(umask 077 && mktemp -d "./confXXXXXX") 2>/dev/null` &&
+  test -d "$tmp"
+}  ||
+{
+  tmp=./conf$$-$RANDOM
+  (umask 077 && mkdir "$tmp")
+} || as_fn_error $? "cannot create a temporary directory in ." "$LINENO" 5
+ac_tmp=$tmp
+
+# Set up the scripts for CONFIG_FILES section.
+# No need to generate them if there are no CONFIG_FILES.
+# This happens for instance with `./config.status config.h'.
+if test -n "$CONFIG_FILES"; then
+
+
+ac_cr=`echo X | tr X '\015'`
+# On cygwin, bash can eat \r inside `` if the user requested igncr.
+# But we know of no other shell where ac_cr would be empty at this
+# point, so we can use a bashism as a fallback.
+if test "x$ac_cr" = x; then
+  eval ac_cr=\$\'\\r\'
+fi
+ac_cs_awk_cr=`$AWK 'BEGIN { print "a\rb" }' </dev/null 2>/dev/null`
+if test "$ac_cs_awk_cr" = "a${ac_cr}b"; then
+  ac_cs_awk_cr='\\r'
+else
+  ac_cs_awk_cr=$ac_cr
+fi
+
+echo 'BEGIN {' >"$ac_tmp/subs1.awk" &&
+_ACEOF
+
+
+{
+  echo "cat >conf$$subs.awk <<_ACEOF" &&
+  echo "$ac_subst_vars" | sed 's/.*/&!$&$ac_delim/' &&
+  echo "_ACEOF"
+} >conf$$subs.sh ||
+  as_fn_error $? "could not make $CONFIG_STATUS" "$LINENO" 5
+ac_delim_num=`echo "$ac_subst_vars" | grep -c '^'`
+ac_delim='%!_!# '
+for ac_last_try in false false false false false :; do
+  . ./conf$$subs.sh ||
+    as_fn_error $? "could not make $CONFIG_STATUS" "$LINENO" 5
+
+  ac_delim_n=`sed -n "s/.*$ac_delim\$/X/p" conf$$subs.awk | grep -c X`
+  if test $ac_delim_n = $ac_delim_num; then
+    break
+  elif $ac_last_try; then
+    as_fn_error $? "could not make $CONFIG_STATUS" "$LINENO" 5
+  else
+    ac_delim="$ac_delim!$ac_delim _$ac_delim!! "
+  fi
+done
+rm -f conf$$subs.sh
+
+cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
+cat >>"\$ac_tmp/subs1.awk" <<\\_ACAWK &&
+_ACEOF
+sed -n '
+h
+s/^/S["/; s/!.*/"]=/
+p
+g
+s/^[^!]*!//
+:repl
+t repl
+s/'"$ac_delim"'$//
+t delim
+:nl
+h
+s/\(.\{148\}\)..*/\1/
+t more1
+s/["\\]/\\&/g; s/^/"/; s/$/\\n"\\/
+p
+n
+b repl
+:more1
+s/["\\]/\\&/g; s/^/"/; s/$/"\\/
+p
+g
+s/.\{148\}//
+t nl
+:delim
+h
+s/\(.\{148\}\)..*/\1/
+t more2
+s/["\\]/\\&/g; s/^/"/; s/$/"/
+p
+b
+:more2
+s/["\\]/\\&/g; s/^/"/; s/$/"\\/
+p
+g
+s/.\{148\}//
+t delim
+' <conf$$subs.awk | sed '
+/^[^""]/{
+  N
+  s/\n//
+}
+' >>$CONFIG_STATUS || ac_write_fail=1
+rm -f conf$$subs.awk
+cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
+_ACAWK
+cat >>"\$ac_tmp/subs1.awk" <<_ACAWK &&
+  for (key in S) S_is_set[key] = 1
+  FS = ""
+
+}
+{
+  line = $ 0
+  nfields = split(line, field, "@")
+  substed = 0
+  len = length(field[1])
+  for (i = 2; i < nfields; i++) {
+    key = field[i]
+    keylen = length(key)
+    if (S_is_set[key]) {
+      value = S[key]
+      line = substr(line, 1, len) "" value "" substr(line, len + keylen + 3)
+      len += length(value) + length(field[++i])
+      substed = 1
+    } else
+      len += 1 + keylen
+  }
+
+  print line
+}
+
+_ACAWK
+_ACEOF
+cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
+if sed "s/$ac_cr//" < /dev/null > /dev/null 2>&1; then
+  sed "s/$ac_cr\$//; s/$ac_cr/$ac_cs_awk_cr/g"
+else
+  cat
+fi < "$ac_tmp/subs1.awk" > "$ac_tmp/subs.awk" \
+  || as_fn_error $? "could not setup config files machinery" "$LINENO" 5
+_ACEOF
+
+# VPATH may cause trouble with some makes, so we remove sole $(srcdir),
+# ${srcdir} and @srcdir@ entries from VPATH if srcdir is ".", strip leading and
+# trailing colons and then remove the whole line if VPATH becomes empty
+# (actually we leave an empty line to preserve line numbers).
+if test "x$srcdir" = x.; then
+  ac_vpsub='/^[	 ]*VPATH[	 ]*=[	 ]*/{
+h
+s///
+s/^/:/
+s/[	 ]*$/:/
+s/:\$(srcdir):/:/g
+s/:\${srcdir}:/:/g
+s/:@srcdir@:/:/g
+s/^:*//
+s/:*$//
+x
+s/\(=[	 ]*\).*/\1/
+G
+s/\n//
+s/^[^=]*=[	 ]*$//
+}'
+fi
+
+cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
+fi # test -n "$CONFIG_FILES"
+
+
+eval set X "  :F $CONFIG_FILES      "
 shift
-host_cpu=$1
-host_vendor=$2
-shift; shift
-# Remember, the first character of IFS is used to create $*,
-# except with old shells:
-host_os=$*
-IFS=$ac_save_IFS
-case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
+for ac_tag
+do
+  case $ac_tag in
+  :[FHLC]) ac_mode=$ac_tag; continue;;
+  esac
+  case $ac_mode$ac_tag in
+  :[FHL]*:*);;
+  :L* | :C*:*) as_fn_error $? "invalid tag \`$ac_tag'" "$LINENO" 5;;
+  :[FH]-) ac_tag=-:-;;
+  :[FH]*) ac_tag=$ac_tag:$ac_tag.in;;
+  esac
+  ac_save_IFS=$IFS
+  IFS=:
+  set x $ac_tag
+  IFS=$ac_save_IFS
+  shift
+  ac_file=$1
+  shift
+
+  case $ac_mode in
+  :L) ac_source=$1;;
+  :[FH])
+    ac_file_inputs=
+    for ac_f
+    do
+      case $ac_f in
+      -) ac_f="$ac_tmp/stdin";;
+      *) # Look for the file first in the build tree, then in the source tree
+	 # (if the path is not absolute).  The absolute path cannot be DOS-style,
+	 # because $ac_f cannot contain `:'.
+	 test -f "$ac_f" ||
+	   case $ac_f in
+	   [\\/$]*) false;;
+	   *) test -f "$srcdir/$ac_f" && ac_f="$srcdir/$ac_f";;
+	   esac ||
+	   as_fn_error 1 "cannot find input file: \`$ac_f'" "$LINENO" 5;;
+      esac
+      case $ac_f in *\'*) ac_f=`$as_echo "$ac_f" | sed "s/'/'\\\\\\\\''/g"`;; esac
+      as_fn_append ac_file_inputs " '$ac_f'"
+    done
+
+    # Let's still pretend it is `configure' which instantiates (i.e., don't
+    # use $as_me), people would be surprised to read:
+    #    /* config.h.  Generated by config.status.  */
+    configure_input='Generated from '`
+	  $as_echo "$*" | sed 's|^[^:]*/||;s|:[^:]*/|, |g'
+	`' by configure.'
+    if test x"$ac_file" != x-; then
+      configure_input="$ac_file.  $configure_input"
+      { $as_echo "$as_me:${as_lineno-$LINENO}: creating $ac_file" >&5
+$as_echo "$as_me: creating $ac_file" >&6;}
+    fi
+    # Neutralize special characters interpreted by sed in replacement strings.
+    case $configure_input in #(
+    *\&* | *\|* | *\\* )
+       ac_sed_conf_input=`$as_echo "$configure_input" |
+       sed 's/[\\\\&|]/\\\\&/g'`;; #(
+    *) ac_sed_conf_input=$configure_input;;
+    esac
+
+    case $ac_tag in
+    *:-:* | *:-) cat >"$ac_tmp/stdin" \
+      || as_fn_error $? "could not create $ac_file" "$LINENO" 5 ;;
+    esac
+    ;;
+  esac
+
+  ac_dir=`$as_dirname -- "$ac_file" ||
+$as_expr X"$ac_file" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+	 X"$ac_file" : 'X\(//\)[^/]' \| \
+	 X"$ac_file" : 'X\(//\)$' \| \
+	 X"$ac_file" : 'X\(/\)' \| . 2>/dev/null ||
+$as_echo X"$ac_file" |
+    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\/\)[^/].*/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\/\)$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\).*/{
+	    s//\1/
+	    q
+	  }
+	  s/.*/./; q'`
+  as_dir="$ac_dir"; as_fn_mkdir_p
+  ac_builddir=.
+
+case "$ac_dir" in
+.) ac_dir_suffix= ac_top_builddir_sub=. ac_top_build_prefix= ;;
+*)
+  ac_dir_suffix=/`$as_echo "$ac_dir" | sed 's|^\.[\\/]||'`
+  # A ".." for each directory in $ac_dir_suffix.
+  ac_top_builddir_sub=`$as_echo "$ac_dir_suffix" | sed 's|/[^\\/]*|/..|g;s|/||'`
+  case $ac_top_builddir_sub in
+  "") ac_top_builddir_sub=. ac_top_build_prefix= ;;
+  *)  ac_top_build_prefix=$ac_top_builddir_sub/ ;;
+  esac ;;
+esac
+ac_abs_top_builddir=$ac_pwd
+ac_abs_builddir=$ac_pwd$ac_dir_suffix
+# for backward compatibility:
+ac_top_builddir=$ac_top_build_prefix
+
+case $srcdir in
+  .)  # We are building in place.
+    ac_srcdir=.
+    ac_top_srcdir=$ac_top_builddir_sub
+    ac_abs_top_srcdir=$ac_pwd ;;
+  [\\/]* | ?:[\\/]* )  # Absolute name.
+    ac_srcdir=$srcdir$ac_dir_suffix;
+    ac_top_srcdir=$srcdir
+    ac_abs_top_srcdir=$srcdir ;;
+  *) # Relative name.
+    ac_srcdir=$ac_top_build_prefix$srcdir$ac_dir_suffix
+    ac_top_srcdir=$ac_top_build_prefix$srcdir
+    ac_abs_top_srcdir=$ac_pwd/$srcdir ;;
+esac
+ac_abs_srcdir=$ac_abs_top_srcdir$ac_dir_suffix
 
 
+  case $ac_mode in
+  :F)
+  #
+  # CONFIG_FILE
+  #
+
+  case $INSTALL in
+  [\\/$]* | ?:[\\/]* ) ac_INSTALL=$INSTALL ;;
+  *) ac_INSTALL=$ac_top_build_prefix$INSTALL ;;
+  esac
+_ACEOF
+
+cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
+# If the template does not know about datarootdir, expand it.
+# FIXME: This hack should be removed a few years after 2.60.
+ac_datarootdir_hack=; ac_datarootdir_seen=
+ac_sed_dataroot='
+/datarootdir/ {
+  p
+  q
+}
+/@datadir@/p
+/@docdir@/p
+/@infodir@/p
+/@localedir@/p
+/@mandir@/p'
+case `eval "sed -n \"\$ac_sed_dataroot\" $ac_file_inputs"` in
+*datarootdir*) ac_datarootdir_seen=yes;;
+*@datadir@*|*@docdir@*|*@infodir@*|*@localedir@*|*@mandir@*)
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $ac_file_inputs seems to ignore the --datarootdir setting" >&5
+$as_echo "$as_me: WARNING: $ac_file_inputs seems to ignore the --datarootdir setting" >&2;}
+_ACEOF
+cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
+  ac_datarootdir_hack='
+  s&@datadir@&$datadir&g
+  s&@docdir@&$docdir&g
+  s&@infodir@&$infodir&g
+  s&@localedir@&$localedir&g
+  s&@mandir@&$mandir&g
+  s&\\\${datarootdir}&$datarootdir&g' ;;
+esac
+_ACEOF
+
+# Neutralize VPATH when `$srcdir' = `.'.
+# Shell code in configure.ac might set extrasub.
+# FIXME: do we really want to maintain this feature?
+cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
+ac_sed_extra="$ac_vpsub
+$extrasub
+_ACEOF
+cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
+:t
+/@[a-zA-Z_][a-zA-Z_0-9]*@/!b
+s|@configure_input@|$ac_sed_conf_input|;t t
+s&@top_builddir@&$ac_top_builddir_sub&;t t
+s&@top_build_prefix@&$ac_top_build_prefix&;t t
+s&@srcdir@&$ac_srcdir&;t t
+s&@abs_srcdir@&$ac_abs_srcdir&;t t
+s&@top_srcdir@&$ac_top_srcdir&;t t
+s&@abs_top_srcdir@&$ac_abs_top_srcdir&;t t
+s&@builddir@&$ac_builddir&;t t
+s&@abs_builddir@&$ac_abs_builddir&;t t
+s&@abs_top_builddir@&$ac_abs_top_builddir&;t t
+s&@INSTALL@&$ac_INSTALL&;t t
+$ac_datarootdir_hack
+"
+eval sed \"\$ac_sed_extra\" "$ac_file_inputs" | $AWK -f "$ac_tmp/subs.awk" \
+  >$ac_tmp/out || as_fn_error $? "could not create $ac_file" "$LINENO" 5
+
+test -z "$ac_datarootdir_hack$ac_datarootdir_seen" &&
+  { ac_out=`sed -n '/\${datarootdir}/p' "$ac_tmp/out"`; test -n "$ac_out"; } &&
+  { ac_out=`sed -n '/^[	 ]*datarootdir[	 ]*:*=/p' \
+      "$ac_tmp/out"`; test -z "$ac_out"; } &&
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $ac_file contains a reference to the variable \`datarootdir'
+which seems to be undefined.  Please make sure it is defined" >&5
+$as_echo "$as_me: WARNING: $ac_file contains a reference to the variable \`datarootdir'
+which seems to be undefined.  Please make sure it is defined" >&2;}
+
+  rm -f "$ac_tmp/stdin"
+  case $ac_file in
+  -) cat "$ac_tmp/out" && rm -f "$ac_tmp/out";;
+  *) rm -f "$ac_file" && mv "$ac_tmp/out" "$ac_file";;
+  esac \
+  || as_fn_error $? "could not create $ac_file" "$LINENO" 5
+ ;;
+
+
+
+  esac
+
+done # for ac_tag
+
+
+as_fn_exit 0
+_ACEOF
+ac_clean_files=$ac_clean_files_save
+
+test $ac_write_fail = 0 ||
+  as_fn_error $? "write failure creating $CONFIG_STATUS" "$LINENO" 5
+
+
+# configure is writing to config.log, and then calls config.status.
+# config.status does its own redirection, appending to config.log.
+# Unfortunately, on DOS this fails, as config.log is still kept open
+# by configure, so config.status won't be able to write to it; its
+# output is simply discarded.  So we exec the FD to /dev/null,
+# effectively closing config.log, so it can be properly (re)opened and
+# appended to by config.status.  When coming back to configure, we
+# need to make the FD available again.
+if test "$no_create" != yes; then
+  ac_cs_success=:
+  ac_config_status_args=
+  test "$silent" = yes &&
+    ac_config_status_args="$ac_config_status_args --quiet"
+  exec 5>/dev/null
+  $SHELL $CONFIG_STATUS $ac_config_status_args || ac_cs_success=false
+  exec 5>>config.log
+  # Use ||, not &&, to avoid exiting from the if with $? = 1, which
+  # would make configure fail if this is the last instruction.
+  $ac_cs_success || as_fn_exit 1
+fi
+if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
+$as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
+fi
+
+	chmod 755 paths
+	./paths
+	exit 0
+fi
+
+ac_config_headers="$ac_config_headers include/config.h"
+
+ac_config_files="$ac_config_files Makefile subst src/Makefile package/solaris/Makefile nrpe.spec sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/openrc-conf startup/openrc-init startup/solaris-PKG_NAME.xml"
+
+
+#sample-config/debian-nrpe-inetd
+#sample-config/openrc-nrpe-inetd
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -3900,13 +6097,64 @@ fi
 done
 
 
-for ac_header in ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h tcpd.h unistd.h arpa/inet.h netinet/in.h socket.h sys/types.h sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h
+for ac_header in ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
 if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
   cat >>confdefs.h <<_ACEOF
 #define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+for ac_header in netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+for ac_header in tcpd.h unistd.h arpa/inet.h netinet/in.h socket.h sys/types.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+for ac_header in sys/time.h sys/resource.h sys/wait.h sys/socket.h sys/stat.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+for ac_header in paths.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "paths.h" "ac_cv_header_paths_h" "$ac_includes_default"
+if test "x$ac_cv_header_paths_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_PATHS_H 1
 _ACEOF
 
 fi
@@ -4526,7 +6774,6 @@ $as_echo "#define HAVE_C99_VSNPRINTF 1" >>confdefs.h
 fi
 
 
-
 for ac_func in getopt_long
 do :
   ac_fn_c_check_func "$LINENO" "getopt_long" "ac_cv_func_getopt_long"
@@ -4578,7 +6825,6 @@ fi
 
 fi
 done
-
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lnsl" >&5
@@ -4655,7 +6901,6 @@ if test "x$ac_cv_lib_socket_socket" = xyes; then :
   SOCKETLIBS="$SOCKETLIBS -lsocket"
 fi
 
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lwrap" >&5
 $as_echo_n "checking for main in -lwrap... " >&6; }
 if ${ac_cv_lib_wrap_main+:} false; then :
@@ -4694,7 +6939,6 @@ $as_echo "#define HAVE_LIBWRAP 1" >>confdefs.h
 
 
 fi
-
 
 for ac_func in strdup strstr strtoul initgroups closesocket sigaction
 do :
@@ -4805,17 +7049,6 @@ $as_echo "#define SOCKET_SIZE_TYPE int" >>confdefs.h
 $as_echo "int" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-#AC_CHECK_TYPE(socklen_t,int,
-#	AC_DEFINE(socklen_t,int,
-#	Define to `int' if <sys/socket.h> does not define.),[
-#	#ifdef HAVE_SYS_TYPES_H
-#	#include <sys/types.h>
-#	#endif
-#	#ifdef HAVE_SYS_SOCKET_H
-#	#include <sys/socket.h>
-#	#endif
-#	])
 
 # Check whether --enable-ssl was given.
 if test "${enable_ssl+set}" = set; then :
@@ -4936,7 +7169,6 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-
 						echo ""
 			echo "*** Generating DH Parameters for SSL/TLS ***"
 			if test -f "$ssldir/sbin/openssl"; then
@@ -4945,7 +7177,8 @@ _ACEOF
 				sslbin=$ssldir/bin/openssl
 			fi
 			# awk to strip off meta data at bottom of dhparam output
-			$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
+#			$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
+			$sslbin dhparam -C 1024 | awk '/^-----/ {exit} {print}' > include/dh.h
 		fi
 	fi
 
@@ -4984,7 +7217,6 @@ else
 fi
 
 
-
 cat >>confdefs.h <<_ACEOF
 #define NRPE_LOG_FACILITY "$log_facility"
 _ACEOF
@@ -5016,11 +7248,7 @@ else
   nrpe_port=5666
 fi
 
-
-
 NRPE_INSTALL_OPTS="-o $nrpe_user -g $nrpe_group"
-
-
 
 cat >>confdefs.h <<_ACEOF
 #define DEFAULT_SERVER_PORT $nrpe_port
@@ -5043,10 +7271,7 @@ else
   nagios_group=nagios
 fi
 
-
-
 NAGIOS_INSTALL_OPTS="-o $nagios_user -g $nagios_group"
-
 
 # Determine target OS, version and architecture for package build macros
 if test "x$target_ver" = "x" ; then
@@ -5054,26 +7279,22 @@ if test "x$target_ver" = "x" ; then
 else
 	TARGET_VER=$target_ver
 fi
-
 if test "x$target_os" = "x" ; then
 	TARGET_OS=`uname -s`
 else
 	TARGET_OS=$target_os
 fi
-
 if test "x$target_cpu" = "x" ; then
 	TARGET_ARCH=`uname -p`
 else
 	TARGET_ARCH=$target_cpu
 fi
-
 TARGET_PLATFORM=""
 if test "x$TARGET_OS" = "xSunOS" ; then
 	if test "x$TARGET_VER" = "x5.10" ; then
 		TARGET_PLATFORM="sol10"
 	fi
 fi
-
 
 # Check whether --enable-command-args was given.
 if test "${enable_command_args+set}" = set; then :
@@ -5615,7 +7836,7 @@ Configuration headers:
 $config_headers
 
 Report bugs to <nagios-users@lists.sourceforge.net>.
-nrpe home page: <http://www.nagios.org>."
+nrpe home page: <https://www.nagios.org/downloads/nagios-core-addons/>."
 
 _ACEOF
 cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
@@ -5743,17 +7964,24 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
+    "paths") CONFIG_FILES="$CONFIG_FILES paths" ;;
     "include/config.h") CONFIG_HEADERS="$CONFIG_HEADERS include/config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "subst") CONFIG_FILES="$CONFIG_FILES subst" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "package/solaris/Makefile") CONFIG_FILES="$CONFIG_FILES package/solaris/Makefile" ;;
-    "init-script") CONFIG_FILES="$CONFIG_FILES init-script" ;;
-    "init-script.debian") CONFIG_FILES="$CONFIG_FILES init-script.debian" ;;
-    "init-script.suse") CONFIG_FILES="$CONFIG_FILES init-script.suse" ;;
     "nrpe.spec") CONFIG_FILES="$CONFIG_FILES nrpe.spec" ;;
     "sample-config/nrpe.cfg") CONFIG_FILES="$CONFIG_FILES sample-config/nrpe.cfg" ;;
-    "sample-config/nrpe.xinetd") CONFIG_FILES="$CONFIG_FILES sample-config/nrpe.xinetd" ;;
+    "startup/bsd-init") CONFIG_FILES="$CONFIG_FILES startup/bsd-init" ;;
+    "startup/debian-init") CONFIG_FILES="$CONFIG_FILES startup/debian-init" ;;
+    "startup/default-init") CONFIG_FILES="$CONFIG_FILES startup/default-init" ;;
+    "startup/default-inetd") CONFIG_FILES="$CONFIG_FILES startup/default-inetd" ;;
+    "startup/default-service") CONFIG_FILES="$CONFIG_FILES startup/default-service" ;;
+    "startup/default-xinetd") CONFIG_FILES="$CONFIG_FILES startup/default-xinetd" ;;
+    "startup/mac-org.nagios.PKG_NAME.plist") CONFIG_FILES="$CONFIG_FILES startup/mac-org.nagios.PKG_NAME.plist" ;;
+    "startup/openrc-conf") CONFIG_FILES="$CONFIG_FILES startup/openrc-conf" ;;
+    "startup/openrc-init") CONFIG_FILES="$CONFIG_FILES startup/openrc-init" ;;
+    "startup/solaris-PKG_NAME.xml") CONFIG_FILES="$CONFIG_FILES startup/solaris-PKG_NAME.xml" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -6341,11 +8569,11 @@ $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
-perl subst init-script
-perl subst init-script.debian
-perl subst init-script.suse
-perl subst sample-config/nrpe.cfg
-perl subst sample-config/nrpe.xinetd
+#perl subst init-script
+#perl subst init-script.debian
+#perl subst init-script.suse
+#perl subst sample-config/nrpe.cfg
+#perl subst sample-config/nrpe.xinetd
 
 
 echo ""

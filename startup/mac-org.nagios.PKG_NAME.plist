@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple/DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>org.nagios.nrpe</string>
+	<key>UserName</key>
+	<string>nagios</string>
+	<key>GroupName</key>
+	<string>nagios</string>
+	<key>Program</key>
+	<string>${exec_prefix}/sbin/nrpe</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>-c</string>
+		<string>/etc/nagios/nrpe.cfg</string>
+	</array>
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+		<key>NetworkState</key>
+		<true/>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+	<!-- ExitTimeOut would be for nagios itself, not nrpe -->
+	<key>ExitTimeOut</key>
+	<integer>120</integer>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<!-- LaunchOnlyOnce might be for nagios checkconfig -->
+	<key>LaunchOnlyOnce</key>
+	<false/>
+</dict>
+</plist>

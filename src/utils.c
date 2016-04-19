@@ -234,9 +234,9 @@ void add_listen_addr(struct addrinfo **listen_addrs, int address_family, char *a
 int clean_environ(const char *keep_env_vars, const char *nrpe_user)
 {
 #ifdef HAVE_PATHS_H
-	static char *path = _PATH_STDPATH;
+	static char	*path = _PATH_STDPATH;
 #else
-	*path = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+	static char	*path = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 #endif
 	struct passwd *pw;
 	size_t len, var_sz = 0;

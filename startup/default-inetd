@@ -1,0 +1,2 @@
+# Enable the following entry to enable the nrpe daemon
+#nrpe stream tcp nowait nagios ${exec_prefix}/sbin/nrpe -c /etc/nagios/nrpe.cfg --inetd

@@ -15,7 +15,7 @@ LDFLAGS=@LDFLAGS@ @LIBS@
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
-CFGDIR=@sysconfdir@
+CFGDIR=@pkgsysconfdir@
 BINDIR=@bindir@
 SBINDIR=@sbindir@
 LIBEXECDIR=@libexecdir@
@@ -23,8 +23,13 @@ INSTALL=@INSTALL@
 NAGIOS_INSTALL_OPTS=@NAGIOS_INSTALL_OPTS@
 NRPE_INSTALL_OPTS=@NRPE_INSTALL_OPTS@
 
-INIT_DIR=@init_dir@
+INIT_DIR=@initdir@
 INIT_OPTS=-o root -g root
+INIT_FILE=@initname@
+INETD_DIR=@inetddir@
+INETD_FILE=@inetdname@
+SRC_INETD=@src_inetd@
+SRC_INIT=@src_init@
 
 
 all:
@@ -55,12 +60,23 @@ install-daemon:
 install:
 	$(MAKE) -C $(SRC_BASE) $@
 
-install-xinetd:
-	$(INSTALL) -m 644 sample-config/nrpe.xinetd /etc/xinetd.d/nrpe
+install-inetd:
+	@if test $(SRC_INETD) = unknown; then \
+		echo No inetd file to install; \
+		exit 1; \
+	fi
+	$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE)
 
-install-daemon-config:
-	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(DESTDIR)$(CFGDIR)
-	$(INSTALL) -m 644 $(NRPE_INSTALL_OPTS) sample-config/nrpe.cfg $(DESTDIR)$(CFGDIR)
+install-init:
+	@if test $(SRC_INIT) = unknown; then \
+		echo No init file to install; \
+		exit 1; \
+	fi
+	$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE)
+
+install-config:
+	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(CFGDIR)
+	$(INSTALL) -m 644 $(NRPE_INSTALL_OPTS) sample-config/nrpe.cfg $(CFGDIR)
 
 solaris-package:
 	@if [ `uname -s` != "SunOS" ] ; then \

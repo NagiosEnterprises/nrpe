@@ -4,19 +4,10 @@ dnl Disable caching
 define([AC_CACHE_LOAD],)
 define([AC_CACHE_SAVE],)
 
-AC_INIT([nrpe],[2.16RC2],[nagios-users@lists.sourceforge.net],[nrpe],[http://www.nagios.org])
+m4_include([build-aux/custom_help.m4])
+AC_INIT([nrpe],[2.16RC2],[nagios-users@lists.sourceforge.net],[nrpe],[https://www.nagios.org/downloads/nagios-core-addons/])
 AC_CONFIG_SRCDIR([src/nrpe.c])
-AC_CONFIG_HEADERS([include/config.h])
-AC_CONFIG_FILES([Makefile
-	subst
-	src/Makefile
-	package/solaris/Makefile
-	init-script
-	init-script.debian
-	init-script.suse
-	nrpe.spec
-	sample-config/nrpe.cfg
-	sample-config/nrpe.xinetd])
+AC_CONFIG_AUX_DIR([build-aux])
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
 PKG_NAME=nrpe
@@ -24,18 +15,103 @@ PKG_VERSION="2.16RC2"
 PKG_HOME_URL="http://www.nagios.org/"
 PKG_REL_DATE="11-09-2015"
 RPM_RELEASE=1
+
+LANG=C
+LC_ALL=C
+LC_COLLATE=C
+LC_CTYPE=C
+LC_MESSAGES=C
+LC_MONETARY=C
+LC_NUMERIC=C
+LC_TIME=C
+
 AC_SUBST(PKG_NAME)
 AC_SUBST(PKG_VERSION)
 AC_SUBST(PKG_HOME_URL)
 AC_SUBST(PKG_REL_DATE)
 AC_SUBST(RPM_RELEASE)
+AC_SUBST(INSTALL)
+AC_SUBST(SNPRINTF_O)
+AC_SUBST(OTHERLIBS)
+AC_SUBST(SOCKETLIBS)
+AC_SUBST(LIBWRAPLIBS)
+AC_SUBST(HAVE_SSL)
+AC_SUBST(NRPE_INSTALL_OPTS)
+AC_SUBST(log_facility)
+AC_SUBST(nrpe_user)
+AC_SUBST(nrpe_group)
+AC_SUBST(nrpe_port)
+AC_SUBST(nagios_user)
+AC_SUBST(nagios_group)
+AC_SUBST(NAGIOS_INSTALL_OPTS)
+AC_SUBST(TARGET_VER)
+AC_SUBST(TARGET_OS)
+AC_SUBST(TARGET_ARCH)
+AC_SUBST(TARGET_PLATFORM)
+AC_SUBST(pkgsysconfdir)
+AC_SUBST(objsysconfdir)
+AC_SUBST(sbindir)
+AC_SUBST(initname)
+AC_SUBST(inetdname)
+AC_SUBST(pluginsdir)
+AC_SUBST(brokersdir)
+AC_SUBST(cgibindir)
+AC_SUBST(webdir)
+AC_SUBST(privatesysconfdir)
+AC_SUBST(pkglocalstatedir)
+AC_SUBST(logdir)
+AC_SUBST(piddir)
+AC_SUBST(pipedir)
+AC_SUBST(spooldir)
+AC_SUBST(initdir)
+AC_SUBST(inetddir)
+AC_SUBST(tmpfilesd)
+AC_SUBST(subsyslockdir)
+AC_SUBST(subsyslockfile)
+AC_SUBST(src_init)
+AC_SUBST(src_inetd)
 
 dnl Figure out how to invoke "install" and what install options to use.
 AC_PROG_INSTALL
-AC_SUBST(INSTALL)
 
-dnl What OS are we running?
-AC_CANONICAL_HOST
+dnl Get O/S, Distribution, init, inetd, system-specific directories
+AC_NAGIOS_GET_OS
+AC_NAGIOS_GET_DISTRIB_TYPE
+AC_NAGIOS_GET_INIT
+AC_NAGIOS_GET_INETD
+AC_NAGIOS_GET_PATHS
+AC_NAGIOS_GET_FILES
+
+dnl Do they just want to see where things will go?
+if test x${showdirs_only} = xyes; then
+	AC_CONFIG_FILES([paths])
+	AC_OUTPUT()
+	chmod 755 paths
+	./paths
+	exit 0
+fi
+
+AC_CONFIG_HEADERS([include/config.h])
+AC_CONFIG_FILES([Makefile
+	subst
+	src/Makefile
+	package/solaris/Makefile
+	nrpe.spec
+	sample-config/nrpe.cfg
+	startup/bsd-init
+	startup/debian-init
+	startup/default-init
+	startup/default-inetd
+	startup/default-service
+	startup/default-xinetd
+	startup/mac-org.nagios.PKG_NAME.plist
+	startup/openrc-conf
+	startup/openrc-init
+	startup/solaris-PKG_NAME.xml
+])
+
+#sample-config/debian-nrpe-inetd
+#sample-config/openrc-nrpe-inetd
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -158,21 +234,17 @@ if test x"$ac_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
 fi
 
 dnl AC_CHECK_FUNC(snprintf,AC_DEFINE(HAVE_SNPRINTF),SNPRINTF_O=./snprintf.o)
-AC_SUBST(SNPRINTF_O)
 
 dnl Check for getopt_long (Solaris)
 AC_CHECK_FUNCS([getopt_long],,AC_CHECK_LIB([iberty],[getopt_long],OTHERLIBS="$OTHERLIBS -liberty"))
-AC_SUBST(OTHERLIBS)
 
 dnl Checks for library functions.
 AC_CHECK_LIB(nsl,main,SOCKETLIBS="$SOCKETLIBS -lnsl")
 AC_CHECK_LIB(socket,socket,SOCKETLIBS="$SOCKETLIBS -lsocket")
-AC_SUBST(SOCKETLIBS)
 AC_CHECK_LIB(wrap,main,[
 	LIBWRAPLIBS="$LIBWRAPLIBS -lwrap"
 	AC_DEFINE(HAVE_LIBWRAP,[1],[Have the TCP wrappers library])
 	])
-AC_SUBST(LIBWRAPLIBS)
 AC_CHECK_FUNCS(strdup strstr strtoul initgroups closesocket sigaction)
 
 dnl socklen_t check - from curl
@@ -223,18 +295,6 @@ AC_TRY_COMPILE([#include <stdlib.h>
 [int a = send(1, (const void *)0, (size_t *) 0, (int *) 0);],
 [AC_DEFINE(SOCKET_SIZE_TYPE, size_t, [Socket Size Type]) AC_MSG_RESULT(size_t)],
 [AC_DEFINE(SOCKET_SIZE_TYPE, int, [Socket Size Type]) AC_MSG_RESULT(int)])
-
-dnl Stolen from Python code: loewis@users.sourceforge.net
-#AC_CHECK_TYPE(socklen_t,int,
-#	AC_DEFINE(socklen_t,int,
-#	Define to `int' if <sys/socket.h> does not define.),[
-#	#ifdef HAVE_SYS_TYPES_H
-#	#include <sys/types.h>
-#	#endif
-#	#ifdef HAVE_SYS_SOCKET_H
-#	#include <sys/socket.h>
-#	#endif
-#	])
 
 dnl Does user want to check for SSL?
 AC_ARG_ENABLE([ssl],
@@ -338,7 +398,6 @@ if test x$check_for_ssl = xyes; then
 		        LIBS="$LIBS -lssl -lcrypto";
 
 			AC_DEFINE_UNQUOTED(HAVE_SSL,[1],[Have SSL support])
-			AC_SUBST(HAVE_SSL)
 	
 			dnl Generate DH parameters
 			echo ""
@@ -349,7 +408,8 @@ if test x$check_for_ssl = xyes; then
 				sslbin=$ssldir/bin/openssl
 			fi
 			# awk to strip off meta data at bottom of dhparam output
-			$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
+#			$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
+			$sslbin dhparam -C 1024 | awk '/^-----/ {exit} {print}' > include/dh.h
 		fi
 	fi
 
@@ -381,7 +441,6 @@ AC_ARG_WITH([log_facility],
 		[sets NRPE syslog facility]),
 	[log_facility=$withval],
 	[log_facility=daemon])
-AC_SUBST(log_facility)
 AC_DEFINE_UNQUOTED(NRPE_LOG_FACILITY,["$log_facility"],[NRPE syslog facility])
 
 AC_ARG_WITH([nrpe_user],
@@ -399,11 +458,7 @@ AC_ARG_WITH([nrpe_port],
 		[sets port number for NRPE to listen on]),
 	[nrpe_port=$withval],
 	[nrpe_port=5666])
-AC_SUBST(nrpe_user)
-AC_SUBST(nrpe_group)
 NRPE_INSTALL_OPTS="-o $nrpe_user -g $nrpe_group"
-AC_SUBST(NRPE_INSTALL_OPTS)
-AC_SUBST(nrpe_port)
 AC_DEFINE_UNQUOTED(DEFAULT_SERVER_PORT,$nrpe_port,[Default port for NRPE daemon])
 
 AC_ARG_WITH([nagios_user],
@@ -416,10 +471,7 @@ AC_ARG_WITH([nagios_group],
 		[sets group name file permissions]),
 	[nagios_group=$withval],
 	[nagios_group=nagios])
-AC_SUBST(nagios_user)
-AC_SUBST(nagios_group)
 NAGIOS_INSTALL_OPTS="-o $nagios_user -g $nagios_group"
-AC_SUBST(NAGIOS_INSTALL_OPTS)
 
 # Determine target OS, version and architecture for package build macros
 if test "x$target_ver" = "x" ; then
@@ -427,26 +479,22 @@ if test "x$target_ver" = "x" ; then
 else
 	TARGET_VER=$target_ver
 fi
-AC_SUBST(TARGET_VER)
 if test "x$target_os" = "x" ; then
 	TARGET_OS=`uname -s`
 else
 	TARGET_OS=$target_os
 fi
-AC_SUBST(TARGET_OS)
 if test "x$target_cpu" = "x" ; then
 	TARGET_ARCH=`uname -p`
 else
 	TARGET_ARCH=$target_cpu
 fi
-AC_SUBST(TARGET_ARCH)
 TARGET_PLATFORM=""
 if test "x$TARGET_OS" = "xSunOS" ; then
 	if test "x$TARGET_VER" = "x5.10" ; then
 		TARGET_PLATFORM="sol10"
 	fi
 fi
-AC_SUBST(TARGET_PLATFORM)
 
 AC_ARG_ENABLE([command-args],
 	AS_HELP_STRING([--enable-command-args],[allows clients to specify command arguments.  *** THIS IS A SECURITY RISK! *** Read the SECURITY file before using this option!]),
@@ -460,11 +508,11 @@ AC_ARG_ENABLE([bash-command-substitution],
 AC_PATH_PROG(PERL,perl)
 AC_OUTPUT()
 
-perl subst init-script
-perl subst init-script.debian
-perl subst init-script.suse
-perl subst sample-config/nrpe.cfg
-perl subst sample-config/nrpe.xinetd
+#perl subst init-script
+#perl subst init-script.debian
+#perl subst init-script.suse
+#perl subst sample-config/nrpe.cfg
+#perl subst sample-config/nrpe.xinetd
 
 
 dnl Review options

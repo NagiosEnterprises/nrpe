@@ -15,3 +15,7 @@ src/nrpe
 subst
 autom4te.cache/
 nbproject/
+.cproject
+.project
+.settings/
+paths
