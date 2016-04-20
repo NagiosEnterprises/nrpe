@@ -633,7 +633,6 @@ OBJEXT
 EXEEXT
 ac_ct_CC
 CPPFLAGS
-LDFLAGS
 CFLAGS
 CC
 LTLIBOBJS
@@ -678,6 +677,7 @@ HAVE_SSL
 LIBWRAPLIBS
 SOCKETLIBS
 OTHERLIBS
+LDFLAGS
 SNPRINTF_O
 INSTALL
 RPM_RELEASE
@@ -2486,6 +2486,7 @@ LC_MESSAGES=C
 LC_MONETARY=C
 LC_NUMERIC=C
 LC_TIME=C
+
 
 
 
@@ -7258,7 +7259,7 @@ fi
 	fi
 
 				if test "`uname -s`" = "HP-UX" ; then
-		LDFLAGS="$LDFLAGS +allowdups";
+		LDFLAGS="$LDFLAGS -Wl,+allowdups";
 	fi
 
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Kerberos include files" >&5
