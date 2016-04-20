@@ -334,8 +334,8 @@ void init_ssl(void)
 		/* use anonymous DH ciphers */
 		if (sslprm.allowDH == 2)
 			strcpy(sslprm.cipher_list, "ADH");
-		/*dh = get_dh2048();*/
-		dh = get_dh1024();
+		dh = get_dh2048();
+		/*dh = get_dh1024();*/
 		SSL_CTX_set_tmp_dh(ctx, dh);
 		DH_free(dh);
 	}
