@@ -41,6 +41,7 @@
 #undef HAVE_STRDUP
 #undef HAVE_STRSTR
 #undef HAVE_STRTOUL 
+#undef HAVE_STRTOK_R
 #undef HAVE_INITGROUPS
 #undef HAVE_CLOSESOCKET
 #undef HAVE_SIGACTION
@@ -100,6 +101,7 @@ typedef int int32_t;
 #define RETSIGTYPE ""
 #undef HAVE_STRUCT_SOCKADDR_STORAGE
 
+/* Use seteuid() or setresuid() depending on the platform */
 #undef SETEUID
 
 #undef HAVE_GETOPT_H

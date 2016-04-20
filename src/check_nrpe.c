@@ -1051,6 +1051,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 	return tot_bytes;
 }
 
+#ifdef HAVE_SSL
 int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 {
 	char name[256], issuer[256];
@@ -1078,6 +1079,7 @@ int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 
 	return preverify_ok;
 }
+#endif
 
 void alarm_handler(int sig)
 {

@@ -276,7 +276,11 @@ int add_ipv6_to_acl(char *ipv6) {
 		}
 
 	/* Parse the address itself */
+#ifdef HAVE_STRTOK_R
 	addrtok = strtok_r(ipv6tmp, "/", &addrsave);
+#else
+	addrtok = strtok(ipv6tmp, "/");
+#endif
 	if(inet_pton(AF_INET6, addrtok, &addr) <= 0) {
 		syslog(LOG_ERR, "Invalid IPv6 address in ACL: %s\n", ipv6);
 		free(ipv6tmp);
@@ -284,7 +288,11 @@ int add_ipv6_to_acl(char *ipv6) {
 		}
 
 	/* Check whether there is a netmask */
+#ifdef HAVE_STRTOK_R
 	addrtok = strtok_r(NULL, "/", &addrsave);
+#else
+	addrtok = strtok(NULL, "/");
+#endif
 	if(NULL != addrtok) {
 		/* If so, build a netmask */
 
@@ -556,7 +564,11 @@ void parse_allowed_hosts(char *allowed_hosts) {
 	const char *delim = ",";
 	char *trimmed_tok;
 
-	tok = strtok_r( hosts, delim, &saveptr);
+#ifdef HAVE_STRTOK_R
+	tok = strtok_r(hosts, delim, &saveptr);
+#else
+	tok = strtok(hosts, delim);
+#endif
 	while( tok) {
 		trimmed_tok = malloc( sizeof( char) * ( strlen( tok) + 1));
 		trim( tok, trimmed_tok);
@@ -567,7 +579,11 @@ void parse_allowed_hosts(char *allowed_hosts) {
 			}
 		}
 		free( trimmed_tok);
-		tok = strtok_r(( char *)0, delim, &saveptr);
+#ifdef HAVE_STRTOK_R
+		tok = strtok_r(NULL, delim, &saveptr);
+#else
+		tok = strtok(NULL, delim);
+#endif
 	}
 
 	free( hosts);

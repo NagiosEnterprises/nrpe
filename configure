@@ -6977,7 +6977,7 @@ $as_echo "#define HAVE_LIBWRAP 1" >>confdefs.h
 
 fi
 
-for ac_func in strdup strstr strtoul initgroups closesocket sigaction
+for ac_func in strdup strstr strtoul strtok_r initgroups closesocket sigaction
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
@@ -7252,10 +7252,13 @@ fi
 				echo ""
 				echo "*** Generating DH Parameters for SSL/TLS ***"
 				# awk to strip off meta data at bottom of dhparam output
-#				$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
-#				$sslbin dhparam -C 1024 | awk '/^-----/ {exit} {print}' > include/dh.h
+				$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
 			fi
 		fi
+	fi
+
+				if test "`uname -s`" = "HP-UX" ; then
+		LDFLAGS="$LDFLAGS +allowdups";
 	fi
 
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Kerberos include files" >&5

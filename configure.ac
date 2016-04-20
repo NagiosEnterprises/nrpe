@@ -251,7 +251,7 @@ AC_CHECK_LIB(wrap,main,[
 	LIBWRAPLIBS="$LIBWRAPLIBS -lwrap"
 	AC_DEFINE(HAVE_LIBWRAP,[1],[Have the TCP wrappers library])
 	])
-AC_CHECK_FUNCS(strdup strstr strtoul initgroups closesocket sigaction)
+AC_CHECK_FUNCS(strdup strstr strtoul strtok_r initgroups closesocket sigaction)
 
 dnl socklen_t check - from curl
 AC_CHECK_TYPE([socklen_t], ,[
@@ -413,9 +413,15 @@ if test x$check_for_ssl = xyes; then
 				echo "*** Generating DH Parameters for SSL/TLS ***"
 				# awk to strip off meta data at bottom of dhparam output
 				$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
-#				$sslbin dhparam -C 1024 | awk '/^-----/ {exit} {print}' > include/dh.h
 			fi
 		fi
+	fi
+
+	dnl On HP-UX the compile will fail with a 'Duplicate symbol "setenv"' error
+	dnl in '/usr/local/lib/libwrap.a(setenv.o)' and '/usr/local/lib/libiberty.a(setenv.o)'
+	dnl so allow duplicate symbols, and use the first one
+	if test "`uname -s`" = "HP-UX" ; then
+		LDFLAGS="$LDFLAGS +allowdups";
 	fi
 
 	dnl RedHat 8.0 and 9.0 include openssl compiled with kerberos, so we must include header file
