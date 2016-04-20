@@ -32,6 +32,7 @@ AC_SUBST(PKG_REL_DATE)
 AC_SUBST(RPM_RELEASE)
 AC_SUBST(INSTALL)
 AC_SUBST(SNPRINTF_O)
+AC_SUBST(LDFLAGS)
 AC_SUBST(OTHERLIBS)
 AC_SUBST(SOCKETLIBS)
 AC_SUBST(LIBWRAPLIBS)
@@ -421,7 +422,7 @@ if test x$check_for_ssl = xyes; then
 	dnl in '/usr/local/lib/libwrap.a(setenv.o)' and '/usr/local/lib/libiberty.a(setenv.o)'
 	dnl so allow duplicate symbols, and use the first one
 	if test "`uname -s`" = "HP-UX" ; then
-		LDFLAGS="$LDFLAGS +allowdups";
+		LDFLAGS="$LDFLAGS -Wl,+allowdups";
 	fi
 
 	dnl RedHat 8.0 and 9.0 include openssl compiled with kerberos, so we must include header file
