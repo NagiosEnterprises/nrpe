@@ -6745,6 +6745,17 @@ else
 fi
 
 
+ac_fn_c_check_func "$LINENO" "seteuid" "ac_cv_func_seteuid"
+if test "x$ac_cv_func_seteuid" = xyes; then :
+  $as_echo "#define SETEUID(id) seteuid(id)" >>confdefs.h
+
+else
+  $as_echo "#define SETEUID(id) setresuid((uid_t) -1, id, (uid_t) -1)" >>confdefs.h
+
+
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for C99 vsnprintf" >&5
 $as_echo_n "checking for C99 vsnprintf... " >&6; }
 if ${ac_cv_HAVE_C99_VSNPRINTF+:} false; then :
@@ -7242,7 +7253,7 @@ fi
 				echo "*** Generating DH Parameters for SSL/TLS ***"
 				# awk to strip off meta data at bottom of dhparam output
 #				$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
-				$sslbin dhparam -C 1024 | awk '/^-----/ {exit} {print}' > include/dh.h
+#				$sslbin dhparam -C 1024 | awk '/^-----/ {exit} {print}' > include/dh.h
 			fi
 		fi
 	fi

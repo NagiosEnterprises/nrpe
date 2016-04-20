@@ -2192,7 +2192,7 @@ int drop_privileges(char *user, char *group)
 			}
 #endif
 
-			if (seteuid(uid) == -1)
+			if (SETEUID(uid) == -1)
 				syslog(LOG_ERR, "Warning: Could not set effective UID=%d", (int)uid);
 		}
 	}
@@ -2258,7 +2258,7 @@ int remove_pid_file(void)
 	if (wrote_pid_file == FALSE)
 		return OK;				/* pid file was not written */
 
-	seteuid(0);					/* get root back so we can delete the pid file */
+	SETEUID(0);					/* get root back so we can delete the pid file */
 	if (unlink(pid_file) == -1) {
 		syslog(LOG_ERR, "Cannot remove pidfile '%s' - check your privileges.", pid_file);
 		return ERROR;

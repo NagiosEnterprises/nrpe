@@ -1,5 +1,7 @@
 dnl Process this -*-m4-*- file with autoconf to produce a configure script.
 
+set +u
+
 dnl Disable caching
 define([AC_CACHE_LOAD],)
 define([AC_CACHE_SAVE],)
@@ -203,6 +205,11 @@ AC_CHECK_FUNC(vsnprintf,,SNPRINTF_O=./snprintf.o)
 AC_CHECK_FUNC(snprintf,,SNPRINTF_O=./snprintf.o)
 AC_CHECK_FUNC(asprintf,,SNPRINTF_O=./snprintf.o)
 AC_CHECK_FUNC(vasprintf,,SNPRINTF_O=./snprintf.o)
+
+AC_CHECK_FUNC(seteuid,
+	AC_DEFINE(SETEUID(id),[seteuid(id)]),
+	AC_DEFINE(SETEUID(id),[setresuid((uid_t) -1, id, (uid_t) -1)])
+)
 
 AC_CACHE_CHECK([for C99 vsnprintf],ac_cv_HAVE_C99_VSNPRINTF,[
 AC_TRY_RUN([

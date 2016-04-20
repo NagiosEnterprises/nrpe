@@ -100,6 +100,8 @@ typedef int int32_t;
 #define RETSIGTYPE ""
 #undef HAVE_STRUCT_SOCKADDR_STORAGE
 
+#undef SETEUID
+
 #undef HAVE_GETOPT_H
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
