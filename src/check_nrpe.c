@@ -1037,10 +1037,10 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			if (bytes_read != buffer_size) {
 				if (packet_ver == NRPE_PACKET_VERSION_3)
 					printf("CHECK_NRPE: Receive buffer size - %ld bytes received "
-						   "(%ld expected).\n", bytes_read, sizeof(buffer_size));
+						   "(%ld expected).\n", (long)bytes_read, sizeof(buffer_size));
 				else
 					printf("CHECK_NRPE: Receive underflow - only %ld bytes received "
-						   "(%ld expected).\n", bytes_read, sizeof(buffer_size));
+						   "(%ld expected).\n", (long)bytes_read, sizeof(buffer_size));
 			}
 			return -1;
 		} else
@@ -1059,7 +1059,7 @@ int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 	int err;
 	SSL *ssl;
 
-	if (preverify_ok || (sslprm.log_opts & SSL_LogCertDetails == 0))
+	if (preverify_ok || ((sslprm.log_opts & SSL_LogCertDetails) == 0))
 		return preverify_ok;
 
 	err_cert = X509_STORE_CTX_get_current_cert(ctx);

@@ -376,7 +376,7 @@ if test x$check_for_ssl = xyes; then
 		dnl Now try and find SSL libraries
 		AC_MSG_CHECKING(for SSL libraries)
 		found_ssl=no
-		for dir in $ssl_lib_dir $ssl_dir $ssl_dir/lib $ssl_dir/lib64 /usr/lib64 \
+		for dir in $ssl_lib_dir $ssldir $ssldir/lib $ssldir/lib64 /usr/lib64 \
 					/usr/lib /usr/lib/x86_64-linux-gnu /usr/lib/i386-linux-gnu \
 					/usr/local/lib /usr/lib/ssl /usr/ssl/lib /usr/openssl/lib \
 					/usr/pkg/lib /usr/freeware/lib/openssl /usr/sfw/lib \
@@ -407,7 +407,7 @@ if test x$check_for_ssl = xyes; then
 
 			AC_DEFINE_UNQUOTED(HAVE_SSL,[1],[Have SSL support])
 	
-			AC_PATH_PROG(sslbin,openssl,value-if-not-found,$ssldir/sbin/openssl$PATH_SEPARATOR$ssldir/bin/openssl$PATH_SEPARATOR$PATH)
+			AC_PATH_PROG(sslbin,openssl,value-if-not-found,$ssldir/sbin$PATH_SEPARATOR$ssldir/bin$PATH_SEPARATOR$PATH)
 
 			dnl Generate DH parameters
 			if test -f "$sslbin"; then

@@ -590,7 +590,7 @@ int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 	int       err;
 	SSL      *ssl;
 
-	if (preverify_ok || (sslprm.log_opts & SSL_LogCertDetails == 0))
+	if (preverify_ok || ((sslprm.log_opts & SSL_LogCertDetails) == 0))
 		return preverify_ok;
 
 	err_cert = X509_STORE_CTX_get_current_cert(ctx);
