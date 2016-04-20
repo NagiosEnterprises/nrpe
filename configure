@@ -624,6 +624,7 @@ ac_includes_default="\
 #endif"
 
 ac_subst_vars='PERL
+sslbin
 EGREP
 GREP
 CPP
@@ -6635,6 +6636,17 @@ $as_echo "#define INT32_T_IS_USHORT 1" >>confdefs.h
 	fi
 fi
 
+ac_fn_c_check_type "$LINENO" "struct sockaddr_storage" "ac_cv_type_struct_sockaddr_storage" "#include <sys/socket.h>
+"
+if test "x$ac_cv_type_struct_sockaddr_storage" = xyes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_SOCKADDR_STORAGE 1
+_ACEOF
+
+
+fi
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for va_copy" >&5
 $as_echo_n "checking for va_copy... " >&6; }
@@ -7183,16 +7195,55 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-						echo ""
-			echo "*** Generating DH Parameters for SSL/TLS ***"
-			if test -f "$ssldir/sbin/openssl"; then
-				sslbin=$ssldir/sbin/openssl
-			else
-				sslbin=$ssldir/bin/openssl
+			# Extract the first word of "openssl", so it can be a program name with args.
+set dummy openssl; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_sslbin+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $sslbin in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_sslbin="$sslbin" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH$PATH_SEPARATOR$ssldir/sbin/openssl$PATH_SEPARATOR$ssldir/bin/openssl
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_sslbin="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_path_sslbin" && ac_cv_path_sslbin="value-if-not-found"
+  ;;
+esac
+fi
+sslbin=$ac_cv_path_sslbin
+if test -n "$sslbin"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $sslbin" >&5
+$as_echo "$sslbin" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+
+						if test -f "$sslbin"; then
+				echo ""
+				echo "*** Generating DH Parameters for SSL/TLS ***"
+				# awk to strip off meta data at bottom of dhparam output
+#				$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
+				$sslbin dhparam -C 1024 | awk '/^-----/ {exit} {print}' > include/dh.h
 			fi
-			# awk to strip off meta data at bottom of dhparam output
-#			$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
-			$sslbin dhparam -C 1024 | awk '/^-----/ {exit} {print}' > include/dh.h
 		fi
 	fi
 

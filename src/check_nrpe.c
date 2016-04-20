@@ -26,7 +26,11 @@
 u_short server_port = DEFAULT_SERVER_PORT;
 char *server_name = NULL;
 char *bind_address = NULL;
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 struct sockaddr_storage hostaddr;
+#else
+struct sockaddr hostaddr;
+#endif
 int address_family = AF_UNSPEC;
 char *command_name = NULL;
 int socket_timeout = DEFAULT_SOCKET_TIMEOUT;

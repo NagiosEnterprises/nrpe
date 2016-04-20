@@ -118,8 +118,13 @@ void randomize_buffer(char *buffer, int buffer_size)
 }
 
 /* opens a connection to a remote host */
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 int my_connect(const char *host, struct sockaddr_storage *hostaddr, u_short port,
 			   int address_family, const char *bind_address)
+#else
+int my_connect(const char *host, struct sockaddr *hostaddr, u_short port,
+			   int address_family, const char *bind_address)
+#endif
 {
 	struct addrinfo hints, *ai, *aitop;
 	char ntop[NI_MAXHOST], strport[NI_MAXSERV];

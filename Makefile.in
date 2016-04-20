@@ -33,7 +33,7 @@ SRC_INIT=@src_init@
 
 
 all:
-	$(MAKE) -C $(SRC_BASE)
+	cd $(SRC_BASE); $(MAKE); cd ..
 
 	@echo ""
 	@echo "*** Compile finished ***"
@@ -46,19 +46,18 @@ all:
 	@echo ""
 
 nrpe:
-	$(MAKE) -C $(SRC_BASE)
+	cd $(SRC_BASE); $(MAKE); cd ..
 
 check_nrpe:
-	$(MAKE) -C $(SRC_BASE)
+	cd $(SRC_BASE); $(MAKE); cd ..
 
 install-plugin:
-	$(MAKE) -C $(SRC_BASE) $@
+	cd $(SRC_BASE); $(MAKE) $@; cd ..
 
 install-daemon:
-	$(MAKE) -C $(SRC_BASE) $@
+	cd $(SRC_BASE); $(MAKE) $@; cd ..
 
 install:
-	$(MAKE) -C $(SRC_BASE) $@
 
 install-inetd:
 	@if test $(SRC_INETD) = unknown; then \
@@ -86,14 +85,14 @@ solaris-package:
 	fi
 
 clean:
-	$(MAKE) -C $(SRC_BASE) $@
-	$(MAKE) -C package/solaris $@
+	cd $(SRC_BASE); $(MAKE) $@; cd ..
+	cd package/solaris; $(MAKE) $@; cd ../..
 	rm -f core
 	rm -f *~ */*~
 
 distclean: clean
-	$(MAKE) -C $(SRC_BASE) $@
-	$(MAKE) -C package/solaris $@
+	cd $(SRC_BASE); $(MAKE) $@; cd ..
+	cd package/solaris; $(MAKE) $@; cd ../..
 	rm -f config.log config.status config.cache nrpe.cfg nrpe.xinetd subst $(SRC_INCLUDE)/config.h init-script init-script.debian init-script.freebsd init-script.suse
 	rm -f sample-config/*.cfg sample-config/*.xinetd
 	rm -f Makefile

@@ -1109,8 +1109,11 @@ static void close_listen_socks(void)
 /* wait for incoming connection requests */
 void wait_for_connections(void)
 {
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 	struct sockaddr_storage from;
-	struct sockaddr_storage addr;
+#else
+	struct sockaddr from;
+#endif
 	socklen_t fromlen;
 	fd_set   *fdset = NULL;
 	int       maxfd = 0, new_sd = 0, i, rc, retval;
@@ -1182,16 +1185,8 @@ void wait_for_connections(void)
 			handle_connection(new_sd);
 
 			/* log info to syslog facility */
-			if (debug == TRUE) {
-				switch (addr.ss_family) {
-				case AF_INET:
-					syslog(LOG_DEBUG, "Connection from %s closed.", remote_host);
-					break;
-				case AF_INET6:
-					syslog(LOG_DEBUG, "Connection from %s closed.", remote_host);
-					break;
-				}
-			}
+			if (debug == TRUE)
+				syslog(LOG_DEBUG, "Connection from %s closed.", remote_host);
 
 			/* close socket prior to exiting */
 			close(new_sd);
@@ -1315,7 +1310,11 @@ void conn_check_peer(int sock)
 #ifdef HAVE_LIBWRAP
 	struct request_info     req;
 #endif
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 	struct sockaddr_storage addr;
+#else
+	struct sockaddr			addr;
+#endif
 	struct sockaddr_in      *nptr;
 	struct sockaddr_in6     *nptr6;
 
@@ -1337,7 +1336,11 @@ void conn_check_peer(int sock)
 		return;
 	}
 
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 	switch (addr.ss_family) {
+#else
+	switch (addr.sa_family) {
+#endif
 
 	case AF_INET:
 		nptr = (struct sockaddr_in *)&addr;
@@ -1359,7 +1362,11 @@ void conn_check_peer(int sock)
 
 	/* is this is a blessed machine? */
 	if (allowed_hosts) {
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 		switch (addr.ss_family) {
+#else
+		switch (addr.sa_family) {
+#endif
 
 		case AF_INET:
 			/* log info to syslog facility */

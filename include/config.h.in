@@ -33,15 +33,10 @@
 #define NRPE_LOG_FACILITY       @log_facility@
 
 #undef ENABLE_COMMAND_ARGUMENTS
-
 #undef ENABLE_BASH_COMMAND_SUBSTITUTION
-
 #undef socklen_t
-
 #undef HAVE_GETOPT_LONG
-
 #undef HAVE_LIBWRAP
-
 #undef STDC_HEADERS
 #undef HAVE_STRDUP
 #undef HAVE_STRSTR
@@ -100,10 +95,10 @@ typedef int int32_t;
 #undef HAVE___VA_COPY
 
 
-
 #define SOCKET_SIZE_TYPE ""
 #define GETGROUPS_T ""
 #define RETSIGTYPE ""
+#undef HAVE_STRUCT_SOCKADDR_STORAGE
 
 #undef HAVE_GETOPT_H
 #ifdef HAVE_GETOPT_H

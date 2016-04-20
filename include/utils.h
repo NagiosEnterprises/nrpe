@@ -38,7 +38,11 @@ void generate_crc32_table(void);
 unsigned long calculate_crc32(char*, int);
 void randomize_buffer(char*,int);
 int my_tcp_connect(char*, int, int*);
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 int my_connect(const char*, struct sockaddr_storage*, u_short, int, const char*);
+#else
+int my_connect(const char*, struct sockaddr*, u_short, int, const char*);
+#endif
 void add_listen_addr(struct addrinfo**, int, char*, int);
 int clean_environ(const char *keep_env_vars, const char *nrpe_user);
 char* strip(char*);

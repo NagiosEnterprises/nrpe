@@ -178,6 +178,7 @@ if test "$ac_cv_type_int32_t" = no ; then
 	fi
 fi
 
+AC_CHECK_TYPES([struct sockaddr_storage],[],[],[#include <sys/socket.h>])
 
 dnl Check for asprintf() and friends...
 AC_CACHE_CHECK([for va_copy],ac_cv_HAVE_VA_COPY,[
@@ -399,17 +400,16 @@ if test x$check_for_ssl = xyes; then
 
 			AC_DEFINE_UNQUOTED(HAVE_SSL,[1],[Have SSL support])
 	
+			AC_PATH_PROG(sslbin,openssl,value-if-not-found,$PATH$PATH_SEPARATOR$ssldir/sbin/openssl$PATH_SEPARATOR$ssldir/bin/openssl)
+
 			dnl Generate DH parameters
-			echo ""
-			echo "*** Generating DH Parameters for SSL/TLS ***"
-			if test -f "$ssldir/sbin/openssl"; then
-				sslbin=$ssldir/sbin/openssl
-			else
-				sslbin=$ssldir/bin/openssl
+			if test -f "$sslbin"; then
+				echo ""
+				echo "*** Generating DH Parameters for SSL/TLS ***"
+				# awk to strip off meta data at bottom of dhparam output
+#				$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
+				$sslbin dhparam -C 1024 | awk '/^-----/ {exit} {print}' > include/dh.h
 			fi
-			# awk to strip off meta data at bottom of dhparam output
-#			$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
-			$sslbin dhparam -C 1024 | awk '/^-----/ {exit} {print}' > include/dh.h
 		fi
 	fi
 
