@@ -46,7 +46,7 @@ int show_version = FALSE;
 int packet_ver = NRPE_PACKET_VERSION_3;
 
 #ifdef HAVE_SSL
-# if defined(__sun) || defined(_AIX)
+# if (defined(__sun) && defined(__SunOS_5_10)) || defined(_AIX)
 SSL_METHOD *meth;
 # else
 const SSL_METHOD *meth;

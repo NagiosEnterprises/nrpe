@@ -418,13 +418,6 @@ if test x$check_for_ssl = xyes; then
 		fi
 	fi
 
-	dnl On HP-UX the compile will fail with a 'Duplicate symbol "setenv"' error
-	dnl in '/usr/local/lib/libwrap.a(setenv.o)' and '/usr/local/lib/libiberty.a(setenv.o)'
-	dnl so allow duplicate symbols, and use the first one
-	if test "`uname -s`" = "HP-UX" ; then
-		LDFLAGS="$LDFLAGS -Wl,+allowdups";
-	fi
-
 	dnl RedHat 8.0 and 9.0 include openssl compiled with kerberos, so we must include header file
 	AC_MSG_CHECKING(for Kerberos include files)
 	found_kerberos=no
@@ -484,6 +477,13 @@ AC_ARG_WITH([nagios_group],
 	[nagios_group=$withval],
 	[nagios_group=nagios])
 NAGIOS_INSTALL_OPTS="-o $nagios_user -g $nagios_group"
+
+	dnl On HP-UX the compile will fail with a 'Duplicate symbol "setenv"' error
+	dnl in '/usr/local/lib/libwrap.a(setenv.o)' and '/usr/local/lib/libiberty.a(setenv.o)'
+	dnl so allow duplicate symbols, and use the first one
+	if test "`uname -s`" = "HP-UX" ; then
+		LDFLAGS="$LDFLAGS -Wl,+allowdups";
+	fi
 
 # Determine target OS, version and architecture for package build macros
 if test "x$target_ver" = "x" ; then

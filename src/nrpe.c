@@ -41,7 +41,7 @@ int       deny_severity = LOG_WARNING;
 #endif
 
 #ifdef HAVE_SSL
-# if defined(__sun) || defined(_AIX)
+# if (defined(__sun) && defined(__SunOS_5_10)) || defined(_AIX)
 SSL_METHOD *meth;
 # else
 const SSL_METHOD *meth;

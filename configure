@@ -7258,10 +7258,6 @@ fi
 		fi
 	fi
 
-				if test "`uname -s`" = "HP-UX" ; then
-		LDFLAGS="$LDFLAGS -Wl,+allowdups";
-	fi
-
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Kerberos include files" >&5
 $as_echo_n "checking for Kerberos include files... " >&6; }
 	found_kerberos=no
@@ -7352,6 +7348,10 @@ else
 fi
 
 NAGIOS_INSTALL_OPTS="-o $nagios_user -g $nagios_group"
+
+				if test "`uname -s`" = "HP-UX" ; then
+		LDFLAGS="$LDFLAGS -Wl,+allowdups";
+	fi
 
 # Determine target OS, version and architecture for package build macros
 if test "x$target_ver" = "x" ; then
