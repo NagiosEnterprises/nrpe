@@ -1,7 +1,5 @@
 dnl Process this -*-m4-*- file with autoconf to produce a configure script.
 
-set +u
-
 dnl Disable caching
 define([AC_CACHE_LOAD],)
 define([AC_CACHE_SAVE],)
@@ -414,8 +412,8 @@ if test x$check_for_ssl = xyes; then
 				echo ""
 				echo "*** Generating DH Parameters for SSL/TLS ***"
 				# awk to strip off meta data at bottom of dhparam output
-#				$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
-				$sslbin dhparam -C 1024 | awk '/^-----/ {exit} {print}' > include/dh.h
+				$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
+#				$sslbin dhparam -C 1024 | awk '/^-----/ {exit} {print}' > include/dh.h
 			fi
 		fi
 	fi
