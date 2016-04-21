@@ -3313,6 +3313,8 @@ else
 		fi
 	elif test x"$libexecdir" = x'${exec_prefix}/lib'; then
 		libexecdir=${libexecdir}/nagios;
+	elif test x"$libexecdir" = x'${exec_prefix}/libexec'; then
+		libexecdir=${exec_prefix}/lib/nagios;
 	fi
 
 fi
