@@ -1,4 +1,4 @@
-# default: on
+# default: off
 # description: NRPE (Nagios Remote Plugin Executor)
 service nrpe
 {

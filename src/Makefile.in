@@ -70,8 +70,8 @@ install-plugin:
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) check_nrpe $(PLUGINSDIR)
 
 install-daemon:
-	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(SBINDIR)
-	$(INSTALL) -m 775 $(NRPE_INSTALL_OPTS) nrpe $(SBINDIR)
+	$(INSTALL) -m 775 -d $(SBINDIR)
+	$(INSTALL) -m 775 nrpe $(SBINDIR)
 
 clean:
 	rm -f core nrpe check_nrpe $(SNPRINTF_O)
