@@ -2808,8 +2808,8 @@ esac
 
 			fi
 
-			if test $dist_ver != "unknown"; then
-				dist_ver=`echo $dist_ver | cut -d'.' -f1 | tr -d :alpha::blank::punct:`
+			if test "$dist_ver" != "unknown"; then
+				dist_ver=`echo "$dist_ver" | cut -d'.' -f1 | tr -d :alpha::blank::punct:`
 			fi
 		fi
 
