@@ -68,7 +68,7 @@ install-inetd:
 		exit 1; \
 	fi
 	@if test $(INETD_TYPE) = inetd; then \
-		@grep -E -q "^\W*nrpe\s+" $(INETD_DIR)/$(INETD_FILE) || \
+		grep -E -q "^\W*nrpe\s+" $(INETD_DIR)/$(INETD_FILE) || \
 		   cat startup/$(SRC_INETD) >> $(INETD_DIR)/$(INETD_FILE); \
 	else \
 		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
