@@ -99,30 +99,31 @@ of TCP wrappers, you need to do the following things:
    ignored._
 
 
-   #### INETD ####
-   If your system uses the inetd superserver **with** tcpwrappers, add an
-   entry to `/etc/inetd.conf` as follows:
+#### INETD
+If your system uses the inetd superserver **with** tcpwrappers, add an entry
+to `/etc/inetd.conf` as follows:
 
     nrpe   stream   tcp   nowait   <user> /usr/sbin/tcpd <nrpebin> -c <nrpecfg> --inetd
 
-   If your system uses the inetd superserver **without** tcpwrappers,
-   add an entry to `/etc/inetd.conf` as follows:
+If your system uses the inetd superserver **without** tcpwrappers, add an
+entry to `/etc/inetd.conf` as follows:
 
     nrpe   stream   tcp   nowait   <user> <nrpebin> -c <nrpecfg> --inetd
 
 
-   - Replace `<user>` with the name of the user that the nrpe server should run as.
-     Example: `nagios`
-   - Replace `<nrpebin>` with the path to the nrpe binary on your system.
-     Example: `/usr/local/nagios/nrpe`
-   - Replace `<nrpecfg>` with the path to the nrpe config file on your system.
-     Example: `/usr/local/nagios/nrpe.cfg`
+- Replace `<user>` with the name of the user that the nrpe server should run as.
+  Example: `nagios`
+- Replace `<nrpebin>` with the path to the nrpe binary on your system.
+  Example: `/usr/local/nagios/nrpe`
+- Replace `<nrpecfg>` with the path to the nrpe config file on your system.
+  Example: `/usr/local/nagios/nrpe.cfg`
 
 
-   #### XINETD ####
-   If your system uses xinetd instead of inetd, you'll probably
-   want to create a file called `nrpe` in your `/etc/xinetd.d`
-   directory that contains the following entries:
+#### XINETD
+If your system uses xinetd instead of inetd, you'll probably
+want to create a file called `nrpe` in your `/etc/xinetd.d`
+directory that contains the following entries:
+
 ```
     # default: on
     # description: NRPE
@@ -139,18 +140,19 @@ of TCP wrappers, you need to do the following things:
         only_from       = <ipaddress1> <ipaddress2> ...
     }
 ```
-   - Replace `<user>` with the name of the user that the nrpe server should run as.
-   - Replace `<nrpebin>` with the path to the nrpe binary on your system.
-   - Replace `<nrpecfg>` with the path to the nrpe config file on your system.
-   - Replace the `<ipaddress>` fields with the IP addresses of hosts which
-     are allowed to connect to the NRPE daemon.  This only works if xinetd was
-     compiled with support for tcpwrappers.
+
+- Replace `<user>` with the name of the user that the nrpe server should run as.
+- Replace `<nrpebin>` with the path to the nrpe binary on your system.
+- Replace `<nrpecfg>` with the path to the nrpe config file on your system.
+- Replace the `<ipaddress>` fields with the IP addresses of hosts which
+  are allowed to connect to the NRPE daemon.  This only works if xinetd was
+  compiled with support for tcpwrappers.
 
 3) Restart inetd or xinetd will the following command (pick the
    on that is appropriate for your system:
 
     /etc/rc.d/init.d/inet restart
-
+   or
     /etc/rc.d/init.d/xinetd restart
 
    OpenBSD users can use the following command to restart inetd:
