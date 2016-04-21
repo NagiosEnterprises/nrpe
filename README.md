@@ -152,7 +152,9 @@ directory that contains the following entries:
    on that is appropriate for your system:
 
     /etc/rc.d/init.d/inet restart
+
    or
+
     /etc/rc.d/init.d/xinetd restart
 
    OpenBSD users can use the following command to restart inetd:
