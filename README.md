@@ -123,7 +123,7 @@ of TCP wrappers, you need to do the following things:
    If your system uses xinetd instead of inetd, you'll probably
    want to create a file called `nrpe` in your `/etc/xinetd.d`
    directory that contains the following entries:
-
+```
     # default: on
     # description: NRPE
     service nrpe
@@ -138,7 +138,7 @@ of TCP wrappers, you need to do the following things:
         disable         = no
         only_from       = <ipaddress1> <ipaddress2> ...
     }
-
+```
    - Replace `<user>` with the name of the user that the nrpe server should run as.
    - Replace `<nrpebin>` with the path to the nrpe binary on your system.
    - Replace `<nrpecfg>` with the path to the nrpe config file on your system.
