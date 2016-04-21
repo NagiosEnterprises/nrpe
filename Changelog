@@ -2,9 +2,21 @@
 NRPE Changelog
 **************
 
-2.16 = xx/xx/xxxx
+3.0 = xx/xx/xxxx
 -----------------
 ENHANCEMENTS
+- Updated code so configure && make will work on AIX, HP-UX, Solaris, OS X.
+  There should be no errors or warnings. Let me know if any errors or
+  warning appear (John Frickson)
+- Added autoconf macros and additional files to better support multi-platform
+  config and compile. The default will still set up to install to
+  /usr/local/nagios but I added a new configure option:
+  '--enable-install-method=<method>'. If <method> is 'opt', everything will
+  install to '/opt/nagios'. If <method> is 'os', installation will be to O/S-
+  and distribution-specific locations, such as /usr/sbin, /usr/lib/nagios,
+  /etc/nagios, and so on.
+- Added additional init and inetd config files to support more systems,
+  including SuSE, Debian, Slackware, Gentoo, *BSD, AIX, HP-UX, Solaris, OS X.
 - Added listen_queue_size as configuration option (Vadim Antipov, Kaspersky Lab)
 - Reworked SSL/TLS. See the README.SSL.md file for full info. (John Frickson)
 - Added support for version 3 variable sized packets up to 64KB. nrpe will
