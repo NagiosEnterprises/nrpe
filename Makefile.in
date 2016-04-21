@@ -71,6 +71,7 @@ install-inetd:
 		@grep -E -q "^\W*nrpe\s+" $(INETD_DIR)/$(INETD_FILE) || \
 		   cat startup/$(SRC_INETD) >> $(INETD_DIR)/$(INETD_FILE); \
 	else \
+		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE) \
 		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE) \
 	fi
 	@grep -E -q "^nrpe[\t ]+5666/tcp" /etc/services || \
@@ -82,9 +83,11 @@ install-init:
 		exit 1; \
 	fi
 	@if test $(INIT_TYPE) = bsd; then \
-		cat startup/$(SRC_INIT) >> $(INETD_DIR)/$(INIT_FILE) \
+		echo cat startup/$(SRC_INIT) >> $(INETD_DIR)/$(INIT_FILE); \
+		cat startup/$(SRC_INIT) >> $(INETD_DIR)/$(INIT_FILE); \
 	else \
-		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE) \
+		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
+		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 	fi
 
 install-config:
