@@ -71,8 +71,8 @@ install-inetd:
 		@grep -E -q "^\W*nrpe\s+" $(INETD_DIR)/$(INETD_FILE) || \
 		   cat startup/$(SRC_INETD) >> $(INETD_DIR)/$(INETD_FILE); \
 	else \
-		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE) \
-		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE) \
+		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
 	fi
 	@grep -E -q "^nrpe[\t ]+5666/tcp" /etc/services || \
 		echo "***** MAKE SURE 'nrpe 5666/tcp' IS IN YOUR /etc/services FILE"
