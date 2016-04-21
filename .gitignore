@@ -19,3 +19,13 @@ nbproject/
 .project
 .settings/
 paths
+startup/bsd-init
+startup/debian-init
+startup/default-inetd
+startup/default-init
+startup/default-service
+startup/default-xinetd
+startup/mac-org.nagios.PKG_NAME.plist
+startup/openrc-conf
+startup/openrc-init
+startup/solaris-PKG_NAME.xml

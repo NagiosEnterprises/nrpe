@@ -2,7 +2,7 @@
  *
  * COMMON.H - NRPE Common Include File
  * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 11-09-2015
+ * Last Modified: 04-21-2016
  *
  * License:
  *
@@ -23,8 +23,8 @@
 
 #include "config.h"
 
-#define PROGRAM_VERSION "2.16RC2"
-#define MODIFICATION_DATE "11-09-2015"
+#define PROGRAM_VERSION "3.0-beta1"
+#define MODIFICATION_DATE "04-21-2016"
 
 #define OK							0
 #define ERROR						-1
