@@ -4812,7 +4812,7 @@ fi
 
 ac_config_headers="$ac_config_headers include/config.h"
 
-ac_config_files="$ac_config_files Makefile subst src/Makefile package/solaris/Makefile nrpe.spec sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/openrc-conf startup/openrc-init startup/solaris-PKG_NAME.xml"
+ac_config_files="$ac_config_files Makefile src/Makefile package/solaris/Makefile nrpe.spec sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/openrc-conf startup/openrc-init startup/solaris-PKG_NAME.xml"
 
 
 #sample-config/debian-nrpe-inetd
@@ -8048,7 +8048,6 @@ do
     "paths") CONFIG_FILES="$CONFIG_FILES paths" ;;
     "include/config.h") CONFIG_HEADERS="$CONFIG_HEADERS include/config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
-    "subst") CONFIG_FILES="$CONFIG_FILES subst" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "package/solaris/Makefile") CONFIG_FILES="$CONFIG_FILES package/solaris/Makefile" ;;
     "nrpe.spec") CONFIG_FILES="$CONFIG_FILES nrpe.spec" ;;
@@ -8648,13 +8647,6 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
-
-
-#perl subst init-script
-#perl subst init-script.debian
-#perl subst init-script.suse
-#perl subst sample-config/nrpe.cfg
-#perl subst sample-config/nrpe.xinetd
 
 
 echo ""

@@ -94,7 +94,6 @@ fi
 
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
-	subst
 	src/Makefile
 	package/solaris/Makefile
 	nrpe.spec
@@ -520,13 +519,6 @@ AC_ARG_ENABLE([bash-command-substitution],
 
 AC_PATH_PROG(PERL,perl)
 AC_OUTPUT()
-
-#perl subst init-script
-#perl subst init-script.debian
-#perl subst init-script.suse
-#perl subst sample-config/nrpe.cfg
-#perl subst sample-config/nrpe.xinetd
-
 
 dnl Review options
 echo ""

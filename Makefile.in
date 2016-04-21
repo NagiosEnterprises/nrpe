@@ -93,8 +93,11 @@ clean:
 distclean: clean
 	cd $(SRC_BASE); $(MAKE) $@; cd ..
 	cd package/solaris; $(MAKE) $@; cd ../..
-	rm -f config.log config.status config.cache nrpe.cfg nrpe.xinetd subst $(SRC_INCLUDE)/config.h init-script init-script.debian init-script.freebsd init-script.suse
-	rm -f sample-config/*.cfg sample-config/*.xinetd
+	rm -rf autom4te.cache
+	rm -f config.log config.status config.cache sample-config/nrpe.cfg $(SRC_INCLUDE)/config.h 
+	rm -f startup/bsd-init startup/debian-init startup/default-init startup/default-inetd
+	rm -f startup/default-service startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist
+	rm -f startup/openrc-conf startup/openrc-init startup/solaris-PKG_NAME.xml
 	rm -f Makefile
 
 devclean: distclean
