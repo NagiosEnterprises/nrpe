@@ -23,9 +23,11 @@ INSTALL=@INSTALL@
 NAGIOS_INSTALL_OPTS=@NAGIOS_INSTALL_OPTS@
 NRPE_INSTALL_OPTS=@NRPE_INSTALL_OPTS@
 
+INIT_TYPE=@init_type@
 INIT_DIR=@initdir@
 INIT_OPTS=-o root -g root
 INIT_FILE=@initname@
+INETD_TYPE=@inetd_type@
 INETD_DIR=@inetddir@
 INETD_FILE=@inetdname@
 SRC_INETD=@src_inetd@
@@ -33,7 +35,7 @@ SRC_INIT=@src_init@
 
 
 all:
-	cd $(SRC_BASE); $(MAKE); cd ..
+	cd $(SRC_BASE); $(MAKE)
 
 	@echo ""
 	@echo "*** Compile finished ***"
@@ -46,32 +48,44 @@ all:
 	@echo ""
 
 nrpe:
-	cd $(SRC_BASE); $(MAKE); cd ..
+	cd $(SRC_BASE); $(MAKE)
 
 check_nrpe:
-	cd $(SRC_BASE); $(MAKE); cd ..
+	cd $(SRC_BASE); $(MAKE)
 
 install-plugin:
-	cd $(SRC_BASE); $(MAKE) $@; cd ..
+	cd $(SRC_BASE); $(MAKE) $@
 
 install-daemon:
-	cd $(SRC_BASE); $(MAKE) $@; cd ..
+	cd $(SRC_BASE); $(MAKE) $@
 
 install:
+	cd $(SRC_BASE); $(MAKE) $@
 
 install-inetd:
 	@if test $(SRC_INETD) = unknown; then \
 		echo No inetd file to install; \
 		exit 1; \
 	fi
-	$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE)
+	@if test $(INETD_TYPE) = inetd; then \
+		@grep -E -q "^\W*nrpe\s+" $(INETD_DIR)/$(INETD_FILE) || \
+		   cat startup/$(SRC_INETD) >> $(INETD_DIR)/$(INETD_FILE); \
+	else \
+		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE) \
+	fi
+	@grep -E -q "^nrpe[\t ]+5666/tcp" /etc/services || \
+		echo "***** MAKE SURE 'nrpe 5666/tcp' IS IN YOUR /etc/services FILE"
 
 install-init:
 	@if test $(SRC_INIT) = unknown; then \
 		echo No init file to install; \
 		exit 1; \
 	fi
-	$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE)
+	@if test $(INIT_TYPE) = bsd; then \
+		cat startup/$(SRC_INIT) >> $(INETD_DIR)/$(INIT_FILE) \
+	else \
+		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE) \
+	fi
 
 install-config:
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(CFGDIR)

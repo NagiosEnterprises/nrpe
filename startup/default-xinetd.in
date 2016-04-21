@@ -4,7 +4,7 @@ service nrpe
 {
     disable         = yes
     socket_type     = stream
-    port            = 5666
+    port            = @NRPE_PORT@
     wait            = no
     user            = nagios
     group           = nagios

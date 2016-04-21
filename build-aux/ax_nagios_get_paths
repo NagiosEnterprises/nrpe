@@ -500,6 +500,7 @@ eval cgibindir=$cgibindir
 eval pkglocalstatedir=$pkglocalstatedir
 eval webdir=$webdir
 eval localedir=$localedir
+eval pkgsysconfdir=$pkgsysconfdir
 
 #
 # Init scripts/files
