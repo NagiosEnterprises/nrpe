@@ -2794,7 +2794,7 @@ esac
 				elif test -r "/etc/debian_version"; then
 					dist_type="debian"
 					if test -r "/etc/lsb-release"; then
-						. /etc/lsb_release
+						. /etc/lsb-release
 						dist_ver=`echo "$DISTRIB_RELEASE"`
 					else
 						dist_ver=`cat /etc/debian_version`
@@ -3608,7 +3608,7 @@ case $init_type in #(
 		initconf=unknown ;; #(
   upstart) :
     initdir=${initdir="/etc/init"}
-		initname=${initname="$PKG_NAME"}
+		initname=${initname="$PKG_NAME.conf"}
 		initconfdir=${initconfdir="/etc/default"}
 		initconf=${initconf="$initconfdir/$PKG_NAME"} ;; #(
   launchd) :
@@ -3676,27 +3676,29 @@ $as_echo_n "checking for which init file to use ... " >&6; }
 case $init_type in #(
   sysv) :
     if test $dist_type = debian; then
-			src_init=debian-init.in
+			src_init=debian-init
 		else
-			src_init=default-init.in
+			src_init=default-init
 		fi ;; #(
   systemd) :
-    src_init=default-service.in
-		src_inetd=default-service.in ;; #(
-  #	[*bsd],
-
-#	[gentoo],
+    src_init=default-service
+		src_inetd=default-service ;; #(
+  bsd) :
+    src_init=bsd-init ;; #(
+  newbsd) :
+    src_init=newbsd-init ;; #(
+  #	[gentoo],
 
 	openrc) :
-    src_init=openrc-init.in ;; #(
+    src_init=openrc-init ;; #(
   smf*) :
-    src_init="solaris-@PKG_NAME@.xml.in"
-		src_inetd="solaris-@PKG_NAME@.xml.in" ;; #(
-  #	[upstart],
-
-	launchd) :
-    src_init="mac-org.nagios.@PKG_NAME@.plist.in"
-		src_inetd="mac-org.nagios.@PKG_NAME@.plist.in" ;; #(
+    src_init="solaris-@PKG_NAME@.xml"
+		src_inetd="solaris-@PKG_NAME@.xml" ;; #(
+  upstart) :
+    src_init=upstart-init ;; #(
+  launchd) :
+    src_init="mac-org.nagios.@PKG_NAME@.plist"
+		src_inetd="mac-org.nagios.@PKG_NAME@.plist" ;; #(
   *) :
     src_init="unknown"
  ;; #(
@@ -3713,12 +3715,10 @@ if test x$src_inetd = x; then
 
 	case $inetd_type in #(
   inetd) :
-    src_inetd=default-inetd.in ;; #(
+    src_inetd=default-inetd ;; #(
   xinetd) :
-    src_inetd=default-xinetd.in ;; #(
-  #		[upstart],
-
-		*) :
+    src_inetd=default-xinetd ;; #(
+  *) :
     src_inetd="unknown"
 	 ;; #(
   *) :
