@@ -54,31 +54,36 @@ AS_CASE([$init_type],
 
 	[sysv],
 		if test $dist_type = debian; then
-			src_init=debian-init.in
+			src_init=debian-init
 		else
-			src_init=default-init.in
+			src_init=default-init
 		fi,
 
 	[systemd],
-		src_init=default-service.in
-		src_inetd=default-service.in,
+		src_init=default-service
+		src_inetd=default-service,
 
-#	[*bsd],
+	[bsd],
+		src_init=bsd-init,
+
+	[newbsd],
+		src_init=newbsd-init,
 
 #	[gentoo],
 
 	[openrc],
-		src_init=openrc-init.in,
+		src_init=openrc-init,
 
 	[smf*],
-		src_init="solaris-@PKG_NAME@.xml.in"
-		src_inetd="solaris-@PKG_NAME@.xml.in",
+		src_init="solaris-@PKG_NAME@.xml"
+		src_inetd="solaris-@PKG_NAME@.xml",
 
-#	[upstart],
+	[upstart],
+		src_init=upstart-init,
 
 	[launchd],
-		src_init="mac-org.nagios.@PKG_NAME@.plist.in"
-		src_inetd="mac-org.nagios.@PKG_NAME@.plist.in",
+		src_init="mac-org.nagios.@PKG_NAME@.plist"
+		src_inetd="mac-org.nagios.@PKG_NAME@.plist",
 
 	[*],
 		src_init="unknown"
@@ -91,12 +96,10 @@ if test x$src_inetd = x; then
 
 	AS_CASE([$inetd_type],
 		[inetd],
-			src_inetd=default-inetd.in,
+			src_inetd=default-inetd,
 
 		[xinetd],
-			src_inetd=default-xinetd.in,
-
-#		[upstart],
+			src_inetd=default-xinetd,
 
 		[*],
 			src_inetd="unknown"

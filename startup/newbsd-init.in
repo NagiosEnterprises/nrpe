@@ -1,0 +1,54 @@
+#!/bin/sh
+#
+# Copyright (c) 2016 Nagios(R) Core(TM) Development Team
+#
+# PROVIDE: nrpe
+# REQUIRE: LOGIN
+# KEYWORD: shutdown
+
+#
+# Add the following lines to /etc/rc.conf to enable nrpe:
+#
+# nrpe_enable (bool):    Set to "NO" by default.
+#                        Set it to "YES" to enable nrpe.
+# nrpe_flags (str):      Set to "" by default.
+# nrpe_configfile (str): Set to "@pkgsysconfdir@/nrpe.cfg" by default.
+#
+
+. /etc/rc.subr
+
+sig_reload=HUP
+
+nrpe_enable=${nrpe_enable:-"NO"}
+command=${nrpe_program:-"@sbindir@/nrpe"}
+command_args="-c ${nrpe_configfile} -d"
+extra_commands=reload
+pidfile=${pidfile:-"/var/run/nrpe.pid"}
+nrpe_configfile=${nrpe_configfile:-"@pkgsysconfdir@/nrpe.cfg"}
+
+name=nrpe
+rcvar=nrpe_enable
+load_rc_config "${name}"
+required_files="${nrpe_configfile}"
+
+start_precmd=nrpe_prestart
+stop_precmd=find_pidfile
+
+find_pidfile()
+{
+    [ -n "$nrpe_pidfile" ] &&
+        warn "No longer necessary to set nrpe_pidfile in rc.conf[.local]"
+
+    if getpidfile_from_conf pid_file ${nrpe_configfile}; then
+        pidfile="$_pidfile_from_conf"
+	else
+	    pidfile='%%PIDDIR%%/nrpe.pid'
+}
+
+nrpe_prestart()
+{
+    find_pidfile
+    install -d -o ${nrpe_user:-nagios} ${pidfile%/*}
+}
+
+run_rc_command "$1"

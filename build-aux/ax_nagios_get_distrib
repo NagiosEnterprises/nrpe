@@ -126,7 +126,7 @@ AC_DEFUN([AX_NAGIOS_GET_DISTRIB_TYPE],
 				elif test -r "/etc/debian_version"; then
 					dist_type="debian"
 					if test -r "/etc/lsb-release"; then
-						. /etc/lsb_release
+						. /etc/lsb-release
 						dist_ver=`echo "$DISTRIB_RELEASE"`
 					else
 						dist_ver=`cat /etc/debian_version`
