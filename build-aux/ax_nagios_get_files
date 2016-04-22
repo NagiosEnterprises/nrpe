@@ -75,15 +75,15 @@ AS_CASE([$init_type],
 		src_init=openrc-init,
 
 	[smf*],
-		src_init="solaris-@PKG_NAME@.xml"
-		src_inetd="solaris-@PKG_NAME@.xml",
+		src_init="solaris-PKG_NAME.xml"
+		src_inetd="solaris-PKG_NAME.xml",
 
 	[upstart],
 		src_init=upstart-init,
 
 	[launchd],
-		src_init="mac-org.nagios.@PKG_NAME@.plist"
-		src_inetd="mac-org.nagios.@PKG_NAME@.plist",
+		src_init="mac-org.nagios.PKG_NAME.plist"
+		src_inetd="mac-org.nagios.PKG_NAME.plist",
 
 	[*],
 		src_init="unknown"

@@ -527,7 +527,11 @@ AS_CASE([$init_type],
 		fi
 		initname=${initname="$PKG_NAME.service"},
 
-	[*bsd],
+	[bsd],
+		initdir=${initdir="/etc/rc.d"}
+		initname=${initname="rc.$PKG_NAME"},
+
+	[newbsd],
 		initdir=${initdir="/etc/rc.d"}
 		initname=${initname="$PKG_NAME"},
 
