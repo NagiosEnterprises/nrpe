@@ -82,13 +82,7 @@ install-init:
 		echo No init file to install; \
 		exit 1; \
 	fi
-	@if test $(INIT_TYPE) = bsd; then \
-		echo cat startup/$(SRC_INIT) >> $(INETD_DIR)/$(INIT_FILE); \
-		cat startup/$(SRC_INIT) >> $(INETD_DIR)/$(INIT_FILE); \
-	else \
-		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
-		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
-	fi
+	$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE)
 
 install-config:
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(CFGDIR)

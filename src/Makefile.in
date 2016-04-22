@@ -66,12 +66,13 @@ install:
 	$(MAKE) install-daemon
 
 install-plugin:
+	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(LIBEXECDIR)
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(PLUGINSDIR)
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) check_nrpe $(PLUGINSDIR)
 
 install-daemon:
-	$(INSTALL) -m 775 -d $(SBINDIR)
-	$(INSTALL) -m 775 nrpe $(SBINDIR)
+	$(INSTALL) -m 755 -d $(SBINDIR)
+	$(INSTALL) -m 755 nrpe $(SBINDIR)
 
 clean:
 	rm -f core nrpe check_nrpe $(SNPRINTF_O)

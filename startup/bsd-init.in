@@ -5,11 +5,15 @@
 
 NRPE_BIN=@sbindir@/nrpe
 NRPE_CFG=@pkgsysconfdir@/nrpe.cfg
+PID_DIR=@piddir@
 PID_FILE=@piddir@/nrpe.pid
 
 # Start nrpe
 nrpe_start() {
 	echo -n "Starting nrpe daemon: $NRPE_BIN - "
+	if [ ! -d "$PID_DIR" ]; then
+		mkdir -p "$PID_DIR"
+	fi
 	$NRPE_BIN -c $NRPE_CFG -d
 	if [ $? = 0 ]; then
 		echo "started"
@@ -49,7 +53,7 @@ nrpe_reload() {
 		killall -HUP nrpe
 	fi
 	if [ $? = 0 ]; then
-		echo "stopped"
+		echo "reloaded"
 	else
 		echo "failed"
 	fi
