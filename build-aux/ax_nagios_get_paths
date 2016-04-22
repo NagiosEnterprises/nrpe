@@ -556,11 +556,11 @@ AS_CASE([$init_type],
 		initconfdir=unknown
 		initconf=unknown,
 
-	[upstart],
-		initdir=${initdir="/etc/init.d"}
-		initname=${initname="$PKG_NAME"}
-		initconfdir=${initconfdir="/etc/default"}
-		initconf=${initconf="$initconfdir/$PKG_NAME"},
+#	[upstart],
+#		initdir=${initdir="/etc/init.d"}
+#		initname=${initname="$PKG_NAME"}
+#		initconfdir=${initconfdir="/etc/default"}
+#		initconf=${initconf="$initconfdir/$PKG_NAME"},
 
 	[launchd],
 		initdir=${initdir="/System/Library/LaunchDaemons"}
@@ -601,9 +601,9 @@ AS_CASE([$inetd_type],
 		fi
 		inetdname=${inetdname="$PKG_NAME.xml"},
 
-	[upstart],
-		inetddir=${inetddir="/etc/init"}
-		inetdname=${inetdname="$PKG_NAME"},
+#	[upstart],
+#		inetddir=${inetddir="/etc/init"}
+#		inetdname=${inetdname="$PKG_NAME"},
 
 	[launchd],
 		inetddir=${inetddir="/System/Library/LaunchDaemons"}

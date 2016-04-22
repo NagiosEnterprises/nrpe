@@ -78,8 +78,8 @@ AS_CASE([$init_type],
 		src_init="solaris-PKG_NAME.xml"
 		src_inetd="solaris-PKG_NAME.xml",
 
-	[upstart],
-		src_init=default-init,
+#	[upstart],
+#		src_init=default-init,
 
 	[launchd],
 		src_init="mac-org.nagios.PKG_NAME.plist"

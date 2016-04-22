@@ -13,7 +13,6 @@
 #        launchd (Mac OS X)
 #        smf10   (Solaris)
 #        smf11   (Solaris)
-#        upstart (Older Debian)
 #        xinetd  (Most Linux, BSD)
 #        inetd   (The rest)
 #
@@ -91,7 +90,7 @@ AC_DEFUN([AX_NAGIOS_GET_INETD],
 			inetd_disabled=""
 
 			if test x"$init_type" = "xupstart"; then
-				inetd_type="upstart"
+				inetd_type="sysv"
 			elif test "$opsys" = "osx"; then
 				inetd_type="launchd"
 			fi

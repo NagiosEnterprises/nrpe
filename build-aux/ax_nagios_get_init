@@ -16,7 +16,6 @@
 #        systemd (Linux SystemD)
 #        gentoo  (Older Gentoo)
 #        openrc  (Recent Gentoo and some others)
-#        upstart (Older Debian)
 #        sysv    (The rest)
 #
 # LICENSE
@@ -58,8 +57,7 @@ AC_DEFUN([AX_NAGIOS_GET_INIT],
 #
 	AC_MSG_CHECKING(what init system is being used )
 	AC_ARG_WITH(init_type,AC_HELP_STRING([--with-init-type=type],
-	 [specify init type (bsd, sysv, systemd, launchd, smf10, smf11, upstart,
-		openrc, etc.)]),
+	 [specify init type (bsd, sysv, systemd, launchd, smf10, smf11, openrc, etc.)]),
 		[
 			#
 			# Run this if --with was specified
@@ -171,7 +169,7 @@ AC_DEFUN([AX_NAGIOS_GET_INIT],
 			if test "$init_type_wanted" = yes; then
 				if test "$pid1" = "/sbin/init" -o "$pid1" = "/usr/sbin/init"; then
 					if `/sbin/init --version 2>/dev/null | grep "upstart" >/dev/null`; then
-						init_type="upstart"
+						init_type="sysv"
 						init_type_wanted=no
 					elif test -f "/etc/rc"; then
 						init_type="newbsd"
