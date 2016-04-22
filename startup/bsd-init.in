@@ -1,54 +1,86 @@
 #!/bin/sh
-#
+
+# Start/stop/restart/reload nrpe
 # Copyright (c) 2016 Nagios(R) Core(TM) Development Team
-#
-# PROVIDE: nrpe
-# REQUIRE: LOGIN
-# KEYWORD: shutdown
 
-#
-# Add the following lines to /etc/rc.conf to enable nrpe:
-#
-# nrpe_enable (bool):    Set to "NO" by default.
-#                        Set it to "YES" to enable nrpe.
-# nrpe_flags (str):      Set to "" by default.
-# nrpe_configfile (str): Set to "@pkgsysconfdir@/nrpe.cfg" by default.
-#
+NRPE_BIN=@sbindir@/nrpe
+NRPE_CFG=@pkgsysconfdir@/nrpe.cfg
+PID_FILE=@piddir@/nrpe.pid
 
-. /etc/rc.subr
-
-sig_reload=HUP
-
-nrpe_enable=${nrpe_enable:-"NO"}
-command=${nrpe_program:-"@sbindir@/nrpe"}
-command_args="-c ${nrpe_configfile} -d"
-extra_commands=reload
-pidfile=${pidfile:-"/var/run/nrpe.pid"}
-nrpe_configfile=${nrpe_configfile:-"@pkgsysconfdir@/nrpe.cfg"}
-
-name=nrpe
-rcvar=nrpe_enable
-load_rc_config "${name}"
-required_files="${nrpe_configfile}"
-
-start_precmd=nrpe_prestart
-stop_precmd=find_pidfile
-
-find_pidfile()
-{
-    [ -n "$nrpe_pidfile" ] &&
-        warn "No longer necessary to set nrpe_pidfile in rc.conf[.local]"
-
-    if getpidfile_from_conf pid_file ${nrpe_configfile}; then
-        pidfile="$_pidfile_from_conf"
+# Start nrpe
+nrpe_start() {
+	echo -n "Starting nrpe daemon: $NRPE_BIN - "
+	$NRPE_BIN -c $NRPE_CFG -d
+	if [ $? = 0 ]; then
+		echo "started"
 	else
-	    pidfile='%%PIDDIR%%/nrpe.pid'
+		echo "failed"
+	fi
 }
 
-nrpe_prestart()
-{
-    find_pidfile
-    install -d -o ${nrpe_user:-nagios} ${pidfile%/*}
+# Stop nrpe
+nrpe_stop() {
+	echo -n "Stopping nrpe daemon - "
+	if [ -r "$PID_FILE" ]; then 
+		kill $(cat "$PID_FILE")
+	else
+		killall nrpe
+	fi
+	if [ $? = 0 ]; then
+		echo "stopped"
+	else
+		echo "failed"
+	fi
 }
 
-run_rc_command "$1"
+# Restart nrpe
+nrpe_restart() {
+	nrpe_stop
+	sleep 1
+	nrpe_start
+}
+
+# Reload nrpe
+nrpe_reload() {
+	echo -n "Reloading nrpe daemon - "
+	if [ -r "$PID_FILE" ]; then 
+		kill -HUP $(cat "$PID_FILE")
+	else
+		killall -HUP nrpe
+	fi
+	if [ $? = 0 ]; then
+		echo "stopped"
+	else
+		echo "failed"
+	fi
+}
+
+# nrpe status
+nrpe_status() {
+	if ps -C nrpe >/dev/null; then
+		echo "nrpe is running."
+	else
+		echo "nrpe is stopped."
+	fi
+}
+
+case "$1" in
+'start')
+	nrpe_start
+	;;
+'stop')
+	nrpe_stop
+	;;
+'restart')
+	nrpe_restart
+	;;
+'reload')
+	nrpe_reload
+	;;
+'status')
+	nrpe_status
+	;;
+*)
+	echo "Usage $0 start|stop|restart|reload|status"
+	;;
+esac
