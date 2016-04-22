@@ -348,7 +348,6 @@ elif test $opsys = "linux"; then
 	fi
 	sysconfdir=${sysconfdir="/etc"}
 	pkgsysconfdir=${pkgsysconfdir="$sysconfdir/nagios"}
-#																		  --pkgsysconfdir=DIR     read-only pakcage-specific data [PREFIX/etc/PKG_NAME]
 	if test $need_etc_subdir = yes; then
 		objsysconfdir=${objsysconfdir="$pkgsysconfdir/objects"}
 	else

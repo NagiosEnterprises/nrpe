@@ -110,6 +110,7 @@ AC_CONFIG_FILES([Makefile
 	startup/openrc-conf
 	startup/openrc-init
 	startup/solaris-PKG_NAME.xml
+	startup/upstart-init
 ])
 
 #sample-config/debian-nrpe-inetd

@@ -3406,7 +3406,6 @@ elif test $opsys = "linux"; then
 	fi
 	sysconfdir=${sysconfdir="/etc"}
 	pkgsysconfdir=${pkgsysconfdir="$sysconfdir/nagios"}
-#																		  --pkgsysconfdir=DIR     read-only pakcage-specific data [PREFIX/etc/PKG_NAME]
 	if test $need_etc_subdir = yes; then
 		objsysconfdir=${objsysconfdir="$pkgsysconfdir/objects"}
 	else
@@ -4822,7 +4821,7 @@ fi
 
 ac_config_headers="$ac_config_headers include/config.h"
 
-ac_config_files="$ac_config_files Makefile src/Makefile package/solaris/Makefile nrpe.spec sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/openrc-conf startup/openrc-init startup/solaris-PKG_NAME.xml"
+ac_config_files="$ac_config_files Makefile src/Makefile package/solaris/Makefile nrpe.spec sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/openrc-conf startup/openrc-init startup/solaris-PKG_NAME.xml startup/upstart-init"
 
 
 #sample-config/debian-nrpe-inetd
@@ -8072,6 +8071,7 @@ do
     "startup/openrc-conf") CONFIG_FILES="$CONFIG_FILES startup/openrc-conf" ;;
     "startup/openrc-init") CONFIG_FILES="$CONFIG_FILES startup/openrc-init" ;;
     "startup/solaris-PKG_NAME.xml") CONFIG_FILES="$CONFIG_FILES startup/solaris-PKG_NAME.xml" ;;
+    "startup/upstart-init") CONFIG_FILES="$CONFIG_FILES startup/upstart-init" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
