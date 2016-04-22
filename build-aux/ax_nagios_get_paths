@@ -557,8 +557,8 @@ AS_CASE([$init_type],
 		initconf=unknown,
 
 	[upstart],
-		initdir=${initdir="/etc/init"}
-		initname=${initname="$PKG_NAME.conf"}
+		initdir=${initdir="/etc/init.d"}
+		initname=${initname="$PKG_NAME"}
 		initconfdir=${initconfdir="/etc/default"}
 		initconf=${initconf="$initconfdir/$PKG_NAME"},
 
