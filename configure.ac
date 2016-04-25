@@ -105,6 +105,7 @@ AC_CONFIG_FILES([Makefile
 	startup/default-init
 	startup/default-inetd
 	startup/default-service
+	startup/default-socket
 	startup/default-xinetd
 	startup/mac-org.nagios.PKG_NAME.plist
 	startup/openrc-conf
