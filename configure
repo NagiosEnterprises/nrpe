@@ -1396,7 +1396,7 @@ Optional Packages:
                           irix, cygwin, aix, hp-ux, etc.)
   --with-dist-type=type   specify distribution type (suse, rh, debian, etc.)
   --with-init-type=type   specify init type (bsd, sysv, systemd, launchd,
-                          smf10, smf11, openrc, etc.)
+                          smf10, smf11, upstart, openrc, etc.)
   --with-inetd-type=type  which super-server the system runs (inetd, xinetd,
                           systemd, launchd, smf10, smf11, etc.)
   --with-pkgsysconfdir=DIR
@@ -2947,7 +2947,7 @@ esac
 			if test "$init_type_wanted" = yes; then
 				if test "$pid1" = "/sbin/init" -o "$pid1" = "/usr/sbin/init"; then
 					if `/sbin/init --version 2>/dev/null | grep "upstart" >/dev/null`; then
-						init_type="sysv"
+						init_type="upstart"
 						init_type_wanted=no
 					elif test -f "/etc/rc"; then
 						init_type="newbsd"
@@ -3014,7 +3014,7 @@ fi
 			inetd_disabled=""
 
 			if test x"$init_type" = "xupstart"; then
-				inetd_type="sysv"
+				inetd_type="upstart"
 			elif test "$opsys" = "osx"; then
 				inetd_type="launchd"
 			fi
@@ -3608,13 +3608,12 @@ case $init_type in #(
 		initname=${initname="$PKG_NAME.xml"}
 		initconfdir=unknown
 		initconf=unknown ;; #(
-  #	[upstart],
-#		initdir=${initdir="/etc/init.d"}
-#		initname=${initname="$PKG_NAME"}
-#		initconfdir=${initconfdir="/etc/default"}
-#		initconf=${initconf="$initconfdir/$PKG_NAME"},
-
-	launchd) :
+  upstart) :
+    initdir=${initdir="/etc/init.d"}
+		initname=${initname="$PKG_NAME"}
+		initconfdir=${initconfdir="/etc/default"}
+		initconf=${initconf="$initconfdir/$PKG_NAME"} ;; #(
+  launchd) :
     initdir=${initdir="/System/Library/LaunchDaemons"}
 		initname=${initname="org.nagios.$PKG_NAME.plist"} ;; #(
   #		initconfdir=${initconfdir="/private/etc"}
@@ -3653,7 +3652,7 @@ case $inetd_type in #(
 		fi
 		inetdname=${inetdname="$PKG_NAME.xml"} ;; #(
   #	[upstart],
-#		inetddir=${inetddir="/etc/init"}
+#		inetddir=${inetddir="/etc/init.d"}
 #		inetdname=${inetdname="$PKG_NAME"},
 
 	launchd) :
@@ -3685,8 +3684,7 @@ case $init_type in #(
 			src_init=default-init
 		fi ;; #(
   systemd) :
-    src_init=default-service
-		src_inetd=default-service ;; #(
+    src_init=default-service ;; #(
   bsd) :
     src_init=bsd-init ;; #(
   newbsd) :
@@ -3698,10 +3696,9 @@ case $init_type in #(
   smf*) :
     src_init="solaris-PKG_NAME.xml"
 		src_inetd="solaris-PKG_NAME.xml" ;; #(
-  #	[upstart],
-#		src_init=default-init,
-
-	launchd) :
+  upstart) :
+    src_init=default-init ;; #(
+  launchd) :
     src_init="mac-org.nagios.PKG_NAME.plist"
 		src_inetd="mac-org.nagios.PKG_NAME.plist" ;; #(
   *) :
@@ -3723,6 +3720,8 @@ if test x$src_inetd = x; then
     src_inetd=default-inetd ;; #(
   xinetd) :
     src_inetd=default-xinetd ;; #(
+  systemd) :
+    src_inetd=default-socket ;; #(
   *) :
     src_inetd="unknown"
 	 ;; #(

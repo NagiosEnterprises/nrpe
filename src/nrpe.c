@@ -141,7 +141,7 @@ int main(int argc, char **argv)
 	int       x;
 	uint32_t  y;
 	char      buffer[MAX_INPUT_BUFFER];
-
+	sleep(10);
 	init();
 
 	/* process command-line args */
@@ -2582,7 +2582,7 @@ int process_arguments(int argc, char **argv)
 	if (argc < 2)
 		return ERROR;
 
-	snprintf(optchars, MAX_INPUT_BUFFER, "c:hVldi46ns");
+	snprintf(optchars, MAX_INPUT_BUFFER, "c:hVldi46nsf");
 
 	while (1) {
 #ifdef HAVE_GETOPT_LONG
@@ -2638,10 +2638,13 @@ int process_arguments(int argc, char **argv)
 
 		case 's':				/* Argument s to indicate SRC option */
 			use_src = TRUE;
+			have_mode = TRUE;
 			break;
 
 		case 'f':
+			use_inetd = FALSE;
 			no_forking = TRUE;
+			have_mode = TRUE;
 			break;
 
 		default:

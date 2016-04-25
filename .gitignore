@@ -3,16 +3,12 @@ config.log
 config.status
 include/config.h
 include/dh.h
-init-script
-init-script.debian
-init-script.suse
+nrpe.spec
 package/solaris/Makefile
 sample-config/nrpe.cfg
-sample-config/nrpe.xinetd
 src/Makefile
 src/check_nrpe
 src/nrpe
-subst
 autom4te.cache/
 nbproject/
 .cproject

@@ -60,8 +60,7 @@ AS_CASE([$init_type],
 		fi,
 
 	[systemd],
-		src_init=default-service
-		src_inetd=default-service,
+		src_init=default-service,
 
 	[bsd],
 		src_init=bsd-init,
@@ -100,6 +99,9 @@ if test x$src_inetd = x; then
 
 		[xinetd],
 			src_inetd=default-xinetd,
+
+		[systemd],
+			src_inetd=default-socket,
 
 		[*],
 			src_inetd="unknown"
