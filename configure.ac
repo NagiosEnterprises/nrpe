@@ -99,6 +99,7 @@ AC_CONFIG_FILES([Makefile
 	src/Makefile
 	package/solaris/Makefile
 	nrpe.spec
+	uninstall
 	sample-config/nrpe.cfg
 	startup/bsd-init
 	startup/debian-init
@@ -106,6 +107,7 @@ AC_CONFIG_FILES([Makefile
 	startup/default-inetd
 	startup/default-service
 	startup/default-socket
+	startup/default-socket-svc
 	startup/default-xinetd
 	startup/mac-org.nagios.PKG_NAME.plist
 	startup/openrc-conf

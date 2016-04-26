@@ -17,4 +17,4 @@ stop on runlevel [!2345]
 expect daemon
 respawn
 
-exec @sbindir@/nrpe -c @pkgsysconfdir@/nrpe.cfg -d
+exec @sbindir@/nrpe -c @pkgsysconfdir@/nrpe.cfg -f

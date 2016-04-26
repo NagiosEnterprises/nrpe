@@ -1,0 +1,222 @@
+#!/bin/sh
+
+# Initialize variables
+quiet=0
+prompt=0
+verb=0
+progs=0
+config=0
+start=0
+force="-f"
+redir="2>/dev/null"
+
+# Set file and path names
+NAME=@PKG_NAME@
+SBINDIR=@sbindir@
+LIBEXECDIR=@libexecdir@
+PLUGINSDIR=@pluginsdir@
+PIDDIR=@piddir@
+CFGDIR=@pkgsysconfdir@
+INIT_TYPE=@init_type@
+INIT_DIR=@initdir@
+INIT_FILE=@initname@
+INETD_TYPE=@inetd_type@
+INETD_DIR=@inetddir@
+INETD_FILE=@inetdname@
+SRC_INETD=@src_inetd@
+SRC_INIT=@src_init@
+
+
+# Display usage message
+usage () {
+	echo "Usage: $0 [-q] [-p] [-v] progs|config|startup|all"
+	echo "-q       Do not print what is happening"
+	echo "-p       Prompt for each action"
+	echo "-v       Be a little more verbose about what is happening"
+	echo "progs    Delete the program files"
+	echo "config   Delete configuration file(s)"
+	echo "startup  Delete startup files (inetd, init, etc.)"
+	echo "         Delete startup files (inetd, init, etc.)"
+	exit 1
+}
+
+get_opts () {
+	while test $# -gt 0 ; do
+		arg=$1
+		shift
+		case "$arg" in
+			-q)			quiet=1		;;
+			-p)			prompt=1	;;
+			progs)		progs=1		;;
+			config)		config=1	;;
+			startup)	start=1		;;
+			-v)			verb=1; force=""; redir="" 	;;
+			all)		progs=1; config=1; start=1	;;
+			*)			echo "Invalid argument: $arg";	usage	;;
+		esac
+	done
+
+	if test $prompt -eq 1 -a $quiet -eq 1 ; then
+		echo "The -p and -q flags are mutually exclusive"
+		echo Please specify one or the other
+		exit 1
+	fi
+	if test $verb -eq 1 -a $quiet -eq 1 ; then
+		echo "The -v and -q flags are mutually exclusive"
+		echo Please specify one or the other
+		exit 1
+	fi
+	if test $progs -eq 0 -a $config -eq 0 ; then
+		usage
+	fi
+}
+
+prt_msg () {
+	if test $quiet -eq 1 ; then
+		return 0
+	fi
+
+	if test $1 -eq 1 -a $verb -eq 0 -a $prompt -eq 0 ; then
+		return 0
+	fi
+	shift
+
+	if test $1 -eq 1 -a $prompt -eq 1 ; then
+		shift
+		echo -n "    $*"
+		echo -n "? [Y|n] "
+		read yn
+		if test "x$yn" = x -o x$yn = xy -o x$yn = xY ; then
+			return 0
+		else
+			return 1
+		fi
+	fi
+
+	shift
+	echo "    $*"
+	return 0
+}
+
+rm_progs () {
+	if test -f "$PLUGINSDIR/check_nrpe" ; then
+		prt_msg 0 1 "Delete $PLUGINSDIR/check_nrpe" && {
+			rm $force "$PLUGINSDIR/check_nrpe"
+			prt_msg 1 0 "Remove directory $PLUGINSDIR"
+			rmdir "$PLUGINSDIR" $redir
+			prt_msg 1 0 "Remove directory $LIBEXECDIR"
+			rmdir "$LIBEXECDIR" $redir
+		}
+	fi
+
+	if test -f "$SBINDIR/$NAME" ; then
+		prt_msg 0 1 "Delete $SBINDIR/$NAME" && {
+			rm $force "$SBINDIR/$NAME"
+		}
+	fi
+
+    if test -d "$PIDDIR" ; then
+		prt_msg 0 1 "Remove directory $PIDDIR" && {
+	        rmdir "$PIDDIR" $redir
+		}
+    fi
+}
+
+rm_startup () {
+	if test "$SRC_INETD" != unknown; then
+		if test "$INETD_TYPE" = inetd; then
+			rc=`grep -E -q "^\W*@PKG_NAME@\s+" "$INETD_DIR/$INETD_FILE"`
+			if test $rc -eq 0; then
+				prt_msg 0 1 "Remove entries from $INETD_DIR/$INETD_FILE" && {
+					prt_msg 1 0 "Creating temp file: $INETD_DIR/$INETD_FILE.$NAME.unin"
+					grep -v -q "\W*@PKG_NAME@\s+" "$INETD_DIR/$INETD_FILE" > "$INETD_DIR/$INETD_FILE.$NAME.unin"
+					prt_msg 1 0 "Renaming original to: $INETD_DIR/$INETD_FILE.$NAME_save"
+					mv "$INETD_DIR/$INETD_FILE" "$INETD_DIR/$INETD_FILE.$NAME_save"
+					prt_msg 1 0 "Renaming $INETD_DIR/$INETD_FILE.unin to $INETD_DIR/$INETD_FILE"
+					mv "$INETD_DIR/$INETD_FILE.unin" "$INETD_DIR/$INETD_FILE"
+					prt_msg 0 0 "Old $INETD_DIR/$INETD_FILE saved as $INETD_DIR/$INETD_FILE.$NAME_save"
+				}
+			fi
+		else
+			if test "$INETD_TYPE" != xinetd; then
+				prt_msg 0 1 "Stop and disable $NAME" && {
+					case "$INETD_TYPE in
+					systemd)
+						systemctl stop $NAME; systemctl disable $NAME
+						;;
+					upstart)
+						stop $NAME
+						;;
+					launchd)
+						launchctl unload $INETD_FILE; launchctl remove $INETD_FILE;
+						;;
+					smf*)
+						svcadm disable -s $NAME
+						;;
+					esac
+				}
+			fi
+			prt_msg 0 1 "Delete $INETD_DIR/$INETD_FILE" && {
+				rm $force "$INETD_DIR/$INETD_FILE"
+				if test "$INETD_TYPE" = systemd; then
+					INETD_FILE=`echo "$INETD_FILE" | sed -e 's/socket$/service/'`
+					prt_msg 0 1 "Delete $INETD_DIR/$INETD_FILE" && {
+						rm $force "$INETD_DIR/$INETD_FILE"
+					}
+				fi
+			}
+		fi
+	fi
+
+	if test "$SRC_INIT" != unknown; then
+		prt_msg 0 1 "Stop and disable $NAME" && {
+			case "$INIT_TYPE in
+			systemd)
+				systemctl stop $NAME; systemctl disable $NAME
+				;;
+			upstart)
+				stop $NAME
+				;;
+			launchd)
+				launchctl unload $INIT_FILE; launchctl remove $INIT_FILE;
+				;;
+			*bsd)
+				if test -x $INIT_DIR/$INIT_FILE ; then
+					$INIT_DIR/$INIT_FILE stop
+				fi
+				chmod 0644 $INIT_DIR/$INIT_FILE
+				;;
+			openrc|gentoo)
+				/sbin/start-stop-daemon --stop $NAME
+				/sbin/rc-update del $NAME
+				;;
+			smf*)
+				svcadm disable -s $NAME
+				;;
+			sysv)
+				service stop $NAME; chkconfig --del $NAME
+				;;
+			esac
+		}
+		prt_msg 0 1 "Delete $INETD_DIR/$INIT_FILE" && {
+			rm $force "$INIT_DIR/$INIT_FILE"
+		}
+	fi
+}
+
+rm_config () {
+	prt_msg 0 1 "Delete $CFGDIR/$NAME.cfg" || return
+	rm $force "$CFGDIR/$NAME.cfg"
+	prt_msg 1 0 "Removing directory $CFGDIR"
+	rm $force "$CFGDIR"
+}
+
+get_opts $@
+
+echo "* * * Uninstall Starting * * *"
+
+if test $progs -eq 1 ;	then rm_progs;		fi
+if test $start -eq 1 ;	then rm_startup;	fi
+if test $config -eq 1 ;	then rm_config;		fi
+
+echo "* * * Uninstall Complete * * *"

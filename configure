@@ -4823,7 +4823,7 @@ fi
 
 ac_config_headers="$ac_config_headers include/config.h"
 
-ac_config_files="$ac_config_files Makefile src/Makefile package/solaris/Makefile nrpe.spec sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/openrc-conf startup/openrc-init startup/solaris-PKG_NAME.xml startup/upstart-init"
+ac_config_files="$ac_config_files Makefile src/Makefile package/solaris/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/openrc-conf startup/openrc-init startup/solaris-PKG_NAME.xml startup/upstart-init"
 
 
 #sample-config/debian-nrpe-inetd
@@ -8062,6 +8062,7 @@ do
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "package/solaris/Makefile") CONFIG_FILES="$CONFIG_FILES package/solaris/Makefile" ;;
     "nrpe.spec") CONFIG_FILES="$CONFIG_FILES nrpe.spec" ;;
+    "uninstall") CONFIG_FILES="$CONFIG_FILES uninstall" ;;
     "sample-config/nrpe.cfg") CONFIG_FILES="$CONFIG_FILES sample-config/nrpe.cfg" ;;
     "startup/bsd-init") CONFIG_FILES="$CONFIG_FILES startup/bsd-init" ;;
     "startup/debian-init") CONFIG_FILES="$CONFIG_FILES startup/debian-init" ;;
@@ -8069,6 +8070,7 @@ do
     "startup/default-inetd") CONFIG_FILES="$CONFIG_FILES startup/default-inetd" ;;
     "startup/default-service") CONFIG_FILES="$CONFIG_FILES startup/default-service" ;;
     "startup/default-socket") CONFIG_FILES="$CONFIG_FILES startup/default-socket" ;;
+    "startup/default-socket-svc") CONFIG_FILES="$CONFIG_FILES startup/default-socket-svc" ;;
     "startup/default-xinetd") CONFIG_FILES="$CONFIG_FILES startup/default-xinetd" ;;
     "startup/mac-org.nagios.PKG_NAME.plist") CONFIG_FILES="$CONFIG_FILES startup/mac-org.nagios.PKG_NAME.plist" ;;
     "startup/openrc-conf") CONFIG_FILES="$CONFIG_FILES startup/openrc-conf" ;;

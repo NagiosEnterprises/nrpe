@@ -1,18 +1,12 @@
 [Unit]
 Description=Nagios Remote Program Executor
 Documentation=http://www.nagios.org/documentation
-After=var-run.mount nss-lookup.target network.target local-fs.target time-sync.target
-Before=getty@tty1.service plymouth-quit.service xdm.service
+Before=nrpe.service
 Conflicts=nrpe.service
 
-[Install]
-WantedBy=multi-user.target
+[Socket]
+ListenStream=@nrpe_port@
+Accept=yes
 
-[Service]
-Accept=true
-ExecStart=@sbindir@/nrpe -c @pkgsysconfdir@/nrpe.cfg -i
-TimeoutStopSec=60
-User=@nagios_user@
-Group=@nagios_group@
-PrivateTmp=true
-OOMScoreAdjust=-500
+[Install]
+WantedBy=sockets.target

@@ -14,6 +14,7 @@
 	<array>
 		<string>-c</string>
 		<string>@pkgsysconfdir@/nrpe.cfg</string>
+		<string>-i</string>
 	</array>
 	<key>KeepAlive</key>
 	<dict>

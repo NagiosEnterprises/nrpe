@@ -31,7 +31,7 @@ start() {
 	# Make sure we have a sane current directory
 	cd /
 	start-stop-daemon --start --exec $NRPE_BIN --pidfile $PID_FILE \
-		-- -c $NRPE_CFG -d $NRPE_OPTS
+		-- -c $NRPE_CFG -f $NRPE_OPTS
 	eend $?
 }
 

@@ -65,18 +65,21 @@ install:
 	$(MAKE) install-plugin
 	$(MAKE) install-daemon
 
-install-plugin:
+install-plugin: install-uninstall
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(LIBEXECDIR)
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(PLUGINSDIR)
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) check_nrpe $(PLUGINSDIR)
 
-install-daemon:
-	$(INSTALL) -m 755 -d $(SBINDIR)
+install-daemon: install-uninstall
 	$(INSTALL) -m 755 nrpe $(SBINDIR)
 	@if ! test -d "$PIDDIR" ; then \
 		echo $(INSTALL) -m 755 $(NRPE_INSTALL_OPTS) -d $(PIDDIR); \
 		$(INSTALL) -m 755 $(NRPE_INSTALL_OPTS) -d $(PIDDIR); \
 	fi
+
+install-uninstall:
+	$(INSTALL) -m 755 -d $(SBINDIR)
+	$(INSTALL) -m 755 ../uninstall $(SBINDIR)/nrpe-uninstall
 
 clean:
 	rm -f core nrpe check_nrpe $(SNPRINTF_O)
