@@ -66,7 +66,7 @@ get_opts () {
 		echo Please specify one or the other
 		exit 1
 	fi
-	if test $progs -eq 0 -a $config -eq 0 ; then
+	if test $progs -eq 0 -a $config -eq 0 -a $start -eq 0 ; then
 		usage
 	fi
 }
@@ -99,7 +99,11 @@ prt_msg () {
 }
 
 rm_progs () {
+	num=0
+	prt_msg 0 0 "*** Uninstalling Progs"
+
 	if test -f "$PLUGINSDIR/check_nrpe" ; then
+		num=1
 		prt_msg 0 1 "Delete $PLUGINSDIR/check_nrpe" && {
 			rm $force "$PLUGINSDIR/check_nrpe"
 			prt_msg 1 0 "Remove directory $PLUGINSDIR"
@@ -110,36 +114,47 @@ rm_progs () {
 	fi
 
 	if test -f "$SBINDIR/$NAME" ; then
+		num=0
 		prt_msg 0 1 "Delete $SBINDIR/$NAME" && {
 			rm $force "$SBINDIR/$NAME"
 		}
 	fi
 
     if test -d "$PIDDIR" ; then
+		num=0
 		prt_msg 0 1 "Remove directory $PIDDIR" && {
 	        rmdir "$PIDDIR" $redir
 		}
     fi
+
+	if test $num -eq 0; then
+		prt_msg 0 0 "There was nothing to uninstall"
+	fi
 }
 
 rm_startup () {
+	num=0
+	prt_msg 0 0 "*** Uninstalling Startup"
+
 	if test "$SRC_INETD" != unknown; then
 		if test "$INETD_TYPE" = inetd; then
 			rc=`grep -E -q "^\W*@PKG_NAME@\s+" "$INETD_DIR/$INETD_FILE"`
 			if test $rc -eq 0; then
-				prt_msg 0 1 "Remove entries from $INETD_DIR/$INETD_FILE" && {
-					prt_msg 1 0 "Creating temp file: $INETD_DIR/$INETD_FILE.$NAME.unin"
+				num=1
+				prt_msg 0 1 "($INETD_TYPE) Remove entries from $INETD_DIR/$INETD_FILE" && {
+					prt_msg 1 0 "($INETD_TYPE) Creating temp file: $INETD_DIR/$INETD_FILE.$NAME.unin"
 					grep -v -q "\W*@PKG_NAME@\s+" "$INETD_DIR/$INETD_FILE" > "$INETD_DIR/$INETD_FILE.$NAME.unin"
-					prt_msg 1 0 "Renaming original to: $INETD_DIR/$INETD_FILE.$NAME_save"
+					prt_msg 1 0 "($INETD_TYPE) Renaming original to: $INETD_DIR/$INETD_FILE.$NAME_save"
 					mv "$INETD_DIR/$INETD_FILE" "$INETD_DIR/$INETD_FILE.$NAME_save"
-					prt_msg 1 0 "Renaming $INETD_DIR/$INETD_FILE.unin to $INETD_DIR/$INETD_FILE"
+					prt_msg 1 0 "($INETD_TYPE) Renaming $INETD_DIR/$INETD_FILE.unin to $INETD_DIR/$INETD_FILE"
 					mv "$INETD_DIR/$INETD_FILE.unin" "$INETD_DIR/$INETD_FILE"
-					prt_msg 0 0 "Old $INETD_DIR/$INETD_FILE saved as $INETD_DIR/$INETD_FILE.$NAME_save"
+					prt_msg 0 0 "($INETD_TYPE) Old $INETD_DIR/$INETD_FILE saved as $INETD_DIR/$INETD_FILE.$NAME_save"
 				}
 			fi
-		else
+		elif test -f "$INETD_DIR/$INETD_FILE"; then
+			num=1
 			if test "$INETD_TYPE" != xinetd; then
-				prt_msg 0 1 "Stop and disable $NAME" && {
+				prt_msg 0 1 "($INETD_TYPE) Stop and disable $NAME)" && {
 					case "$INETD_TYPE" in
 					systemd)
 						systemctl stop $NAME; systemctl disable $NAME
@@ -156,11 +171,11 @@ rm_startup () {
 					esac
 				}
 			fi
-			prt_msg 0 1 "Delete $INETD_DIR/$INETD_FILE" && {
+			prt_msg 0 1 "($INETD_TYPE) Delete $INETD_DIR/$INETD_FILE" && {
 				rm $force "$INETD_DIR/$INETD_FILE"
 				if test "$INETD_TYPE" = systemd; then
 					INETD_FILE=`echo "$INETD_FILE" | sed -e 's/socket$/service/'`
-					prt_msg 0 1 "Delete $INETD_DIR/$INETD_FILE" && {
+					prt_msg 0 1 "($INETD_TYPE) Delete $INETD_DIR/$INETD_FILE" && {
 						rm $force "$INETD_DIR/$INETD_FILE"
 					}
 				fi
@@ -169,46 +184,63 @@ rm_startup () {
 	fi
 
 	if test "$SRC_INIT" != unknown; then
-		prt_msg 0 1 "Stop and disable $NAME" && {
-			case "$INIT_TYPE" in
-			systemd)
-				systemctl stop $NAME; systemctl disable $NAME
-				;;
-			upstart)
-				stop $NAME
-				;;
-			launchd)
-				launchctl unload $INIT_FILE; launchctl remove $INIT_FILE;
-				;;
-			*bsd)
-				if test -x $INIT_DIR/$INIT_FILE ; then
-					$INIT_DIR/$INIT_FILE stop
-				fi
-				chmod 0644 $INIT_DIR/$INIT_FILE
-				;;
-			openrc|gentoo)
-				/sbin/start-stop-daemon --stop $NAME
-				/sbin/rc-update del $NAME
-				;;
-			smf*)
-				svcadm disable -s $NAME
-				;;
-			sysv)
-				service stop $NAME; chkconfig --del $NAME
-				;;
-			esac
-		}
-		prt_msg 0 1 "Delete $INETD_DIR/$INIT_FILE" && {
-			rm $force "$INIT_DIR/$INIT_FILE"
-		}
+		if test -f "$INIT_DIR/$INIT_FILE"; then
+			num=1
+			prt_msg 0 1 "($INIT_TYPE) Stop and disable $NAME" && {
+				case "$INIT_TYPE" in
+				systemd)
+					systemctl stop $NAME; systemctl disable $NAME
+					;;
+				upstart)
+					stop $NAME
+					;;
+				launchd)
+					launchctl unload $INIT_FILE; launchctl remove $INIT_FILE;
+					;;
+				*bsd)
+					if test -x $INIT_DIR/$INIT_FILE ; then
+						$INIT_DIR/$INIT_FILE stop
+					fi
+					chmod 0644 $INIT_DIR/$INIT_FILE
+					;;
+				openrc|gentoo)
+					/sbin/start-stop-daemon --stop $NAME
+					/sbin/rc-update del $NAME
+					;;
+				smf*)
+					svcadm disable -s $NAME
+					;;
+				sysv)
+					service stop $NAME; chkconfig --del $NAME
+					;;
+				esac
+			}
+			prt_msg 0 1 "($INIT_TYPE) Delete $INETD_DIR/$INIT_FILE" && {
+				rm $force "$INIT_DIR/$INIT_FILE"
+			}
+		fi
+	fi
+
+	if test $num -eq 0; then
+		prt_msg 0 0 "There was nothing to uninstall"
 	fi
 }
 
 rm_config () {
-	prt_msg 0 1 "Delete $CFGDIR/$NAME.cfg" || return
-	rm $force "$CFGDIR/$NAME.cfg"
-	prt_msg 1 0 "Removing directory $CFGDIR"
-	rm $force "$CFGDIR"
+    num=0
+	prt_msg 0 0 "*** Uninstalling Config"
+
+    if test -f "$CFGDIR/$NAME.cfg" then ;
+		num=1
+		prt_msg 0 1 "Delete $CFGDIR/$NAME.cfg" || return
+		rm $force "$CFGDIR/$NAME.cfg"
+		prt_msg 1 0 "Removing directory $CFGDIR"
+		rm $force "$CFGDIR"
+	fi
+
+	if test $num -eq 0; then
+		prt_msg 0 0 "There was nothing to uninstall"
+	fi
 }
 
 get_opts $@
