@@ -140,7 +140,7 @@ rm_startup () {
 		else
 			if test "$INETD_TYPE" != xinetd; then
 				prt_msg 0 1 "Stop and disable $NAME" && {
-					case "$INETD_TYPE in
+					case "$INETD_TYPE" in
 					systemd)
 						systemctl stop $NAME; systemctl disable $NAME
 						;;
@@ -170,7 +170,7 @@ rm_startup () {
 
 	if test "$SRC_INIT" != unknown; then
 		prt_msg 0 1 "Stop and disable $NAME" && {
-			case "$INIT_TYPE in
+			case "$INIT_TYPE" in
 			systemd)
 				systemctl stop $NAME; systemctl disable $NAME
 				;;

@@ -3321,7 +3321,7 @@ fi
 
 if test x"$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
 
-tmpfilesd=${tmpfilesd="/var/lib/tmpfiles.d"}
+tmpfilesd=${tmpfilesd="/usr/lib/tmpfiles.d"}
 if test ! -d "$tmpfilesd"; then
 	tmpfilesd="N/A"
 else
