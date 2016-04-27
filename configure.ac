@@ -71,6 +71,7 @@ AC_SUBST(inetddir)
 AC_SUBST(tmpfilesd)
 AC_SUBST(subsyslockdir)
 AC_SUBST(subsyslockfile)
+AC_SUBST(src_tmpfile)
 AC_SUBST(src_init)
 AC_SUBST(src_inetd)
 
@@ -194,7 +195,7 @@ ac_cv_HAVE_VA_COPY=yes,
 ac_cv_HAVE_VA_COPY=no)])
 if test x"$ac_cv_HAVE_VA_COPY" = x"yes"; then
     AC_DEFINE(HAVE_VA_COPY,1,[Whether va_copy() is available])
-else    
+else
     AC_CACHE_CHECK([for __va_copy],ac_cv_HAVE___VA_COPY,[
     AC_TRY_LINK([#include <stdarg.h>
     va_list ap1,ap2;], [__va_copy(ap1,ap2);],
@@ -219,7 +220,7 @@ AC_CACHE_CHECK([for C99 vsnprintf],ac_cv_HAVE_C99_VSNPRINTF,[
 AC_TRY_RUN([
 #include <sys/types.h>
 #include <stdarg.h>
-void foo(const char *format, ...) { 
+void foo(const char *format, ...) {
        va_list ap;
        int len;
        char buf[5];
@@ -272,11 +273,11 @@ AC_CHECK_TYPE([socklen_t], ,[
                 AC_TRY_COMPILE([
                    #ifdef HAVE_SYS_TYPES_H
                    #include <sys/types.h>
-                   #endif 
+                   #endif
                    #ifdef HAVE_SYS_SOCKET_H
                    #include <sys/socket.h>
                    #endif
-                   
+
                    int getpeername (int, $arg2 *, $t *);
                 ],[
                    $t len;
@@ -287,7 +288,7 @@ AC_CHECK_TYPE([socklen_t], ,[
                 ])
              done
           done
- 
+
           if test "x$curl_cv_socklen_t_equiv" = x; then
              AC_MSG_ERROR([Cannot find a type to use in place of socklen_t])
           fi
@@ -400,7 +401,7 @@ if test x$check_for_ssl = xyes; then
 				found_ssl=yes
 			        break
 			fi
-		done	
+		done
 
 		if test x_$found_ssl != x_yes; then
         		AC_MSG_ERROR(Cannot find ssl libraries)
@@ -411,7 +412,7 @@ if test x$check_for_ssl = xyes; then
 		        LIBS="$LIBS -lssl -lcrypto";
 
 			AC_DEFINE_UNQUOTED(HAVE_SSL,[1],[Have SSL support])
-	
+
 			AC_PATH_PROG(sslbin,openssl,value-if-not-found,$ssldir/sbin$PATH_SEPARATOR$ssldir/bin$PATH_SEPARATOR$PATH)
 
 			dnl Generate DH parameters
@@ -443,7 +444,7 @@ if test x$check_for_ssl = xyes; then
 	else
 		printf "found Kerberos include files in $kerbdir\n";
 	fi
-	
+
 
 fi
 

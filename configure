@@ -642,6 +642,7 @@ INSTALL_SCRIPT
 INSTALL_PROGRAM
 src_inetd
 src_init
+src_tmpfile
 subsyslockfile
 subsyslockdir
 tmpfilesd
@@ -2538,6 +2539,7 @@ LC_TIME=C
 
 
 
+
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
 # incompatible versions:
@@ -3684,7 +3686,8 @@ case $init_type in #(
 			src_init=default-init
 		fi ;; #(
   systemd) :
-    src_init=default-service ;; #(
+    src_tmpfile=tmpfile.conf.in
+		src_init=default-service ;; #(
   bsd) :
     src_init=bsd-init ;; #(
   newbsd) :

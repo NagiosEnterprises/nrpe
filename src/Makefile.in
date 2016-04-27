@@ -31,6 +31,8 @@ NRPE_INSTALL_OPTS=@NRPE_INSTALL_OPTS@
 
 PLUGINSDIR=@pluginsdir@
 PIDDIR=@piddir@
+TMPFILESDIR=@tmpfilesd@
+SRC_TMPFILE=@src_tmpfile@
 
 #AC_SUBST(pkgsysconfdir)
 #AC_SUBST(objsysconfdir)
@@ -75,6 +77,10 @@ install-daemon: install-uninstall
 	@if ! test -d "$PIDDIR" ; then \
 		echo $(INSTALL) -m 755 $(NRPE_INSTALL_OPTS) -d $(PIDDIR); \
 		$(INSTALL) -m 755 $(NRPE_INSTALL_OPTS) -d $(PIDDIR); \
+	fi
+	@if test "$TMPFILESDIR" != "N/A" ; then \
+		echo $(INSTALL) -m 644 startup/$(SRC_TMPFILE) $(TMPFILESDIR)/nrpe; \
+		$(INSTALL) -m 644 startup/$(SRC_TMPFILE) $(TMPFILESDIR)/nrpe; \
 	fi
 
 install-uninstall:

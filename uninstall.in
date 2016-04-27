@@ -30,13 +30,12 @@ SRC_INIT=@src_init@
 # Display usage message
 usage () {
 	echo "Usage: $0 [-q] [-p] [-v] progs|config|startup|all"
-	echo "-q       Do not print what is happening"
-	echo "-p       Prompt for each action"
-	echo "-v       Be a little more verbose about what is happening"
-	echo "progs    Delete the program files"
-	echo "config   Delete configuration file(s)"
-	echo "startup  Delete startup files (inetd, init, etc.)"
-	echo "         Delete startup files (inetd, init, etc.)"
+	echo "    -q       Do not print what is happening"
+	echo "    -p       Prompt for each action"
+	echo "    -v       Be a little more verbose about what is happening"
+	echo "    progs    Delete the program files"
+	echo "    config   Delete configuration file(s)"
+	echo "    startup  Delete startup files (inetd, init, etc.)"
 	exit 1
 }
 
@@ -76,6 +75,14 @@ prt_msg () {
 		return 0
 	fi
 
+	case $1 in
+		0)  indent="" ;;
+		1)	indent="   " ;;
+		2)	indent="      " ;;
+		*)	indent="" ;;
+	esac
+	shift
+
 	if test $1 -eq 1 -a $verb -eq 0 -a $prompt -eq 0 ; then
 		return 0
 	fi
@@ -83,7 +90,7 @@ prt_msg () {
 
 	if test $1 -eq 1 -a $prompt -eq 1 ; then
 		shift
-		echo -n "    $*"
+		echo -n "${indent}$*"
 		echo -n "? [Y|n] "
 		read yn
 		if test "x$yn" = x -o x$yn = xy -o x$yn = xY ; then
@@ -94,67 +101,67 @@ prt_msg () {
 	fi
 
 	shift
-	echo "    $*"
+	echo "${indent}$*"
 	return 0
 }
 
 rm_progs () {
 	num=0
-	prt_msg 0 0 "*** Uninstalling Progs"
+	prt_msg 1 0 0 "*** Uninstalling Progs"
 
 	if test -f "$PLUGINSDIR/check_nrpe" ; then
 		num=1
-		prt_msg 0 1 "Delete $PLUGINSDIR/check_nrpe" && {
+		prt_msg 2 0 1 "Delete $PLUGINSDIR/check_nrpe" && {
 			rm $force "$PLUGINSDIR/check_nrpe"
-			prt_msg 1 0 "Remove directory $PLUGINSDIR"
+			prt_msg 2 1 0 "Remove directory $PLUGINSDIR"
 			rmdir "$PLUGINSDIR" $redir
-			prt_msg 1 0 "Remove directory $LIBEXECDIR"
+			prt_msg 2 1 0 "Remove directory $LIBEXECDIR"
 			rmdir "$LIBEXECDIR" $redir
 		}
 	fi
 
 	if test -f "$SBINDIR/$NAME" ; then
 		num=0
-		prt_msg 0 1 "Delete $SBINDIR/$NAME" && {
+		prt_msg 2 0 1 "Delete $SBINDIR/$NAME" && {
 			rm $force "$SBINDIR/$NAME"
 		}
 	fi
 
     if test -d "$PIDDIR" ; then
 		num=0
-		prt_msg 0 1 "Remove directory $PIDDIR" && {
+		prt_msg 2 0 1 "Remove directory $PIDDIR" && {
 	        rmdir "$PIDDIR" $redir
 		}
     fi
 
 	if test $num -eq 0; then
-		prt_msg 0 0 "There was nothing to uninstall"
+		prt_msg 2 0 0 "There was nothing to uninstall"
 	fi
 }
 
 rm_startup () {
 	num=0
-	prt_msg 0 0 "*** Uninstalling Startup"
+	prt_msg 1 0 0 "*** Uninstalling Startup"
 
 	if test "$SRC_INETD" != unknown; then
 		if test "$INETD_TYPE" = inetd; then
 			rc=`grep -E -q "^\W*@PKG_NAME@\s+" "$INETD_DIR/$INETD_FILE"`
 			if test $rc -eq 0; then
 				num=1
-				prt_msg 0 1 "($INETD_TYPE) Remove entries from $INETD_DIR/$INETD_FILE" && {
-					prt_msg 1 0 "($INETD_TYPE) Creating temp file: $INETD_DIR/$INETD_FILE.$NAME.unin"
+				prt_msg 2 0 1 "($INETD_TYPE) Remove entries from $INETD_DIR/$INETD_FILE" && {
+					prt_msg 2 1 0 "($INETD_TYPE) Creating temp file: $INETD_DIR/$INETD_FILE.$NAME.unin"
 					grep -v -q "\W*@PKG_NAME@\s+" "$INETD_DIR/$INETD_FILE" > "$INETD_DIR/$INETD_FILE.$NAME.unin"
-					prt_msg 1 0 "($INETD_TYPE) Renaming original to: $INETD_DIR/$INETD_FILE.$NAME_save"
+					prt_msg 2 1 0 "($INETD_TYPE) Renaming original to: $INETD_DIR/$INETD_FILE.$NAME_save"
 					mv "$INETD_DIR/$INETD_FILE" "$INETD_DIR/$INETD_FILE.$NAME_save"
-					prt_msg 1 0 "($INETD_TYPE) Renaming $INETD_DIR/$INETD_FILE.unin to $INETD_DIR/$INETD_FILE"
+					prt_msg 2 1 0 "($INETD_TYPE) Renaming $INETD_DIR/$INETD_FILE.unin to $INETD_DIR/$INETD_FILE"
 					mv "$INETD_DIR/$INETD_FILE.unin" "$INETD_DIR/$INETD_FILE"
-					prt_msg 0 0 "($INETD_TYPE) Old $INETD_DIR/$INETD_FILE saved as $INETD_DIR/$INETD_FILE.$NAME_save"
+					prt_msg 2 0 0 "($INETD_TYPE) Old $INETD_DIR/$INETD_FILE saved as $INETD_DIR/$INETD_FILE.$NAME_save"
 				}
 			fi
 		elif test -f "$INETD_DIR/$INETD_FILE"; then
 			num=1
 			if test "$INETD_TYPE" != xinetd; then
-				prt_msg 0 1 "($INETD_TYPE) Stop and disable $NAME)" && {
+				prt_msg 2 0 1 "($INETD_TYPE) Stop and disable $NAME)" && {
 					case "$INETD_TYPE" in
 					systemd)
 						systemctl stop $NAME; systemctl disable $NAME
@@ -171,11 +178,11 @@ rm_startup () {
 					esac
 				}
 			fi
-			prt_msg 0 1 "($INETD_TYPE) Delete $INETD_DIR/$INETD_FILE" && {
+			prt_msg 2 0 1 "($INETD_TYPE) Delete $INETD_DIR/$INETD_FILE" && {
 				rm $force "$INETD_DIR/$INETD_FILE"
 				if test "$INETD_TYPE" = systemd; then
 					INETD_FILE=`echo "$INETD_FILE" | sed -e 's/socket$/service/'`
-					prt_msg 0 1 "($INETD_TYPE) Delete $INETD_DIR/$INETD_FILE" && {
+					prt_msg 2 0 1 "($INETD_TYPE) Delete $INETD_DIR/$INETD_FILE" && {
 						rm $force "$INETD_DIR/$INETD_FILE"
 					}
 				fi
@@ -186,7 +193,7 @@ rm_startup () {
 	if test "$SRC_INIT" != unknown; then
 		if test -f "$INIT_DIR/$INIT_FILE"; then
 			num=1
-			prt_msg 0 1 "($INIT_TYPE) Stop and disable $NAME" && {
+			prt_msg 2 0 1 "($INIT_TYPE) Stop and disable $NAME" && {
 				case "$INIT_TYPE" in
 				systemd)
 					systemctl stop $NAME; systemctl disable $NAME
@@ -215,40 +222,40 @@ rm_startup () {
 					;;
 				esac
 			}
-			prt_msg 0 1 "($INIT_TYPE) Delete $INETD_DIR/$INIT_FILE" && {
+			prt_msg 2 0 1 "($INIT_TYPE) Delete $INETD_DIR/$INIT_FILE" && {
 				rm $force "$INIT_DIR/$INIT_FILE"
 			}
 		fi
 	fi
 
 	if test $num -eq 0; then
-		prt_msg 0 0 "There was nothing to uninstall"
+		prt_msg 2 0 0 "There was nothing to uninstall"
 	fi
 }
 
 rm_config () {
     num=0
-	prt_msg 0 0 "*** Uninstalling Config"
+	prt_msg 1 0 0 "*** Uninstalling Config"
 
-    if test -f "$CFGDIR/$NAME.cfg" then ;
+    if test -f "$CFGDIR/$NAME.cfg"; then
 		num=1
-		prt_msg 0 1 "Delete $CFGDIR/$NAME.cfg" || return
+		prt_msg 2 0 1 "Delete $CFGDIR/$NAME.cfg" || return
 		rm $force "$CFGDIR/$NAME.cfg"
-		prt_msg 1 0 "Removing directory $CFGDIR"
+		prt_msg 2 1 0 "Removing directory $CFGDIR"
 		rm $force "$CFGDIR"
 	fi
 
 	if test $num -eq 0; then
-		prt_msg 0 0 "There was nothing to uninstall"
+		prt_msg 2 0 0 "There was nothing to uninstall"
 	fi
 }
 
 get_opts $@
 
-echo "* * * Uninstall Starting * * *"
+prt_msg 0 0 0 "* * * Uninstall Starting * * *"
 
 if test $progs -eq 1 ;	then rm_progs;		fi
 if test $start -eq 1 ;	then rm_startup;	fi
 if test $config -eq 1 ;	then rm_config;		fi
 
-echo "* * * Uninstall Complete * * *"
+prt_msg 0 0 0 "* * * Uninstall Complete * * *"

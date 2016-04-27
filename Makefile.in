@@ -89,6 +89,12 @@ install-inetd:
 	else \
 		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+		if test $(INETD_TYPE) = systemd; then \
+			SRC_INETD_FILE=`echo "$SRC_INETD_FILE" | sed -e 's/socket$/socket-svc/'`; \
+			$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+			INETD_FILE=`echo "$INETD_FILE" | sed -e 's/socket$/service/'`; \
+			$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+		fi; \
 	fi
 	@grep -E -q "^nrpe[\t ]+5666/tcp" /etc/services || \
 		echo "***** MAKE SURE 'nrpe 5666/tcp' IS IN YOUR /etc/services FILE"

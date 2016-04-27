@@ -60,6 +60,7 @@ AS_CASE([$init_type],
 		fi,
 
 	[systemd],
+		src_tmpfile=tmpfile.conf.in
 		src_init=default-service,
 
 	[bsd],
