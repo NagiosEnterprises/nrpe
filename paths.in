@@ -8,6 +8,7 @@ echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 echo "Detected Environment:"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 wrout "Operating System" "@opsys@"
+wrout "Architecture" "@arch@"
 wrout "Distribution type" "@dist_type@ Version @dist_ver@"
 wrout "Init type" "@init_type@"
 wrout "Inetd type" "@inetd_type@"

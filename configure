@@ -666,6 +666,7 @@ inetd_type
 init_type
 dist_ver
 dist_type
+arch
 opsys
 TARGET_PLATFORM
 TARGET_ARCH
@@ -2546,6 +2547,7 @@ LC_TIME=C
 
 
 
+
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
 # incompatible versions:
@@ -2708,6 +2710,8 @@ fi
      ;;
 esac
 		fi
+
+		arch=`uname -m | tr "[A-Z]" "[a-z]"`
 
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $opsys" >&5
 $as_echo "$opsys" >&6; }
@@ -7303,7 +7307,11 @@ $as_echo_n "checking for SSL libraries... " >&6; }
 			if test "`uname -s`" = "Darwin" ; then
 				soext="dylib"
 			elif test "`uname -s`" = "HP-UX" ; then
-				soext="sl"
+				if test x$arch = "ia64"; then
+					soext="so"
+				else
+					soext="sl"
+				fi
 			elif test "`uname -s`" = "AIX" ; then
 				soext="a"
 			else

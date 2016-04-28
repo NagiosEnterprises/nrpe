@@ -91,5 +91,7 @@ AC_DEFUN([AX_NAGIOS_GET_OS],
 				[msys*],		opsys="msys")
 		fi
 
+		arch=`uname -m | tr ["[A-Z]" "[a-z]"]`
+
 		AC_MSG_RESULT($opsys)
 ])

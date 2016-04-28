@@ -50,6 +50,7 @@ AC_SUBST(TARGET_OS)
 AC_SUBST(TARGET_ARCH)
 AC_SUBST(TARGET_PLATFORM)
 AC_SUBST(opsys)
+AC_SUBST(arch)
 AC_SUBST(dist_type)
 AC_SUBST(dist_ver)
 AC_SUBST(init_type)
@@ -394,7 +395,11 @@ if test x$check_for_ssl = xyes; then
 			if test "`uname -s`" = "Darwin" ; then
 				soext="dylib"
 			elif test "`uname -s`" = "HP-UX" ; then
-				soext="sl"
+				if test x$arch = "ia64"; then
+					soext="so"
+				else
+					soext="sl"
+				fi
 			elif test "`uname -s`" = "AIX" ; then
 				soext="a"
 			else
