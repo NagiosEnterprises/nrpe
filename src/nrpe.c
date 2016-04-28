@@ -24,6 +24,10 @@
  * now allowed_hosts is parsed by parse_allowed_hosts() from acl.c.
  */
 
+#if defined(__hpux) && defined(HAVE_LIBWRAP)
+int rfc931_timeout=15;
+#endif
+
 #include "config.h"
 #include "common.h"
 #include "nrpe.h"
