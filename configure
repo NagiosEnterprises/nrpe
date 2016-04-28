@@ -664,6 +664,9 @@ objsysconfdir
 pkgsysconfdir
 inetd_type
 init_type
+dist_ver
+dist_type
+opsys
 TARGET_PLATFORM
 TARGET_ARCH
 TARGET_OS
@@ -2489,6 +2492,9 @@ LC_MESSAGES=C
 LC_MONETARY=C
 LC_NUMERIC=C
 LC_TIME=C
+
+
+
 
 
 
