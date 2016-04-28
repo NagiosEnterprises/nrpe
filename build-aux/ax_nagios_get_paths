@@ -226,7 +226,7 @@ else
 	if test x"$sysconfdir" = x'${prefix}/etc'; then AS_UNSET(sysconfdir); fi
 
 	if test x"$prefix" = "xNONE"; then
-		if test $dist_type = freebsd; then
+		if test $dist_type = freebsd -o $dist_type = openbsd; then
 			prefix="/usr/local"
 		elif test $dist_type = netbsd; then
 			prefix="/usr/pkg"
@@ -488,7 +488,11 @@ elif test $opsys = "bsd"; then
 	if test $dist_type = freebsd -o $dist_type = openbsd; then
 		prefix=${prefix="/usr/local"}
 		exec_prefix=${exec_prefix="/usr/local"}
-		install_method="$install_method : FreeBSD"
+		if test $dist_type = freebsd; then
+			install_method="$install_method : FreeBSD"
+		else
+			install_method="$install_method : OpenBSD"
+		fi
 	elif test $dist_type = netbsd; then
 		prefix=${prefix="/usr/pkg"}
 		exec_prefix=${exec_prefix="/usr/pkg"}
@@ -508,6 +512,8 @@ elif test $opsys = "bsd"; then
 	fi
 	if test $dist_type = freebsd; then
 		sysconfdir=${sysconfdir="/usr/local/etc"}
+	else
+		sysconfdir=${sysconfdir="/etc"}
 	fi
 	pkgsysconfdir=${pkgsysconfdir="$sysconfdir/nagios"}
 	if test $need_etc_subdir = yes; then
