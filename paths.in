@@ -1,13 +1,22 @@
 #!/bin/sh
 
 wrout () {
-	if test "$2" != "N/A"; then printf "  %-20s %s\n" "$1" "$2"; fi
+	if test "$2" != "N/A"; then printf "  %-25s %s\n" "$1" "$2"; fi
 }
 
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo "Detected Environment:"
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+wrout "Operating System" "@opsys@"
+wrout "Distribution type" "@dist_type@ Version @dist_ver@"
+wrout "Init type" "@init_type@"
+wrout "Inetd type" "@inetd_type@"
+echo
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo "Paths are:"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 wrout "prefix" "@prefix@"
+wrout "exec_prefix" "@prefix@"
 if test "@PKG_NAME@" = "nagios"; then
 	wrout "bindir" "@bindir@"
 fi

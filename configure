@@ -3285,7 +3285,15 @@ else
 	if test x"$datadir" = x'${datarootdir}'; then { datadir=; unset datadir;}; fi
 	if test x"$sysconfdir" = x'${prefix}/etc'; then { sysconfdir=; unset sysconfdir;}; fi
 
-	if test x"$prefix" = "xNONE"; then prefix="/usr"; fi
+	if test x"$prefix" = "xNONE"; then
+		if test $dist_type = freebsd; then
+			prefix="/usr/local"
+		elif test $dist_type = netbsd; then
+			prefix="/usr/pkg"
+		else
+			prefix="/usr"
+		fi
+	fi
 	if test x"$exec_prefix" = "xNONE"; then exec_prefix=$prefix; fi
 	if test x"$localstatedir" = x'${prefix}/var'; then
 		if test $opsys = "osx"; then
@@ -3305,6 +3313,10 @@ else
 			elif test x"$libexecdir" = x'${exec_prefix}/libexec'; then
 				libexecdir="/usr/lib/nagios"
 			fi
+		fi
+	elif test $opsys = "bsd"; then
+		if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
+			libexecdir=${exec_prefix}/libexec/nagios;
 		fi
 	elif test $opsys = "osx"; then
 		if test x"$sbindir" = x'${exec_prefix}/sbin'; then
@@ -3528,6 +3540,89 @@ elif test $opsys = "unix"; then
   *) :
      ;;
 esac
+
+elif test $opsys = "bsd"; then
+
+	#
+	# "Standard" BSD install
+	#
+	install_method="$install_method : BSD"
+	if test $dist_type = freebsd -o $dist_type = openbsd; then
+		prefix=${prefix="/usr/local"}
+		exec_prefix=${exec_prefix="/usr/local"}
+		install_method="$install_method : FreeBSD"
+	elif test $dist_type = netbsd; then
+		prefix=${prefix="/usr/pkg"}
+		exec_prefix=${exec_prefix="/usr/pkg"}
+		install_method="$install_method : NetBSD"
+	fi
+	datadir=${datadir="$datarootdir/nagios"}
+	if test $need_web = yes -o $need_cgi = yes; then
+		if test $dist_type = freebsd; then
+			webdir=${webdir="$prefix/www/nagios"}
+		elif test $dist_type = netbsd; then
+			webdir=${webdir="$prefix/share/nagios"}
+		elif test $dist_type = openbsd; then
+			webdir=${webdir="/var/www/nagios"}
+		fi
+	else
+		webdir="N/A"
+	fi
+	if test $dist_type = freebsd; then
+		sysconfdir=${sysconfdir="/usr/local/etc"}
+	fi
+	pkgsysconfdir=${pkgsysconfdir="$sysconfdir/nagios"}
+	if test $need_etc_subdir = yes; then
+		objsysconfdir=${objsysconfdir="$pkgsysconfdir/objects"}
+	else
+		objsysconfdir="N/A"
+	fi
+	privatesysconfdir=${privatesysconfdir="$pkgsysconfdir/private"}
+	if test "$need_pls_dir" = yes; then
+		pkglocalstatedir=${pkglocalstatedir="$localstatedir/lib/$PKG_NAME"}
+	else
+		pkglocalstatedir="N/A"
+	fi
+	if test "$need_loc" = yes; then
+		localedir=${localedir="/usr/local/share/locale/<lang>/LC_MESSAGES/nagios-plugins.mo"}
+	fi
+	if test "$need_spl" = yes; then
+		spooldir=${spooldir="$localstatedir/spool/$PKG_NAME"}
+	else
+		spooldir="N/A"
+	fi
+	if test $need_brk = yes; then
+		brokersdir=${brokersdir="$libexecdir/brokers"}
+	else
+		brokersdir="N/A"
+	fi
+	if test $need_plg = yes; then
+		pluginsdir=${pluginsdir="$libexecdir/plugins"}
+	else
+		pluginsdir="N/A"
+	fi
+	if test $need_cgi = yes; then
+		if test $dist_type = freebsd; then
+			cgibindir=${cgibindir="$webdir/cgi-bin"}
+		elif test $dist_type = netbsd; then
+			cgibindir=${pluginsdir="$libexecdir/cgi-bin"}
+		elif test $dist_type = openbsd; then
+			cgibindir=${pluginsdir="/var/www/cgi-bin/nagios"}
+		fi
+	else
+		cgibindir="N/A"
+	fi
+	piddir=${piddir="$localstatedir/run/${PKG_NAME}"}
+	if test "$need_pipe" = yes; then
+		pipedir=${pipedir="$localstatedir/run/${PKG_NAME}"}
+	else
+		pipedir="N/A"
+	fi
+	if test $need_log_subdir = yes; then
+		logdir=${logdir="$localstatedir/log/$PKG_NAME"}
+	else
+		logdir=${logdir="$localstatedir/log"}
+	fi
 
 else
 

@@ -8,6 +8,8 @@ paths
 uninstall
 .cproject
 .project
+nrpe.cbp
+nrpe.layout
 package/solaris/Makefile
 sample-config/nrpe.cfg
 src/Makefile
