@@ -35,33 +35,33 @@ SRC_INIT=@src_init@
 
 
 default:
-	@echo
-	@echo Please enter 'make [option]' where [option] is one of:
-	@echo
-	@echo "     all              builds nrpe and check_nrpe"
-	@echo "     nrpe             builds nrpe only"
-	@echo "     check_nrpe       builds check_nrpe only"
-	@echo "     install          install nrpe and check_nrpe"
-	@echo "     install-plugin   install the check_nrpe plugin"
-	@echo "     install-daemon   install the nrpe daemon"
-	@echo "     install-config   install the nrpe configuration file"
-	@echo "     install-inetd    install the startup files for inetd, launchd, etc."
-	@echo "     install-init     install the startup files for init, systemd, etc."
-	@echo "     solaris-package  create the solaris package"
-	@echo
+	echo;\
+	echo Please enter 'make [option]' where [option] is one of:;\
+	echo;\
+	echo "     all              builds nrpe and check_nrpe";\
+	echo "     nrpe             builds nrpe only";\
+	echo "     check_nrpe       builds check_nrpe only";\
+	echo "     install          install nrpe and check_nrpe";\
+	echo "     install-plugin   install the check_nrpe plugin";\
+	echo "     install-daemon   install the nrpe daemon";\
+	echo "     install-config   install the nrpe configuration file";\
+	echo "     install-inetd    install the startup files for inetd, launchd, etc.";\
+	echo "     install-init     install the startup files for init, systemd, etc.";\
+	echo "     solaris-package  create the solaris package";\
+	echo
 
 all:
 	cd $(SRC_BASE); $(MAKE)
 
 	@echo ""
-	@echo "*** Compile finished ***"
-	@echo ""
-	@echo "If the NRPE daemon and client compiled without any errors, you"
-	@echo "can continue with the installation or upgrade process."
-	@echo ""
-	@echo "Read the PDF documentation (NRPE.pdf) for information on the next"
-	@echo "steps you should take to complete the installation or upgrade."
-	@echo ""
+	echo "*** Compile finished ***";\
+	echo "";\
+	echo "If the NRPE daemon and client compiled without any errors, you";\
+	echo "can continue with the installation or upgrade process.";\
+	echo "";\
+	echo "Read the PDF documentation (NRPE.pdf) for information on the next";\
+	echo "steps you should take to complete the installation or upgrade.";\
+	echo ""
 
 nrpe:
 	cd $(SRC_BASE); $(MAKE)

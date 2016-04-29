@@ -457,8 +457,8 @@ void usage(int result)
 		printf(" <mode>           = One of the following operating modes:\n");
 		printf("   -i             =    Run as a service under inetd or xinetd\n");
 		printf("   -d             =    Run as a standalone daemon\n");
-		/* Updates help section to indicate how to start under SRC on AIX */
 		printf("   -d -s          =    Run as a subsystem under AIX\n");
+		printf("   -f             =    Don't fork() for systemd, launchd, etc.\n");
 		printf("\n");
 		printf("Notes:\n");
 		printf("This program is designed to process requests from the check_nrpe\n");

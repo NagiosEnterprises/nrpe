@@ -395,7 +395,7 @@ if test x$check_for_ssl = xyes; then
 			if test "`uname -s`" = "Darwin" ; then
 				soext="dylib"
 			elif test "`uname -s`" = "HP-UX" ; then
-				if test x$arch = "ia64"; then
+				if test x$arch = "xia64"; then
 					soext="so"
 				else
 					soext="sl"
@@ -540,8 +540,8 @@ echo ""
 echo ""
 AC_MSG_RESULT([*** Configuration summary for $PKG_NAME $PKG_VERSION $PKG_REL_DATE ***:])
 
-echo ""
-echo " General Options:"
+echo "";\
+echo " General Options:";\
 echo " -------------------------"
 
 AC_MSG_RESULT([ NRPE port:    $nrpe_port])
@@ -551,8 +551,9 @@ AC_MSG_RESULT([ Nagios user:  $nagios_user])
 AC_MSG_RESULT([ Nagios group: $nagios_group])
 
 
-echo ""
-echo ""
-echo "Review the options above for accuracy.  If they look okay,"
-echo "type 'make all' to compile the NRPE daemon and client."
+echo "";\
+echo "";\
+echo "Review the options above for accuracy.  If they look okay,";\
+echo "type 'make all' to compile the NRPE daemon and client";\
+echo "or type 'make' to get a list of make options.";\
 echo ""
