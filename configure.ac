@@ -198,16 +198,16 @@ va_list ap1,ap2;], [va_copy(ap1,ap2);],
 ac_cv_HAVE_VA_COPY=yes,
 ac_cv_HAVE_VA_COPY=no)])
 if test x"$ac_cv_HAVE_VA_COPY" = x"yes"; then
-    AC_DEFINE(HAVE_VA_COPY,1,[Whether va_copy() is available])
+	AC_DEFINE(HAVE_VA_COPY,1,[Whether va_copy() is available])
 else
-    AC_CACHE_CHECK([for __va_copy],ac_cv_HAVE___VA_COPY,[
-    AC_TRY_LINK([#include <stdarg.h>
-    va_list ap1,ap2;], [__va_copy(ap1,ap2);],
-    ac_cv_HAVE___VA_COPY=yes,
-    ac_cv_HAVE___VA_COPY=no)])
-    if test x"$ac_cv_HAVE___VA_COPY" = x"yes"; then
-        AC_DEFINE(HAVE___VA_COPY,1,[Whether __va_copy() is available])
-    fi
+	AC_CACHE_CHECK([for __va_copy],ac_cv_HAVE___VA_COPY,[
+	AC_TRY_LINK([#include <stdarg.h>
+	va_list ap1,ap2;], [__va_copy(ap1,ap2);],
+	ac_cv_HAVE___VA_COPY=yes,
+	ac_cv_HAVE___VA_COPY=no)])
+	if test x"$ac_cv_HAVE___VA_COPY" = x"yes"; then
+		AC_DEFINE(HAVE___VA_COPY,1,[Whether __va_copy() is available])
+	fi
 fi
 
 AC_CHECK_FUNC(vsnprintf,,SNPRINTF_O=./snprintf.o)
@@ -225,29 +225,29 @@ AC_TRY_RUN([
 #include <sys/types.h>
 #include <stdarg.h>
 void foo(const char *format, ...) {
-       va_list ap;
-       int len;
-       char buf[5];
+	va_list ap;
+	int len;
+	char buf[5];
 
-       va_start(ap, format);
-       len = vsnprintf(buf, 0, format, ap);
-       va_end(ap);
-       if (len != 5) exit(1);
+	va_start(ap, format);
+	len = vsnprintf(buf, 0, format, ap);
+	va_end(ap);
+	if (len != 5) exit(1);
 
-       va_start(ap, format);
-       len = vsnprintf(0, 0, format, ap);
-       va_end(ap);
-       if (len != 5) exit(1);
+	va_start(ap, format);
+	len = vsnprintf(0, 0, format, ap);
+	va_end(ap);
+	if (len != 5) exit(1);
 
-       if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
+	if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
 
-       exit(0);
+	exit(0);
 }
 main() { foo("hello"); }
 ],
 ac_cv_HAVE_C99_VSNPRINTF=yes,ac_cv_HAVE_C99_VSNPRINTF=no,ac_cv_HAVE_C99_VSNPRINTF=cross)])
 if test x"$ac_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
-    AC_DEFINE(HAVE_C99_VSNPRINTF,1,[Define if system has C99 compatible vsnprintf])
+	AC_DEFINE(HAVE_C99_VSNPRINTF,1,[Define if system has C99 compatible vsnprintf])
 fi
 
 dnl AC_CHECK_FUNC(snprintf,AC_DEFINE(HAVE_SNPRINTF),SNPRINTF_O=./snprintf.o)
@@ -266,41 +266,41 @@ AC_CHECK_FUNCS(strdup strstr strtoul strtok_r initgroups closesocket sigaction)
 
 dnl socklen_t check - from curl
 AC_CHECK_TYPE([socklen_t], ,[
-       AC_MSG_CHECKING([for socklen_t equivalent])
-       AC_CACHE_VAL([curl_cv_socklen_t_equiv],
-       [
-          # Systems have either "struct sockaddr *" or
-          # "void *" as the second argument to getpeername
-          curl_cv_socklen_t_equiv=
-          for arg2 in "struct sockaddr" void; do
-             for t in int size_t unsigned long "unsigned long"; do
-                AC_TRY_COMPILE([
-                   #ifdef HAVE_SYS_TYPES_H
-                   #include <sys/types.h>
-                   #endif
-                   #ifdef HAVE_SYS_SOCKET_H
-                   #include <sys/socket.h>
-                   #endif
+	AC_MSG_CHECKING([for socklen_t equivalent])
+	AC_CACHE_VAL([curl_cv_socklen_t_equiv],
+	[
+		# Systems have either "struct sockaddr *" or
+		# "void *" as the second argument to getpeername
+		curl_cv_socklen_t_equiv=
+		for arg2 in "struct sockaddr" void; do
+			for t in int size_t unsigned long "unsigned long"; do
+				AC_TRY_COMPILE([
+					#ifdef HAVE_SYS_TYPES_H
+					#include <sys/types.h>
+					#endif
+					#ifdef HAVE_SYS_SOCKET_H
+					#include <sys/socket.h>
+					#endif
 
-                   int getpeername (int, $arg2 *, $t *);
-                ],[
-                   $t len;
-                   getpeername(0,0,&len);
-                ],[
-                   curl_cv_socklen_t_equiv="$t"
-                   break
-                ])
-             done
-          done
+					int getpeername (int, $arg2 *, $t *);
+				],[
+					$t len;
+					getpeername(0,0,&len);
+				],[
+					curl_cv_socklen_t_equiv="$t"
+					break
+				])
+			done
+		done
 
-          if test "x$curl_cv_socklen_t_equiv" = x; then
-             AC_MSG_ERROR([Cannot find a type to use in place of socklen_t])
-          fi
-       ])
-       AC_MSG_RESULT($curl_cv_socklen_t_equiv)
-       AC_DEFINE_UNQUOTED(socklen_t, $curl_cv_socklen_t_equiv,
-                         [type to use in place of socklen_t if not defined])],
-       [#include <sys/types.h>
+		if test "x$curl_cv_socklen_t_equiv" = x; then
+			AC_MSG_ERROR([Cannot find a type to use in place of socklen_t])
+		fi
+	])
+	AC_MSG_RESULT($curl_cv_socklen_t_equiv)
+	AC_DEFINE_UNQUOTED(socklen_t, $curl_cv_socklen_t_equiv,
+						[type to use in place of socklen_t if not defined])],
+		[#include <sys/types.h>
 #include <sys/socket.h>])
 
 
@@ -347,77 +347,80 @@ dnl Modified version of Mark Ethan Trostler's macro <trostler@juniper.net>
 if test x$check_for_ssl = xyes; then
 	AC_MSG_CHECKING(for SSL headers)
 	found_ssl=no
-	for dir in $ssl_inc_dir $ssl_dir /usr/local/openssl /usr/local/opt/openssl /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr /usr/freeware/lib/openssl /usr/sfw/include; do
+	for dir in $ssl_inc_dir $ssl_dir /usr/local/openssl /usr/local/opt/openssl \
+				/usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr \
+				/usr/freeware/lib/openssl /usr/sfw/include /opt/openssl; do
 		ssldir="$dir"
 		if test -f "$dir/include/openssl/ssl.h"; then
 			found_ssl=yes
 			CFLAGS="$CFLAGS -I$dir/include/openssl -I$ssldir/include"
 			sslincdir="$dir/include/openssl"
-		        break
+			break
 		fi
 		if test -f "$dir/include/ssl.h"; then
 			found_ssl=yes
 			CFLAGS="$CFLAGS -I$dir/include"
 			sslincdir="$dir/include"
-		        break
+			break
 		fi
 		if test -f "$dir/ssl.h"; then
 			found_ssl=yes
 			CFLAGS="$CFLAGS -I$dir"
 			sslincdir="$dir"
 			ssldir="$dir/.."
-		        break
+			break
 		fi
 		if test -f "$dir/openssl/ssl.h"; then
 			found_ssl=yes
 			CFLAGS="$CFLAGS -I$dir/openssl"
 			sslincdir="$dir/openssl"
 			ssldir="$dir/.."
-		        break
+			break
 		fi
 	done
 
 	if test x_$found_ssl != x_yes; then
-        	AC_MSG_ERROR(Cannot find ssl headers)
+		AC_MSG_ERROR(Cannot find ssl headers)
 	else
-
-	        printf "SSL headers found in $ssldir\n";
+		printf "SSL headers found in $ssldir\n";
 
 		dnl Now try and find SSL libraries
 		AC_MSG_CHECKING(for SSL libraries)
 		found_ssl=no
+		if test "`uname -s`" = "Darwin" ; then
+			soext="dylib"
+		elif test "`uname -s`" = "HP-UX" ; then
+			if test x$arch = "xia64"; then
+				soext="so"
+			else
+				soext="sl"
+			fi
+		elif test "`uname -s`" = "AIX" ; then
+			soext="a"
+		else
+			soext="so"
+		fi
 		for dir in $ssl_lib_dir $ssldir $ssldir/lib $ssldir/lib64 /usr/lib64 \
 					/usr/lib /usr/lib/x86_64-linux-gnu /usr/lib/i386-linux-gnu \
 					/usr/local/lib /usr/lib/ssl /usr/ssl/lib /usr/openssl/lib \
 					/usr/pkg/lib /usr/freeware/lib/openssl /usr/sfw/lib \
-					/opt/freeware/lib; do
+					/opt/freeware/lib /opt/openssl/lib/hpux64 \
+					/opt/openssl/lib/hpux32 /opt/openssl/lib/pa20_64 \
+					/opt/openssl/lib /opt/openssl; do
 			ssllibdir="$dir"
-			if test "`uname -s`" = "Darwin" ; then
-				soext="dylib"
-			elif test "`uname -s`" = "HP-UX" ; then
-				if test x$arch = "xia64"; then
-					soext="so"
-				else
-					soext="sl"
-				fi
-			elif test "`uname -s`" = "AIX" ; then
-				soext="a"
-			else
-				soext="so"
-			fi
 			if test -f "$dir/libssl.$soext"; then
 				found_ssl=yes
-			        break
+				break
 			fi
 		done
 
 		if test x_$found_ssl != x_yes; then
-        		AC_MSG_ERROR(Cannot find ssl libraries)
+			AC_MSG_ERROR(Cannot find ssl libraries)
 		else
-		        printf "SSL libraries found in $ssllibdir\n";
+			printf "SSL libraries found in $ssllibdir\n";
 
 			LDFLAGS="$LDFLAGS -L$ssllibdir";
-		        LIBS="$LIBS -lssl -lcrypto";
+			LIBS="$LIBS -lssl -lcrypto";
 
 			AC_DEFINE_UNQUOTED(HAVE_SSL,[1],[Have SSL support])
 

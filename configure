@@ -6807,16 +6807,16 @@ if test x"$ac_cv_HAVE_VA_COPY" = x"yes"; then
 $as_echo "#define HAVE_VA_COPY 1" >>confdefs.h
 
 else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for __va_copy" >&5
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for __va_copy" >&5
 $as_echo_n "checking for __va_copy... " >&6; }
 if ${ac_cv_HAVE___VA_COPY+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <stdarg.h>
-    va_list ap1,ap2;
+	va_list ap1,ap2;
 int
 main ()
 {
@@ -6835,11 +6835,11 @@ rm -f core conftest.err conftest.$ac_objext \
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_HAVE___VA_COPY" >&5
 $as_echo "$ac_cv_HAVE___VA_COPY" >&6; }
-    if test x"$ac_cv_HAVE___VA_COPY" = x"yes"; then
+	if test x"$ac_cv_HAVE___VA_COPY" = x"yes"; then
 
 $as_echo "#define HAVE___VA_COPY 1" >>confdefs.h
 
-    fi
+	fi
 fi
 
 ac_fn_c_check_func "$LINENO" "vsnprintf" "ac_cv_func_vsnprintf"
@@ -6897,23 +6897,23 @@ else
 #include <sys/types.h>
 #include <stdarg.h>
 void foo(const char *format, ...) {
-       va_list ap;
-       int len;
-       char buf[5];
+	va_list ap;
+	int len;
+	char buf[5];
 
-       va_start(ap, format);
-       len = vsnprintf(buf, 0, format, ap);
-       va_end(ap);
-       if (len != 5) exit(1);
+	va_start(ap, format);
+	len = vsnprintf(buf, 0, format, ap);
+	va_end(ap);
+	if (len != 5) exit(1);
 
-       va_start(ap, format);
-       len = vsnprintf(0, 0, format, ap);
-       va_end(ap);
-       if (len != 5) exit(1);
+	va_start(ap, format);
+	len = vsnprintf(0, 0, format, ap);
+	va_end(ap);
+	if (len != 5) exit(1);
 
-       if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
+	if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
 
-       exit(0);
+	exit(0);
 }
 main() { foo("hello"); }
 
@@ -7123,35 +7123,35 @@ if test "x$ac_cv_type_socklen_t" = xyes; then :
 
 else
 
-       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for socklen_t equivalent" >&5
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for socklen_t equivalent" >&5
 $as_echo_n "checking for socklen_t equivalent... " >&6; }
-       if ${curl_cv_socklen_t_equiv+:} false; then :
+	if ${curl_cv_socklen_t_equiv+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-          # Systems have either "struct sockaddr *" or
-          # "void *" as the second argument to getpeername
-          curl_cv_socklen_t_equiv=
-          for arg2 in "struct sockaddr" void; do
-             for t in int size_t unsigned long "unsigned long"; do
-                cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+		# Systems have either "struct sockaddr *" or
+		# "void *" as the second argument to getpeername
+		curl_cv_socklen_t_equiv=
+		for arg2 in "struct sockaddr" void; do
+			for t in int size_t unsigned long "unsigned long"; do
+				cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-                   #ifdef HAVE_SYS_TYPES_H
-                   #include <sys/types.h>
-                   #endif
-                   #ifdef HAVE_SYS_SOCKET_H
-                   #include <sys/socket.h>
-                   #endif
+					#ifdef HAVE_SYS_TYPES_H
+					#include <sys/types.h>
+					#endif
+					#ifdef HAVE_SYS_SOCKET_H
+					#include <sys/socket.h>
+					#endif
 
-                   int getpeername (int, $arg2 *, $t *);
+					int getpeername (int, $arg2 *, $t *);
 
 int
 main ()
 {
 
-                   $t len;
-                   getpeername(0,0,&len);
+					$t len;
+					getpeername(0,0,&len);
 
   ;
   return 0;
@@ -7159,21 +7159,21 @@ main ()
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
 
-                   curl_cv_socklen_t_equiv="$t"
-                   break
+					curl_cv_socklen_t_equiv="$t"
+					break
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-             done
-          done
+			done
+		done
 
-          if test "x$curl_cv_socklen_t_equiv" = x; then
-             as_fn_error $? "Cannot find a type to use in place of socklen_t" "$LINENO" 5
-          fi
+		if test "x$curl_cv_socklen_t_equiv" = x; then
+			as_fn_error $? "Cannot find a type to use in place of socklen_t" "$LINENO" 5
+		fi
 
 fi
 
-       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $curl_cv_socklen_t_equiv" >&5
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $curl_cv_socklen_t_equiv" >&5
 $as_echo "$curl_cv_socklen_t_equiv" >&6; }
 
 cat >>confdefs.h <<_ACEOF
@@ -7259,77 +7259,80 @@ if test x$check_for_ssl = xyes; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL headers" >&5
 $as_echo_n "checking for SSL headers... " >&6; }
 	found_ssl=no
-	for dir in $ssl_inc_dir $ssl_dir /usr/local/openssl /usr/local/opt/openssl /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr /usr/freeware/lib/openssl /usr/sfw/include; do
+	for dir in $ssl_inc_dir $ssl_dir /usr/local/openssl /usr/local/opt/openssl \
+				/usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr \
+				/usr/freeware/lib/openssl /usr/sfw/include /opt/openssl; do
 		ssldir="$dir"
 		if test -f "$dir/include/openssl/ssl.h"; then
 			found_ssl=yes
 			CFLAGS="$CFLAGS -I$dir/include/openssl -I$ssldir/include"
 			sslincdir="$dir/include/openssl"
-		        break
+			break
 		fi
 		if test -f "$dir/include/ssl.h"; then
 			found_ssl=yes
 			CFLAGS="$CFLAGS -I$dir/include"
 			sslincdir="$dir/include"
-		        break
+			break
 		fi
 		if test -f "$dir/ssl.h"; then
 			found_ssl=yes
 			CFLAGS="$CFLAGS -I$dir"
 			sslincdir="$dir"
 			ssldir="$dir/.."
-		        break
+			break
 		fi
 		if test -f "$dir/openssl/ssl.h"; then
 			found_ssl=yes
 			CFLAGS="$CFLAGS -I$dir/openssl"
 			sslincdir="$dir/openssl"
 			ssldir="$dir/.."
-		        break
+			break
 		fi
 	done
 
 	if test x_$found_ssl != x_yes; then
-        	as_fn_error $? "Cannot find ssl headers" "$LINENO" 5
+		as_fn_error $? "Cannot find ssl headers" "$LINENO" 5
 	else
-
-	        printf "SSL headers found in $ssldir\n";
+		printf "SSL headers found in $ssldir\n";
 
 				{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL libraries" >&5
 $as_echo_n "checking for SSL libraries... " >&6; }
 		found_ssl=no
+		if test "`uname -s`" = "Darwin" ; then
+			soext="dylib"
+		elif test "`uname -s`" = "HP-UX" ; then
+			if test x$arch = "xia64"; then
+				soext="so"
+			else
+				soext="sl"
+			fi
+		elif test "`uname -s`" = "AIX" ; then
+			soext="a"
+		else
+			soext="so"
+		fi
 		for dir in $ssl_lib_dir $ssldir $ssldir/lib $ssldir/lib64 /usr/lib64 \
 					/usr/lib /usr/lib/x86_64-linux-gnu /usr/lib/i386-linux-gnu \
 					/usr/local/lib /usr/lib/ssl /usr/ssl/lib /usr/openssl/lib \
 					/usr/pkg/lib /usr/freeware/lib/openssl /usr/sfw/lib \
-					/opt/freeware/lib; do
+					/opt/freeware/lib /opt/openssl/lib/hpux64 \
+					/opt/openssl/lib/hpux32 /opt/openssl/lib/pa20_64 \
+					/opt/openssl/lib /opt/openssl; do
 			ssllibdir="$dir"
-			if test "`uname -s`" = "Darwin" ; then
-				soext="dylib"
-			elif test "`uname -s`" = "HP-UX" ; then
-				if test x$arch = "ia64"; then
-					soext="so"
-				else
-					soext="sl"
-				fi
-			elif test "`uname -s`" = "AIX" ; then
-				soext="a"
-			else
-				soext="so"
-			fi
 			if test -f "$dir/libssl.$soext"; then
 				found_ssl=yes
-			        break
+				break
 			fi
 		done
 
 		if test x_$found_ssl != x_yes; then
-        		as_fn_error $? "Cannot find ssl libraries" "$LINENO" 5
+			as_fn_error $? "Cannot find ssl libraries" "$LINENO" 5
 		else
-		        printf "SSL libraries found in $ssllibdir\n";
+			printf "SSL libraries found in $ssllibdir\n";
 
 			LDFLAGS="$LDFLAGS -L$ssllibdir";
-		        LIBS="$LIBS -lssl -lcrypto";
+			LIBS="$LIBS -lssl -lcrypto";
 
 
 cat >>confdefs.h <<_ACEOF
@@ -8787,8 +8790,8 @@ echo ""
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: *** Configuration summary for $PKG_NAME $PKG_VERSION $PKG_REL_DATE ***:" >&5
 $as_echo "*** Configuration summary for $PKG_NAME $PKG_VERSION $PKG_REL_DATE ***:" >&6; }
 
-echo ""
-echo " General Options:"
+echo "";\
+echo " General Options:";\
 echo " -------------------------"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result:  NRPE port:    $nrpe_port" >&5
@@ -8803,8 +8806,9 @@ $as_echo " Nagios user:  $nagios_user" >&6; }
 $as_echo " Nagios group: $nagios_group" >&6; }
 
 
-echo ""
-echo ""
-echo "Review the options above for accuracy.  If they look okay,"
-echo "type 'make all' to compile the NRPE daemon and client."
+echo "";\
+echo "";\
+echo "Review the options above for accuracy.  If they look okay,";\
+echo "type 'make all' to compile the NRPE daemon and client";\
+echo "or type 'make' to get a list of make options.";\
 echo ""
