@@ -50,6 +50,9 @@
 #undef SIZEOF_SHORT
 #undef SIZEOF_LONG
 
+/* #undef const */
+#undef USE_SSL_DH
+
 /* stupid stuff for u_int32_t */
 #undef U_INT32_T_IS_USHORT
 #undef U_INT32_T_IS_UINT
@@ -238,7 +241,9 @@ typedef int int32_t;
 #ifdef HAVE_SSL
 #include <rsa.h>
 #include <crypto.h>
+# ifdef USE_SSL_DH
 #include <dh.h>
+# endif
 #include <pem.h>
 #include <ssl.h>
 #include <err.h>

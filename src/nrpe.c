@@ -24,10 +24,6 @@
  * now allowed_hosts is parsed by parse_allowed_hosts() from acl.c.
  */
 
-#if defined(__hpux) && defined(HAVE_LIBWRAP)
-int rfc931_timeout=15;
-#endif
-
 #include "config.h"
 #include "common.h"
 #include "nrpe.h"
@@ -36,7 +32,9 @@ int rfc931_timeout=15;
 
 #ifdef HAVE_SSL
 # include <ssl.h>
-# include "../include/dh.h"
+# ifdef USE_SSL_DH
+#  include "../include/dh.h"
+# endif
 #endif
 #ifndef HAVE_ASPRINTF
 extern int asprintf(char **ptr, const char *format, ...);
@@ -45,6 +43,9 @@ extern int asprintf(char **ptr, const char *format, ...);
 #ifdef HAVE_LIBWRAP
 int       allow_severity = LOG_INFO;
 int       deny_severity = LOG_WARNING;
+# ifdef __hpux
+int       rfc931_timeout=15;
+# endif
 #endif
 
 #ifdef HAVE_SSL
@@ -246,6 +247,11 @@ void init_ssl(void)
 		return;
 	}
 
+#ifndef USE_SSL_DH
+	ssl_opts = SSL_OP_ALL;
+	sslprm.allowDH = 0;
+#endif
+
 	if (sslprm.log_opts & SSL_LogStartup)
 		log_ssl_startup();
 
@@ -341,9 +347,11 @@ void init_ssl(void)
 		/* use anonymous DH ciphers */
 		if (sslprm.allowDH == 2)
 			strcpy(sslprm.cipher_list, "ADH");
+#ifdef USE_SSL_DH
 		dh = get_dh2048();
 		SSL_CTX_set_tmp_dh(ctx, dh);
 		DH_free(dh);
+#endif
 	}
 
 	if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {

@@ -327,6 +327,10 @@ dnl Optional SSL library and include paths
 ssl_dir=
 ssl_inc_dir=
 ssl_lib_dir=
+ssl_usedh=
+AC_ARG_WITH([dh],
+	AS_HELP_STRING([--with-dh],[use --without-dh to turn of DH keys]),
+	[ssl_usedh=$withval])
 AC_ARG_WITH([ssl],
 	AS_HELP_STRING([--with-ssl=DIR],[sets location of the SSL installation]),
 	[ssl_dir=$withval])
@@ -405,7 +409,7 @@ if test x$check_for_ssl = xyes; then
 					/usr/local/lib /usr/lib/ssl /usr/ssl/lib /usr/openssl/lib \
 					/usr/pkg/lib /usr/freeware/lib/openssl /usr/sfw/lib \
 					/opt/freeware/lib /opt/openssl/lib/hpux64 \
-					/opt/openssl/lib/hpux32 /opt/openssl/lib/pa20_64 \
+					/opt/openssl/lib/pa20_64 /opt/openssl/lib/hpux32 \
 					/opt/openssl/lib /opt/openssl; do
 			ssllibdir="$dir"
 			if test -f "$dir/libssl.$soext"; then
@@ -426,12 +430,17 @@ if test x$check_for_ssl = xyes; then
 
 			AC_PATH_PROG(sslbin,openssl,value-if-not-found,$ssldir/sbin$PATH_SEPARATOR$ssldir/bin$PATH_SEPARATOR$PATH)
 
-			dnl Generate DH parameters
-			if test -f "$sslbin"; then
-				echo ""
-				echo "*** Generating DH Parameters for SSL/TLS ***"
-				# awk to strip off meta data at bottom of dhparam output
-				$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
+			if test x$ssl_usedh = xno; then
+				echo "skipping DH Parameter generation"
+			else
+				AC_DEFINE(USE_SSL_DH)
+				dnl Generate DH parameters
+				if test -f "$sslbin"; then
+					echo ""
+					echo "*** Generating DH Parameters for SSL/TLS ***"
+					# awk to strip off meta data at bottom of dhparam output
+					$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
+				fi
 			fi
 		fi
 	fi

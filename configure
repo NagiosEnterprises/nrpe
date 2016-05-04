@@ -750,6 +750,7 @@ with_logdir
 with_piddir
 with_pipedir
 enable_ssl
+with_dh
 with_ssl
 with_ssl_inc
 with_ssl_lib
@@ -1417,6 +1418,7 @@ Optional Packages:
   --with-logdir=DIR       where log files should be placed
   --with-piddir=DIR       where the PID file should be placed
   --with-pipedir=DIR      where socket and pipe files should be placed
+  --with-dh               use --without-dh to turn of DH keys
   --with-ssl=DIR          sets location of the SSL installation
   --with-ssl-inc=DIR      sets location of the SSL include files
   --with-ssl-lib=DIR      sets location of the SSL libraries
@@ -7230,6 +7232,13 @@ fi
 ssl_dir=
 ssl_inc_dir=
 ssl_lib_dir=
+ssl_usedh=
+
+# Check whether --with-dh was given.
+if test "${with_dh+set}" = set; then :
+  withval=$with_dh; ssl_usedh=$withval
+fi
+
 
 # Check whether --with-ssl was given.
 if test "${with_ssl+set}" = set; then :
@@ -7317,7 +7326,7 @@ $as_echo_n "checking for SSL libraries... " >&6; }
 					/usr/local/lib /usr/lib/ssl /usr/ssl/lib /usr/openssl/lib \
 					/usr/pkg/lib /usr/freeware/lib/openssl /usr/sfw/lib \
 					/opt/freeware/lib /opt/openssl/lib/hpux64 \
-					/opt/openssl/lib/hpux32 /opt/openssl/lib/pa20_64 \
+					/opt/openssl/lib/pa20_64 /opt/openssl/lib/hpux32 \
 					/opt/openssl/lib /opt/openssl; do
 			ssllibdir="$dir"
 			if test -f "$dir/libssl.$soext"; then
@@ -7382,11 +7391,17 @@ fi
 
 
 
-						if test -f "$sslbin"; then
-				echo ""
-				echo "*** Generating DH Parameters for SSL/TLS ***"
-				# awk to strip off meta data at bottom of dhparam output
-				$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
+			if test x$ssl_usedh = xno; then
+				echo "skipping DH Parameter generation"
+			else
+				$as_echo "#define USE_SSL_DH 1" >>confdefs.h
+
+								if test -f "$sslbin"; then
+					echo ""
+					echo "*** Generating DH Parameters for SSL/TLS ***"
+					# awk to strip off meta data at bottom of dhparam output
+					$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
+				fi
 			fi
 		fi
 	fi
