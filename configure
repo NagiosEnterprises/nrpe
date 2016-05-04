@@ -7102,6 +7102,24 @@ if test "x$ac_cv_lib_wrap_main" = xyes; then :
 
 $as_echo "#define HAVE_LIBWRAP 1" >>confdefs.h
 
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <tcpd.h>
+
+int
+main ()
+{
+int a = rfc931_timeout;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  $as_echo "#define HAVE_RFC931_TIMEOUT 1" >>confdefs.h
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 fi
 

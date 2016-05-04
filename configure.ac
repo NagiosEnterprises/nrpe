@@ -261,6 +261,8 @@ AC_CHECK_LIB(socket,socket,SOCKETLIBS="$SOCKETLIBS -lsocket")
 AC_CHECK_LIB(wrap,main,[
 	LIBWRAPLIBS="$LIBWRAPLIBS -lwrap"
 	AC_DEFINE(HAVE_LIBWRAP,[1],[Have the TCP wrappers library])
+	AC_TRY_LINK([#include <tcpd.h>
+		],[int a = rfc931_timeout;],AC_DEFINE(HAVE_RFC931_TIMEOUT))
 	])
 AC_CHECK_FUNCS(strdup strstr strtoul strtok_r initgroups closesocket sigaction)
 

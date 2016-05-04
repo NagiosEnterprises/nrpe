@@ -43,7 +43,7 @@ extern int asprintf(char **ptr, const char *format, ...);
 #ifdef HAVE_LIBWRAP
 int       allow_severity = LOG_INFO;
 int       deny_severity = LOG_WARNING;
-# ifdef __hpux
+# ifndef HAVE_RFC931_TIMEOUT
 int       rfc931_timeout=15;
 # endif
 #endif
