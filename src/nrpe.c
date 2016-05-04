@@ -38,6 +38,9 @@ int rfc931_timeout=15;
 # include <ssl.h>
 # include "../include/dh.h"
 #endif
+#ifndef HAVE_ASPRINTF
+extern int asprintf(char **ptr, const char *format, ...);
+#endif
 
 #ifdef HAVE_LIBWRAP
 int       allow_severity = LOG_INFO;
@@ -45,7 +48,7 @@ int       deny_severity = LOG_WARNING;
 #endif
 
 #ifdef HAVE_SSL
-# if (defined(__sun) && defined(__SunOS_5_10)) || defined(_AIX)
+# if (defined(__sun) && defined(__SunOS_5_10)) || defined(_AIX) || defined(__upux)
 SSL_METHOD *meth;
 # else
 const SSL_METHOD *meth;
@@ -111,7 +114,7 @@ typedef enum _SSL_VER {
 } SslVer;
 
 typedef enum _CLNT_CERTS {
-	Ask_For_Cert = 1, Require_Cert = 2
+	ClntCerts_Unknown = 0, Ask_For_Cert = 1, Require_Cert = 2
 } ClntCerts;
 
 typedef enum _SSL_LOGGING {
@@ -145,7 +148,7 @@ int main(int argc, char **argv)
 	int       x;
 	uint32_t  y;
 	char      buffer[MAX_INPUT_BUFFER];
-	sleep(10);
+
 	init();
 
 	/* process command-line args */
@@ -1155,7 +1158,7 @@ void wait_for_connections(void)
 		for (i = 0; i < num_listen_socks; i++) {
 			if (!FD_ISSET(listen_socks[i], fdset))
 				continue;
-			fromlen = sizeof(from);
+			fromlen = (socklen_t)sizeof(from);
 
 			/* accept a new connection request */
 			new_sd = accept(listen_socks[i], (struct sockaddr *)&from, &fromlen);

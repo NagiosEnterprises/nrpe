@@ -35,7 +35,7 @@ SRC_INIT=@src_init@
 
 
 default:
-	echo;\
+	@echo;\
 	echo Please enter 'make [option]' where [option] is one of:;\
 	echo;\
 	echo "     all              builds nrpe and check_nrpe";\
@@ -53,7 +53,7 @@ default:
 all:
 	cd $(SRC_BASE); $(MAKE)
 
-	@echo ""
+	@echo "";\
 	echo "*** Compile finished ***";\
 	echo "";\
 	echo "If the NRPE daemon and client compiled without any errors, you";\

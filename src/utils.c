@@ -32,6 +32,10 @@
 #include "../include/common.h"
 #include "../include/utils.h"
 
+#ifndef HAVE_ASPRINTF
+extern int asprintf(char **ptr, const char *format, ...);
+#endif
+
 #ifndef NI_MAXSERV
 # define NI_MAXSERV 32
 #endif
