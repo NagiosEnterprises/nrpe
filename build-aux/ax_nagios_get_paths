@@ -602,6 +602,7 @@ eval cgibindir=$cgibindir
 eval pkglocalstatedir=$pkglocalstatedir
 eval webdir=$webdir
 eval localedir=$localedir
+eval sysconfdir=$sysconfdir
 eval pkgsysconfdir=$pkgsysconfdir
 eval piddir=$piddir
 
