@@ -115,9 +115,11 @@ AC_CONFIG_FILES([Makefile
 	startup/default-socket-svc
 	startup/default-xinetd
 	startup/mac-org.nagios.PKG_NAME.plist
+	startup/newbsd-init
 	startup/openrc-conf
 	startup/openrc-init
 	startup/solaris-PKG_NAME.xml
+	startup/tmpfile.conf
 	startup/upstart-init
 ])
 
