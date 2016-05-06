@@ -3677,6 +3677,7 @@ eval pkglocalstatedir=$pkglocalstatedir
 eval webdir=$webdir
 eval localedir=$localedir
 eval pkgsysconfdir=$pkgsysconfdir
+eval piddir=$piddir
 
 #
 # Init scripts/files
@@ -3799,7 +3800,7 @@ case $init_type in #(
 			src_init=default-init
 		fi ;; #(
   systemd) :
-    src_tmpfile=tmpfile.conf.in
+    src_tmpfile=tmpfile.conf
 		src_init=default-service ;; #(
   bsd) :
     src_init=bsd-init ;; #(
