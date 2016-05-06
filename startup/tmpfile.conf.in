@@ -1,2 +1,2 @@
 #Type	Path			Mode	UID				GID				Age	Argument
-D		@piddir@	0755	@nagios_user@	@nagios_group@	-	-
+D		@piddir@	0755	@nrpe_user@	@nrpe_group@	-	-

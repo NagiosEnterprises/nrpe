@@ -5,9 +5,9 @@
 	<key>Label</key>
 	<string>org.nagios.nrpe</string>
 	<key>UserName</key>
-	<string>nagios</string>
+	<string>@nrpe_user@</string>
 	<key>GroupName</key>
-	<string>nagios</string>
+	<string>@nrpe_group@</string>
 	<key>Program</key>
 	<string>@sbindir@/nrpe</string>
 	<key>ProgramArguments</key>

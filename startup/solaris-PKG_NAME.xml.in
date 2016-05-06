@@ -86,9 +86,9 @@
 		</dependent>
 
 		<method_context>
-			<method_credential user='@nagios_user@' group='@nagios_group@'/>
+			<method_credential user='@nrpe_user@' group='@nrpe_group@'/>
 			<method_environment>
-				<envvar name='BASEDIR' value='/export/home/@nagios_user@'/>
+				<envvar name='BASEDIR' value='/export/home/@nrpe_user@'/>
 			</method_environment>
 		</method_context>
 

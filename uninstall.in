@@ -8,7 +8,7 @@ progs=0
 config=0
 start=0
 force="-f"
-redir="2>/dev/null"
+redir=1
 
 # Set file and path names
 NAME=@PKG_NAME@
@@ -49,7 +49,7 @@ get_opts () {
 			progs)		progs=1		;;
 			config)		config=1	;;
 			startup)	start=1		;;
-			-v)			verb=1; force=""; redir="" 	;;
+			-v)			verb=1; force=""; redir=0 	;;
 			all)		progs=1; config=1; start=1	;;
 			*)			echo "Invalid argument: $arg";	usage	;;
 		esac
@@ -114,9 +114,17 @@ rm_progs () {
 		prt_msg 2 0 1 "Delete $PLUGINSDIR/check_nrpe" && {
 			rm $force "$PLUGINSDIR/check_nrpe"
 			prt_msg 2 1 0 "Remove directory $PLUGINSDIR"
-			rmdir "$PLUGINSDIR" $redir
+			if test $redir -eq 1; then
+				rmdir "$PLUGINSDIR" 2>/dev/null
+			else
+				rmdir "$PLUGINSDIR"
+			fi
 			prt_msg 2 1 0 "Remove directory $LIBEXECDIR"
-			rmdir "$LIBEXECDIR" $redir
+			if test $redir -eq 1; then
+				rmdir "$LIBEXECDIR" 2>/dev/null
+			else
+				rmdir "$LIBEXECDIR"
+			fi
 		}
 	fi
 
@@ -130,7 +138,11 @@ rm_progs () {
     if test -d "$PIDDIR" ; then
 		num=0
 		prt_msg 2 0 1 "Remove directory $PIDDIR" && {
-	        rmdir "$PIDDIR" $redir
+			if test $redir -eq 1; then
+				rmdir "$PIDDIR" 2>/dev/null
+			else
+				rmdir "$PIDDIR"
+			fi
 		}
     fi
 
@@ -242,7 +254,11 @@ rm_config () {
 		prt_msg 2 0 1 "Delete $CFGDIR/$NAME.cfg" || return
 		rm $force "$CFGDIR/$NAME.cfg"
 		prt_msg 2 1 0 "Removing directory $CFGDIR"
-		rm $force "$CFGDIR"
+		if test $redir -eq 1; then
+			rmdir "$CFGDIR" 2>/dev/null
+		else
+			rmdir "$CFGDIR"
+		fi
 	fi
 
 	if test $num -eq 0; then

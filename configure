@@ -4942,9 +4942,6 @@ ac_config_headers="$ac_config_headers include/config.h"
 ac_config_files="$ac_config_files Makefile src/Makefile package/solaris/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/openrc-conf startup/openrc-init startup/solaris-PKG_NAME.xml startup/upstart-init"
 
 
-#sample-config/debian-nrpe-inetd
-#sample-config/openrc-nrpe-inetd
-
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -6776,6 +6773,17 @@ _ACEOF
 fi
 
 
+ac_fn_c_check_func "$LINENO" "seteuid" "ac_cv_func_seteuid"
+if test "x$ac_cv_func_seteuid" = xyes; then :
+  $as_echo "#define SETEUID(id) seteuid(id)" >>confdefs.h
+
+else
+  $as_echo "#define SETEUID(id) setresuid((uid_t) -1, id, (uid_t) -1)" >>confdefs.h
+
+
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for va_copy" >&5
 $as_echo_n "checking for va_copy... " >&6; }
 if ${ac_cv_HAVE_VA_COPY+:} false; then :
@@ -6870,17 +6878,6 @@ if test "x$ac_cv_func_vasprintf" = xyes; then :
 
 else
   SNPRINTF_O=./snprintf.o
-fi
-
-
-ac_fn_c_check_func "$LINENO" "seteuid" "ac_cv_func_seteuid"
-if test "x$ac_cv_func_seteuid" = xyes; then :
-  $as_echo "#define SETEUID(id) seteuid(id)" >>confdefs.h
-
-else
-  $as_echo "#define SETEUID(id) setresuid((uid_t) -1, id, (uid_t) -1)" >>confdefs.h
-
-
 fi
 
 
@@ -7321,7 +7318,8 @@ $as_echo_n "checking for SSL headers... " >&6; }
 	if test x_$found_ssl != x_yes; then
 		as_fn_error $? "Cannot find ssl headers" "$LINENO" 5
 	else
-		printf "SSL headers found in $ssldir\n";
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found in $ssldir" >&5
+$as_echo "found in $ssldir" >&6; }
 
 				{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL libraries" >&5
 $as_echo_n "checking for SSL libraries... " >&6; }
@@ -7356,7 +7354,8 @@ $as_echo_n "checking for SSL libraries... " >&6; }
 		if test x_$found_ssl != x_yes; then
 			as_fn_error $? "Cannot find ssl libraries" "$LINENO" 5
 		else
-			printf "SSL libraries found in $ssllibdir\n";
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found in $ssllibdir" >&5
+$as_echo "found in $ssllibdir" >&6; }
 
 			LDFLAGS="$LDFLAGS -L$ssllibdir";
 			LIBS="$LIBS -lssl -lcrypto";
@@ -7442,9 +7441,11 @@ _ACEOF
 	done
 
 	if test x_$found_kerberos != x_yes; then
-		printf "could not find include files\n";
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: could not find include files" >&5
+$as_echo "$as_me: WARNING: could not find include files" >&2;}
 	else
-		printf "found Kerberos include files in $kerbdir\n";
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found Kerberos include files in $kerbdir" >&5
+$as_echo "found Kerberos include files in $kerbdir" >&6; }
 	fi
 
 

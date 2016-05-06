@@ -121,9 +121,6 @@ AC_CONFIG_FILES([Makefile
 	startup/upstart-init
 ])
 
-#sample-config/debian-nrpe-inetd
-#sample-config/openrc-nrpe-inetd
-
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_MAKE_SET
@@ -189,7 +186,14 @@ if test "$ac_cv_type_int32_t" = no ; then
 	fi
 fi
 
+dnl Check for struct sockaddr_storate
 AC_CHECK_TYPES([struct sockaddr_storage],[],[],[#include <sys/socket.h>])
+
+dnl Should we use seteuid() or setresuid()?
+AC_CHECK_FUNC(seteuid,
+	AC_DEFINE(SETEUID(id),[seteuid(id)]),
+	AC_DEFINE(SETEUID(id),[setresuid((uid_t) -1, id, (uid_t) -1)])
+)
 
 dnl Check for asprintf() and friends...
 AC_CACHE_CHECK([for va_copy],ac_cv_HAVE_VA_COPY,[
@@ -214,11 +218,6 @@ AC_CHECK_FUNC(vsnprintf,,SNPRINTF_O=./snprintf.o)
 AC_CHECK_FUNC(snprintf,,SNPRINTF_O=./snprintf.o)
 AC_CHECK_FUNC(asprintf,,SNPRINTF_O=./snprintf.o)
 AC_CHECK_FUNC(vasprintf,,SNPRINTF_O=./snprintf.o)
-
-AC_CHECK_FUNC(seteuid,
-	AC_DEFINE(SETEUID(id),[seteuid(id)]),
-	AC_DEFINE(SETEUID(id),[setresuid((uid_t) -1, id, (uid_t) -1)])
-)
 
 AC_CACHE_CHECK([for C99 vsnprintf],ac_cv_HAVE_C99_VSNPRINTF,[
 AC_TRY_RUN([
@@ -388,7 +387,7 @@ if test x$check_for_ssl = xyes; then
 	if test x_$found_ssl != x_yes; then
 		AC_MSG_ERROR(Cannot find ssl headers)
 	else
-		printf "SSL headers found in $ssldir\n";
+		AC_MSG_RESULT(found in $ssldir)
 
 		dnl Now try and find SSL libraries
 		AC_MSG_CHECKING(for SSL libraries)
@@ -423,7 +422,7 @@ if test x$check_for_ssl = xyes; then
 		if test x_$found_ssl != x_yes; then
 			AC_MSG_ERROR(Cannot find ssl libraries)
 		else
-			printf "SSL libraries found in $ssllibdir\n";
+			AC_MSG_RESULT(found in $ssllibdir)
 
 			LDFLAGS="$LDFLAGS -L$ssllibdir";
 			LIBS="$LIBS -lssl -lcrypto";
@@ -462,9 +461,9 @@ if test x$check_for_ssl = xyes; then
 	done
 
 	if test x_$found_kerberos != x_yes; then
-		printf "could not find include files\n";
+		AC_MSG_WARN(could not find include files)
 	else
-		printf "found Kerberos include files in $kerbdir\n";
+		AC_MSG_RESULT(found Kerberos include files in $kerbdir)
 	fi
 
 

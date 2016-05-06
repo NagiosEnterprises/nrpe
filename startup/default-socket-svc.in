@@ -7,8 +7,8 @@ After=var-run.mount nss-lookup.target network.target local-fs.target time-sync.t
 Restart=on-failure
 ExecStart=@sbindir@/nrpe -c @pkgsysconfdir@/nrpe.cfg -f
 KillMode=process
-User=@nagios_user@
-Group=@nagios_group@
+User=@nrpe_user@
+Group=@nrpe_group@
 PrivateTmp=true
 OOMScoreAdjust=-500
 
