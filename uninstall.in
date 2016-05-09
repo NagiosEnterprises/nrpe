@@ -234,7 +234,7 @@ rm_startup () {
 					;;
 				esac
 			}
-			prt_msg 2 0 1 "($INIT_TYPE) Delete $INETD_DIR/$INIT_FILE" && {
+			prt_msg 2 0 1 "($INIT_TYPE) Delete $INIT_DIR/$INIT_FILE" && {
 				rm $force "$INIT_DIR/$INIT_FILE"
 				if test $INIT_TYPE = upstart; then
 					prt_msg 2 0 1 "($INIT_TYPE) initctl reload-configuration" && {

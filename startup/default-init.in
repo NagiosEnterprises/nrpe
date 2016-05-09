@@ -52,13 +52,6 @@ if [ -f /etc/rc.status ]; then
 	EXIT_CMD="rc_exit"
 	rc_reset
 
-elif [ -f /lib/lsb/init-functions ]; then
-
-	. /lib/lsb/init-functions
-	START_CMD="start_daemon -p $PID_FILE"
-	QSTAT_CMD="pidofproc -p $PID_FILE $NRPE_BIN"
-	PRT_STAT="status_of_proc -p $PID_FILE $NRPE_BIN nrpe"
-
 elif [ -f /etc/rc.d/init.d/functions ]; then
 
 	. /etc/rc.d/init.d/functions
@@ -66,6 +59,13 @@ elif [ -f /etc/rc.d/init.d/functions ]; then
 elif [ -f /etc/init.d/functions ]; then
 
 	. /etc/init.d/functions
+
+elif [ -f /lib/lsb/init-functions ]; then
+
+	. /lib/lsb/init-functions
+	START_CMD="start_daemon -p $PID_FILE"
+	QSTAT_CMD="pidofproc -p $PID_FILE $NRPE_BIN"
+	PRT_STAT="status_of_proc -p $PID_FILE $NRPE_BIN nrpe"
 
 elif [ -f /etc/rc.d/functions ]; then
 

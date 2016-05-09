@@ -173,7 +173,7 @@ AC_DEFUN([AX_NAGIOS_GET_INIT],
 					if `/sbin/init --version 2>/dev/null | grep "upstart" >/dev/null`; then
 						init_type="upstart"
 						init_type_wanted=no
-					elif test -f "/etc/rc"; then
+					elif test -f "/etc/rc" -a ! -L "/etc/rc"; then
 						init_type="newbsd"
 						init_type_wanted=no
 					else
