@@ -121,6 +121,7 @@ AC_CONFIG_FILES([Makefile
 	startup/solaris-PKG_NAME.xml
 	startup/tmpfile.conf
 	startup/upstart-init
+	startup/rh-upstart-init
 ])
 
 dnl Checks for programs.

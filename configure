@@ -4945,7 +4945,7 @@ fi
 
 ac_config_headers="$ac_config_headers include/config.h"
 
-ac_config_files="$ac_config_files Makefile src/Makefile package/solaris/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/newbsd-init startup/openrc-conf startup/openrc-init startup/solaris-PKG_NAME.xml startup/tmpfile.conf startup/upstart-init"
+ac_config_files="$ac_config_files Makefile src/Makefile package/solaris/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/newbsd-init startup/openrc-conf startup/openrc-init startup/solaris-PKG_NAME.xml startup/tmpfile.conf startup/upstart-init startup/rh-upstart-init"
 
 
 ac_ext=c
@@ -8240,6 +8240,7 @@ do
     "startup/solaris-PKG_NAME.xml") CONFIG_FILES="$CONFIG_FILES startup/solaris-PKG_NAME.xml" ;;
     "startup/tmpfile.conf") CONFIG_FILES="$CONFIG_FILES startup/tmpfile.conf" ;;
     "startup/upstart-init") CONFIG_FILES="$CONFIG_FILES startup/upstart-init" ;;
+    "startup/rh-upstart-init") CONFIG_FILES="$CONFIG_FILES startup/rh-upstart-init" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
