@@ -103,10 +103,12 @@ install-init:
 		echo No init file to install; \
 		exit 1; \
 	fi
-    @if test $(INIT_TYPE) = upstart; then \
+	@if test $(INIT_TYPE) = upstart; then\
 		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
-    else \
+		echo initctl reload-configuration; \
+		initctl reload-configuration; \
+	else\
 		echo $(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 	fi
