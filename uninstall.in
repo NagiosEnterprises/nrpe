@@ -236,6 +236,11 @@ rm_startup () {
 			}
 			prt_msg 2 0 1 "($INIT_TYPE) Delete $INETD_DIR/$INIT_FILE" && {
 				rm $force "$INIT_DIR/$INIT_FILE"
+				if test $INIT_TYPE = upstart; then
+					prt_msg 2 0 1 "($INIT_TYPE) initctl reload-configuration" && {
+						initctl reload-configuration
+					}
+				fi
 			}
 		fi
 	fi
