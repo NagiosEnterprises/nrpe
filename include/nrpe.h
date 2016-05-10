@@ -51,7 +51,7 @@ int wait_conn_fork(int sock);
 void conn_check_peer(int sock);
 void handle_connection(int);
 void init_handle_conn(void);
-int handle_conn_ssl(int sock);
+int handle_conn_ssl(int sock, void *ssl_ptr);
 int read_packet(int sock, void *ssl_ptr, v2_packet *v2_pkt, v3_packet **v3_pkt);
 void free_memory(void);
 int my_system(char*, int, int*, char**);	/* executes a command via popen(), but also protects against timeouts */

@@ -213,6 +213,7 @@ connection_timeout=300
 # will be changed to something like the example below in a later version of NRPE.
 
 #ssl_cipher_list=ALL:!MD5:@STRENGTH
+#ssl_cipher_list=ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!RC4:!MD5:@STRENGTH
 
 # SSL Certificate and Private Key Files
 

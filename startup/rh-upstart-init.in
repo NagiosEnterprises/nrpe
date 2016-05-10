@@ -7,11 +7,11 @@
 
 description		"the Nagios Remote Plugin Executor"
 
-oom score -800
+oom -10
 
 start on (local-filesystems and net-device-up IFACE!=lo)
 stop on runlevel [!2345]
 
 respawn
 
-exec @sbindir@/nrpe -c @pkgsysconfdir@/nrpe.cfg -d
+exec @sbindir@/nrpe -c @pkgsysconfdir@/nrpe.cfg -f

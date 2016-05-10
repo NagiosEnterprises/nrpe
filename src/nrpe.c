@@ -1478,7 +1478,17 @@ void handle_connection(int sock)
 
 	/* do SSL handshake */
 	if (use_ssl == TRUE) {
-		if (handle_conn_ssl(sock) != OK)
+    	if ((ssl = SSL_new(ctx)) == NULL) {
+        	syslog(LOG_ERR, "Error: Could not create SSL connection structure.");
+# ifdef DEBUG
+            errfp = fopen("/tmp/err.log", "a");
+    		ERR_print_errors_fp(errfp);
+        	fclose(errfp);
+# endif
+    		return;
+        }
+
+		if (handle_conn_ssl(sock, ssl) != OK)
 			return;
 	}
 
@@ -1714,24 +1724,14 @@ void init_handle_conn(void)
 	alarm(connection_timeout);
 }
 
-int handle_conn_ssl(int sock)
+int handle_conn_ssl(int sock, void *ssl_ptr)
 {
 #ifdef HAVE_SSL
 	const SSL_CIPHER *c;
 	char      buffer[MAX_INPUT_BUFFER];
-	SSL      *ssl = NULL;
+	SSL      *ssl = (SSL*)ssl_ptr;
 	X509     *peer;
 	int       rc, x;
-
-	if ((ssl = SSL_new(ctx)) == NULL) {
-		syslog(LOG_ERR, "Error: Could not create SSL connection structure.");
-# ifdef DEBUG
-		errfp = fopen("/tmp/err.log", "a");
-		ERR_print_errors_fp(errfp);
-		fclose(errfp);
-# endif
-		return ERROR;
-	}
 
 	SSL_set_fd(ssl, sock);
 
