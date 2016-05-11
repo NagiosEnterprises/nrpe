@@ -2051,6 +2051,7 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 				write(fd[1], buffer, bytes_read);
 			}
 
+			write(fd[1], "\0", 1);
 			status = pclose(fp);	/* close the command and get termination status */
 
 			/* report an error if we couldn't close the command */

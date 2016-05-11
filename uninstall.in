@@ -7,6 +7,9 @@ verb=0
 progs=0
 config=0
 start=0
+delusr=0
+delgrp=0
+delscpt=0
 force="-f"
 redir=1
 
@@ -25,17 +28,25 @@ INETD_DIR=@inetddir@
 INETD_FILE=@inetdname@
 SRC_INETD=@src_inetd@
 SRC_INIT=@src_init@
+USERID=@nrpe_user@
+GRPID=@nrpe_group@
 
 
 # Display usage message
 usage () {
-	echo "Usage: $0 [-q] [-p] [-v] progs|config|startup|all"
-	echo "    -q       Do not print what is happening"
-	echo "    -p       Prompt for each action"
-	echo "    -v       Be a little more verbose about what is happening"
-	echo "    progs    Delete the program files"
-	echo "    config   Delete configuration file(s)"
-	echo "    startup  Delete startup files (inetd, init, etc.)"
+	echo "Usage: $0 [-q] [-p] [-v] progs|config|startup|user|group|script|all"
+	echo "   Optional args:"
+	echo "      -q       Do not print what is happening"
+	echo "      -p       Prompt for each action"
+	echo "      -v       Be a little more verbose about what is happening"
+	echo "   One or more of the following are required:"
+	echo "      progs    Delete the program files"
+	echo "      config   Delete configuration file(s)"
+	echo "      startup  Delete startup files (inetd, init, etc.)"
+	echo "      user     Delete the $USERID user"
+	echo "      group    Delete the $GRPID group"
+	echo "      script   Delete this uninstall script"
+	echo "      all      Do all of the above"
 	exit 1
 }
 
@@ -49,6 +60,9 @@ get_opts () {
 			progs)		progs=1		;;
 			config)		config=1	;;
 			startup)	start=1		;;
+			user)		delusr=1;	;;
+			group)		delgrp=1;	;;
+			script)		delscpt=1;	;;
 			-v)			verb=1; force=""; redir=0 	;;
 			all)		progs=1; config=1; start=1	;;
 			*)			echo "Invalid argument: $arg";	usage	;;
@@ -78,7 +92,7 @@ prt_msg () {
 	case $1 in
 		0)  indent="" ;;
 		1)	indent="   " ;;
-		2)	indent="      " ;;
+		2)	indent="        " ;;
 		*)	indent="" ;;
 	esac
 	shift
@@ -129,14 +143,14 @@ rm_progs () {
 	fi
 
 	if test -f "$SBINDIR/$NAME" ; then
-		num=0
+		num=1
 		prt_msg 2 0 1 "Delete $SBINDIR/$NAME" && {
 			rm $force "$SBINDIR/$NAME"
 		}
 	fi
 
     if test -d "$PIDDIR" ; then
-		num=0
+		num=1
 		prt_msg 2 0 1 "Remove directory $PIDDIR" && {
 			if test $redir -eq 1; then
 				rmdir "$PIDDIR" 2>/dev/null
@@ -179,7 +193,11 @@ rm_startup () {
 						systemctl stop $NAME; systemctl disable $NAME
 						;;
 					upstart)
-						stop $NAME
+						if test $verb -eq 1; then
+							stop $NAME
+						else
+							stop $NAME >/dev/null 2>&1
+						fi
 						;;
 					launchd)
 						launchctl unload $INETD_FILE; launchctl remove $INETD_FILE;
@@ -211,7 +229,11 @@ rm_startup () {
 					systemctl stop $NAME; systemctl disable $NAME
 					;;
 				upstart)
-					stop $NAME
+					if test $verb -eq 1; then
+						stop $NAME
+					else
+						stop $NAME >/dev/null 2>&1
+					fi
 					;;
 				launchd)
 					launchctl unload $INIT_FILE; launchctl remove $INIT_FILE;
@@ -271,6 +293,17 @@ rm_config () {
 	fi
 }
 
+rm_user () {
+#USERID=@nrpe_user@
+}
+
+rm_group () {
+#GRPID=@nrpe_group@
+}
+
+rm_script () {
+}
+
 get_opts $@
 
 prt_msg 0 0 0 "* * * Uninstall Starting * * *"
@@ -278,5 +311,8 @@ prt_msg 0 0 0 "* * * Uninstall Starting * * *"
 if test $progs -eq 1 ;	then rm_progs;		fi
 if test $start -eq 1 ;	then rm_startup;	fi
 if test $config -eq 1 ;	then rm_config;		fi
+if test $delusr -eq 1;	then rm_user;		fi
+if test $delgrp -eq 1;	then rm_group;		fi
+if test $delscpt -eq 1;	then rm_script;		fi
 
 prt_msg 0 0 0 "* * * Uninstall Complete * * *"
