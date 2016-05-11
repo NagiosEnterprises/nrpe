@@ -22,6 +22,10 @@ LIBEXECDIR=@libexecdir@
 INSTALL=@INSTALL@
 NAGIOS_INSTALL_OPTS=@NAGIOS_INSTALL_OPTS@
 NRPE_INSTALL_OPTS=@NRPE_INSTALL_OPTS@
+OPSYS=@opsys@
+DIST=@dist_type@
+USERID=@nrpe_user@
+GRPID=@nrpe_group@
 
 INIT_TYPE=@init_type@
 INIT_DIR=@initdir@
@@ -38,16 +42,19 @@ default:
 	@echo;\
 	echo Please enter 'make [option]' where [option] is one of:;\
 	echo;\
-	echo "     all              builds nrpe and check_nrpe";\
-	echo "     nrpe             builds nrpe only";\
-	echo "     check_nrpe       builds check_nrpe only";\
-	echo "     install          install nrpe and check_nrpe";\
-	echo "     install-plugin   install the check_nrpe plugin";\
-	echo "     install-daemon   install the nrpe daemon";\
-	echo "     install-config   install the nrpe configuration file";\
-	echo "     install-inetd    install the startup files for inetd, launchd, etc.";\
-	echo "     install-init     install the startup files for init, systemd, etc.";\
-	echo "     solaris-package  create the solaris package";\
+	echo "     all                builds nrpe and check_nrpe";\
+	echo "     nrpe               builds nrpe only";\
+	echo "     check_nrpe         builds check_nrpe only";\
+	echo "     install            install nrpe and check_nrpe";\
+	echo "     install-plugin     install the check_nrpe plugin";\
+	echo "     install-daemon     install the nrpe daemon";\
+	echo "     install-group      add the $GRPID group id if it does not exist";\
+	echo "     install-user       add the $USERID user id if it does not exist";\
+	echo "     install-group-user add the $USERID user and $GRPID group";\
+	echo "     install-config     install the nrpe configuration file";\
+	echo "     install-inetd      install the startup files for inetd, launchd, etc.";\
+	echo "     install-init       install the startup files for init, systemd, etc.";\
+	echo "     solaris-package    create the solaris package";\
 	echo
 
 all:
@@ -116,6 +123,47 @@ install-init:
 install-config:
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(CFGDIR)
 	$(INSTALL) -m 644 $(NRPE_INSTALL_OPTS) sample-config/nrpe.cfg $(CFGDIR)
+
+install-group:
+	@if test $(OPSYS) = aix; then\
+		mkgroup $(GRPID);\
+	elif test $(OPSYS) = hpux; then\
+		groupadd $(GRPID);\
+	elif test $(OPSYS) = solaris; then\
+		groupadd $(GRPID);\
+	elif test $(OPSYS) = osx; then\
+		newid=`dscl . -list /Groups gid | tr -s ' ' | cut -d' ' -f2 | sort -n | tail -1`;\
+		newid=$((newid + 1));\
+		dscl . -create /Groups/$(GRPID) gid $$newid;\
+	elif test $(OPSYS) = "bsd" -a $(DIST) = "freebsd; then\
+		pw add group $(GRPID);\
+	else\
+		groupadd -r $(GRPID);\
+	fi
+
+install-user:
+	@if test $(OPSYS) = aix; then\
+		useradd -g $(GRPID) $(USERID);\
+	elif test $(OPSYS) = hpux; then\
+		useradd -g $(GRPID) $(USERID);\
+	elif test $(OPSYS) = solaris; then\
+		useradd -g $(GRPID) $(USERID);\
+	elif test $(OPSYS) = osx; then\
+		newid=`dscl . -list /Users UniqueID | tr -s ' ' | cut -d' ' -f2 | sort -n | tail -1`;\
+		newid=$((newid + 1));\
+		dscl . -create /Users/$(USERID);\
+		dscl . -create /Users/$(USERID) UniqueID $$newid;\
+		dscl . -append /Groups/$(GRPID) GroupMembership $(USERID);\
+	elif test $(OPSYS) = "bsd" -a $(DIST) = "freebsd; then\
+		pw add user -g $(GRPID) $(USERID);\
+	else\
+		useradd -r -g $(GRPID) $(USERID);\
+	fi
+
+install-group-user:
+	$(MAKE) install-group
+	$(MAKE) install-user
+
 
 solaris-package:
 	@if [ `uname -s` != "SunOS" ] ; then \
