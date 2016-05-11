@@ -904,6 +904,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 		if (packet_ver == NRPE_PACKET_VERSION_2) {
 			buffer_size = sizeof(v2_packet) - common_size;
 			buff_ptr = (char *)v2_pkt + common_size;
+			memset(buff_ptr, 0, sizeof(v2_pkt->buffer));
 		} else {
 			int32_t pkt_size = sizeof(v3_packet) - 1;
 
@@ -982,6 +983,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 		if (packet_ver == NRPE_PACKET_VERSION_2) {
 			buffer_size = sizeof(v2_packet) - common_size;
 			buff_ptr = (char *)v2_pkt + common_size;
+			memset(buff_ptr, 0, sizeof(v2_pkt->buffer));
 		} else {
 			pkt_size = sizeof(v3_packet) - 1;
 
@@ -1028,6 +1030,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			bytes_read += rc;
 			bytes_to_recv -= rc;
 		}
+
+		buff_ptr[bytes_read] = 0;
 
 		if (rc < 0 || bytes_read != buffer_size) {
 			if (packet_ver == NRPE_PACKET_VERSION_3) {

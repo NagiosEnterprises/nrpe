@@ -2377,11 +2377,12 @@ void child_sighandler(int sig)
 /* tests whether or not a client request is valid */
 int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 {
-	u_int32_t packet_crc32;
-	u_int32_t calculated_crc32;
-	char     *buff, *ptr;
+	u_int32_t	packet_crc32;
+	u_int32_t	calculated_crc32;
+	char		*buff, *ptr;
+	int			rc;
 #ifdef ENABLE_COMMAND_ARGUMENTS
-	int       x;
+	int			x;
 #endif
 
 	/* check the crc 32 value */
@@ -2425,7 +2426,11 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	}
 
 	/* make sure request doesn't contain nasties */
-	if (contains_nasty_metachars(v2pkt->buffer) == TRUE) {
+	if (packet_ver == NRPE_PACKET_VERSION_3)
+		rc = contains_nasty_metachars(v3pkt->buffer);
+	else
+		rc = contains_nasty_metachars(v2pkt->buffer);
+	if (rc == TRUE) {
 		syslog(LOG_ERR, "Error: Request contained illegal metachars!");
 		return ERROR;
 	}
