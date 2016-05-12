@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # Initialize variables
+myname="$0"
 quiet=0
 prompt=0
 verb=0
@@ -15,6 +16,8 @@ redir=1
 
 # Set file and path names
 NAME=@PKG_NAME@
+OPSYS=@opsys@
+DIST=@dist_type@
 SBINDIR=@sbindir@
 LIBEXECDIR=@libexecdir@
 PLUGINSDIR=@pluginsdir@
@@ -294,14 +297,41 @@ rm_config () {
 }
 
 rm_user () {
-#USERID=@nrpe_user@
+	prt_msg 1 0 0 "*** Removing user $(USERID)"
+	prt_msg 2 0 1 "Delete $(USERID)" || return
+
+	if test $(OPSYS) = aix; then
+		rmuser -p $(USERID)
+	elif test $(OPSYS) = osx; then
+		dscl . -delete /Groups/$(GRPID) GroupMembership $(USERID)
+		dscl . -delete /Users name $(USERID)
+	elif test $(OPSYS) = "bsd" -a $(DIST) = "freebsd"; then
+		pw del user $(USERID)
+	else
+		userdel $(USERID)
+	fi
 }
 
 rm_group () {
-#GRPID=@nrpe_group@
+	prt_msg 1 0 0 "*** Removing group $(GROUPID)"
+	prt_msg 2 0 1 "Delete $(GROUPID)" || return
+
+	if test $(OPSYS) = aix; then
+		rmgroup -p $(GRPID)
+	elif test $(OPSYS) = osx; then
+		dscl . -delete /Groups/$(GRPID)
+	elif test $(OPSYS) = "bsd" -a $(DIST) = "freebsd"; then
+		pw del group $(GRPID)
+	else
+		groupdel $(GRPID)
+	fi
 }
 
 rm_script () {
+	prt_msg 1 0 0 "*** Removing $(myname)"
+	prt_msg 2 0 1 "Delete $(myname)" || return
+
+    rm "$(myname)"
 }
 
 get_opts $@

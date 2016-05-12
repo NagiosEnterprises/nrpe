@@ -190,7 +190,7 @@ int process_arguments(int argc, char **argv)
 	if (argc < 2)
 		return ERROR;
 
-	snprintf(optchars, MAX_INPUT_BUFFER, "H:b:c:a:t:p:S:L:C:K:A:d::s:46hlnuV");
+	snprintf(optchars, MAX_INPUT_BUFFER, "H:b:c:a:t:p:S:L:C:K:A:d::s:246hlnuV");
 
 	while (1) {
 #ifdef HAVE_GETOPT_LONG
@@ -1087,7 +1087,7 @@ int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 
 void alarm_handler(int sig)
 {
-	const char msg[] = "CHECK_NRPE: Socket timeout";
+	const char msg[] = "CHECK_NRPE: Socket timeout\n";
 	write(STDOUT_FILENO, msg, sizeof(msg) - 1);
 	exit(timeout_return_code);
 }

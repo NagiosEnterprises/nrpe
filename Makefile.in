@@ -115,6 +115,9 @@ install-init:
 		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		echo initctl reload-configuration; \
 		initctl reload-configuration; \
+	elif test $(INIT_TYPE) = systemd; then\
+		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
+		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 	else\
 		echo $(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
@@ -127,15 +130,13 @@ install-config:
 install-group:
 	@if test $(OPSYS) = aix; then\
 		mkgroup $(GRPID);\
-	elif test $(OPSYS) = hpux; then\
-		groupadd $(GRPID);\
-	elif test $(OPSYS) = solaris; then\
+	elif test $(OPSYS) = hpux -o $(OPSYS) = solaris; then\
 		groupadd $(GRPID);\
 	elif test $(OPSYS) = osx; then\
 		newid=`dscl . -list /Groups gid | tr -s ' ' | cut -d' ' -f2 | sort -n | tail -1`;\
-		newid=$((newid + 1));\
+		newid=`expr 1 + $newid`;\
 		dscl . -create /Groups/$(GRPID) gid $$newid;\
-	elif test $(OPSYS) = "bsd" -a $(DIST) = "freebsd; then\
+	elif test $(OPSYS) = "bsd" -a $(DIST) = "freebsd"; then\
 		pw add group $(GRPID);\
 	else\
 		groupadd -r $(GRPID);\
@@ -144,17 +145,15 @@ install-group:
 install-user:
 	@if test $(OPSYS) = aix; then\
 		useradd -g $(GRPID) $(USERID);\
-	elif test $(OPSYS) = hpux; then\
-		useradd -g $(GRPID) $(USERID);\
-	elif test $(OPSYS) = solaris; then\
+	elif test $(OPSYS) = hpux -o $(OPSYS) = solaris; then\
 		useradd -g $(GRPID) $(USERID);\
 	elif test $(OPSYS) = osx; then\
 		newid=`dscl . -list /Users UniqueID | tr -s ' ' | cut -d' ' -f2 | sort -n | tail -1`;\
-		newid=$((newid + 1));\
+		newid=`expr 1 + $newid`;\
 		dscl . -create /Users/$(USERID);\
 		dscl . -create /Users/$(USERID) UniqueID $$newid;\
 		dscl . -append /Groups/$(GRPID) GroupMembership $(USERID);\
-	elif test $(OPSYS) = "bsd" -a $(DIST) = "freebsd; then\
+	elif test $(OPSYS) = "bsd" -a $(DIST) = "freebsd"; then\
 		pw add user -g $(GRPID) $(USERID);\
 	else\
 		useradd -r -g $(GRPID) $(USERID);\
