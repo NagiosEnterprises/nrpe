@@ -46,7 +46,8 @@ int show_version = FALSE;
 int packet_ver = NRPE_PACKET_VERSION_3;
 
 #ifdef HAVE_SSL
-# if (defined(__sun) && defined(__SunOS_5_10)) || defined(_AIX) || defined(__hpux)
+/* # if (defined(__sun) && defined(__SunOS_5_10)) || defined(_AIX) || defined(__hpux) */
+# if defined(__sun) || defined(_AIX) || defined(__hpux)
 SSL_METHOD *meth;
 # else
 const SSL_METHOD *meth;
@@ -672,7 +673,7 @@ int connect_to_remote()
 		if (sslprm.log_opts & SSL_LogCipher) {
 			const SSL_CIPHER *c = SSL_get_current_cipher(ssl);
 			syslog(LOG_NOTICE, "Remote %s - %s, Cipher is %s", rem_host,
-				   SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
+				   (char*)SSL_CIPHER_get_version(c), (char*)SSL_CIPHER_get_name(c));
 		}
 
 		if ((sslprm.log_opts & SSL_LogIfClientCert) || (sslprm.log_opts & SSL_LogCertDetails)) {

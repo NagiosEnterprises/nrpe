@@ -13,19 +13,24 @@ CC=@CC@
 CFLAGS=@CFLAGS@ @DEFS@
 LDFLAGS=@LDFLAGS@ @LIBS@
 
+INSTALL=@INSTALL@
+GREP=@GREP@
+EGREP=@EGREP@
+
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 CFGDIR=@pkgsysconfdir@
 BINDIR=@bindir@
 SBINDIR=@sbindir@
 LIBEXECDIR=@libexecdir@
-INSTALL=@INSTALL@
 NAGIOS_INSTALL_OPTS=@NAGIOS_INSTALL_OPTS@
 NRPE_INSTALL_OPTS=@NRPE_INSTALL_OPTS@
 OPSYS=@opsys@
 DIST=@dist_type@
-USERID=@nrpe_user@
-GRPID=@nrpe_group@
+NRPE_USER=@nrpe_user@
+NRPE_GROUP=@nrpe_group@
+NAGIOS_USER=@nagios_user@
+NAGIOS_GROUP=@nagios_group@
 
 INIT_TYPE=@init_type@
 INIT_DIR=@initdir@
@@ -48,9 +53,9 @@ default:
 	echo "     install            install nrpe and check_nrpe";\
 	echo "     install-plugin     install the check_nrpe plugin";\
 	echo "     install-daemon     install the nrpe daemon";\
-	echo "     install-group      add the $GRPID group id if it does not exist";\
-	echo "     install-user       add the $USERID user id if it does not exist";\
-	echo "     install-group-user add the $USERID user and $GRPID group";\
+	echo "     install-group      add the groups if they do not exist";\
+	echo "     install-user       add the user ids if they do not exist";\
+	echo "     install-group-user add the users and groups if they do not exist";\
 	echo "     install-config     install the nrpe configuration file";\
 	echo "     install-inetd      install the startup files for inetd, launchd, etc.";\
 	echo "     install-init       install the startup files for init, systemd, etc.";\
@@ -63,8 +68,7 @@ all:
 	@echo "";\
 	echo "*** Compile finished ***";\
 	echo "";\
-	echo "If the NRPE daemon and client compiled without any errors, you";\
-	echo "can continue with the installation or upgrade process.";\
+	echo "You can now continue with the installation or upgrade process.";\
 	echo "";\
 	echo "Read the PDF documentation (NRPE.pdf) for information on the next";\
 	echo "steps you should take to complete the installation or upgrade.";\
@@ -91,18 +95,22 @@ install-inetd:
 		exit 1; \
 	fi
 	@if test $(INETD_TYPE) = inetd; then \
-		grep -E -q "^\W*nrpe\s+" $(INETD_DIR)/$(INETD_FILE) || \
+		$(EGREP) -q "^\W*nrpe\s+" $(INETD_DIR)/$(INETD_FILE) || \
 		   cat startup/$(SRC_INETD) >> $(INETD_DIR)/$(INETD_FILE); \
-	else \
+	elifif test $(INETD_TYPE) = systemd; then \
+		SRC_INETD_FILE=`echo "$(SRC_INETD)" | sed -e 's/socket/socket-svc/'`; \
+		echo $(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
+		$(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
+	elif test $(INETD_TYPE) = smf10 -o $(INETD_TYPE) = smf11; then \
+		echo svccfg import startup/$(SRC_INETD); \
+		svccfg import startup/$(SRC_INETD); \
+		echo svcadm enable nrpe; \
+		svcadm enable nrpe; \
+	else\
 		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
-		if test $(INETD_TYPE) = systemd; then \
-			SRC_INETD_FILE=`echo "$(SRC_INETD)" | sed -e 's/socket/socket-svc/'`; \
-			echo $(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
-			$(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
-		fi; \
 	fi
-	@grep -E -q "^nrpe[\t ]+5666/tcp" /etc/services || \
+	@$(EGREP) -q "^nrpe[\t ]+5666/tcp" /etc/services || \
 		echo "***** MAKE SURE 'nrpe 5666/tcp' IS IN YOUR /etc/services FILE"
 
 install-init:
@@ -118,6 +126,11 @@ install-init:
 	elif test $(INIT_TYPE) = systemd; then\
 		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
+	elif test $(INETD_TYPE) = smf10 -o $(INETD_TYPE) = smf11; then \
+		echo svccfg import startup/$(SRC_INIT); \
+		svccfg import startup/$(SRC_INIT); \
+		echo svcadm enable nrpe; \
+		svcadm enable nrpe; \
 	else\
 		echo $(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
@@ -128,35 +141,74 @@ install-config:
 	$(INSTALL) -m 644 $(NRPE_INSTALL_OPTS) sample-config/nrpe.cfg $(CFGDIR)
 
 install-group:
-	@if test $(OPSYS) = aix; then\
-		mkgroup $(GRPID);\
-	elif test $(OPSYS) = hpux -o $(OPSYS) = solaris; then\
-		groupadd $(GRPID);\
+	@if test $(DIST) = aix; then\
+		echo mkgroup $(NAGIOS_GROUP);\
+		mkgroup $(NAGIOS_GROUP);\
+		echo mkgroup $(NRPE_GROUP);\
+		mkgroup $(NRPE_GROUP);\
+	elif test $(DIST) = hpux -o $(DIST) = solaris; then\
+		echo groupadd $(NAGIOS_GROUP);\
+		groupadd $(NAGIOS_GROUP);\
+		echo groupadd $(NRPE_GROUP);\
+		groupadd $(NRPE_GROUP);\
 	elif test $(OPSYS) = osx; then\
 		newid=`dscl . -list /Groups gid | tr -s ' ' | cut -d' ' -f2 | sort -n | tail -1`;\
 		newid=`expr 1 + $newid`;\
-		dscl . -create /Groups/$(GRPID) gid $$newid;\
-	elif test $(OPSYS) = "bsd" -a $(DIST) = "freebsd"; then\
-		pw add group $(GRPID);\
+		newid=`expr 1 + $newid`;\
+		echo dscl . -create /Groups/$(NAGIOS_GROUP) gid $$newid;\
+		dscl . -create /Groups/$(NAGIOS_GROUP) gid $$newid;\
+		newid=`expr 1 + $newid`;\
+		echo dscl . -create /Groups/$(NRPE_GROUP) gid $$newid;\
+		dscl . -create /Groups/$(NRPE_GROUP) gid $$newid;\
+	elif test $(DIST) = "freebsd"; then\
+		echo pw add group $(NAGIOS_GROUP);\
+		pw add group $(NAGIOS_GROUP);\
+		echo pw add group $(NRPE_GROUP);\
+		pw add group $(NRPE_GROUP);\
 	else\
-		groupadd -r $(GRPID);\
+		echo groupadd -r $(NAGIOS_GROUP);\
+		groupadd -r $(NAGIOS_GROUP);\
+		echo groupadd -r $(NRPE_GROUP);\
+		groupadd -r $(NRPE_GROUP);\
 	fi
 
 install-user:
-	@if test $(OPSYS) = aix; then\
-		useradd -g $(GRPID) $(USERID);\
-	elif test $(OPSYS) = hpux -o $(OPSYS) = solaris; then\
-		useradd -g $(GRPID) $(USERID);\
+	@if test $(DIST) = aix; then\
+		echo useradd -g $(NAGIOS_GROUP) $(NAGIOS_USER);\
+		useradd -g $(NAGIOS_GROUP) $(NAGIOS_USER);\
+		echo useradd -g $(NRPE_GROUP) $(NRPE_USER);\
+		useradd -g $(NRPE_GROUP) $(NRPE_USER);\
+	elif test $(DIST) = hpux -o $(DIST) = solaris; then\
+		echo useradd -g $(NAGIOS_GROUP) $(NAGIOS_USER);\
+		useradd -g $(NAGIOS_GROUP) $(NAGIOS_USER);\
+		echo useradd -g $(NRPE_GROUP) $(NRPE_USER);\
+		useradd -g $(NRPE_GROUP) $(NRPE_USER);\
 	elif test $(OPSYS) = osx; then\
 		newid=`dscl . -list /Users UniqueID | tr -s ' ' | cut -d' ' -f2 | sort -n | tail -1`;\
 		newid=`expr 1 + $newid`;\
-		dscl . -create /Users/$(USERID);\
-		dscl . -create /Users/$(USERID) UniqueID $$newid;\
-		dscl . -append /Groups/$(GRPID) GroupMembership $(USERID);\
-	elif test $(OPSYS) = "bsd" -a $(DIST) = "freebsd"; then\
-		pw add user -g $(GRPID) $(USERID);\
+		echo dscl . -create /Users/$(NAGIOS_USER);\
+		echo dscl . -create /Users/$(NAGIOS_USER) UniqueID $$newid;\
+		echo dscl . -append /Groups/$(NAGIOS_GROUP) GroupMembership $(NAGIOS_USER);\
+		dscl . -create /Users/$(NAGIOS_USER);\
+		dscl . -create /Users/$(NAGIOS_USER) UniqueID $$newid;\
+		dscl . -append /Groups/$(NAGIOS_GROUP) GroupMembership $(NAGIOS_USER);\
+		newid=`expr 1 + $newid`;\
+		echo dscl . -create /Users/$(NRPE_USER);\
+		echo dscl . -create /Users/$(NRPE_USER) UniqueID $$newid;\
+		echo dscl . -append /Groups/$(NRPE_GROUP) GroupMembership $(NRPE_USER);\
+		dscl . -create /Users/$(NRPE_USER);\
+		dscl . -create /Users/$(NRPE_USER) UniqueID $$newid;\
+		dscl . -append /Groups/$(NRPE_GROUP) GroupMembership $(NRPE_USER);\
+	elif test $(DIST) = "freebsd"; then\
+		echo pw add user -g $(NAGIOS_GROUP) $(NAGIOS_USER);\
+		pw add user -g $(NAGIOS_GROUP) $(NAGIOS_USER);\
+		echo pw add user -g $(NRPE_GROUP) $(NRPE_USER);\
+		pw add user -g $(NRPE_GROUP) $(NRPE_USER);\
 	else\
-		useradd -r -g $(GRPID) $(USERID);\
+		echo useradd -r -g $(NAGIOS_GROUP) $(NAGIOS_USER);\
+		useradd -r -g $(NAGIOS_GROUP) $(NAGIOS_USER);\
+		echo useradd -r -g $(NRPE_GROUP) $(NRPE_USER);\
+		useradd -r -g $(NRPE_GROUP) $(NRPE_USER);\
 	fi
 
 install-group-user:

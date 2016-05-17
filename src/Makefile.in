@@ -74,7 +74,7 @@ install-plugin: install-uninstall
 
 install-daemon: install-uninstall
 	$(INSTALL) -m 755 nrpe $(SBINDIR)
-	@if ! test -d "$(PIDDIR)" ; then \
+	@if test ! -d "$(PIDDIR)" ; then \
 		echo $(INSTALL) -m 755 $(NRPE_INSTALL_OPTS) -d $(PIDDIR); \
 		$(INSTALL) -m 755 $(NRPE_INSTALL_OPTS) -d $(PIDDIR); \
 	fi

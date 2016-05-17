@@ -36,7 +36,7 @@ GRPID=@nrpe_group@
 
 
 # Display usage message
-usage () {
+usage() {
 	echo "Usage: $0 [-q] [-p] [-v] progs|config|startup|user|group|script|all"
 	echo "   Optional args:"
 	echo "      -q       Do not print what is happening"
@@ -53,7 +53,7 @@ usage () {
 	exit 1
 }
 
-get_opts () {
+get_opts() {
 	while test $# -gt 0 ; do
 		arg=$1
 		shift
@@ -87,7 +87,7 @@ get_opts () {
 	fi
 }
 
-prt_msg () {
+prt_msg() {
 	if test $quiet -eq 1 ; then
 		return 0
 	fi
@@ -122,7 +122,7 @@ prt_msg () {
 	return 0
 }
 
-rm_progs () {
+rm_progs() {
 	num=0
 	prt_msg 1 0 0 "*** Uninstalling Progs"
 
@@ -168,7 +168,7 @@ rm_progs () {
 	fi
 }
 
-rm_startup () {
+rm_startup() {
 	num=0
 	prt_msg 1 0 0 "*** Uninstalling Startup"
 
@@ -275,7 +275,7 @@ rm_startup () {
 	fi
 }
 
-rm_config () {
+rm_config() {
     num=0
 	prt_msg 1 0 0 "*** Uninstalling Config"
 
@@ -296,42 +296,42 @@ rm_config () {
 	fi
 }
 
-rm_user () {
-	prt_msg 1 0 0 "*** Removing user $(USERID)"
-	prt_msg 2 0 1 "Delete $(USERID)" || return
+rm_user() {
+	prt_msg 1 0 0 "*** Removing user ${USERID}"
+	prt_msg 2 0 1 "Delete ${USERID}" || return
 
-	if test $(OPSYS) = aix; then
-		rmuser -p $(USERID)
-	elif test $(OPSYS) = osx; then
-		dscl . -delete /Groups/$(GRPID) GroupMembership $(USERID)
-		dscl . -delete /Users name $(USERID)
-	elif test $(OPSYS) = "bsd" -a $(DIST) = "freebsd"; then
-		pw del user $(USERID)
+	if test ${OPSYS} = aix; then
+		rmuser -p ${USERID}
+	elif test ${OPSYS} = osx; then
+		dscl . -delete /Groups/${GRPID} GroupMembership ${USERID}
+		dscl . -delete /Users name ${USERID}
+	elif test ${DIST} = "freebsd"; then
+		pw del user ${USERID}
 	else
-		userdel $(USERID)
+		userdel ${USERID}
 	fi
 }
 
-rm_group () {
-	prt_msg 1 0 0 "*** Removing group $(GROUPID)"
-	prt_msg 2 0 1 "Delete $(GROUPID)" || return
+rm_group() {
+	prt_msg 1 0 0 "*** Removing group ${GROUPID}"
+	prt_msg 2 0 1 "Delete ${GROUPID}" || return
 
-	if test $(OPSYS) = aix; then
-		rmgroup -p $(GRPID)
-	elif test $(OPSYS) = osx; then
-		dscl . -delete /Groups/$(GRPID)
-	elif test $(OPSYS) = "bsd" -a $(DIST) = "freebsd"; then
-		pw del group $(GRPID)
+	if test ${OPSYS} = aix; then
+		rmgroup -p ${GRPID}
+	elif test ${OPSYS} = osx; then
+		dscl . -delete /Groups/${GRPID}
+	elif test ${DIST} = "freebsd"; then
+		pw del group ${GRPID}
 	else
-		groupdel $(GRPID)
+		groupdel ${GRPID}
 	fi
 }
 
-rm_script () {
-	prt_msg 1 0 0 "*** Removing $(myname)"
-	prt_msg 2 0 1 "Delete $(myname)" || return
+rm_script() {
+	prt_msg 1 0 0 "*** Removing ${myname}"
+	prt_msg 2 0 1 "Delete ${myname}" || return
 
-    rm "$(myname)"
+    rm "${myname)"
 }
 
 get_opts $@

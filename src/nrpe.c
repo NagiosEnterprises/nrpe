@@ -49,7 +49,8 @@ int       rfc931_timeout=15;
 #endif
 
 #ifdef HAVE_SSL
-# if (defined(__sun) && defined(__SunOS_5_10)) || defined(_AIX) || defined(__upux)
+/* # if (defined(__sun) && defined(__SunOS_5_10)) || defined(_AIX) || defined(__hpux) */
+# if defined(__sun) || defined(_AIX) || defined(__hpux)
 SSL_METHOD *meth;
 # else
 const SSL_METHOD *meth;
@@ -1771,7 +1772,7 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 	if (sslprm.log_opts & SSL_LogCipher) {
 		c = SSL_get_current_cipher(ssl);
 		syslog(LOG_NOTICE, "Remote %s - %s, Cipher is %s", remote_host,
-			   SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
+			   (char*)SSL_CIPHER_get_version(c), (char*)SSL_CIPHER_get_name(c));
 	}
 
 	if ((sslprm.log_opts & SSL_LogIfClientCert)

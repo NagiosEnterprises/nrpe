@@ -75,8 +75,8 @@ AS_CASE([$init_type],
 		src_init=openrc-init,
 
 	[smf*],
-		src_init="solaris-PKG_NAME.xml"
-		src_inetd="solaris-PKG_NAME.xml",
+		src_init="solaris-init.xml"
+		src_inetd="solaris-inetd.xml",
 
 	[upstart],
 		if test $dist_type = rh ; then

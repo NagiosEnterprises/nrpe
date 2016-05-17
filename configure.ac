@@ -118,7 +118,8 @@ AC_CONFIG_FILES([Makefile
 	startup/newbsd-init
 	startup/openrc-conf
 	startup/openrc-init
-	startup/solaris-PKG_NAME.xml
+	startup/solaris-init.xml
+	startup/solaris-inetd.xml
 	startup/tmpfile.conf
 	startup/upstart-init
 	startup/rh-upstart-init
@@ -357,7 +358,8 @@ if test x$check_for_ssl = xyes; then
 	found_ssl=no
 	for dir in $ssl_inc_dir $ssl_dir /usr/local/openssl /usr/local/opt/openssl \
 				/usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr \
-				/usr/freeware/lib/openssl /usr/sfw/include /opt/openssl; do
+				/usr/freeware/lib/openssl /usr/sfw /usr/sfw/include \
+				/opt/openssl; do
 		ssldir="$dir"
 		if test -f "$dir/include/openssl/ssl.h"; then
 			found_ssl=yes

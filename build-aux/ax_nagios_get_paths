@@ -212,14 +212,14 @@ AC_ARG_WITH(pipedir, AC_HELP_STRING([--with-pipedir=DIR],
 
 if test $install_method = "default"; then
 	if test $opsys = "unix"; then
-		if test x"$prefix" = "xNONE"; then prefix="/usr/local/$PKG_NAME"; fi
+		if test x"$prefix" = "xNONE"; then prefix="/usr/local/nagios"; fi
 	else
 		if test x"$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
 	fi
 	datarootdir=${datarootdir="$prefix"}
 
 elif test $install_method = "opt"; then
-	if test x"$prefix" = "xNONE"; then prefix="/opt/$PKG_NAME"; fi
+	if test x"$prefix" = "xNONE"; then prefix="/opt/nagios"; fi
 
 else
 	if test x"$datadir" = x'${datarootdir}'; then AS_UNSET(datadir); fi
@@ -651,9 +651,9 @@ AS_CASE([$init_type],
 
 	[smf*],
 		if test $init_type = smf10; then
-			initdir=${initdir="/var/svc/manifest/network"}
+			initdir=${initdir="/var/svc/manifest/network/nagios"}
 		else
-			initdir=${initdir="/lib/svc/manifest/network"}
+			initdir=${initdir="/lib/svc/manifest/network/nagios"}
 		fi
 		initname=${initname="$PKG_NAME.xml"}
 		initconfdir=unknown
