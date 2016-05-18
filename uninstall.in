@@ -308,7 +308,7 @@ rm_user() {
 	elif test ${DIST} = "freebsd"; then
 		pw del user ${USERID}
 	else
-		userdel ${USERID}
+		userdel -r ${USERID}
 	fi
 }
 

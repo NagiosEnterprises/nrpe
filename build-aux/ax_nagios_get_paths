@@ -698,9 +698,9 @@ AS_CASE([$inetd_type],
 
 	[smf*],
 		if test $init_type = smf10; then
-			inetddir=${inetddir="/var/svc/manifest/network"}
+			inetddir=${inetddir="/var/svc/manifest/network/nagios"}
 		else
-			inetddir=${inetddir="/lib/svc/manifest/network"}
+			inetddir=${inetddir="/lib/svc/manifest/network/nagios"}
 		fi
 		inetdname=${inetdname="$PKG_NAME.xml"},
 

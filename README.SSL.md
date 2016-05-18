@@ -41,7 +41,7 @@ key generated.
 
 The NRPE configuration file has added new SSL/TLS options. The
 defaults currently will allow old check_nrpe clients to continue to
-connect to the nrpe daemon, but can report on "old style" 
+connect to the nrpe daemon, but can report on "old style"
 connections, or enforce more secure communication as your migration
 progresses. The new options are in the "SSL/TLS OPTIONS" section of
 nrpe.cfg, about two-thirds of the way down.
@@ -241,7 +241,7 @@ Now, sign the CSRs. As root, do the following:
            -out server_certs/db_server.pem
         chown root.nagios server_certs/db_server.pem
         chmod 440 server_certs/db_server.pem
-        openssl ca -days 365 -notext -md sha256
+        openssl ca -days 365 -notext -md sha256 \
            -keyfile ca/ca_key.pem -cert ca/ca_cert.pem \
            -in server_certs/bobs_workstation.csr \
            -out server_certs/bobs_workstation.pem
@@ -264,10 +264,10 @@ running the check_nrpe program.
            -out nag_serv.csr -nodes
 
         cd /usr/local/nagios/etc/ssl
-        openssl ca -extension usr_cert -days 365 -notext -md sha256 \
+        openssl ca -extensions usr_cert -days 365 -notext -md sha256 \
            -keyfile ca/ca_key.pem -cert ca/ca_cert.pem \
            -in client_certs/nag_serv.csr \
-           -out client_certs/nag_serv.pem \
+           -out client_certs/nag_serv.pem
         chown root.nagios client_certs/nag_serv.pem
         chmod 440 client_certs/nag_serv.pem
 

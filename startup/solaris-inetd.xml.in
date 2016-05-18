@@ -12,8 +12,6 @@
 		type='service'
 		version='1'>
 
-		<create-default-instance enabled='true' />
-
 		<restarter>
 			<service_fmri value='svc:/network/inetd:default' />
 		</restarter>
@@ -30,11 +28,11 @@
 			type='method'
 			name='inetd_start'
 			exec='@sbindir@/nrpe -c @pkgsysconfdir@/nrpe.cfg -i'
-			timeout_seconds='0'
+			timeout_seconds='0'>
 			<method_context>
 				<method_credential user='@nrpe_user@' group='@nrpe_group@'/>
 			</method_context>
-		/>
+		</exec_method>
 
 		<exec_method
 			type='method'
@@ -68,6 +66,8 @@
 				type='astring'
 				value='solaris.smf.manage.nrpe'/>
 		</property_group>
+
+		<instance name='default' enabled='true' />
 
 		<stability value='Unstable' />
 

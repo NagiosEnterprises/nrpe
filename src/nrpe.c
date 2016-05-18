@@ -1728,7 +1728,11 @@ void init_handle_conn(void)
 int handle_conn_ssl(int sock, void *ssl_ptr)
 {
 #ifdef HAVE_SSL
+#if defined(__sun) || defined(_AIX) || defined(__hpux)
+	SSL_CIPHER *c;
+#else
 	const SSL_CIPHER *c;
+#endif
 	char      buffer[MAX_INPUT_BUFFER];
 	SSL      *ssl = (SSL*)ssl_ptr;
 	X509     *peer;
@@ -1772,7 +1776,7 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 	if (sslprm.log_opts & SSL_LogCipher) {
 		c = SSL_get_current_cipher(ssl);
 		syslog(LOG_NOTICE, "Remote %s - %s, Cipher is %s", remote_host,
-			   (char*)SSL_CIPHER_get_version(c), (char*)SSL_CIPHER_get_name(c));
+			   SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
 	}
 
 	if ((sslprm.log_opts & SSL_LogIfClientCert)

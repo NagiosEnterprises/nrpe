@@ -671,9 +671,13 @@ int connect_to_remote()
 			syslog(LOG_NOTICE, "Remote %s - SSL Version: %s", rem_host, SSL_get_version(ssl));
 
 		if (sslprm.log_opts & SSL_LogCipher) {
+# if defined(__sun) || defined(_AIX) || defined(__hpux)
+			SSL_CIPHER *c = SSL_get_current_cipher(ssl);
+# else
 			const SSL_CIPHER *c = SSL_get_current_cipher(ssl);
+# endif
 			syslog(LOG_NOTICE, "Remote %s - %s, Cipher is %s", rem_host,
-				   (char*)SSL_CIPHER_get_version(c), (char*)SSL_CIPHER_get_name(c));
+				   SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
 		}
 
 		if ((sslprm.log_opts & SSL_LogIfClientCert) || (sslprm.log_opts & SSL_LogCertDetails)) {
