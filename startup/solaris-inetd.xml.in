@@ -21,7 +21,7 @@
 			restart_on='restart'
 			type='path'>
 			<service_fmri
-			    value='file://localhost/pkg@sysconfdir@/nrpe.cfg' />
+			    value='file://localhost@sysconfdir@/nrpe.cfg' />
 		</dependency>
 
 		<exec_method

@@ -47,19 +47,19 @@ default:
 	@echo;\
 	echo Please enter 'make [option]' where [option] is one of:;\
 	echo;\
-	echo "     all                builds nrpe and check_nrpe";\
-	echo "     nrpe               builds nrpe only";\
-	echo "     check_nrpe         builds check_nrpe only";\
-	echo "     install            install nrpe and check_nrpe";\
-	echo "     install-plugin     install the check_nrpe plugin";\
-	echo "     install-daemon     install the nrpe daemon";\
-	echo "     install-group      add the groups if they do not exist";\
-	echo "     install-user       add the user ids if they do not exist";\
-	echo "     install-group-user add the users and groups if they do not exist";\
-	echo "     install-config     install the nrpe configuration file";\
-	echo "     install-inetd      install the startup files for inetd, launchd, etc.";\
-	echo "     install-init       install the startup files for init, systemd, etc.";\
-	echo "     solaris-package    create the solaris package";\
+	echo "     all                  builds nrpe and check_nrpe";\
+	echo "     nrpe                 builds nrpe only";\
+	echo "     check_nrpe           builds check_nrpe only";\
+	echo "     install              install nrpe and check_nrpe";\
+	echo "     install-plugin       install the check_nrpe plugin";\
+	echo "     install-daemon       install the nrpe daemon";\
+	echo "     install-groups       add the groups if they do not exist";\
+	echo "     install-users        add the user ids if they do not exist";\
+	echo "     install-groups-users add the users and groups if they do not exist";\
+	echo "     install-config       install the nrpe configuration file";\
+	echo "     install-inetd        install the startup files for inetd, launchd, etc.";\
+	echo "     install-init         install the startup files for init, systemd, etc.";\
+	echo "     solaris-package      create the solaris package";\
 	echo
 
 all:
@@ -107,8 +107,7 @@ install-inetd:
 		if test $(INETD_TYPE) = smf10 -o $(INETD_TYPE) = smf11; then \
 			echo svccfg import $(INETD_DIR)/$(INETD_FILE); \
 			svccfg import $(INETD_DIR)/$(INETD_FILE); \
-			echo svcadm enable nrpe; \
-			svcadm enable nrpe; \
+			echo "*** Run 'svcadm enable nrpe' to start it"; \
 		fi;\
 	fi
 	@$(EGREP) -q "^nrpe[\t ]+5666/tcp" /etc/services || \
@@ -132,8 +131,7 @@ install-init:
 		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		echo svccfg import $(INIT_DIR)/$(INIT_FILE); \
 		svccfg import $(INIT_DIR)/$(INIT_FILE); \
-		echo svcadm enable nrpe; \
-		svcadm enable nrpe; \
+		echo "*** Run 'svcadm enable nrpe' to start it"; \
 	else\
 		echo $(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
