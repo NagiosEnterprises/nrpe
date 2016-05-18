@@ -158,6 +158,7 @@ int process_arguments(int argc, char **argv)
 	int argindex = 0;
 	int c = 1;
 	int i = 1;
+	int has_cert = 0, has_priv_key = 0;
 
 #ifdef HAVE_GETOPT_LONG
 	int option_index = 0;
@@ -281,10 +282,12 @@ int process_arguments(int argc, char **argv)
 
 		case 'C':
 			sslprm.cert_file = strdup(optarg);
+			has_cert = 1;
 			break;
 
 		case 'K':
 			sslprm.privatekey_file = strdup(optarg);
+			has_priv_key = 1;
 			break;
 
 		case 'S':
@@ -345,6 +348,12 @@ int process_arguments(int argc, char **argv)
 			strncat(query, argv[c], i);
 			query[sizeof(query) - 1] = '\x0';
 		}
+	}
+
+	if ((has_cert && !has_priv_key) || (!has_cert && has_priv_key)) {
+		syslog(LOG_ERR, "Error: the client certificate and the private key "
+						"must both be given or neither");
+		return ERROR;
 	}
 
 	/* make sure required args were supplied */
