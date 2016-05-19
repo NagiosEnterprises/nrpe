@@ -3857,7 +3857,7 @@ $as_echo "$src_inetd" >&6; }
 
 
 
-if test x${opsys} = xsolaris -a x${init_type} != xsmf11; then
+if test "$dist_type" = solaris -a $dist_ver != smf11; then
 	$as_echo "#define SOLARIS_10 yes" >>confdefs.h
 
 fi
