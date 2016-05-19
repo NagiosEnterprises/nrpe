@@ -101,14 +101,18 @@ install-inetd:
 		SRC_INETD_FILE=`echo "$(SRC_INETD)" | sed -e 's/socket/socket-svc/'`; \
 		echo $(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
+	elif test $(INETD_TYPE) = smf10 -o $(INETD_TYPE) = smf11; then \
+		echo $(INSTALL) -m 775 -g sys -d $(INETD_DIR)
+		$(INSTALL) -m 775 -g sys -d $(INETD_DIR)
+		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+		$(INSTALL) -m 775 -d $(INETD_DIR)
+		echo svccfg import $(INETD_DIR)/$(INETD_FILE); \
+		svccfg import $(INETD_DIR)/$(INETD_FILE); \
+		echo "*** Run 'svcadm enable nrpe' to start it"; \
 	else\
 		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
-		if test $(INETD_TYPE) = smf10 -o $(INETD_TYPE) = smf11; then \
-			echo svccfg import $(INETD_DIR)/$(INETD_FILE); \
-			svccfg import $(INETD_DIR)/$(INETD_FILE); \
-			echo "*** Run 'svcadm enable nrpe' to start it"; \
-		fi;\
 	fi
 	@$(EGREP) -q "^nrpe[\t ]+5666/tcp" /etc/services || \
 		echo "***** MAKE SURE 'nrpe 5666/tcp' IS IN YOUR /etc/services FILE"
@@ -127,6 +131,8 @@ install-init:
 		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 	elif test $(INETD_TYPE) = smf10 -o $(INETD_TYPE) = smf11; then \
+		echo $(INSTALL) -m 775 -g sys -d $(INETD_DIR)
+		$(INSTALL) -m 775 -g sys -d $(INITD_DIR)
 		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		echo svccfg import $(INIT_DIR)/$(INIT_FILE); \

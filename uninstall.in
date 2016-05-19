@@ -220,6 +220,10 @@ rm_startup() {
 					prt_msg 2 0 1 "($INETD_TYPE) Delete $INETD_DIR/$INETD_FILE" && {
 						rm $force "$INETD_DIR/$INETD_FILE"
 					}
+				elif test "$INETD_TYPE" = smf10 -o "$INETD_TYPE" = smf11; then
+					prt_msg 2 0 1 "($INIT_TYPE) svcadm restart svc:/system/manifest-import" && {
+						svcadm restart svc:/system/manifest-import
+					}
 				fi
 			}
 		fi
@@ -267,6 +271,10 @@ rm_startup() {
 					prt_msg 2 0 1 "($INIT_TYPE) initctl reload-configuration" && {
 						initctl reload-configuration
 					}
+				elif test "$INETD_TYPE" = smf10 -o "$INETD_TYPE" = smf11; then
+					prt_msg 2 0 1 "($INIT_TYPE) svcadm restart svc:/system/manifest-import" && {
+						svcadm restart svc:/system/manifest-import
+					}
 				fi
 			}
 		fi
@@ -303,19 +311,34 @@ rm_user() {
 	prt_msg 2 0 1 "Delete nrpe user:${NRPE_USER} and nagios user:${NAGIOS_USER}" || return
 
 	if test ${OPSYS} = aix; then
-		rmuser -p ${NRPE_USER}
-		rmuser -p ${NAGIOS_USER}
+		if test $redir -eq 1; then
+			rmuser -p ${NRPE_USER} 2>/dev/null
+			rmuser -p ${NAGIOS_USER} 2>/dev/null
+		else
+			rmuser -p ${NRPE_USER}
+			rmuser -p ${NAGIOS_USER}
+		fi
 	elif test ${OPSYS} = osx; then
 		dscl . -delete /Groups/${NRPE_GROUP} GroupMembership ${NRPE_USER}
 		dscl . -delete /Users name ${NRPE_USER}
 		dscl . -delete /Groups/${NAGIOS_GROUP} GroupMembership ${NAGIOS_USER}
 		dscl . -delete /Users name ${NAGIOS_USER}
 	elif test ${DIST} = "freebsd"; then
-		pw del user ${NRPE_USER}
-		pw del user ${NAGIOS_USER}
+		if test $redir -eq 1; then
+			pw del user ${NRPE_USER} 2>/dev/null
+			pw del user ${NAGIOS_USER} 2>/dev/null
+		else
+			pw del user ${NRPE_USER}
+			pw del user ${NAGIOS_USER}
+		fi
 	else
-		userdel -r ${NRPE_USER}
-		userdel -r ${NAGIOS_USER}
+		if test $redir -eq 1; then
+			userdel -r ${NRPE_USER} 2>/dev/null
+			userdel -r ${NAGIOS_USER} 2>/dev/null
+		else
+			userdel -r ${NRPE_USER}
+			userdel -r ${NAGIOS_USER}
+		fi
 	fi
 }
 
@@ -324,17 +347,37 @@ rm_group() {
 	prt_msg 2 0 1 "Delete nrpe group:${NRPE_GROUP} and nagios group:${NAGIOS_GROUP}" || return
 
 	if test ${OPSYS} = aix; then
-		rmgroup -p ${NRPE_GROUP}
-		rmgroup -p ${NAGIOS_GROUP}
+		if test $redir -eq 1; then
+			rmgroup -p ${NRPE_GROUP} 2>/dev/null
+			rmgroup -p ${NAGIOS_GROUP} 2>/dev/null
+		else
+			rmgroup -p ${NRPE_GROUP}
+			rmgroup -p ${NAGIOS_GROUP}
+		fi
 	elif test ${OPSYS} = osx; then
-		dscl . -delete /Groups/${NRPE_GROUP}
-		dscl . -delete /Groups/${NAGIOS_GROUP}
+		if test $redir -eq 1; then
+			dscl . -delete /Groups/${NRPE_GROUP} 2>/dev/null
+			dscl . -delete /Groups/${NAGIOS_GROUP} 2>/dev/null
+		else
+			dscl . -delete /Groups/${NRPE_GROUP}
+			dscl . -delete /Groups/${NAGIOS_GROUP}
+		fi
 	elif test ${DIST} = "freebsd"; then
-		pw del group ${NRPE_GROUP}
-		pw del group ${NAGIOS_GROUP}
+		if test $redir -eq 1; then
+			pw del group ${NRPE_GROUP} 2>/dev/null
+			pw del group ${NAGIOS_GROUP} 2>/dev/null
+		else
+			pw del group ${NRPE_GROUP}
+			pw del group ${NAGIOS_GROUP}
+		fi
 	else
-		groupdel ${NRPE_GROUP}
-		groupdel ${NAGIOS_GROUP}
+		if test $redir -eq 1; then
+			groupdel ${NRPE_GROUP} 2>/dev/null
+			groupdel ${NAGIOS_GROUP} 2>/dev/null
+		else
+			groupdel ${NRPE_GROUP}
+			groupdel ${NAGIOS_GROUP}
+		fi
 	fi
 }
 
@@ -342,7 +385,11 @@ rm_script() {
 	prt_msg 1 0 0 "*** Removing ${myname}"
 	prt_msg 2 0 1 "Delete ${myname}" || return
 
-    rm "${myname)"
+	if test $redir -eq 1; then
+		rm "${myname}" 2>/dev/null
+	else
+		rm "${myname}"
+	fi
 }
 
 get_opts $@
