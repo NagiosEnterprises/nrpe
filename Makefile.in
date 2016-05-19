@@ -102,11 +102,11 @@ install-inetd:
 		echo $(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
 	elif test $(INETD_TYPE) = smf10 -o $(INETD_TYPE) = smf11; then \
-		echo $(INSTALL) -m 775 -g sys -d $(INETD_DIR)
-		$(INSTALL) -m 775 -g sys -d $(INETD_DIR)
+		echo $(INSTALL) -m 775 -g sys -d $(INETD_DIR);\
+		$(INSTALL) -m 775 -g sys -d $(INETD_DIR);\
 		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
-		$(INSTALL) -m 775 -d $(INETD_DIR)
+		$(INSTALL) -m 775 -d $(INETD_DIR);\
 		echo svccfg import $(INETD_DIR)/$(INETD_FILE); \
 		svccfg import $(INETD_DIR)/$(INETD_FILE); \
 		echo "*** Run 'svcadm enable nrpe' to start it"; \
@@ -131,8 +131,8 @@ install-init:
 		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 	elif test $(INETD_TYPE) = smf10 -o $(INETD_TYPE) = smf11; then \
-		echo $(INSTALL) -m 775 -g sys -d $(INETD_DIR)
-		$(INSTALL) -m 775 -g sys -d $(INITD_DIR)
+		echo $(INSTALL) -m 775 -g sys -d $(INETD_DIR);\
+		$(INSTALL) -m 775 -g sys -d $(INITD_DIR);\
 		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		echo svccfg import $(INIT_DIR)/$(INIT_FILE); \
