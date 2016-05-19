@@ -3857,6 +3857,11 @@ $as_echo "$src_inetd" >&6; }
 
 
 
+if test x${opsys} = xsolaris -a x${init_type} != xsmf11; then
+	$as_echo "#define SOLARIS_10 yes" >>confdefs.h
+
+fi
+
 if test x${showdirs_only} = xyes; then
 	ac_config_files="$ac_config_files paths"
 

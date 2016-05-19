@@ -49,8 +49,7 @@ int       rfc931_timeout=15;
 #endif
 
 #ifdef HAVE_SSL
-/* # if (defined(__sun) && defined(__SunOS_5_10)) || defined(_AIX) || defined(__hpux) */
-# if defined(__sun) || defined(_AIX) || defined(__hpux)
+# if (defined(__sun) && defined(SOLARIS_10)) || defined(_AIX) || defined(__hpux)
 SSL_METHOD *meth;
 # else
 const SSL_METHOD *meth;
@@ -1728,7 +1727,7 @@ void init_handle_conn(void)
 int handle_conn_ssl(int sock, void *ssl_ptr)
 {
 #ifdef HAVE_SSL
-#if defined(__sun) || defined(_AIX) || defined(__hpux)
+# if (defined(__sun) && defined(SOLARIS_10)) || defined(_AIX) || defined(__hpux)
 	SSL_CIPHER *c;
 #else
 	const SSL_CIPHER *c;

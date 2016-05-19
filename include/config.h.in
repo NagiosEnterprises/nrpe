@@ -40,7 +40,7 @@
 #undef STDC_HEADERS
 #undef HAVE_STRDUP
 #undef HAVE_STRSTR
-#undef HAVE_STRTOUL 
+#undef HAVE_STRTOUL
 #undef HAVE_STRTOK_R
 #undef HAVE_INITGROUPS
 #undef HAVE_CLOSESOCKET
@@ -107,6 +107,9 @@ typedef int int32_t;
 
 /* Use seteuid() or setresuid() depending on the platform */
 #undef SETEUID
+
+/* Is this a Solaris 10 machine? */
+#undef SOLARIS_10
 
 #undef HAVE_GETOPT_H
 #ifdef HAVE_GETOPT_H
@@ -227,7 +230,7 @@ typedef int int32_t;
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
- 
+
 #undef HAVE_GRP_H
 #ifdef HAVE_GRP_H
 #include <grp.h>

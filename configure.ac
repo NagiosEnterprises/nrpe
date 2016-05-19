@@ -90,6 +90,10 @@ AC_NAGIOS_GET_INETD
 AC_NAGIOS_GET_PATHS
 AC_NAGIOS_GET_FILES
 
+if test x${opsys} = xsolaris -a x${init_type} != xsmf11; then
+	AC_DEFINE(SOLARIS_10,yes)
+fi
+
 dnl Do they just want to see where things will go?
 if test x${showdirs_only} = xyes; then
 	AC_CONFIG_FILES([paths])
