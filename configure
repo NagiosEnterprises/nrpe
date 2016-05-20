@@ -3289,6 +3289,9 @@ if test $install_method = "default"; then
 		if test x"$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
 	fi
 	datarootdir=${datarootdir="$prefix"}
+	if test "$prefix" = /opt; then prefix="/opt/nagios"
+	elif test "$prefix" = /opt/local; then prefix="/opt/local/nagios"
+	fi
 
 elif test $install_method = "opt"; then
 	if test x"$prefix" = "xNONE"; then prefix="/opt/nagios"; fi
@@ -3298,7 +3301,7 @@ else
 	if test x"$sysconfdir" = x'${prefix}/etc'; then { sysconfdir=; unset sysconfdir;}; fi
 
 	if test x"$prefix" = "xNONE"; then
-		if test $dist_type = freebsd -o $dist_type = openbsd; then
+		if test $dist_type = freebsd -o $dist_type = openbsd -o $dist_type = osx; then
 			prefix="/usr/local"
 		elif test $dist_type = netbsd; then
 			prefix="/usr/pkg"
@@ -3308,7 +3311,7 @@ else
 	fi
 	if test x"$exec_prefix" = "xNONE"; then exec_prefix=$prefix; fi
 	if test x"$localstatedir" = x'${prefix}/var'; then
-		if test $opsys = "osx"; then
+		if test $dist_type = "osx"; then
 			localstatedir="/private/var"
 		else
 			localstatedir="/var"
@@ -3330,7 +3333,7 @@ else
 		if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
 			libexecdir=${exec_prefix}/libexec/nagios;
 		fi
-	elif test $opsys = "osx"; then
+	elif test $dist_type = "osx"; then
 		if test x"$sbindir" = x'${exec_prefix}/sbin'; then
 			sbindir="$libexecdir"
 		fi

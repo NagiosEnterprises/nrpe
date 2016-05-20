@@ -31,6 +31,7 @@ startup/newbsd-init
 startup/openrc-conf
 startup/openrc-init
 startup/rh-upstart-init
-startup/solaris-PKG_NAME.xml
+startup/solaris-inetd.xml
+startup/solaris-init.xml
 startup/tmpfile.conf
 startup/upstart-init
