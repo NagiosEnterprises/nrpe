@@ -13,100 +13,113 @@ rc=0
 #-------------------------------------
 group_exists(){
 	case $dist in
-		osx)	return `dscl . -read /Groups/$gid >/dev/null 2>&1; echo $?`	;;
-		hpux)	return `grget -n $gid >/dev/null 2>&1; echo $?`	;;
-		aix)	return `lsgroup -a $gid >/dev/null 2>&1; echo $?`	;;
-		*)		return `getent group $gid > /dev/null 2>&1; echo $?`	;;
+		osx)	rc=`dscl . -read /Groups/$gid >/dev/null 2>&1; echo $?`	;;
+		hpux)	rc=`grget -n $gid >/dev/null 2>&1; echo $?`	;;
+		aix)	rc=`lsgroup -a $gid >/dev/null 2>&1; echo $?`	;;
+		*)		rc=`getent group $gid > /dev/null 2>&1; echo $?`	;;
 	esac
+
+	echo $rc
 }
 
 #------------------------
 # Add the specified user
 #------------------------
 add_user(){
-	if `id "$uid" > /dev/null 2>&1; echo $?` eq 0; then
-		echo "User $uid already exists"
-		return 0
+	rc=`id "$uid" > /dev/null 2>&1; echo $?`
+	if test $rc -eq 0; then
+		echo "User $uid already exists" > /dev/stderr
+		echo 0
+		return
 	fi
 
 	case $dist in
 		aix)
-			echo useradd -g $gid $uid
-			return `useradd -g $gid $uid; echo $?`
+			echo useradd -g $gid $uid > /dev/stderr
+			rc=`useradd -g $gid $uid; echo $?`
 			;;
 
 		hpux|solaris)
-			echo useradd -m -g $gid $uid
-			return `useradd -m -g $gid $uid; echo $?`
+			echo useradd -m -g $gid $uid > /dev/stderr
+			rc=`useradd -m -g $gid $uid; echo $?`
 			;;
 
 		osx)
 			newid=`dscl . -list /Users UniqueID | tr -s ' ' | cut -d' ' -f2 | sort -n | tail -1`
-			newid=`expr 1 + $$newid`
-			echo dscl . -create /Users/$uid
+			newid=`expr 1 + $newid`
+			echo dscl . -create /Users/$uid > /dev/stderr
 			dscl . -create /Users/$uid
-			echo dscl . -create /Users/$uid UniqueID $newid
-			dscl . -create /Users/$$uid UniqueID $newid
-			echo dscl . -create /Users/$uid UserShell /usr/bin/false
+			echo dscl . -create /Users/$uid UniqueID $newid > /dev/stderr
+			dscl . -create /Users/$uid UniqueID $newid
+			echo dscl . -create /Users/$uid UserShell /usr/bin/false > /dev/stderr
 			dscl . -create /Users/$uid UserShell /usr/bin/false
-			echo dscl . -create /Users/$$uid PrimaryGroupID 20
+			echo dscl . -create /Users/$uid PrimaryGroupID 20 > /dev/stderr
 			dscl . -create /Users/$uid PrimaryGroupID 20
-			echo dscl . -append /Groups/$gid GroupMembership $uid
-			return `dscl . -append /Groups/$gid GroupMembership $uid; echo $?`
+			echo dscl . -append /Groups/$gid GroupMembership $uid > /dev/stderr
+			rc=`dscl . -append /Groups/$gid GroupMembership $uid; echo $?`
 			;;
 
 		freebsd)
-			echo pw add user -g $gid $uid
-			return `pw add user -g $gid $uid; echo $?`
+			echo pw add user -g $gid $uid > /dev/stderr
+			rc=`pw add user -g $gid $uid; echo $?`
 			;;
 
 		*)
-			echo useradd -r -g $gid $uid
-			return `useradd -r -g $gid $uid; echo $?`
+			echo useradd -r -g $gid $uid > /dev/stderr
+			rc=`useradd -r -g $gid $uid; echo $?`
 			;;
 	esac
+
+	echo $rc
 }
 
 #-------------------------
 # Add the specified group
 #-------------------------
 add_group(){
-	if `group_exists` eq 0; then
-		echo "Group $gid already exists"
-		return 0
+	rc=`group_exists`
+	if test $rc -eq 0; then
+		echo "Group $gid already exists" > /dev/stderr
+		echo 0
+		return
 	fi
 
 	case $dist in
 		aix)
-			echo mkgroup $gid
-			return `mkgroup "$gid"; echo $?`
+			echo mkgroup $gid > /dev/stderr
+			rc=`mkgroup "$gid"; echo $?`
 			;;
 
 		hpux|solaris)
-			echo groupadd $gid
-			return `groupadd "$gid"; echo $?`
+			echo groupadd $gid > /dev/stderr
+			rc=`groupadd "$gid"; echo $?`
 			;;
 
 		osx)
 			newid=`dscl . -list /Groups gid | tr -s ' ' | cut -d' ' -f2 | sort -n | tail -1`
-			newid=`expr 1 + $$newid`
-			echo dscl . -create /Groups/$gid gid $newid
-			return `dscl . -create /Groups/$gid gid $newid; echo $?`
+			newid=`expr 1 + $newid`
+			echo dscl . -create /Groups/$gid gid $newid > /dev/stderr
+			rc=`dscl . -create /Groups/$gid gid $newid; echo $?`
 			;;
 
 		freebsd)
-			echo pw add group $gid
-			return `pw add group $gid; echo $?`
+			echo pw add group $gid > /dev/stderr
+			rc=`pw add group $gid; echo $?`
+			;;
 
 		*)
-			echo groupadd -r $gid
-			return `groupadd -r $gid; echo $?`
+			echo groupadd -r $gid > /dev/stderr
+			rc=`groupadd -r $gid; echo $?`
 			;;
 	esac
+
+	echo $rc
 }
 
 
-if test `add_group` ne 0; then
+rc=`add_group`
+if test $rc -ne 0; then
 	exit 1;
 fi
-exit `add_user`
+rc=`add_user`
+exit $rc
