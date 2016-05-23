@@ -147,7 +147,9 @@ install-config:
 
 install-groups-users:
 	@build-aux/add_group_user $(DIST) $(NAGIOS_USER) $(NAGIOS_GROUP)
-	@build-aux/add_group_user $(DIST) $(NRPE_USER) $(NRPE_GROUP)
+	@if test "$(NAGIOS_USER)" != "$(NRPE_USER)" -o "$(NAGIOS_GROUP)" != "$(NRPE_GROUP)"; then\
+		build-aux/add_group_user $(DIST) $(NRPE_USER) $(NRPE_GROUP);\
+	fi
 
 solaris-package:
 	@if [ `uname -s` != "SunOS" ] ; then \
