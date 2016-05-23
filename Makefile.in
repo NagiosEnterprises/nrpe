@@ -50,12 +50,10 @@ default:
 	echo "     all                  builds nrpe and check_nrpe";\
 	echo "     nrpe                 builds nrpe only";\
 	echo "     check_nrpe           builds check_nrpe only";\
+	echo "     install-groups-users add the users and groups if they do not exist";\
 	echo "     install              install nrpe and check_nrpe";\
 	echo "     install-plugin       install the check_nrpe plugin";\
 	echo "     install-daemon       install the nrpe daemon";\
-	echo "     install-groups       add the groups if they do not exist";\
-	echo "     install-users        add the user ids if they do not exist";\
-	echo "     install-groups-users add the users and groups if they do not exist";\
 	echo "     install-config       install the nrpe configuration file";\
 	echo "     install-inetd        install the startup files for inetd, launchd, etc.";\
 	echo "     install-init         install the startup files for init, systemd, etc.";\
@@ -147,80 +145,9 @@ install-config:
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(CFGDIR)
 	$(INSTALL) -m 644 $(NRPE_INSTALL_OPTS) sample-config/nrpe.cfg $(CFGDIR)
 
-install-groups:
-	@if test $(DIST) = aix; then\
-		echo mkgroup $(NAGIOS_GROUP);\
-		mkgroup $(NAGIOS_GROUP) || true;\
-		echo mkgroup $(NRPE_GROUP);\
-		mkgroup $(NRPE_GROUP) || true;\
-	elif test $(DIST) = hpux -o $(DIST) = solaris; then\
-		echo groupadd $(NAGIOS_GROUP);\
-		groupadd $(NAGIOS_GROUP) || true;\
-		echo groupadd $(NRPE_GROUP);\
-		groupadd $(NRPE_GROUP) || true;\
-	elif test $(DIST) = osx; then\
-		newid=`dscl . -list /Groups gid | tr -s ' ' | cut -d' ' -f2 | sort -n | tail -1`;\
-		newid=`expr 1 + $$newid`;\
-		echo dscl . -create /Groups/$(NAGIOS_GROUP) gid $$newid;\
-		dscl . -create /Groups/$(NAGIOS_GROUP) gid $$newid;\
-		newid=`expr 1 + $$newid`;\
-		echo dscl . -create /Groups/$(NRPE_GROUP) gid $$newid;\
-		dscl . -create /Groups/$(NRPE_GROUP) gid $$newid;\
-	elif test $(DIST) = "freebsd"; then\
-		echo pw add group $(NAGIOS_GROUP);\
-		pw add group $(NAGIOS_GROUP) || true;\
-		echo pw add group $(NRPE_GROUP);\
-		pw add group $(NRPE_GROUP) || true;\
-	else\
-		echo groupadd -r $(NAGIOS_GROUP);\
-		groupadd -r $(NAGIOS_GROUP) || true;\
-		echo groupadd -r $(NRPE_GROUP);\
-		groupadd -r $(NRPE_GROUP) || true;\
-	fi
-
-install-users:
-	@if test $(DIST) = aix; then\
-		echo useradd -g $(NAGIOS_GROUP) $(NAGIOS_USER);\
-		useradd -g $(NAGIOS_GROUP) $(NAGIOS_USER) || true;\
-		echo useradd -g $(NRPE_GROUP) $(NRPE_USER);\
-		useradd -g $(NRPE_GROUP) $(NRPE_USER) || true;\
-	elif test $(DIST) = hpux -o $(DIST) = solaris; then\
-		echo useradd -m -g $(NAGIOS_GROUP) $(NAGIOS_USER);\
-		useradd -m -g $(NAGIOS_GROUP) $(NAGIOS_USER) || true;\
-		echo useradd -m -g $(NRPE_GROUP) $(NRPE_USER);\
-		useradd -m -g $(NRPE_GROUP) $(NRPE_USER) || true;\
-	elif test $(DIST) = osx; then\
-		newid=`dscl . -list /Users UniqueID | tr -s ' ' | cut -d' ' -f2 | sort -n | tail -1`;\
-		newid=`expr 1 + $$newid`;\
-		echo dscl . -create /Users/$(NAGIOS_USER);\
-		echo dscl . -create /Users/$(NAGIOS_USER) UniqueID $$newid;\
-		echo dscl . -append /Groups/$(NAGIOS_GROUP) GroupMembership $(NAGIOS_USER);\
-		dscl . -create /Users/$(NAGIOS_USER);\
-		dscl . -create /Users/$(NAGIOS_USER) UniqueID $$newid;\
-		dscl . -append /Groups/$(NAGIOS_GROUP) GroupMembership $(NAGIOS_USER);\
-		newid=`expr 1 + $$newid`;\
-		echo dscl . -create /Users/$(NRPE_USER);\
-		echo dscl . -create /Users/$(NRPE_USER) UniqueID $$newid;\
-		echo dscl . -append /Groups/$(NRPE_GROUP) GroupMembership $(NRPE_USER);\
-		dscl . -create /Users/$(NRPE_USER);\
-		dscl . -create /Users/$(NRPE_USER) UniqueID $$newid;\
-		dscl . -append /Groups/$(NRPE_GROUP) GroupMembership $(NRPE_USER);\
-	elif test $(DIST) = "freebsd"; then\
-		echo pw add user -g $(NAGIOS_GROUP) $(NAGIOS_USER);\
-		pw add user -g $(NAGIOS_GROUP) $(NAGIOS_USER) || true;\
-		echo pw add user -g $(NRPE_GROUP) $(NRPE_USER);\
-		pw add user -g $(NRPE_GROUP) $(NRPE_USER) || true;\
-	else\
-		echo useradd -r -g $(NAGIOS_GROUP) $(NAGIOS_USER);\
-		useradd -r -g $(NAGIOS_GROUP) $(NAGIOS_USER) || true;\
-		echo useradd -r -g $(NRPE_GROUP) $(NRPE_USER);\
-		useradd -r -g $(NRPE_GROUP) $(NRPE_USER) || true;\
-	fi
-
 install-groups-users:
-	$(MAKE) install-groups
-	$(MAKE) install-users
-
+	@build-aux/add_group_user $(DIST) $(NAGIOS_USER) $(NAGIOS_GROUP)
+	@build-aux/add_group_user $(DIST) $(NRPE_USER) $(NRPE_GROUP)
 
 solaris-package:
 	@if [ `uname -s` != "SunOS" ] ; then \

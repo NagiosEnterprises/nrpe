@@ -1,0 +1,112 @@
+#!/bin/sh
+
+#----------------------
+# Initialize variables
+#----------------------
+dist="$1"
+uid="$2"
+gid="$3"
+rc=0
+
+#-------------------------------------
+# Check if the specified group exists
+#-------------------------------------
+group_exists(){
+	case $dist in
+		osx)	return `dscl . -read /Groups/$gid >/dev/null 2>&1; echo $?`	;;
+		hpux)	return `grget -n $gid >/dev/null 2>&1; echo $?`	;;
+		aix)	return `lsgroup -a $gid >/dev/null 2>&1; echo $?`	;;
+		*)		return `getent group $gid > /dev/null 2>&1; echo $?`	;;
+	esac
+}
+
+#------------------------
+# Add the specified user
+#------------------------
+add_user(){
+	if `id "$uid" > /dev/null 2>&1; echo $?` eq 0; then
+		echo "User $uid already exists"
+		return 0
+	fi
+
+	case $dist in
+		aix)
+			echo useradd -g $gid $uid
+			return `useradd -g $gid $uid; echo $?`
+			;;
+
+		hpux|solaris)
+			echo useradd -m -g $gid $uid
+			return `useradd -m -g $gid $uid; echo $?`
+			;;
+
+		osx)
+			newid=`dscl . -list /Users UniqueID | tr -s ' ' | cut -d' ' -f2 | sort -n | tail -1`
+			newid=`expr 1 + $$newid`
+			echo dscl . -create /Users/$uid
+			dscl . -create /Users/$uid
+			echo dscl . -create /Users/$uid UniqueID $newid
+			dscl . -create /Users/$$uid UniqueID $newid
+			echo dscl . -create /Users/$uid UserShell /usr/bin/false
+			dscl . -create /Users/$uid UserShell /usr/bin/false
+			echo dscl . -create /Users/$$uid PrimaryGroupID 20
+			dscl . -create /Users/$uid PrimaryGroupID 20
+			echo dscl . -append /Groups/$gid GroupMembership $uid
+			return `dscl . -append /Groups/$gid GroupMembership $uid; echo $?`
+			;;
+
+		freebsd)
+			echo pw add user -g $gid $uid
+			return `pw add user -g $gid $uid; echo $?`
+			;;
+
+		*)
+			echo useradd -r -g $gid $uid
+			return `useradd -r -g $gid $uid; echo $?`
+			;;
+	esac
+}
+
+#-------------------------
+# Add the specified group
+#-------------------------
+add_group(){
+	if `group_exists` eq 0; then
+		echo "Group $gid already exists"
+		return 0
+	fi
+
+	case $dist in
+		aix)
+			echo mkgroup $gid
+			return `mkgroup "$gid"; echo $?`
+			;;
+
+		hpux|solaris)
+			echo groupadd $gid
+			return `groupadd "$gid"; echo $?`
+			;;
+
+		osx)
+			newid=`dscl . -list /Groups gid | tr -s ' ' | cut -d' ' -f2 | sort -n | tail -1`
+			newid=`expr 1 + $$newid`
+			echo dscl . -create /Groups/$gid gid $newid
+			return `dscl . -create /Groups/$gid gid $newid; echo $?`
+			;;
+
+		freebsd)
+			echo pw add group $gid
+			return `pw add group $gid; echo $?`
+
+		*)
+			echo groupadd -r $gid
+			return `groupadd -r $gid; echo $?`
+			;;
+	esac
+}
+
+
+if test `add_group` ne 0; then
+	exit 1;
+fi
+exit `add_user`
