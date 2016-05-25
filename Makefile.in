@@ -112,8 +112,8 @@ install-inetd:
 		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
 	fi
-	@$(EGREP) -q "^nrpe[\t ]+5666/tcp" /etc/services || \
-		echo "***** MAKE SURE 'nrpe 5666/tcp' IS IN YOUR /etc/services FILE"
+	@$(EGREP) -q "^nrpe[\t ]+@nrpe_port@/tcp" /etc/services || \
+		echo "***** MAKE SURE 'nrpe @nrpe_port@/tcp' IS IN YOUR /etc/services FILE"
 
 install-init:
 	@if test $(SRC_INIT) = unknown; then \
@@ -140,8 +140,8 @@ install-init:
 		echo $(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		if test $(INIT_TYPE) = newbsd; then\
-			echo "*** Add 'nrpe_enable=\"YES\"' and";\
-			echo "    set 'nrpe_configfile' in /etc/rc.conf";\
+			echo "*** Add 'nrpe_enable=\"YES\"' to /etc/rc.conf and";\
+			echo "*** optionally set 'nrpe_configfile'";\
 		fi;\
 	fi
 
