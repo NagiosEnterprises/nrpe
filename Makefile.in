@@ -128,7 +128,7 @@ install-init:
 	elif test $(INIT_TYPE) = systemd; then\
 		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
-	elif test $(INETD_TYPE) = smf10 -o $(INETD_TYPE) = smf11; then \
+	elif test $(INIT_TYPE) = smf10 -o $(INIT_TYPE) = smf11; then \
 		echo $(INSTALL) -m 775 -g sys -d $(INETD_DIR);\
 		$(INSTALL) -m 775 -g sys -d $(INITD_DIR);\
 		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
@@ -139,6 +139,10 @@ install-init:
 	else\
 		echo $(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
+		if test $(INIT_TYPE) = newbsd; then\
+			echo "*** Add 'nrpe_enable=\"YES\"' and";\
+			echo "    set 'nrpe_configfile' in /etc/rc.conf";\
+		fi;\
 	fi
 
 install-config:
