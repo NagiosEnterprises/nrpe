@@ -3,26 +3,26 @@
 # Copyright (c) 2016 Nagios(R) Core(TM) Development Team
 #
 # PROVIDE: nrpe
-# REQUIRE: LOGIN
+# REQUIRE: DAEMON
 # KEYWORD: shutdown
 
 . /etc/rc.subr
 
-sig_reload=HUP
-: ${nrpe@bsdenable@:="NO"}
+: ${nrpe@bsd_enable@:="NO"}
 : ${nrpe_configfile:="@pkgsysconfdir@/nrpe.cfg"}
-: ${nrpe_program:="@sbindir@/nrpe"}
-: ${pidfile:="@piddir@/nrpe.pid"}
-command_args="-c ${nrpe_configfile} -d"
-extra_commands=reload
+
 name=nrpe
-rcvar=nrpe@bsdenable@
-load_rc_config "${name}"
-required_files="${nrpe_configfile}"
+command="@sbindir@/nrpe"
+command_args="-c $nrpe_configfile -d"
+pidfile="@piddir@/nrpe.pid"
+extra_commands=reload
+sig_reload=HUP
+rcvar=nrpe@bsd_enable@
+load_rc_config "$name"
+required_files="$nrpe_configfile"
 sig_reload=HUP
 
 start_precmd=nrpe_prestart
-stop_precmd=find_pidfile
 
 nrpe_prestart()
 {

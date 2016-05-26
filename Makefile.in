@@ -140,7 +140,7 @@ install-init:
 		echo $(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		if test $(INIT_TYPE) = newbsd; then\
-			echo "nrpe@bsdenable@=YES" >> /etc/rc.conf;\
+			echo "nrpe@bsd_enable@=YES" >> /etc/rc.conf;\
 			echo "nrpe_configfile=$(CFGDIR)/nrpe.cfg" >> /etc/rc.conf;\
 		fi;\
 	fi
