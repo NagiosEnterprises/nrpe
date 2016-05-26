@@ -65,14 +65,16 @@ AS_CASE([$init_type],
 		src_init=default-service,
 
 	[bsd],
+		src_init=bsd-init,
+
+	[newbsd],
 		if test $dist_type = freebsd ; then
 			bsd_enable="_enable"
 		elif test $dist_type = openbsd ; then
 			bsd_enable="_flags"
+		elif test $dist_type = netbsd ; then
+			bsd_enable=""
 		fi
-		src_init=bsd-init,
-
-	[newbsd],
 		src_init=newbsd-init,
 
 #	[gentoo],
