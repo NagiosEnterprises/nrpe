@@ -64,6 +64,11 @@ add_user(){
 			rc=`pw add user $uid -g $gid -s /usr/bin/false; echo $?`
 			;;
 
+		netbsd)
+			echo useradd -g $gid $uid > /dev/stderr
+			rc=`useradd -g $gid $uid; echo $?`
+			;;
+
 		*)
 			echo useradd -r -g $gid $uid > /dev/stderr
 			rc=`useradd -r -g $gid $uid; echo $?`
@@ -105,6 +110,11 @@ add_group(){
 		freebsd)
 			echo pw add group $gid > /dev/stderr
 			rc=`pw add group $gid; echo $?`
+			;;
+
+		netbsd)
+			echo groupadd $gid > /dev/stderr
+			rc=`groupadd $gid; echo $?`
 			;;
 
 		*)

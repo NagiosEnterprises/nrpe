@@ -176,12 +176,12 @@ rm_startup() {
 
 	if test "$SRC_INETD" != unknown; then
 		if test "$INETD_TYPE" = inetd; then
-			rc=`grep -E -q "^\W*@PKG_NAME@\s+" "$INETD_DIR/$INETD_FILE"`
+			rc=`grep -E -q "^\W*$NAME\s+" "$INETD_DIR/$INETD_FILE"`
 			if test $rc -eq 0; then
 				num=1
 				prt_msg 2 0 1 "($INETD_TYPE) Remove entries from $INETD_DIR/$INETD_FILE" && {
 					prt_msg 2 1 0 "($INETD_TYPE) Creating temp file: $INETD_DIR/$INETD_FILE.$NAME.unin"
-					grep -v -q "\W*@PKG_NAME@\s+" "$INETD_DIR/$INETD_FILE" > "$INETD_DIR/$INETD_FILE.$NAME.unin"
+					grep -v -q "\W*$NAME\s+" "$INETD_DIR/$INETD_FILE" > "$INETD_DIR/$INETD_FILE.$NAME.unin"
 					prt_msg 2 1 0 "($INETD_TYPE) Renaming original to: $INETD_DIR/$INETD_FILE.$NAME_save"
 					mv "$INETD_DIR/$INETD_FILE" "$INETD_DIR/$INETD_FILE.$NAME_save"
 					prt_msg 2 1 0 "($INETD_TYPE) Renaming $INETD_DIR/$INETD_FILE.unin to $INETD_DIR/$INETD_FILE"
@@ -267,11 +267,22 @@ rm_startup() {
 			}
 			prt_msg 2 0 1 "($INIT_TYPE) Delete $INIT_DIR/$INIT_FILE" && {
 				rm $force "$INIT_DIR/$INIT_FILE"
+				if test ${OPSYS} = bsd; then
+					prt_msg 2 0 1 "($INITD_TYPE) Remove entries from $INETD_DIR/rc.conf" && {
+						prt_msg 2 1 0 "($INIT_TYPE) Creating temp file: $INETD_DIR/rc.conf.$NAME.unin"
+						grep -v -q "^$NAME" "$INETD_DIR/rc.conf" > "$INETD_DIR/rc.conf.$NAME.unin"
+						prt_msg 2 1 0 "($INIT_TYPE) Renaming original to: $INETD_DIR/rc.conf.$NAME_save"
+						mv "$INETD_DIR/rc.conf" "$INETD_DIR/rc.conf.$NAME_save"
+						prt_msg 2 1 0 "($INIT_TYPE) Renaming $INETD_DIR/rc.conf.unin to $INETD_DIR/rc.conf"
+						mv "$INETD_DIR/rc.conf.unin" "$INETD_DIR/rc.conf"
+						prt_msg 2 0 0 "($INIT_TYPE) Old $INETD_DIR/rc.conf saved as $INETD_DIR/rc.conf.$NAME_save"
+					}
+				fi
 				if test $INIT_TYPE = upstart; then
 					prt_msg 2 0 1 "($INIT_TYPE) initctl reload-configuration" && {
 						initctl reload-configuration
 					}
-				elif test "$INETD_TYPE" = smf10 -o "$INETD_TYPE" = smf11; then
+				elif test "$INIT_TYPE" = smf10 -o "$INIT_TYPE" = smf11; then
 					prt_msg 2 0 1 "($INIT_TYPE) svcadm restart svc:/system/manifest-import" && {
 						svcadm restart svc:/system/manifest-import
 					}

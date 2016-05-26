@@ -47,6 +47,7 @@ AC_DEFUN([AX_NAGIOS_GET_FILES],
 
 src_inetd=""
 src_init=""
+bsd_enable=""
 
 AC_MSG_CHECKING(for which init file to use )
 
@@ -64,6 +65,11 @@ AS_CASE([$init_type],
 		src_init=default-service,
 
 	[bsd],
+		if test $dist_type = freebsd ; then
+			bsd_enable="_enable"
+		elif test $dist_type = openbsd ; then
+			bsd_enable="_flags"
+		fi
 		src_init=bsd-init,
 
 	[newbsd],

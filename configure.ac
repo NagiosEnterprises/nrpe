@@ -78,6 +78,7 @@ AC_SUBST(subsyslockfile)
 AC_SUBST(src_tmpfile)
 AC_SUBST(src_init)
 AC_SUBST(src_inetd)
+AC_SUBST(bsd_enable)
 
 dnl Figure out how to invoke "install" and what install options to use.
 AC_PROG_INSTALL

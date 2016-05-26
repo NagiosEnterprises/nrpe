@@ -640,6 +640,7 @@ LIBOBJS
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
+bsd_enable
 src_inetd
 src_init
 src_tmpfile
@@ -2550,6 +2551,7 @@ LC_TIME=C
 
 
 
+
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
 # incompatible versions:
@@ -3792,6 +3794,7 @@ $as_echo "$install_method" >&6; }
 
 src_inetd=""
 src_init=""
+bsd_enable=""
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for which init file to use " >&5
 $as_echo_n "checking for which init file to use ... " >&6; }
@@ -3807,7 +3810,12 @@ case $init_type in #(
     src_tmpfile=tmpfile.conf
 		src_init=default-service ;; #(
   bsd) :
-    src_init=bsd-init ;; #(
+    if test $dist_type = freebsd ; then
+			bsd_enable="_enable"
+		elif test $dist_type = openbsd ; then
+			bsd_enable="_flags"
+		fi
+		src_init=bsd-init ;; #(
   newbsd) :
     src_init=newbsd-init ;; #(
   #	[gentoo],

@@ -6,26 +6,17 @@
 # REQUIRE: LOGIN
 # KEYWORD: shutdown
 
-#
-# Add the following lines to /etc/rc.conf to enable nrpe:
-#
-# nrpe_enable (bool):    Set to "NO" by default.
-#                        Set it to "YES" to enable nrpe.
-# nrpe_configfile (str): Set to "@pkgsysconfdir@/nrpe.cfg" by default.
-#
-
 . /etc/rc.subr
 
 sig_reload=HUP
-
-: ${nrpe_enable:="NO"}
+: ${nrpe@bsdenable@:="NO"}
 : ${nrpe_configfile:="@pkgsysconfdir@/nrpe.cfg"}
 : ${nrpe_program:="@sbindir@/nrpe"}
 : ${pidfile:="@piddir@/nrpe.pid"}
 command_args="-c ${nrpe_configfile} -d"
 extra_commands=reload
 name=nrpe
-rcvar=nrpe_enable
+rcvar=nrpe@bsdenable@
 load_rc_config "${name}"
 required_files="${nrpe_configfile}"
 sig_reload=HUP
