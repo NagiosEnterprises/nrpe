@@ -93,7 +93,7 @@ install-inetd:
 		exit 1; \
 	fi
 	@if test $(INETD_TYPE) = inetd; then \
-		$(EGREP) -q "^\W*nrpe\s+" $(INETD_DIR)/$(INETD_FILE) || \
+		$(EGREP) -q "^\W*nrpe\s+" $(INETD_DIR)/$(INETD_FILE) 2>/dev/null || \
 		   cat startup/$(SRC_INETD) >> $(INETD_DIR)/$(INETD_FILE); \
 	elif test $(INETD_TYPE) = systemd; then \
 		SRC_INETD_FILE=`echo "$(SRC_INETD)" | sed -e 's/socket/socket-svc/'`; \
@@ -129,8 +129,8 @@ install-init:
 		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 	elif test $(INIT_TYPE) = smf10 -o $(INIT_TYPE) = smf11; then \
-		echo $(INSTALL) -m 775 -g sys -d $(INETD_DIR);\
-		$(INSTALL) -m 775 -g sys -d $(INITD_DIR);\
+		echo $(INSTALL) -m 775 -g sys -d $(INIT_DIR);\
+		$(INSTALL) -m 775 -g sys -d $(INIT_DIR);\
 		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		echo svccfg import $(INIT_DIR)/$(INIT_FILE); \
@@ -140,8 +140,13 @@ install-init:
 		echo $(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		if test $(INIT_TYPE) = newbsd; then\
-			echo "nrpe@bsd_enable@=YES" >> /etc/rc.conf;\
-			echo "nrpe_configfile=$(CFGDIR)/nrpe.cfg" >> /etc/rc.conf;\
+			if test $(DIST) = openbsd; then\
+				echo "# nrpe@bsd_enable@=NO" >> /etc/rc.conf;\
+				echo "nrpe@bsd_enable@=\"-d -c $(CFGDIR)/nrpe.cfg\"" >> /etc/rc.conf;\
+			else\
+				echo "nrpe@bsd_enable@=YES" >> /etc/rc.conf;\
+				echo "nrpe_configfile=$(CFGDIR)/nrpe.cfg" >> /etc/rc.conf;\
+			fi;\
 		fi;\
 	fi
 
@@ -176,9 +181,9 @@ distclean: clean
 	rm -f startup/bsd-init startup/debian-init startup/default-init startup/default-inetd
 	rm -f startup/default-service startup/default-socket startup/default-socket-svc
 	rm -f startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/newbsd-init
-	rm -f startup/openrc-conf startup/openrc-init startup/rh-upstart-init
-	rm -f startup/solaris-init.xml startup/solaris-inetd.xml startup/tmpfile.conf
-	rm -f startup/upstart-init
+	rm -f startup/openbsd-init startup/openrc-conf startup/openrc-init
+	rm -f startup/rh-upstart-init startup/solaris-init.xml startup/solaris-inetd.xml
+	rm -f startup/tmpfile.conf startup/upstart-init
 	rm -f Makefile
 
 devclean: distclean

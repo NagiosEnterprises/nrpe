@@ -119,7 +119,7 @@ AC_DEFUN([AX_NAGIOS_GET_INETD],
 				if test -f /etc/xinetd.conf -a -d /etc/xinetd.d; then
 					inetd_disabled="(Not running)"
 					inetd_type=xinetd
-				elif test -f /etc/inetd.conf; then
+				elif test -f /etc/inetd.conf -o -f /usr/sbin/inetd; then
 					inetd_type=inetd
 					inetd_disabled="(Not running)"
 				fi

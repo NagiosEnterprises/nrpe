@@ -121,6 +121,7 @@ AC_CONFIG_FILES([Makefile
 	startup/default-xinetd
 	startup/mac-org.nagios.PKG_NAME.plist
 	startup/newbsd-init
+	startup/openbsd-init
 	startup/openrc-conf
 	startup/openrc-init
 	startup/solaris-init.xml
@@ -423,7 +424,12 @@ if test x$check_for_ssl = xyes; then
 					/opt/openssl/lib/pa20_64 /opt/openssl/lib/hpux32 \
 					/opt/openssl/lib /opt/openssl; do
 			ssllibdir="$dir"
-			if test -f "$dir/libssl.$soext"; then
+			if test "$dist_type" = "openbsd"; then
+				if test -f $dir/libssl.$soext*; then
+					found_ssl=yes
+					break
+				fi
+			elif test -f "$dir/libssl.$soext"; then
 				found_ssl=yes
 				break
 			fi

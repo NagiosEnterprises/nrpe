@@ -217,9 +217,6 @@ if test $install_method = "default"; then
 		if test x"$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
 	fi
 	datarootdir=${datarootdir="$prefix"}
-	if test "$prefix" = /opt; then prefix="/opt/nagios"
-	elif test "$prefix" = /opt/local; then prefix="/opt/local/nagios"
-	fi
 
 elif test $install_method = "opt"; then
 	if test x"$prefix" = "xNONE"; then prefix="/opt/nagios"; fi
@@ -683,7 +680,7 @@ AS_CASE([$init_type],
 # Inetd (per connection) scripts/files
 #
 AS_CASE([$inetd_type],
-	[inetd],
+	[inetd*],
 		inetddir=${inetddir="/etc"}
 		inetdname=${inetdname="inetd.conf"},
 

@@ -70,12 +70,14 @@ AS_CASE([$init_type],
 	[newbsd],
 		if test $dist_type = freebsd ; then
 			bsd_enable="_enable"
+			src_init=newbsd-init
 		elif test $dist_type = openbsd ; then
 			bsd_enable="_flags"
+			src_init=openbsd-init
 		elif test $dist_type = netbsd ; then
 			bsd_enable=""
-		fi
-		src_init=newbsd-init,
+			src_init=newbsd-init
+		fi,
 
 #	[gentoo],
 
@@ -107,7 +109,7 @@ AC_MSG_CHECKING(for which inetd files to use )
 if test x$src_inetd = x; then
 
 	AS_CASE([$inetd_type],
-		[inetd],
+		[inetd*],
 			src_inetd=default-inetd,
 
 		[xinetd],

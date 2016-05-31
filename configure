@@ -3058,7 +3058,7 @@ esac
 				if test -f /etc/xinetd.conf -a -d /etc/xinetd.d; then
 					inetd_disabled="(Not running)"
 					inetd_type=xinetd
-				elif test -f /etc/inetd.conf; then
+				elif test -f /etc/inetd.conf -o -f /usr/sbin/inetd; then
 					inetd_type=inetd
 					inetd_disabled="(Not running)"
 				fi
@@ -3291,9 +3291,6 @@ if test $install_method = "default"; then
 		if test x"$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
 	fi
 	datarootdir=${datarootdir="$prefix"}
-	if test "$prefix" = /opt; then prefix="/opt/nagios"
-	elif test "$prefix" = /opt/local; then prefix="/opt/local/nagios"
-	fi
 
 elif test $install_method = "opt"; then
 	if test x"$prefix" = "xNONE"; then prefix="/opt/nagios"; fi
@@ -3753,7 +3750,7 @@ esac
 # Inetd (per connection) scripts/files
 #
 case $inetd_type in #(
-  inetd) :
+  inetd*) :
     inetddir=${inetddir="/etc"}
 		inetdname=${inetdname="inetd.conf"} ;; #(
   xinetd) :
@@ -3814,12 +3811,14 @@ case $init_type in #(
   newbsd) :
     if test $dist_type = freebsd ; then
 			bsd_enable="_enable"
+			src_init=newbsd-init
 		elif test $dist_type = openbsd ; then
 			bsd_enable="_flags"
+			src_init=openbsd-init
 		elif test $dist_type = netbsd ; then
 			bsd_enable=""
-		fi
-		src_init=newbsd-init ;; #(
+			src_init=newbsd-init
+		fi ;; #(
   #	[gentoo],
 
 	openrc) :
@@ -3851,7 +3850,7 @@ $as_echo_n "checking for which inetd files to use ... " >&6; }
 if test x$src_inetd = x; then
 
 	case $inetd_type in #(
-  inetd) :
+  inetd*) :
     src_inetd=default-inetd ;; #(
   xinetd) :
     src_inetd=default-xinetd ;; #(
@@ -4963,7 +4962,7 @@ fi
 
 ac_config_headers="$ac_config_headers include/config.h"
 
-ac_config_files="$ac_config_files Makefile src/Makefile package/solaris/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/newbsd-init startup/openrc-conf startup/openrc-init startup/solaris-init.xml startup/solaris-inetd.xml startup/tmpfile.conf startup/upstart-init startup/rh-upstart-init"
+ac_config_files="$ac_config_files Makefile src/Makefile package/solaris/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/newbsd-init startup/openbsd-init startup/openrc-conf startup/openrc-init startup/solaris-init.xml startup/solaris-inetd.xml startup/tmpfile.conf startup/upstart-init startup/rh-upstart-init"
 
 
 ac_ext=c
@@ -7370,7 +7369,12 @@ $as_echo_n "checking for SSL libraries... " >&6; }
 					/opt/openssl/lib/pa20_64 /opt/openssl/lib/hpux32 \
 					/opt/openssl/lib /opt/openssl; do
 			ssllibdir="$dir"
-			if test -f "$dir/libssl.$soext"; then
+			if test "$dist_type" = "openbsd"; then
+				if test -f $dir/libssl.$soext*; then
+					found_ssl=yes
+					break
+				fi
+			elif test -f "$dir/libssl.$soext"; then
 				found_ssl=yes
 				break
 			fi
@@ -8254,6 +8258,7 @@ do
     "startup/default-xinetd") CONFIG_FILES="$CONFIG_FILES startup/default-xinetd" ;;
     "startup/mac-org.nagios.PKG_NAME.plist") CONFIG_FILES="$CONFIG_FILES startup/mac-org.nagios.PKG_NAME.plist" ;;
     "startup/newbsd-init") CONFIG_FILES="$CONFIG_FILES startup/newbsd-init" ;;
+    "startup/openbsd-init") CONFIG_FILES="$CONFIG_FILES startup/openbsd-init" ;;
     "startup/openrc-conf") CONFIG_FILES="$CONFIG_FILES startup/openrc-conf" ;;
     "startup/openrc-init") CONFIG_FILES="$CONFIG_FILES startup/openrc-init" ;;
     "startup/solaris-init.xml") CONFIG_FILES="$CONFIG_FILES startup/solaris-init.xml" ;;

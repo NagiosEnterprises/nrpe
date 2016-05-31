@@ -64,7 +64,7 @@ add_user(){
 			rc=`pw add user $uid -g $gid -s /usr/bin/false; echo $?`
 			;;
 
-		netbsd)
+		netbsd|openbsd)
 			echo useradd -g $gid $uid > /dev/stderr
 			rc=`useradd -g $gid $uid; echo $?`
 			;;
@@ -112,7 +112,7 @@ add_group(){
 			rc=`pw add group $gid; echo $?`
 			;;
 
-		netbsd)
+		netbsd|openbsd)
 			echo groupadd $gid > /dev/stderr
 			rc=`groupadd $gid; echo $?`
 			;;
