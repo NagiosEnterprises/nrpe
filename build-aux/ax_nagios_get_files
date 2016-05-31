@@ -96,8 +96,8 @@ AS_CASE([$init_type],
 		fi,
 
 	[launchd],
-		src_init="mac-org.nagios.PKG_NAME.plist"
-		src_inetd="mac-org.nagios.PKG_NAME.plist",
+		src_init="mac-org.plist"
+		src_inetd="mac-org.plist",
 
 	[*],
 		src_init="unknown"
