@@ -4962,7 +4962,7 @@ fi
 
 ac_config_headers="$ac_config_headers include/config.h"
 
-ac_config_files="$ac_config_files Makefile src/Makefile package/solaris/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/newbsd-init startup/openbsd-init startup/openrc-conf startup/openrc-init startup/solaris-init.xml startup/solaris-inetd.xml startup/tmpfile.conf startup/upstart-init startup/rh-upstart-init"
+ac_config_files="$ac_config_files Makefile src/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/newbsd-init startup/openbsd-init startup/openrc-conf startup/openrc-init startup/solaris-init.xml startup/solaris-inetd.xml startup/tmpfile.conf startup/upstart-init startup/rh-upstart-init"
 
 
 ac_ext=c
@@ -7549,29 +7549,6 @@ NAGIOS_INSTALL_OPTS="-o $nagios_user -g $nagios_group"
 		LDFLAGS="$LDFLAGS -Wl,+allowdups";
 	fi
 
-# Determine target OS, version and architecture for package build macros
-if test "x$target_ver" = "x" ; then
-	TARGET_VER=`uname -r`
-else
-	TARGET_VER=$target_ver
-fi
-if test "x$target_os" = "x" ; then
-	TARGET_OS=`uname -s`
-else
-	TARGET_OS=$target_os
-fi
-if test "x$target_cpu" = "x" ; then
-	TARGET_ARCH=`uname -p`
-else
-	TARGET_ARCH=$target_cpu
-fi
-TARGET_PLATFORM=""
-if test "x$TARGET_OS" = "xSunOS" ; then
-	if test "x$TARGET_VER" = "x5.10" ; then
-		TARGET_PLATFORM="sol10"
-	fi
-fi
-
 # Check whether --enable-command-args was given.
 if test "${enable_command_args+set}" = set; then :
   enableval=$enable_command_args;
@@ -8244,7 +8221,6 @@ do
     "include/config.h") CONFIG_HEADERS="$CONFIG_HEADERS include/config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
-    "package/solaris/Makefile") CONFIG_FILES="$CONFIG_FILES package/solaris/Makefile" ;;
     "nrpe.spec") CONFIG_FILES="$CONFIG_FILES nrpe.spec" ;;
     "uninstall") CONFIG_FILES="$CONFIG_FILES uninstall" ;;
     "sample-config/nrpe.cfg") CONFIG_FILES="$CONFIG_FILES sample-config/nrpe.cfg" ;;

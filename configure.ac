@@ -107,7 +107,6 @@ fi
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
 	src/Makefile
-	package/solaris/Makefile
 	nrpe.spec
 	uninstall
 	sample-config/nrpe.cfg
@@ -528,29 +527,6 @@ NAGIOS_INSTALL_OPTS="-o $nagios_user -g $nagios_group"
 	if test "`uname -s`" = "HP-UX" ; then
 		LDFLAGS="$LDFLAGS -Wl,+allowdups";
 	fi
-
-# Determine target OS, version and architecture for package build macros
-if test "x$target_ver" = "x" ; then
-	TARGET_VER=`uname -r`
-else
-	TARGET_VER=$target_ver
-fi
-if test "x$target_os" = "x" ; then
-	TARGET_OS=`uname -s`
-else
-	TARGET_OS=$target_os
-fi
-if test "x$target_cpu" = "x" ; then
-	TARGET_ARCH=`uname -p`
-else
-	TARGET_ARCH=$target_cpu
-fi
-TARGET_PLATFORM=""
-if test "x$TARGET_OS" = "xSunOS" ; then
-	if test "x$TARGET_VER" = "x5.10" ; then
-		TARGET_PLATFORM="sol10"
-	fi
-fi
 
 AC_ARG_ENABLE([command-args],
 	AS_HELP_STRING([--enable-command-args],[allows clients to specify command arguments.  *** THIS IS A SECURITY RISK! *** Read the SECURITY file before using this option!]),
