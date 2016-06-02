@@ -433,7 +433,7 @@ void usage(int result)
 	printf("Last Modified: %s\n", MODIFICATION_DATE);
 	printf("License: GPL v2 with exemptions (-l for more info)\n");
 #ifdef HAVE_SSL
-	printf("SSL/TLS Available: Anonymous DH Mode, OpenSSL 0.9.6 or higher required\n");
+	printf("SSL/TLS Available, OpenSSL 0.9.6 or higher required\n");
 #endif
 #ifdef HAVE_LIBWRAP
 	printf("TCP Wrappers Available\n");
