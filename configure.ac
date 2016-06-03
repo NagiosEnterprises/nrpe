@@ -118,7 +118,7 @@ AC_CONFIG_FILES([Makefile
 	startup/default-socket
 	startup/default-socket-svc
 	startup/default-xinetd
-	startup/mac-org.nagios.PKG_NAME.plist
+	startup/mac-org.plist
 	startup/newbsd-init
 	startup/openbsd-init
 	startup/openrc-conf

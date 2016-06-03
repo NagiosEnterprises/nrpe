@@ -4962,7 +4962,7 @@ fi
 
 ac_config_headers="$ac_config_headers include/config.h"
 
-ac_config_files="$ac_config_files Makefile src/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/newbsd-init startup/openbsd-init startup/openrc-conf startup/openrc-init startup/solaris-init.xml startup/solaris-inetd.xml startup/tmpfile.conf startup/upstart-init startup/rh-upstart-init"
+ac_config_files="$ac_config_files Makefile src/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-org.plist startup/newbsd-init startup/openbsd-init startup/openrc-conf startup/openrc-init startup/solaris-init.xml startup/solaris-inetd.xml startup/tmpfile.conf startup/upstart-init startup/rh-upstart-init"
 
 
 ac_ext=c
@@ -8232,7 +8232,7 @@ do
     "startup/default-socket") CONFIG_FILES="$CONFIG_FILES startup/default-socket" ;;
     "startup/default-socket-svc") CONFIG_FILES="$CONFIG_FILES startup/default-socket-svc" ;;
     "startup/default-xinetd") CONFIG_FILES="$CONFIG_FILES startup/default-xinetd" ;;
-    "startup/mac-org.nagios.PKG_NAME.plist") CONFIG_FILES="$CONFIG_FILES startup/mac-org.nagios.PKG_NAME.plist" ;;
+    "startup/mac-org.plist") CONFIG_FILES="$CONFIG_FILES startup/mac-org.plist" ;;
     "startup/newbsd-init") CONFIG_FILES="$CONFIG_FILES startup/newbsd-init" ;;
     "startup/openbsd-init") CONFIG_FILES="$CONFIG_FILES startup/openbsd-init" ;;
     "startup/openrc-conf") CONFIG_FILES="$CONFIG_FILES startup/openrc-conf" ;;

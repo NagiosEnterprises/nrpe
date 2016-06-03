@@ -180,7 +180,7 @@ distclean: clean
 	rm -f config.log config.status config.cache sample-config/nrpe.cfg $(SRC_INCLUDE)/config.h
 	rm -f startup/bsd-init startup/debian-init startup/default-init startup/default-inetd
 	rm -f startup/default-service startup/default-socket startup/default-socket-svc
-	rm -f startup/default-xinetd startup/mac-org.nagios.PKG_NAME.plist startup/newbsd-init
+	rm -f startup/default-xinetd startup/mac-org.plist startup/newbsd-init
 	rm -f startup/openbsd-init startup/openrc-conf startup/openrc-init
 	rm -f startup/rh-upstart-init startup/solaris-init.xml startup/solaris-inetd.xml
 	rm -f startup/tmpfile.conf startup/upstart-init
