@@ -28,10 +28,10 @@ else
 fi
 
 # Current version number
-CURRENTVERSION=nrpe-3.0-PRE1
+CURRENTVERSION=nrpe-3.0-PRE2
 
 # Last date
-LASTDATE=05-31-2016
+LASTDATE=06-07-2016
 
 if [ "x$1" = "x" ]
 then
