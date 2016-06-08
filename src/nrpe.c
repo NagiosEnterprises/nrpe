@@ -2024,6 +2024,7 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 
 	/* execute the command in the child process */
 	if (pid == 0) {
+		SETEUID(0);				/* get root back so the next call works correctly */
 		drop_privileges(nrpe_user, nrpe_group, 1);	/* drop privileges */
 		close(fd[0]);			/* close pipe for reading */
 		setpgid(0, 0);			/* become process group leader */
