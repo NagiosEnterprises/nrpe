@@ -110,6 +110,8 @@ AC_DEFUN([AX_NAGIOS_GET_DISTRIB_TYPE],
 					. /etc/os-release
 					if test x"$ID_LIKE" != x; then
 						dist_type=`echo $ID_LIKE | cut -d' ' -f1 | tr ["[A-Z]" "[a-z]"]`
+					elif test x"$ID" = xol; then
+						dist_type=rh
 					else
 						dist_type=`echo $ID | tr ["[A-Z]" "[a-z]"]`
 					fi
