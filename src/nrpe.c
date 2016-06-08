@@ -573,7 +573,7 @@ void set_stdio_sigs(void)
 		exit(STATE_CRITICAL);
 
 	clean_environ(keep_env_vars, nrpe_user);
-	drop_privileges(nrpe_user, nrpe_group);	/* drop privileges */
+	drop_privileges(nrpe_user, nrpe_group, 0);	/* drop privileges */
 	check_privileges();			/* make sure we're not root */
 }
 
@@ -1477,6 +1477,7 @@ void handle_connection(int sock)
 #endif
 
 	/* do SSL handshake */
+#ifdef HAVE_SSL
 	if (use_ssl == TRUE) {
     	if ((ssl = SSL_new(ctx)) == NULL) {
         	syslog(LOG_ERR, "Error: Could not create SSL connection structure.");
@@ -1491,6 +1492,7 @@ void handle_connection(int sock)
 		if (handle_conn_ssl(sock, ssl) != OK)
 			return;
 	}
+#endif
 
 #ifdef HAVE_SSL
 	rc = read_packet(sock, ssl, &receive_packet, &v3_receive_packet);
@@ -2022,6 +2024,7 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 
 	/* execute the command in the child process */
 	if (pid == 0) {
+		drop_privileges(nrpe_user, nrpe_group, 1);	/* drop privileges */
 		close(fd[0]);			/* close pipe for reading */
 		setpgid(0, 0);			/* become process group leader */
 
@@ -2148,7 +2151,7 @@ void my_connection_sighandler(int sig)
 }
 
 /* drops privileges */
-int drop_privileges(char *user, char *group)
+int drop_privileges(char *user, char *group, int full_drop)
 {
 	uid_t     uid = -1;
 	gid_t     gid = -1;
@@ -2195,8 +2198,8 @@ int drop_privileges(char *user, char *group)
 			/* else we were passed the UID */
 			uid = (uid_t) atoi(user);
 
-		/* set effective user ID if other than current EUID */
 		if (uid != geteuid()) {
+		/* set effective user ID if other than current EUID */
 #ifdef HAVE_INITGROUPS
 			/* initialize supplementary groups */
 			if (initgroups(user, gid) == -1) {
@@ -2211,7 +2214,10 @@ int drop_privileges(char *user, char *group)
 			}
 #endif
 
-			if (SETEUID(uid) == -1)
+			if (full_drop) {
+				if (setuid(uid) == -1)
+					syslog(LOG_ERR, "Warning: Could not set UID=%d", (int)uid);
+			} else if (SETEUID(uid) == -1)
 				syslog(LOG_ERR, "Warning: Could not set effective UID=%d", (int)uid);
 		}
 	}

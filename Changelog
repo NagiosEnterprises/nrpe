@@ -4,10 +4,25 @@ NRPE Changelog
 
 3.0 = xx/xx/xxxx
 -----------------
+SECURITY
+- Fix for CVE-2014-2913
+- Added function to clean the environment before forking. (John Frickson)
+
 ENHANCEMENTS
+- Added support for optional config file to check_nrpe. With the new SSL
+  parameters, the line was getting long. The config file is specified with
+  --config-file=<path> or -f <path> parameters. The config file must look
+  like command line options, but the options can be on separate lines. It
+  MUST NOT include --config-file (-f), --command (-c) or --args (-a). If any
+  options are in both the config file and on the command line, the command line
+  options are used.
+- make can now add users and groups using "make install-groups-users" (John Frickson)
+- Added "nrpe-uninstall" script to the same directory nrpe get installed to (John Frickson)
 - Updated code so configure && make will work on AIX, HP-UX, Solaris, OS X.
   There should be no errors or warnings. Let me know if any errors or
   warning appear (John Frickson)
+- Added command-line option to prevent forking, since some of the init
+  replacements (such as systemd, etc.) don't want daemons to fork (John Frickson)
 - Added autoconf macros and additional files to better support multi-platform
   config and compile. The default will still set up to install to
   /usr/local/nagios but I added a new configure option:
@@ -25,6 +40,7 @@ ENHANCEMENTS
   to only send version 2 packets if the switch `-2` is used. (John Frickson)
 
 FIXES
+- Fixed configure to check more places for SSL headers/libs. (John Frickson)
 - Added ifdefs for complete_SSL_shutdown to compile without SSL. (Matthew L. Daniel)
 - Renamed configure.in to configure.ac and added check for sigaction (John Frickson)
 - Replaced all instances of signal() with sigaction() + blocking (John Frickson)
