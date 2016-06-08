@@ -23,9 +23,10 @@
 
 #define DEFAULT_NRPE_COMMAND "_NRPE_CHECK"	/* check version of NRPE daemon */
 
-u_short server_port = DEFAULT_SERVER_PORT;
+u_short server_port = 0;
 char *server_name = NULL;
 char *bind_address = NULL;
+char *config_file = NULL;
 #ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 struct sockaddr_storage hostaddr;
 #else
@@ -34,7 +35,7 @@ struct sockaddr hostaddr;
 int address_family = AF_UNSPEC;
 char *command_name = NULL;
 int socket_timeout = DEFAULT_SOCKET_TIMEOUT;
-int timeout_return_code = STATE_CRITICAL;
+int timeout_return_code = -1;
 int sd;
 
 char rem_host[MAX_HOST_ADDRESS_LENGTH];
@@ -61,8 +62,8 @@ int use_ssl = FALSE;
 
 /* SSL/TLS parameters */
 typedef enum _SSL_VER {
-	SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus, TLSv1,
-	TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus
+	SSL_Ver_Invalid = 0, SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus,
+	TLSv1, TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus
 } SslVer;
 
 typedef enum _CLNT_CERTS { Ask_For_Cert = 1, Require_Cert = 2 } ClntCerts;
@@ -70,7 +71,7 @@ typedef enum _CLNT_CERTS { Ask_For_Cert = 1, Require_Cert = 2 } ClntCerts;
 typedef enum _SSL_LOGGING {
 	SSL_NoLogging = 0, SSL_LogStartup = 1, SSL_LogIpAddr = 2,
 	SSL_LogVersion = 4, SSL_LogCipher = 8, SSL_LogIfClientCert = 16,
-	SSL_LogCertDetails = 32
+	SSL_LogCertDetails = 32,
 } SslLogging;
 
 struct _SSL_PARMS {
@@ -83,9 +84,11 @@ struct _SSL_PARMS {
 	ClntCerts client_certs;
 	SslLogging log_opts;
 } sslprm = {
-NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", TLSv1_plus, TRUE, 0, SSL_NoLogging};
+NULL, NULL, NULL, "", SSL_Ver_Invalid, -1, 0, SSL_NoLogging};
+int have_log_opts = FALSE;
 
-int process_arguments(int, char **);
+int process_arguments(int, char **, int);
+int read_config_file(char *);
 void usage(int result);
 void setup_ssl();
 void set_sig_hadlers();
@@ -103,10 +106,23 @@ int main(int argc, char **argv)
 {
 	int16_t result;
 
-	result = process_arguments(argc, argv);
+	result = process_arguments(argc, argv, 0);
 
 	if (result != OK || show_help == TRUE || show_license == TRUE || show_version == TRUE)
 		usage(result);			/* usage() will call exit() */
+
+	if (server_port == 0)
+		server_port = DEFAULT_SERVER_PORT;
+	if (socket_timeout == -1)
+		socket_timeout = DEFAULT_SOCKET_TIMEOUT;
+	if (timeout_return_code == -1)
+		timeout_return_code = STATE_CRITICAL;
+	if (sslprm.cipher_list[0] == '\0')
+		strncpy(sslprm.cipher_list, "ALL:!MD5:@STRENGTH", MAX_FILENAME_LENGTH - 1);
+	if (sslprm.ssl_min_ver == SSL_Ver_Invalid)
+		sslprm.ssl_min_ver = TLSv1_plus;
+	if (sslprm.allowDH = -1)
+		sslprm.allowDH = TRUE;
 
 	generate_crc32_table();		/* generate the CRC 32 table */
 	setup_ssl();				/* Do all the SSL/TLS set up */
@@ -151,18 +167,19 @@ int main(int argc, char **argv)
 }
 
 /* process command line arguments */
-int process_arguments(int argc, char **argv)
+int process_arguments(int argc, char **argv, int from_config_file)
 {
 	char optchars[MAX_INPUT_BUFFER];
 	int argindex = 0;
 	int c = 1;
 	int i = 1;
-	int has_cert = 0, has_priv_key = 0;
+	int has_cert = 0, has_priv_key = 0, rc;
 
 #ifdef HAVE_GETOPT_LONG
 	int option_index = 0;
 	static struct option long_options[] = {
 		{"host", required_argument, 0, 'H'},
+		{"config-file", required_argument, 0, 'f'},
 		{"bind", required_argument, 0, 'b'},
 		{"command", required_argument, 0, 'c'},
 		{"args", required_argument, 0, 'a'},
@@ -191,7 +208,8 @@ int process_arguments(int argc, char **argv)
 	if (argc < 2)
 		return ERROR;
 
-	snprintf(optchars, MAX_INPUT_BUFFER, "H:b:c:a:t:p:S:L:C:K:A:d::s:246hlnuV");
+	optind = 0;
+	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d::s:246hlnuV");
 
 	while (1) {
 #ifdef HAVE_GETOPT_LONG
@@ -214,6 +232,15 @@ int process_arguments(int argc, char **argv)
 			bind_address = strdup(optarg);
 			break;
 
+		case 'f':
+			if (from_config_file) {
+				syslog(LOG_ERR, "Error: The config file should not have a "
+								"config-file (-f) option.");
+				break;
+			}
+			config_file = strdup(optarg);
+			break;
+
 		case 'V':
 			show_version = TRUE;
 			break;
@@ -223,26 +250,53 @@ int process_arguments(int argc, char **argv)
 			break;
 
 		case 't':
+			if (from_config_file && socket_timeout != -1) {
+				syslog(LOG_WARNING, "WARNING: Command-line socket timeout overrides "
+								"the config file option.");
+				break;
+			}
 			socket_timeout = atoi(optarg);
 			if (socket_timeout <= 0)
 				return ERROR;
 			break;
 
 		case 'p':
+			if (from_config_file && server_port != 0) {
+				syslog(LOG_WARNING, "WARNING: Command-line server port overrides "
+								"the config file option.");
+				break;
+			}
 			server_port = atoi(optarg);
 			if (server_port <= 0)
 				return ERROR;
 			break;
 
 		case 'H':
+			if (from_config_file && server_name != NULL) {
+				syslog(LOG_WARNING, "WARNING: Command-line server name overrides "
+								"the config file option.");
+				break;
+			}
 			server_name = strdup(optarg);
 			break;
 
 		case 'c':
+			if (from_config_file) {
+				syslog(LOG_ERR, "Error: The config file should not have a "
+								"command (-c) option.");
+				return ERROR;
+				break;
+			}
 			command_name = strdup(optarg);
 			break;
 
 		case 'a':
+			if (from_config_file) {
+				syslog(LOG_ERR, "Error: The config file should not have "
+								"args (-a) arguments.");
+				return ERROR;
+				break;
+			}
 			argindex = optind;
 			break;
 
@@ -251,22 +305,47 @@ int process_arguments(int argc, char **argv)
 			break;
 
 		case 'u':
+			if (from_config_file && timeout_return_code != -1) {
+				syslog(LOG_WARNING, "WARNING: Command-line unknown-timeout (-u) "
+								"overrides the config file option.");
+				break;
+			}
 			timeout_return_code = STATE_UNKNOWN;
 			break;
 
 		case '2':
+			if (from_config_file && packet_ver != NRPE_PACKET_VERSION_3) {
+				syslog(LOG_WARNING, "WARNING: Command-line v2-packets-only (-2) "
+								"overrides the config file option.");
+				break;
+			}
 			packet_ver = NRPE_PACKET_VERSION_2;
 			break;
 
 		case '4':
+			if (from_config_file && address_family != AF_UNSPEC) {
+				syslog(LOG_WARNING, "WARNING: Command-line ipv4 (-4) "
+								"or ipv6 (-6) overrides the config file option.");
+				break;
+			}
 			address_family = AF_INET;
 			break;
 
 		case '6':
+			if (from_config_file && address_family != AF_UNSPEC) {
+				syslog(LOG_WARNING, "WARNING: Command-line ipv4 (-4) "
+								"or ipv6 (-6) overrides the config file option.");
+				break;
+			}
 			address_family = AF_INET6;
 			break;
 
 		case 'd':
+			if (from_config_file && sslprm.allowDH != -1) {
+				syslog(LOG_WARNING, "WARNING: Command-line use-adh (-d) "
+								"overrides the config file option.");
+				break;
+			}
 			if (optarg)
 				sslprm.allowDH = atoi(optarg);
 			else
@@ -276,20 +355,40 @@ int process_arguments(int argc, char **argv)
 			break;
 
 		case 'A':
+			if (from_config_file && sslprm.cacert_file != NULL) {
+				syslog(LOG_WARNING, "WARNING: Command-line ca-cert-file (-A) "
+								"overrides the config file option.");
+				break;
+			}
 			sslprm.cacert_file = strdup(optarg);
 			break;
 
 		case 'C':
+			if (from_config_file && sslprm.cert_file != NULL) {
+				syslog(LOG_WARNING, "WARNING: Command-line client-cert (-C) "
+								"overrides the config file option.");
+				break;
+			}
 			sslprm.cert_file = strdup(optarg);
 			has_cert = 1;
 			break;
 
 		case 'K':
+			if (from_config_file && sslprm.privatekey_file != NULL) {
+				syslog(LOG_WARNING, "WARNING: Command-line key-file (-K) "
+								"overrides the config file option.");
+				break;
+			}
 			sslprm.privatekey_file = strdup(optarg);
 			has_priv_key = 1;
 			break;
 
 		case 'S':
+			if (from_config_file && sslprm.ssl_min_ver != SSL_Ver_Invalid) {
+				syslog(LOG_WARNING, "WARNING: Command-line ssl-version (-S) "
+								"overrides the config file option.");
+				break;
+			}
 			if (!strcmp(optarg, "SSLv2"))
 				sslprm.ssl_min_ver = SSLv2;
 			else if (!strcmp(optarg, "SSLv2+"))
@@ -315,12 +414,23 @@ int process_arguments(int argc, char **argv)
 			break;
 
 		case 'L':
+			if (from_config_file && sslprm.cipher_list[0] != '\0') {
+				syslog(LOG_WARNING, "WARNING: Command-line cipher-list (-L) "
+								"overrides the config file option.");
+				break;
+			}
 			strncpy(sslprm.cipher_list, optarg, sizeof(sslprm.cipher_list) - 1);
 			sslprm.cipher_list[sizeof(sslprm.cipher_list) - 1] = '\0';
 			break;
 
 		case 's':
+			if (from_config_file && have_log_opts == TRUE) {
+				syslog(LOG_WARNING, "WARNING: Command-line ssl-logging (-s) "
+								"overrides the config file option.");
+				break;
+			}
 			sslprm.log_opts = strtoul(optarg, NULL, 0);
+			have_log_opts = TRUE;
 			break;
 
 		default:
@@ -349,6 +459,11 @@ int process_arguments(int argc, char **argv)
 		}
 	}
 
+	if (!from_config_file && config_file != NULL) {
+		if ((rc = read_config_file(config_file)) != OK)
+			return rc;
+	}
+
 	if ((has_cert && !has_priv_key) || (!has_cert && has_priv_key)) {
 		syslog(LOG_ERR, "Error: the client certificate and the private key "
 						"must both be given or neither");
@@ -361,6 +476,69 @@ int process_arguments(int argc, char **argv)
 		return ERROR;
 
 	return OK;
+}
+
+int read_config_file(char *fname)
+{
+	int			rc, argc = 0;
+	FILE		*f;
+	char		*buf, *bufp, **argv;
+	char		*delims = " \t\r\n";
+	struct stat	st;
+	size_t		sz;
+
+	if (stat(fname, &st)) {
+		syslog(LOG_ERR, "Error: Could not stat config file %s", fname);
+		return ERROR;
+	}
+	if ((f = fopen(fname, "r")) == NULL) {
+		syslog(LOG_ERR, "Error: Could not open config file %s", fname);
+		return ERROR;
+	}
+	if ((buf = (char*)calloc(1, st.st_size + 2)) == NULL) {
+		fclose(f);
+		syslog(LOG_ERR, "Error: read_config_file fail to allocate memory");
+		return ERROR;
+	}
+	if ((sz = fread(buf, 1, st.st_size, f)) != st.st_size) {
+		fclose(f);
+		free(buf);
+		syslog(LOG_ERR, "Error: Failed to completely read config file %s", fname);
+		return ERROR;
+	}
+	if ((argv = calloc(50, sizeof(char*))) == NULL) {
+		fclose(f);
+		free(buf);
+		syslog(LOG_ERR, "Error: read_config_file fail to allocate memory");
+		return ERROR;
+	}
+
+	argv[argc++] = "check_nrpe";
+
+	bufp = buf;
+	while (argc < 50) {
+		if (*bufp == '\0')
+			break;
+		while (strchr(delims, *bufp))
+			++bufp;
+		argv[argc] = strsep(&bufp, delims);
+		if (!argv[argc++])
+			break;
+	}
+
+	fclose(f);
+
+	if (argc == 50) {
+		free(buf);
+		free(argv);
+		syslog(LOG_ERR, "Error: too many parameters in config file %s", fname);
+		return ERROR;
+	}
+
+	rc = process_arguments(argc, argv, 1);
+	free(buf);
+	free(argv);
+	return rc;
 }
 
 void usage(int result)

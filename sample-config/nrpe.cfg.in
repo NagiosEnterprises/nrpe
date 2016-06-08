@@ -2,7 +2,7 @@
 # Sample NRPE Config File
 # Written by: Ethan Galstad (nagios@nagios.org)
 #
-# Last Modified: 11-23-2007
+# Last Modified: 2016-05-10
 #
 # NOTES:
 # This is a sample configuration file for the NRPE daemon.  It needs to be
