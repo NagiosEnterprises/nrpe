@@ -44,7 +44,7 @@ if [ -f /etc/rc.status ]; then
 	. /etc/rc.status
 	# Set these commands/functions to SuSE etc. values
 	START_CMD="startproc -p $PID_FILE"
-	STAT_CMD="checkproc"
+	STAT_CMD="checkproc -p $PID_FILE $NRPE_BIN"
 	QSTAT_CMD="rc_status"
 	TERM_CMD="killproc -p $PID_FILE -TERM $NRPE_BIN"
 	HUP_CMD="killproc -p $PID_FILE -HUP $NRPE_BIN"
@@ -120,7 +120,9 @@ try-restart|condrestart)
 	;;
 
 status)
+	echo -n "Checking for nrpe daemon: "
 	$STAT_CMD
+	$PRT_STAT
 	RETVAL=$?
 	;;
 

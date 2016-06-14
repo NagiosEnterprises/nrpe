@@ -115,6 +115,9 @@ AC_DEFUN([AX_NAGIOS_GET_DISTRIB_TYPE],
 					else
 						dist_type=`echo $ID | tr ["[A-Z]" "[a-z]"]`
 					fi
+					if test x"$dist_type" = sles; then
+						dist_type=suse
+					fi
 					if test x"$VERSION_ID" != x; then
 						dist_ver=$VERSION_ID
 					elif test x"$VERSION" != x; then
