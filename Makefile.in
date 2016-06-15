@@ -152,7 +152,7 @@ install-init:
 			if test -f /sbin/chkconfig ; then \
 			    /sbin/chkconfig nrpe on;\
 			else
-				echo "Make sure to enable the nrpe daemon
+				echo "Make sure to enable the nrpe daemon"
 			fi;\
 		fi;\
 	fi
