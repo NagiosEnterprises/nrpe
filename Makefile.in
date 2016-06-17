@@ -143,16 +143,16 @@ install-init:
 			if test $(DIST) = openbsd; then\
 				echo "# nrpe@bsd_enable@=NO" >> /etc/rc.conf;\
 				echo "nrpe@bsd_enable@=\"-d -c $(CFGDIR)/nrpe.cfg\"" >> /etc/rc.conf;\
-				echo "Make sure to enable the nrpe daemon
+				echo "Make sure to enable the nrpe daemon";\
 			else\
 				echo "nrpe@bsd_enable@=YES" >> /etc/rc.conf;\
 				echo "nrpe_configfile=$(CFGDIR)/nrpe.cfg" >> /etc/rc.conf;\
 			fi;\
-		else;\
+		else\
 			if test -f /sbin/chkconfig ; then \
 			    /sbin/chkconfig nrpe on;\
-			else
-				echo "Make sure to enable the nrpe daemon"
+			else\
+				echo "Make sure to enable the nrpe daemon";\
 			fi;\
 		fi;\
 	fi
