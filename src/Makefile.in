@@ -78,7 +78,7 @@ install-daemon: install-uninstall
 		echo $(INSTALL) -m 755 $(NRPE_INSTALL_OPTS) -d $(PIDDIR); \
 		$(INSTALL) -m 755 $(NRPE_INSTALL_OPTS) -d $(PIDDIR); \
 	fi
-	@if test "$(TMPFILESDIR)" != "N/A" ; then \
+	@if test "$(TMPFILESDIR)" != "N/A" -a x$(SRC_TMPFILE) != x ; then \
 		echo $(INSTALL) -m 644 ../startup/$(SRC_TMPFILE) $(TMPFILESDIR); \
 		$(INSTALL) -m 644 ../startup/$(SRC_TMPFILE) $(TMPFILESDIR); \
 	fi
