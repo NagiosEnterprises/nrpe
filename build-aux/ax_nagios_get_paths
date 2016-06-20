@@ -68,8 +68,7 @@ AC_MSG_CHECKING(for which paths to use )
 AC_ARG_ENABLE(install_method,
 	AC_HELP_STRING([--enable-install-method=<method>],
 	[sets the install method to use: 'default' (the default) will install to
-	/usr/local/nagios, 'opt' will be like 'default', except will install to
-	/opt/nagios instead, 'os' will try to determine which method to use based
+	/usr/local/nagios, 'os' will try to determine which method to use based
 	on OS type and distribution. Fine tuning using the '--bindir', etc.
 	overrides above will still work]),
 	install_method=$enableval,
@@ -89,7 +88,7 @@ AC_ARG_ENABLE(showdirs_only,
 AS_CASE([$install_method],
 	[yes], install_method="os",
 	[no],  install_method="default",
-	[opt|default|os], :,
+	[default|os], :,
 	[*], echo >&6; AC_MSG_ERROR(['--enable-install-method=$install_method' is invalid])
 )
 
@@ -188,24 +187,6 @@ AC_ARG_WITH(pipedir, AC_HELP_STRING([--with-pipedir=DIR],
 	fi)
 
 
-#AC_SUBST(sbindir)
-#AC_SUBST(initname)
-#AC_SUBST(inetdname)
-#AC_SUBST(pkglocalstatedir)
-#AC_SUBST(spooldir)
-#AC_SUBST(initdir)
-#AC_SUBST(inetddir)
-#AC_SUBST(tmpfilesd)
-#AC_SUBST(subsyslockdir)
-
-
-
-
-# docdir ??
-# includedir ??
-# mandir ??
-# pdfdir ??
-
 #
 # Setup the base directory
 #
@@ -217,9 +198,6 @@ if test $install_method = "default"; then
 		if test x"$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
 	fi
 	datarootdir=${datarootdir="$prefix"}
-
-elif test $install_method = "opt"; then
-	if test x"$prefix" = "xNONE"; then prefix="/opt/nagios"; fi
 
 else
 	if test x"$datadir" = x'${datarootdir}'; then AS_UNSET(datadir); fi
@@ -292,7 +270,7 @@ if test "$need_loc" = no; then
 	localedir="N/A"
 fi
 
-if test $install_method = "default" -o $install_method = "opt"; then
+if test $install_method = "default" ; then
 	#
 	# Do the default setup
 	#

@@ -36,7 +36,6 @@ AC_SUBST(LDFLAGS)
 AC_SUBST(OTHERLIBS)
 AC_SUBST(SOCKETLIBS)
 AC_SUBST(LIBWRAPLIBS)
-AC_SUBST(HAVE_SSL)
 AC_SUBST(NRPE_INSTALL_OPTS)
 AC_SUBST(log_facility)
 AC_SUBST(nrpe_user)
@@ -334,154 +333,10 @@ AC_ARG_ENABLE([ssl],
 	],check_for_ssl=yes)
 
 dnl Optional SSL library and include paths
-ssl_dir=
-ssl_inc_dir=
-ssl_lib_dir=
-ssl_usedh=
-AC_ARG_WITH([dh],
-	AS_HELP_STRING([--with-dh],[use --without-dh to turn of DH keys]),
-	[ssl_usedh=$withval])
-AC_ARG_WITH([ssl],
-	AS_HELP_STRING([--with-ssl=DIR],[sets location of the SSL installation]),
-	[ssl_dir=$withval])
-AC_ARG_WITH([ssl-inc],
-	AS_HELP_STRING([--with-ssl-inc=DIR],
-		[sets location of the SSL include files]),
-	[ ssl_inc_dir=$withval])
-AC_ARG_WITH([ssl-lib],
-	AS_HELP_STRING([--with-ssl-lib=DIR],[sets location of the SSL libraries]),
-	[ssl_lib_dir=$withval])
-AC_ARG_WITH([kerberos-inc],
-	AS_HELP_STRING([--with-kerberos-inc=DIR],
-		[sets location of the Kerberos include files]),
-	[kerberos_inc_dir=$withval])
-
-dnl Check for SSL support
-dnl Modified version of Mark Ethan Trostler's macro <trostler@juniper.net>
 if test x$check_for_ssl = xyes; then
-	AC_MSG_CHECKING(for SSL headers)
-	found_ssl=no
-	for dir in $ssl_inc_dir $ssl_dir /usr/local/openssl /usr/local/opt/openssl \
-				/usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr \
-				/usr/freeware/lib/openssl /usr/sfw /usr/sfw/include \
-				/opt/openssl; do
-		ssldir="$dir"
-		if test -f "$dir/include/openssl/ssl.h"; then
-			found_ssl=yes
-			CFLAGS="$CFLAGS -I$dir/include/openssl -I$ssldir/include"
-			sslincdir="$dir/include/openssl"
-			break
-		fi
-		if test -f "$dir/include/ssl.h"; then
-			found_ssl=yes
-			CFLAGS="$CFLAGS -I$dir/include"
-			sslincdir="$dir/include"
-			break
-		fi
-		if test -f "$dir/ssl.h"; then
-			found_ssl=yes
-			CFLAGS="$CFLAGS -I$dir"
-			sslincdir="$dir"
-			ssldir="$dir/.."
-			break
-		fi
-		if test -f "$dir/openssl/ssl.h"; then
-			found_ssl=yes
-			CFLAGS="$CFLAGS -I$dir/openssl"
-			sslincdir="$dir/openssl"
-			ssldir="$dir/.."
-			break
-		fi
-	done
-
-	if test x_$found_ssl != x_yes; then
-		AC_MSG_ERROR(Cannot find ssl headers)
-	else
-		AC_MSG_RESULT(found in $ssldir)
-
-		dnl Now try and find SSL libraries
-		AC_MSG_CHECKING(for SSL libraries)
-		found_ssl=no
-		if test "`uname -s`" = "Darwin" ; then
-			soext="dylib"
-		elif test "`uname -s`" = "HP-UX" ; then
-			if test x$arch = "xia64"; then
-				soext="so"
-			else
-				soext="sl"
-			fi
-		elif test "`uname -s`" = "AIX" ; then
-			soext="a"
-		else
-			soext="so"
-		fi
-		for dir in $ssl_lib_dir $ssldir $ssldir/lib $ssldir/lib64 /usr/lib64 \
-					/usr/lib /usr/lib/x86_64-linux-gnu /usr/lib/i386-linux-gnu \
-					/usr/local/lib /usr/lib/ssl /usr/ssl/lib /usr/openssl/lib \
-					/usr/pkg/lib /usr/freeware/lib/openssl /usr/sfw/lib \
-					/opt/freeware/lib /opt/openssl/lib/hpux64 \
-					/opt/openssl/lib/pa20_64 /opt/openssl/lib/hpux32 \
-					/opt/openssl/lib /opt/openssl; do
-			ssllibdir="$dir"
-			if test "$dist_type" = "openbsd"; then
-				if test -f $dir/libssl.$soext*; then
-					found_ssl=yes
-					break
-				fi
-			elif test -f "$dir/libssl.$soext"; then
-				found_ssl=yes
-				break
-			fi
-		done
-
-		if test x_$found_ssl != x_yes; then
-			AC_MSG_ERROR(Cannot find ssl libraries)
-		else
-			AC_MSG_RESULT(found in $ssllibdir)
-
-			LDFLAGS="$LDFLAGS -L$ssllibdir";
-			LIBS="$LIBS -lssl -lcrypto";
-
-			AC_DEFINE_UNQUOTED(HAVE_SSL,[1],[Have SSL support])
-
-			AC_PATH_PROG(sslbin,openssl,value-if-not-found,$ssldir/sbin$PATH_SEPARATOR$ssldir/bin$PATH_SEPARATOR$PATH)
-
-			if test x$ssl_usedh = xno; then
-				echo "skipping DH Parameter generation"
-			else
-				AC_DEFINE(USE_SSL_DH)
-				dnl Generate DH parameters
-				if test -f "$sslbin"; then
-					echo ""
-					echo "*** Generating DH Parameters for SSL/TLS ***"
-					# awk to strip off meta data at bottom of dhparam output
-					$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
-				fi
-			fi
-		fi
-	fi
-
-	dnl RedHat 8.0 and 9.0 include openssl compiled with kerberos, so we must include header file
-	AC_MSG_CHECKING(for Kerberos include files)
-	found_kerberos=no
-	for dir in $kerberos_inc_dir /usr/kerberos/include; do
-		kerbdir="$dir"
-		if test -f "$dir/krb5.h"; then
-			found_kerberos=yes
-			CFLAGS="$CFLAGS -I$kerbdir"
-			AC_DEFINE_UNQUOTED(HAVE_KRB5_H,[1],[Have the krb5.h header file])
-			dnl AC_CHECK_HEADERS(krb5.h)
-			break
-		fi
-	done
-
-	if test x_$found_kerberos != x_yes; then
-		AC_MSG_WARN(could not find include files)
-	else
-		AC_MSG_RESULT(found Kerberos include files in $kerbdir)
-	fi
-
-
+	# need_dh should only be set for NRPE
+	need_dh=yes
+	AC_NAGIOS_GET_SSL
 fi
 
 AC_ARG_WITH([log_facility],
