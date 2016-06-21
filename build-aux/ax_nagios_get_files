@@ -54,11 +54,11 @@ AC_MSG_CHECKING(for which init file to use )
 AS_CASE([$init_type],
 
 	[sysv],
-		if test $dist_type = debian; then
-			src_init=debian-init
-		else
-			src_init=default-init
-		fi,
+#		if test $dist_type = debian; then
+#			src_init=debian-init
+#		else
+			src_init=default-init,
+#		fi,
 
 	[systemd],
 		src_tmpfile=tmpfile.conf

@@ -151,7 +151,7 @@ if test x$SSL_TYPE != xNONE; then
 	fi
 
 	# First, try using pkg_config
-	AC_CHECK_TOOL([PKG_CONFIG], [x-pkg-config])
+	AC_CHECK_TOOL([PKG_CONFIG], [pkg-config])
 	if test x"$PKG_CONFIG" != x ; then
 		cflags=`$PKG_CONFIG $SSL_TYPE --cflags_only-I 2>/dev/null`
 		if test $? = 0; then
