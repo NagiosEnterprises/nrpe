@@ -121,7 +121,7 @@ int main(int argc, char **argv)
 		strncpy(sslprm.cipher_list, "ALL:!MD5:@STRENGTH", MAX_FILENAME_LENGTH - 1);
 	if (sslprm.ssl_min_ver == SSL_Ver_Invalid)
 		sslprm.ssl_min_ver = TLSv1_plus;
-	if (sslprm.allowDH = -1)
+	if (sslprm.allowDH == -1)
 		sslprm.allowDH = TRUE;
 
 	generate_crc32_table();		/* generate the CRC 32 table */

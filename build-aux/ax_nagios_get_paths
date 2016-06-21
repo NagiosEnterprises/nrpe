@@ -228,20 +228,26 @@ else
 				if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
 					libexecdir="/usr/nagios"
 				fi
+			elif test $dist_type = "osx"; then
+				datarootdir="/usr/local/share"
+				if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
+					libexecdir="/usr/local/nagios"
+				fi
 			elif test x"$libexecdir" = x'${exec_prefix}/libexec'; then
 				libexecdir="/usr/lib/nagios"
+			fi
+		fi
+		if test $dist_type = "osx"; then
+			if test x"$sbindir" = x'${exec_prefix}/sbin'; then
+				sbindir="$libexecdir"
+			fi
+			if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
+				libexecdir="/usr/local/libexec/nagios"
 			fi
 		fi
 	elif test $opsys = "bsd"; then
 		if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
 			libexecdir=${exec_prefix}/libexec/nagios;
-		fi
-	elif test $dist_type = "osx"; then
-		if test x"$sbindir" = x'${exec_prefix}/sbin'; then
-			sbindir="$libexecdir"
-		fi
-		if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
-			libexecdir="/usr/libexec/nagios"
 		fi
 	elif test x"$libexecdir" = x'${exec_prefix}/lib'; then
 		libexecdir=${libexecdir}/nagios;
@@ -389,7 +395,7 @@ elif test $opsys = "unix"; then
 	install_method="$install_method : Unix Standard"
 	if test $dist_type = osx; then
 		install_method="$install_method : OS X Standard"
-		sbindir=${sbindir="/usr/libexec"}
+		sbindir=${sbindir="/usr/local/libexec"}
 	fi
 	datadir=${datadir="$datarootdir/nagios"}
 	if test $need_web = yes; then
@@ -644,7 +650,7 @@ AS_CASE([$init_type],
 		initconf=${initconf="$initconfdir/$PKG_NAME"},
 
 	[launchd],
-		initdir=${initdir="/System/Library/LaunchDaemons"}
+		initdir=${initdir="/Library/LaunchDaemons"}
 		initname=${initname="org.nagios.$PKG_NAME.plist"},
 #		initconfdir=${initconfdir="/private/etc"}
 #		initconf=${initconf="$initconfdir/$PKG_NAME"},
@@ -687,7 +693,7 @@ AS_CASE([$inetd_type],
 #		inetdname=${inetdname="$PKG_NAME"},
 
 	[launchd],
-		inetddir=${inetddir="/System/Library/LaunchDaemons"}
+		inetddir=${inetddir="/Library/LaunchDaemons"}
 		inetdname=${inetdname="org.nagios.$PKG_NAME.plist"},
 
 	[*],

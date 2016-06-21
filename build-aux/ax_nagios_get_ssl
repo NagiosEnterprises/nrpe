@@ -89,13 +89,13 @@ if test x$SSL_TYPE = xyes; then
 fi
 
 
-dflt_hdrs="$ssl_inc_dir $ssldir $ssldir/include $ssldir/include /usr/include/{BBB} \
+dflt_hdrs="$ssl_inc_dir $ssl_dir $ssl_dir/include $ssl_dir/include /usr/include/{BBB} \
 			/usr/local/include{BBB} /usr/local/{AAA} /usr/local/{BBB} \
 			/usr/local/opt/{BBB} /usr/lib/{AAA} /usr/lib/{BBB} /usr/{AAA} \
 			/usr/pkg /usr/local /usr /usr/freeware/lib/{BBB} /usr/sfw \
 			/usr/sfw/include /opt/{BBB}"
 
-dflt_libs="$ssl_lib_dir $ssldir $ssldir/lib $ssldir/lib64 /usr/lib64 \
+dflt_libs="$ssl_lib_dir {ssldir} {ssldir}/lib {ssldir}/lib64 /usr/lib64 \
 			/usr/lib /usr/lib/x86_64-linux-gnu /usr/lib/i386-linux-gnu \
 			/usr/local/lib /usr/lib/{AAA} /usr/{AAA}/lib /usr/{BBB}/lib \
 			/usr/pkg/lib /usr/freeware/lib/{BBB} /usr/sfw/lib /opt/freeware/lib \
@@ -205,6 +205,8 @@ if test x$SSL_TYPE != xNONE; then
 
 			AC_MSG_CHECKING(for SSL libraries)
 			found_ssl=no
+			ssl_lib_dirs=`echo "$ssl_lib_dirs" | sed -e "s|{ssldir}|$ssldir|g"`
+
 			if test "`uname -s`" = "Darwin" ; then
 				soext="dylib"
 			elif test "`uname -s`" = "HP-UX" ; then

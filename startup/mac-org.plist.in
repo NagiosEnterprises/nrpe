@@ -12,9 +12,10 @@
 	<string>@sbindir@/nrpe</string>
 	<key>ProgramArguments</key>
 	<array>
+		<string>nrpe</string>
 		<string>-c</string>
 		<string>@pkgsysconfdir@/nrpe.cfg</string>
-		<string>-i</string>
+		<string>-f</string>
 	</array>
 	<key>KeepAlive</key>
 	<dict>
@@ -25,13 +26,7 @@
 	</dict>
 	<key>RunAtLoad</key>
 	<true/>
-	<!-- ExitTimeOut would be for nagios itself, not nrpe -->
-	<key>ExitTimeOut</key>
-	<integer>120</integer>
 	<key>ProcessType</key>
 	<string>Background</string>
-	<!-- LaunchOnlyOnce might be for nagios checkconfig -->
-	<key>LaunchOnlyOnce</key>
-	<false/>
 </dict>
 </plist>
