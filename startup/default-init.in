@@ -34,7 +34,6 @@ START_CMD="daemon --pidfile $PID_FILE"
 TERM_CMD="killproc -p $PID_FILE $NRPE_BIN -TERM"
 HUP_CMD="killproc -p $PID_FILE $NRPE_BIN -HUP"
 PRT_STAT="echo"
-QSTAT_CMD="status nrpe >/dev/null 2>&1"
 STAT_MSG="echo -n Checking for nrpe daemon "
 STAT_CMD="status nrpe"
 EXIT_CMD="exit"
@@ -51,7 +50,6 @@ if [ -f /etc/rc.status ]; then
 	HUP_CMD="killproc -p $PID_FILE -HUP $NRPE_BIN"
 	PRT_STAT="rc_status -v -r"
 	STAT_CMD="checkproc -p $PID_FILE $NRPE_BIN"
-	QSTAT_CMD="$STAT_CMD"
 	EXIT_CMD="rc_exit"
 	rc_reset
 
@@ -69,8 +67,7 @@ elif [ -f /lib/lsb/init-functions ]; then
 
 	MSG_CMD="log_daemon_msg"
 	START_CMD="start_daemon -p $PID_FILE"
-	PRT_STAT="log_end_msg \$RETVAL"
-	QSTAT_CMD="pidofproc -p $PID_FILE $NRPE_BIN"
+	PRT_STAT="log_end_msg"
 	STAT_MSG=
 	STAT_CMD="status_of_proc -p $PID_FILE $NRPE_BIN nrpe"
 
@@ -89,7 +86,11 @@ start)
 	$MSG_CMD "Starting nrpe "
 	$START_CMD $NRPE_BIN -c $NRPE_CFG -d
 	RETVAL=$?
-	$PRT_STAT
+	if test $PRT_STAT = log_end_msg; then
+		$PRT_STAT $RETVAL
+	else
+		$PRT_STAT
+	fi
 	if [ $RETVAL = 0 ]; then
 		[ -d $LOCK_DIR ] && touch $LOCK_FILE || true
 	fi
@@ -100,7 +101,11 @@ stop)
 	$MSG_CMD "Shutting down nrpe "
 	$TERM_CMD
 	RETVAL=$?
-	$PRT_STAT
+	if test $PRT_STAT = log_end_msg; then
+		$PRT_STAT $RETVAL
+	else
+		$PRT_STAT
+	fi
 	if [ $RETVAL = 0 ]; then
 		[ -d $LOCK_DIR ] && rm -f $LOCK_FILE
 	fi
@@ -116,11 +121,15 @@ reload)
 	$MSG_CMD "Reloading nrpe "
 	$HUP_CMD
 	RETVAL=$?
-	$PRT_STAT
+	if test $PRT_STAT = log_end_msg; then
+		$PRT_STAT $RETVAL
+	else
+		$PRT_STAT
+	fi
 	;;
 
 try-restart|condrestart)
-	$QSTAT_CMD || exit 0
+	$STAT_CMD || exit 0
 	$0 stop
 	$0 start
 	RETVAL=$?
@@ -129,8 +138,10 @@ try-restart|condrestart)
 status)
 	$STAT_MSG
 	$STAT_CMD
-	$PRT_STAT
 	RETVAL=$?
+	if test $PRT_STAT != log_end_msg; then
+		$PRT_STAT
+	fi
 	;;
 
 *)
