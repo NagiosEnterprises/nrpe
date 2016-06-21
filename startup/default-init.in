@@ -29,12 +29,14 @@ test -x $NRPE_BIN || exit 5
 RETVAL=0
 
 # Default these commands/functions to RedHat/CentOS etc. values
+MSG_CMD="echo -n"
 START_CMD="daemon --pidfile $PID_FILE"
-STAT_CMD="status nrpe"
-QSTAT_CMD="status nrpe >/dev/null 2>&1"
 TERM_CMD="killproc -p $PID_FILE $NRPE_BIN -TERM"
 HUP_CMD="killproc -p $PID_FILE $NRPE_BIN -HUP"
 PRT_STAT="echo"
+QSTAT_CMD="status nrpe >/dev/null 2>&1"
+STAT_MSG="echo -n 'Checking for nrpe daemon '"
+STAT_CMD="status nrpe"
 EXIT_CMD="exit"
 
 
@@ -42,13 +44,14 @@ EXIT_CMD="exit"
 if [ -f /etc/rc.status ]; then
 
 	. /etc/rc.status
+
 	# Set these commands/functions to SuSE etc. values
 	START_CMD="startproc -p $PID_FILE"
-	STAT_CMD="checkproc -p $PID_FILE $NRPE_BIN"
-	QSTAT_CMD="rc_status"
 	TERM_CMD="killproc -p $PID_FILE -TERM $NRPE_BIN"
 	HUP_CMD="killproc -p $PID_FILE -HUP $NRPE_BIN"
 	PRT_STAT="rc_status -v -r"
+	QSTAT_CMD="rc_status"
+	STAT_CMD="checkproc -p $PID_FILE $NRPE_BIN"
 	EXIT_CMD="rc_exit"
 	rc_reset
 
@@ -63,9 +66,13 @@ elif [ -f /etc/init.d/functions ]; then
 elif [ -f /lib/lsb/init-functions ]; then
 
 	. /lib/lsb/init-functions
+
+	MSG_CMD="log_daemon_msg"
 	START_CMD="start_daemon -p $PID_FILE"
+	PRT_STAT="log_end_msg \$RETVAL"
 	QSTAT_CMD="pidofproc -p $PID_FILE $NRPE_BIN"
-	PRT_STAT="status_of_proc -p $PID_FILE $NRPE_BIN nrpe"
+	STAT_MSG=
+	STAT_CMD="status_of_proc -p $PID_FILE $NRPE_BIN nrpe"
 
 elif [ -f /etc/rc.d/functions ]; then
 
@@ -79,18 +86,18 @@ case "$1" in
 
 start)
 	# Start daemons.
-	echo -n "Starting nrpe: "
+	$MSG_CMD "Starting nrpe "
 	$START_CMD $NRPE_BIN -c $NRPE_CFG -d
 	RETVAL=$?
 	$PRT_STAT
 	if [ $RETVAL = 0 ]; then
-		[ -d $LOCK_DIR ] && touch $LOCK_FILE
+		[ -d $LOCK_DIR ] && touch $LOCK_FILE || true
 	fi
 	;;
 
 stop)
 	# Stop daemons.
-	echo -n "Shutting down nrpe: "
+	$MSG_CMD "Shutting down nrpe "
 	$TERM_CMD
 	RETVAL=$?
 	$PRT_STAT
@@ -106,7 +113,7 @@ restart|force-reload)
 	;;
 
 reload)
-	echo -n "Reloading nrpe: "
+	$MSG_CMD "Reloading nrpe "
 	$HUP_CMD
 	RETVAL=$?
 	$PRT_STAT
@@ -120,7 +127,7 @@ try-restart|condrestart)
 	;;
 
 status)
-	echo -n "Checking for nrpe daemon: "
+	$STAT_MSG
 	$STAT_CMD
 	$PRT_STAT
 	RETVAL=$?
