@@ -10,8 +10,8 @@
 # Provides:           nrpe
 # Required-Start:     $local_fs $remote_fs $syslog $network $time
 # Required-Stop:      $local_fs $remote_fs $syslog $network
-# Default-Start:      2 3 4 5
-# Default-Stop:       0 1 6
+# Default-Start:      3 5
+# Default-Stop:       0 1 2 4 6
 # Short-Description:  Starts and stops the Nagios Remote Plugin Executor
 # Description:        Starts and stops the Nagios Remote Plugin Executor
 #                     so a remote nagios server can run plugins on this host
@@ -35,7 +35,7 @@ TERM_CMD="killproc -p $PID_FILE $NRPE_BIN -TERM"
 HUP_CMD="killproc -p $PID_FILE $NRPE_BIN -HUP"
 PRT_STAT="echo"
 QSTAT_CMD="status nrpe >/dev/null 2>&1"
-STAT_MSG="echo -n 'Checking for nrpe daemon '"
+STAT_MSG="echo -n Checking for nrpe daemon "
 STAT_CMD="status nrpe"
 EXIT_CMD="exit"
 
@@ -50,8 +50,8 @@ if [ -f /etc/rc.status ]; then
 	TERM_CMD="killproc -p $PID_FILE -TERM $NRPE_BIN"
 	HUP_CMD="killproc -p $PID_FILE -HUP $NRPE_BIN"
 	PRT_STAT="rc_status -v -r"
-	QSTAT_CMD="rc_status"
 	STAT_CMD="checkproc -p $PID_FILE $NRPE_BIN"
+	QSTAT_CMD="$STAT_CMD"
 	EXIT_CMD="rc_exit"
 	rc_reset
 
@@ -109,7 +109,7 @@ stop)
 restart|force-reload)
 	$0 stop
 	$0 start
-	$QSTAT_CMD
+	RETVAL=$?
 	;;
 
 reload)
@@ -123,7 +123,7 @@ try-restart|condrestart)
 	$QSTAT_CMD || exit 0
 	$0 stop
 	$0 start
-	$QSTAT_CMD
+	RETVAL=$?
 	;;
 
 status)
