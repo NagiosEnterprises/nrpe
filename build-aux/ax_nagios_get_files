@@ -54,11 +54,7 @@ AC_MSG_CHECKING(for which init file to use )
 AS_CASE([$init_type],
 
 	[sysv],
-#		if test $dist_type = debian; then
-#			src_init=debian-init
-#		else
-			src_init=default-init,
-#		fi,
+		src_init=default-init,
 
 	[systemd],
 		src_tmpfile=tmpfile.conf
@@ -96,8 +92,7 @@ AS_CASE([$init_type],
 		fi,
 
 	[launchd],
-		src_init="mac-org.plist"
-		src_inetd="mac-org.plist",
+		src_init="mac-init.plist"
 
 	[*],
 		src_init="unknown"
@@ -117,6 +112,9 @@ if test x$src_inetd = x; then
 
 		[systemd],
 			src_inetd=default-socket,
+
+		[launchd],
+			src_inetd="mac-inetd.plist",
 
 		[*],
 			src_inetd="unknown"

@@ -87,34 +87,6 @@ install-daemon:
 install:
 	cd $(SRC_BASE); $(MAKE) $@
 
-install-inetd:
-	@if test $(SRC_INETD) = unknown; then \
-		echo No inetd file to install; \
-		exit 1; \
-	fi
-	@if test $(INETD_TYPE) = inetd; then \
-		$(EGREP) -q "^\W*nrpe\s+" $(INETD_DIR)/$(INETD_FILE) 2>/dev/null || \
-		   cat startup/$(SRC_INETD) >> $(INETD_DIR)/$(INETD_FILE); \
-	elif test $(INETD_TYPE) = systemd; then \
-		SRC_INETD_FILE=`echo "$(SRC_INETD)" | sed -e 's/socket/socket-svc/'`; \
-		echo $(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
-		$(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
-	elif test $(INETD_TYPE) = smf10 -o $(INETD_TYPE) = smf11; then \
-		echo $(INSTALL) -m 775 -g sys -d $(INETD_DIR);\
-		$(INSTALL) -m 775 -g sys -d $(INETD_DIR);\
-		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
-		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
-		$(INSTALL) -m 775 -d $(INETD_DIR);\
-		echo svccfg import $(INETD_DIR)/$(INETD_FILE); \
-		svccfg import $(INETD_DIR)/$(INETD_FILE); \
-		echo "*** Run 'svcadm enable nrpe' to start it"; \
-	else\
-		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
-		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
-	fi
-	@$(EGREP) -q "^nrpe[\t ]+@nrpe_port@/tcp" /etc/services || \
-		echo "***** MAKE SURE 'nrpe @nrpe_port@/tcp' IS IN YOUR /etc/services FILE"
-
 install-init:
 	@if test $(SRC_INIT) = unknown; then \
 		echo No init file to install; \
@@ -148,6 +120,8 @@ install-init:
 				echo "nrpe@bsd_enable@=YES" >> /etc/rc.conf;\
 				echo "nrpe_configfile=$(CFGDIR)/nrpe.cfg" >> /etc/rc.conf;\
 			fi;\
+		elif test $(INIT_TYPE) = launchd; then\
+			launchctl load $(INIT_DIR)/$(INIT_FILE); \
 		else\
 			if test -f /sbin/chkconfig ; then \
 			    /sbin/chkconfig nrpe on;\
@@ -156,6 +130,37 @@ install-init:
 			fi;\
 		fi;\
 	fi
+
+install-inetd:
+	@if test $(SRC_INETD) = unknown; then \
+		echo No inetd file to install; \
+		exit 1; \
+	fi
+	@if test $(INETD_TYPE) = inetd; then \
+		$(EGREP) -q "^\W*nrpe\s+" $(INETD_DIR)/$(INETD_FILE) 2>/dev/null || \
+		   cat startup/$(SRC_INETD) >> $(INETD_DIR)/$(INETD_FILE); \
+	elif test $(INETD_TYPE) = systemd; then \
+		SRC_INETD_FILE=`echo "$(SRC_INETD)" | sed -e 's/socket/socket-svc/'`; \
+		echo $(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
+		$(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
+	elif test $(INETD_TYPE) = smf10 -o $(INETD_TYPE) = smf11; then \
+		echo $(INSTALL) -m 775 -g sys -d $(INETD_DIR);\
+		$(INSTALL) -m 775 -g sys -d $(INETD_DIR);\
+		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+		$(INSTALL) -m 775 -d $(INETD_DIR);\
+		echo svccfg import $(INETD_DIR)/$(INETD_FILE); \
+		svccfg import $(INETD_DIR)/$(INETD_FILE); \
+		echo "*** Run 'svcadm enable nrpe' to start it"; \
+	elif test $(INIT_TYPE) = launchd; then\
+		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+		launchctl load $(INETD_DIR)/$(INETD_FILE); \
+	else\
+		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+	fi
+	@$(EGREP) -q "^nrpe[\t ]+@nrpe_port@/tcp" /etc/services || \
+		echo "***** MAKE SURE 'nrpe @nrpe_port@/tcp' IS IN YOUR /etc/services FILE"
 
 install-config:
 	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(CFGDIR)
@@ -187,10 +192,10 @@ distclean: clean
 	rm -f config.log config.status config.cache sample-config/nrpe.cfg $(SRC_INCLUDE)/config.h
 	rm -f startup/bsd-init startup/debian-init startup/default-init startup/default-inetd
 	rm -f startup/default-service startup/default-socket startup/default-socket-svc
-	rm -f startup/default-xinetd startup/mac-org.plist startup/newbsd-init
-	rm -f startup/openbsd-init startup/openrc-conf startup/openrc-init
-	rm -f startup/rh-upstart-init startup/solaris-init.xml startup/solaris-inetd.xml
-	rm -f startup/tmpfile.conf startup/upstart-init
+	rm -f startup/default-xinetd startup/mac-init.plist startup/mac-inetd.plist
+	rm -f startup/newbsd-init startup/openbsd-init startup/openrc-conf
+	rm -f startup/openrc-init startup/rh-upstart-init startup/solaris-init.xml
+	rm -f startup/solaris-inetd.xml startup/tmpfile.conf startup/upstart-init
 	rm -f Makefile
 
 devclean: distclean

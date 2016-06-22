@@ -117,7 +117,8 @@ AC_CONFIG_FILES([Makefile
 	startup/default-socket
 	startup/default-socket-svc
 	startup/default-xinetd
-	startup/mac-org.plist
+	startup/mac-init.plist
+	startup/mac-inetd.plist
 	startup/newbsd-init
 	startup/openbsd-init
 	startup/openrc-conf
