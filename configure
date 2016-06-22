@@ -3309,20 +3309,26 @@ else
 				if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
 					libexecdir="/usr/nagios"
 				fi
+			elif test $dist_type = "osx"; then
+				datarootdir="/usr/local/share"
+				if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
+					libexecdir="/usr/local/nagios"
+				fi
 			elif test x"$libexecdir" = x'${exec_prefix}/libexec'; then
 				libexecdir="/usr/lib/nagios"
+			fi
+		fi
+		if test $dist_type = "osx"; then
+			if test x"$sbindir" = x'${exec_prefix}/sbin'; then
+				sbindir="$libexecdir"
+			fi
+			if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
+				libexecdir="/usr/local/libexec/nagios"
 			fi
 		fi
 	elif test $opsys = "bsd"; then
 		if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
 			libexecdir=${exec_prefix}/libexec/nagios;
-		fi
-	elif test $dist_type = "osx"; then
-		if test x"$sbindir" = x'${exec_prefix}/sbin'; then
-			sbindir="$libexecdir"
-		fi
-		if test x"$libexecdir" = x'${exec_prefix}/libexec'; then
-			libexecdir="/usr/libexec/nagios"
 		fi
 	elif test x"$libexecdir" = x'${exec_prefix}/lib'; then
 		libexecdir=${libexecdir}/nagios;
@@ -3470,7 +3476,7 @@ elif test $opsys = "unix"; then
 	install_method="$install_method : Unix Standard"
 	if test $dist_type = osx; then
 		install_method="$install_method : OS X Standard"
-		sbindir=${sbindir="/usr/libexec"}
+		sbindir=${sbindir="/usr/local/libexec"}
 	fi
 	datadir=${datadir="$datarootdir/nagios"}
 	if test $need_web = yes; then
@@ -3718,7 +3724,7 @@ case $init_type in #(
 		initconfdir=${initconfdir="/etc/default"}
 		initconf=${initconf="$initconfdir/$PKG_NAME"} ;; #(
   launchd) :
-    initdir=${initdir="/System/Library/LaunchDaemons"}
+    initdir=${initdir="/Library/LaunchDaemons"}
 		initname=${initname="org.nagios.$PKG_NAME.plist"} ;; #(
   #		initconfdir=${initconfdir="/private/etc"}
 #		initconf=${initconf="$initconfdir/$PKG_NAME"},
@@ -3760,7 +3766,7 @@ case $inetd_type in #(
 #		inetdname=${inetdname="$PKG_NAME"},
 
 	launchd) :
-    inetddir=${inetddir="/System/Library/LaunchDaemons"}
+    inetddir=${inetddir="/Library/LaunchDaemons"}
 		inetdname=${inetdname="org.nagios.$PKG_NAME.plist"} ;; #(
   *) :
     inetddir=${inetddir="unknown"}
@@ -3783,12 +3789,13 @@ $as_echo_n "checking for which init file to use ... " >&6; }
 
 case $init_type in #(
   sysv) :
-    if test $dist_type = debian; then
-			src_init=debian-init
-		else
-			src_init=default-init
-		fi ;; #(
-  systemd) :
+    #		if test $dist_type = debian; then
+#			src_init=debian-init
+#		else
+			src_init=default-init ;; #(
+  #		fi,
+
+	systemd) :
     src_tmpfile=tmpfile.conf
 		src_init=default-service ;; #(
   bsd) :
@@ -7315,13 +7322,13 @@ if test x$SSL_TYPE = xyes; then
 fi
 
 
-dflt_hdrs="$ssl_inc_dir $ssldir $ssldir/include $ssldir/include /usr/include/{BBB} \
+dflt_hdrs="$ssl_inc_dir $ssl_dir $ssl_dir/include $ssl_dir/include /usr/include/{BBB} \
 			/usr/local/include{BBB} /usr/local/{AAA} /usr/local/{BBB} \
 			/usr/local/opt/{BBB} /usr/lib/{AAA} /usr/lib/{BBB} /usr/{AAA} \
 			/usr/pkg /usr/local /usr /usr/freeware/lib/{BBB} /usr/sfw \
 			/usr/sfw/include /opt/{BBB}"
 
-dflt_libs="$ssl_lib_dir $ssldir $ssldir/lib $ssldir/lib64 /usr/lib64 \
+dflt_libs="$ssl_lib_dir {ssldir} {ssldir}/lib {ssldir}/lib64 /usr/lib64 \
 			/usr/lib /usr/lib/x86_64-linux-gnu /usr/lib/i386-linux-gnu \
 			/usr/local/lib /usr/lib/{AAA} /usr/{AAA}/lib /usr/{BBB}/lib \
 			/usr/pkg/lib /usr/freeware/lib/{BBB} /usr/sfw/lib /opt/freeware/lib \
@@ -7390,8 +7397,8 @@ $as_echo "found Kerberos include files in $kerbdir" >&6; }
 
 	# First, try using pkg_config
 	if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}x-pkg-config", so it can be a program name with args.
-set dummy ${ac_tool_prefix}x-pkg-config; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
+set dummy ${ac_tool_prefix}pkg-config; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_prog_PKG_CONFIG+:} false; then :
@@ -7407,7 +7414,7 @@ do
   test -z "$as_dir" && as_dir=.
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_PKG_CONFIG="${ac_tool_prefix}x-pkg-config"
+    ac_cv_prog_PKG_CONFIG="${ac_tool_prefix}pkg-config"
     $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -7430,8 +7437,8 @@ fi
 fi
 if test -z "$ac_cv_prog_PKG_CONFIG"; then
   ac_ct_PKG_CONFIG=$PKG_CONFIG
-  # Extract the first word of "x-pkg-config", so it can be a program name with args.
-set dummy x-pkg-config; ac_word=$2
+  # Extract the first word of "pkg-config", so it can be a program name with args.
+set dummy pkg-config; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_prog_ac_ct_PKG_CONFIG+:} false; then :
@@ -7447,7 +7454,7 @@ do
   test -z "$as_dir" && as_dir=.
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_ac_ct_PKG_CONFIG="x-pkg-config"
+    ac_cv_prog_ac_ct_PKG_CONFIG="pkg-config"
     $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -7537,6 +7544,8 @@ $as_echo "found in $ssldir" >&6; }
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL libraries" >&5
 $as_echo_n "checking for SSL libraries... " >&6; }
 			found_ssl=no
+			ssl_lib_dirs=`echo "$ssl_lib_dirs" | sed -e "s|{ssldir}|$ssldir|g"`
+
 			if test "`uname -s`" = "Darwin" ; then
 				soext="dylib"
 			elif test "`uname -s`" = "HP-UX" ; then
