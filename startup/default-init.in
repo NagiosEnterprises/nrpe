@@ -34,7 +34,7 @@ START_CMD="daemon --pidfile $PID_FILE"
 TERM_CMD="killproc -p $PID_FILE $NRPE_BIN -TERM"
 HUP_CMD="killproc -p $PID_FILE $NRPE_BIN -HUP"
 PRT_STAT="echo"
-STAT_MSG="echo -n Checking for nrpe daemon "
+STAT_MSG="echo -n Checking for nrpe daemon... "
 STAT_CMD="status nrpe"
 EXIT_CMD="exit"
 
