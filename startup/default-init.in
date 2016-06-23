@@ -8,10 +8,12 @@
 #
 ### BEGIN INIT INFO
 # Provides:           nrpe
-# Required-Start:     $local_fs $remote_fs $syslog $network $time
-# Required-Stop:      $local_fs $remote_fs $syslog $network
-# Default-Start:      3 5
-# Default-Stop:       0 1 2 4 6
+# Required-Start:     $local_fs $remote_fs $time
+# Required-Stop:      $local_fs $remote_fs
+# Should-Start:       $syslog $network
+# Should-Stop:        $syslog $network
+# Default-Start:      2 3 4 5
+# Default-Stop:       0 1 6
 # Short-Description:  Starts and stops the Nagios Remote Plugin Executor
 # Description:        Starts and stops the Nagios Remote Plugin Executor
 #                     so a remote nagios server can run plugins on this host
