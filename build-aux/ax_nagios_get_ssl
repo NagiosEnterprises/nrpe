@@ -128,6 +128,8 @@ AS_CASE([$SSL_TYPE],
 
 if test x$SSL_TYPE != xNONE; then
 
+	found_ssl=no
+
 	# RedHat 8.0 and 9.0 include openssl compiled with kerberos,
 	# so we must include header file
 	# Must come before openssl checks for Redhat EL 3
@@ -153,11 +155,12 @@ if test x$SSL_TYPE != xNONE; then
 	# First, try using pkg_config
 	AC_CHECK_TOOL([PKG_CONFIG], [pkg-config])
 	if test x"$PKG_CONFIG" != x ; then
-		cflags=`$PKG_CONFIG $SSL_TYPE --cflags_only-I 2>/dev/null`
+		cflags=`$PKG_CONFIG $SSL_TYPE --cflags-only-I 2>/dev/null`
 		if test $? = 0; then
 			CFLAGS="$CFLAGS $cflags"
-			LDFLAGS="$LDFLAGS `$PKG_CONFIG $SSL_TYPE --libs_only-L 2>/dev/null`"
-			LIBS="$LIBS `$PKG_CONFIG $SSL_TYPE --libs_only-l 2>/dev/null`"
+			LDFLAGS="$LDFLAGS `$PKG_CONFIG $SSL_TYPE --libs-only-L 2>/dev/null`"
+			LIBS="$LIBS `$PKG_CONFIG $SSL_TYPE --libs-only-l 2>/dev/null`"
+			found_ssl=yes
 		fi
 
 	else
@@ -165,7 +168,6 @@ if test x$SSL_TYPE != xNONE; then
 		# Find the SSL Headers
 
 		AC_MSG_CHECKING(for SSL headers)
-		found_ssl=no
 		for dir in $ssl_hdr_dirs; do
 			ssldir="$dir"
 			if test -f "$dir/include/openssl/$ssl_hdr"; then
@@ -236,23 +238,25 @@ if test x$SSL_TYPE != xNONE; then
 
 				LDFLAGS="$LDFLAGS -L$SSL_LIB_DIR";
 				LIBS="$LIBS -l`echo $ssl_lib | sed -e 's/^lib//'` -lcrypto";
-				#                                                 ^^^^^^^^
 				AC_DEFINE_UNQUOTED(HAVE_SSL,[1],[Have SSL support])
+			fi
+		fi
+	fi
 
-				# Find the openssl program
+	if test x$found_ssl = xyes -a x$need_dh = xyes; then
 
-				if test x$need_dh = xyes; then
-					AC_PATH_PROG(sslbin,openssl,value-if-not-found,$ssl_dir/sbin$PATH_SEPARATOR$ssl_dir/bin$PATH_SEPARATOR$PATH)
-					#                   ^^^^^^^
-					AC_DEFINE(USE_SSL_DH)
-					# Generate DH parameters
-					if test -f "$sslbin"; then
-						echo ""
-						echo "*** Generating DH Parameters for SSL/TLS ***"
-						# awk to strip off meta data at bottom of dhparam output
-						$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
-					fi
-				fi
+		# Find the openssl program
+
+		if test x$need_dh = xyes; then
+			AC_PATH_PROG(sslbin,openssl,value-if-not-found,$ssl_dir/sbin$PATH_SEPARATOR$ssl_dir/bin$PATH_SEPARATOR$PATH)
+			#                   ^^^^^^^
+			AC_DEFINE(USE_SSL_DH)
+			# Generate DH parameters
+			if test -f "$sslbin"; then
+				echo ""
+				echo "*** Generating DH Parameters for SSL/TLS ***"
+				# awk to strip off meta data at bottom of dhparam output
+				$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
 			fi
 		fi
 	fi
