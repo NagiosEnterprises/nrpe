@@ -119,7 +119,7 @@ AS_CASE([$SSL_TYPE],
 		[ssl_hdr_dirs=`echo "$dflt_hdrs" | sed -e 's/{AAA}/nss_compat_ossl/g' | sed -e 's/{BBB}/nss_compat_ossl/g'`
 		 ssl_lib_dirs=`echo "$dflt_libs" | sed -e 's/{AAA}/nss_compat_ossl/g' | sed -e 's/{BBB}/nss_compat_ossl/g'`
 		 ssl_hdr=nss_compat_ossl.h
-		 ssl_lib=libnss],
+		 ssl_lib=libnss_compat],
 	[*], echo >&6; AC_MSG_ERROR(['--with-ssl-type=$SSL_TYPE' is invalid])
 )
 
