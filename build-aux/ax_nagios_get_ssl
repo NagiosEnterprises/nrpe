@@ -162,8 +162,9 @@ if test x$SSL_TYPE != xNONE; then
 			LIBS="$LIBS `$PKG_CONFIG $SSL_TYPE --libs-only-l 2>/dev/null`"
 			found_ssl=yes
 		fi
+	fi
 
-	else
+	if test x_$found_ssl != x_yes; then
 
 		# Find the SSL Headers
 
