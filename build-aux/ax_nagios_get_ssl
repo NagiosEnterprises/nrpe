@@ -65,7 +65,8 @@ AC_SUBST(SSL_LIB_DIR)
 
 # Which type - openssl, gnutls-openssl, nss
 AC_ARG_WITH([ssl-type],
-	AS_HELP_STRING([--with-ssl-type=TYPE],[replace TYPE with gnutls or nss to use one of these instead of openssl]),
+dnl	AS_HELP_STRING([--with-ssl-type=TYPE],[replace TYPE with gnutls or nss to use one of these instead of openssl]),
+	AS_HELP_STRING([--with-ssl-type=TYPE],[replace TYPE with gnutls to use that instead of openssl]),
 	[SSL_TYPE=$withval])
 
 AC_ARG_WITH([ssl],
@@ -244,13 +245,27 @@ if test x$SSL_TYPE != xNONE; then
 		fi
 	fi
 
+	if test x$found_ssl = xyes ; then
+		# try to compile and link to see if SSL is set up properly
+		AC_MSG_CHECKING([whether compiling and linking against SSL works])
+
+		AC_LINK_IFELSE(
+			[AC_LANG_PROGRAM([#include <openssl/ssl.h>], [SSL_new(NULL)])],
+			[
+				AC_MSG_RESULT([yes])
+				$1
+			], [
+				AC_MSG_ERROR([no])
+				$2
+			])
+	fi
+
 	if test x$found_ssl = xyes -a x$need_dh = xyes; then
 
 		# Find the openssl program
 
 		if test x$need_dh = xyes; then
 			AC_PATH_PROG(sslbin,openssl,value-if-not-found,$ssl_dir/sbin$PATH_SEPARATOR$ssl_dir/bin$PATH_SEPARATOR$PATH)
-			#                   ^^^^^^^
 			AC_DEFINE(USE_SSL_DH)
 			# Generate DH parameters
 			if test -f "$sslbin"; then

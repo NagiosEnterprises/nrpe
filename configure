@@ -1420,8 +1420,8 @@ Optional Packages:
   --with-logdir=DIR       where log files should be placed
   --with-piddir=DIR       where the PID file should be placed
   --with-pipedir=DIR      where socket and pipe files should be placed
-  --with-ssl-type=TYPE    replace TYPE with gnutls or nss to use one of these
-                          instead of openssl
+	  --with-ssl-type=TYPE    replace TYPE with gnutls to use that instead of
+                          openssl
   --with-ssl=DIR          sets location of the SSL installation
   --with-ssl-inc=DIR      sets location of the SSL include files
   --with-ssl-lib=DIR      sets location of the SSL libraries
@@ -7584,6 +7584,38 @@ _ACEOF
 		fi
 	fi
 
+	if test x$found_ssl = xyes ; then
+		# try to compile and link to see if SSL is set up properly
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether compiling and linking against SSL works" >&5
+$as_echo_n "checking whether compiling and linking against SSL works... " >&6; }
+
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <openssl/ssl.h>
+int
+main ()
+{
+SSL_new(NULL)
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+
+else
+
+				as_fn_error $? "no" "$LINENO" 5
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+	fi
+
 	if test x$found_ssl = xyes -a x$need_dh = xyes; then
 
 		# Find the openssl program
@@ -7630,7 +7662,6 @@ $as_echo "no" >&6; }
 fi
 
 
-			#                   ^^^^^^^
 			$as_echo "#define USE_SSL_DH 1" >>confdefs.h
 
 			# Generate DH parameters
