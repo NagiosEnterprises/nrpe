@@ -7362,6 +7362,8 @@ esac
 
 if test x$SSL_TYPE != xNONE; then
 
+	found_ssl=no
+
 	# RedHat 8.0 and 9.0 include openssl compiled with kerberos,
 	# so we must include header file
 	# Must come before openssl checks for Redhat EL 3
@@ -7485,11 +7487,12 @@ else
 fi
 
 	if test x"$PKG_CONFIG" != x ; then
-		cflags=`$PKG_CONFIG $SSL_TYPE --cflags_only-I 2>/dev/null`
+		cflags=`$PKG_CONFIG $SSL_TYPE --cflags-only-I 2>/dev/null`
 		if test $? = 0; then
 			CFLAGS="$CFLAGS $cflags"
-			LDFLAGS="$LDFLAGS `$PKG_CONFIG $SSL_TYPE --libs_only-L 2>/dev/null`"
-			LIBS="$LIBS `$PKG_CONFIG $SSL_TYPE --libs_only-l 2>/dev/null`"
+			LDFLAGS="$LDFLAGS `$PKG_CONFIG $SSL_TYPE --libs-only-L 2>/dev/null`"
+			LIBS="$LIBS `$PKG_CONFIG $SSL_TYPE --libs-only-l 2>/dev/null`"
+			found_ssl=yes
 		fi
 
 	else
@@ -7498,7 +7501,6 @@ fi
 
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL headers" >&5
 $as_echo_n "checking for SSL headers... " >&6; }
-		found_ssl=no
 		for dir in $ssl_hdr_dirs; do
 			ssldir="$dir"
 			if test -f "$dir/include/openssl/$ssl_hdr"; then
@@ -7572,17 +7574,21 @@ $as_echo "found in $SSL_LIB_DIR" >&6; }
 
 				LDFLAGS="$LDFLAGS -L$SSL_LIB_DIR";
 				LIBS="$LIBS -l`echo $ssl_lib | sed -e 's/^lib//'` -lcrypto";
-				#                                                 ^^^^^^^^
 
 cat >>confdefs.h <<_ACEOF
 #define HAVE_SSL 1
 _ACEOF
 
+			fi
+		fi
+	fi
 
-				# Find the openssl program
+	if test x$found_ssl = xyes -a x$need_dh = xyes; then
 
-				if test x$need_dh = xyes; then
-					# Extract the first word of "openssl", so it can be a program name with args.
+		# Find the openssl program
+
+		if test x$need_dh = xyes; then
+			# Extract the first word of "openssl", so it can be a program name with args.
 set dummy openssl; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
@@ -7623,17 +7629,15 @@ $as_echo "no" >&6; }
 fi
 
 
-					#                   ^^^^^^^
-					$as_echo "#define USE_SSL_DH 1" >>confdefs.h
+			#                   ^^^^^^^
+			$as_echo "#define USE_SSL_DH 1" >>confdefs.h
 
-					# Generate DH parameters
-					if test -f "$sslbin"; then
-						echo ""
-						echo "*** Generating DH Parameters for SSL/TLS ***"
-						# awk to strip off meta data at bottom of dhparam output
-						$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
-					fi
-				fi
+			# Generate DH parameters
+			if test -f "$sslbin"; then
+				echo ""
+				echo "*** Generating DH Parameters for SSL/TLS ***"
+				# awk to strip off meta data at bottom of dhparam output
+				$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
 			fi
 		fi
 	fi
