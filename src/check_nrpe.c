@@ -558,9 +558,10 @@ void usage(int result)
 
 	if (result != OK || show_help == TRUE) {
 		printf("Usage: check_nrpe -H <host> [-2] [-4] [-6] [-n] [-u] [-V] [-l] [-d <num>]\n"
-			   "       [-S <ssl version>  [-L <cipherlist>] [-C <clientcert>]\n"
+			   "       [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n"
 			   "       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n"
-			   "       [-p <port>] [-t <timeout>] [-c <command>] [-a <arglist...>]\n");
+			   "       [-f <cfg-file>] [-p <port>] [-t <timeout>] [-c <command>]\n"
+			   "       [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" <host>       = The address of the host running the NRPE daemon\n");
@@ -573,12 +574,11 @@ void usage(int result)
 		printf(" -V           = Show version\n");
 		printf(" -l           = Show license\n");
 		printf(" -d           = Don't use Anonymous Diffie Hellman\n");
-		printf(" -<num>       = Anonymous Diffie Hellman use:\n");
+		printf(" <num>        = Anonymous Diffie Hellman use:\n");
 		printf("                0 = Don't use Anonymous Diffie Hellman\n");
 		printf("                    (This will be the default in a future release.)\n");
 		printf("                1 = Allow Anonymous Diffie Hellman\n");
 		printf("                2 = Force Anonymous Diffie Hellman\n");
-		printf(" <bindaddr>   = bind to local address\n");
 		printf
 			(" <ssl ver>    = The SSL/TLS version to use. Can be any one of: SSLv2 (only),\n");
 		printf("                SSLv2+ (or above), SSLv3 (only), SSLv3+ (or above),\n");
@@ -591,6 +591,8 @@ void usage(int result)
 		printf(" <key>        = The private key to use with the client certificate\n");
 		printf(" <ca-cert>    = The CA certificate to use for PKI\n");
 		printf(" <logopts>    = SSL Logging Options\n");
+		printf(" <bindaddr>   = bind to local address\n");
+		printf(" <cfg-file>   = configuration file to use\n");
 		printf(" [port]       = The port on which the daemon is running (default=%d)\n",
 			   DEFAULT_SERVER_PORT);
 		printf(" [timeout]    = Number of seconds before connection times out (default=%d)\n",
