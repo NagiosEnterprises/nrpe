@@ -154,17 +154,17 @@ if test x$SSL_TYPE != xNONE; then
 	fi
 
 	# First, try using pkg_config
-	AC_CHECK_TOOL([PKG_CONFIG], [pkg-config])
-	if test x"$PKG_CONFIG" != x ; then
-		cflags=`$PKG_CONFIG $SSL_TYPE --cflags-only-I 2>/dev/null`
-		if test $? = 0; then
-			CFLAGS="$CFLAGS $cflags"
-			LDFLAGS="$LDFLAGS `$PKG_CONFIG $SSL_TYPE --libs-only-L 2>/dev/null`"
-			LIBS="$LIBS `$PKG_CONFIG $SSL_TYPE --libs-only-l 2>/dev/null`"
-			found_ssl=yes
-			AC_DEFINE_UNQUOTED(HAVE_SSL,[1],[Have SSL support])
-		fi
-	fi
+#	AC_CHECK_TOOL([PKG_CONFIG], [pkg-config])
+#	if test x"$PKG_CONFIG" != x ; then
+#		cflags=`$PKG_CONFIG $SSL_TYPE --cflags-only-I 2>/dev/null`
+#		if test $? = 0; then
+#			CFLAGS="$CFLAGS $cflags"
+#			LDFLAGS="$LDFLAGS `$PKG_CONFIG $SSL_TYPE --libs-only-L 2>/dev/null`"
+#			LIBS="$LIBS `$PKG_CONFIG $SSL_TYPE --libs-only-l 2>/dev/null`"
+#			found_ssl=yes
+#			AC_DEFINE_UNQUOTED(HAVE_SSL,[1],[Have SSL support])
+#		fi
+#	fi
 
 	if test x_$found_ssl != x_yes; then
 
