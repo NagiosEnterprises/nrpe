@@ -785,7 +785,7 @@ int connect_to_remote()
 	struct sockaddr addr;
 	struct in_addr *inaddr;
 	socklen_t addrlen;
-	int result, rc;
+	int result, rc, ssl_err, ern;
 
 	/* try to connect to the host at the given port number */
 	if ((sd =
@@ -820,6 +820,9 @@ int connect_to_remote()
 
 	SSL_set_fd(ssl, sd);
 	if ((rc = SSL_connect(ssl)) != 1) {
+		ern = errno;
+		ssl_err = SSL_get_error(ssl, rc);
+
 		if (sslprm.log_opts & (SSL_LogCertDetails | SSL_LogIfClientCert)) {
 			int x, nerrs = 0;
 			rc = 0;
@@ -829,15 +832,24 @@ int connect_to_remote()
 				++nerrs;
 			}
 			if (nerrs == 0)
-				syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
-					   rem_host, SSL_get_error(ssl, rc));
+				syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: rc=%d SSL-error=%d",
+					   rem_host, rc, ssl_err);
 
 		} else
-			syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
-				   rem_host, SSL_get_error(ssl, rc));
+			syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: rc=%d SSL-error=%d",
+				   rem_host, rc, ssl_err);
 
-		printf("CHECK_NRPE: Error - Could not complete SSL handshake with %s: %d\n",
-			   rem_host, SSL_get_error(ssl, rc));
+		if (ssl_err == 5) {
+			/* Often, errno will be zero, so print a generic message here */
+			if (ern == 0)
+				printf("CHECK_NRPE: Error - Could not connect to %s. Check system logs on %s\n",
+					   rem_host, rem_host);
+			else
+				printf("CHECK_NRPE: Error - Could not connect to %s: %s\n",
+					   rem_host, strerror(ern));
+		} else
+			printf("CHECK_NRPE: Error - Could not complete SSL handshake with %s: %d\n",
+				   rem_host, ssl_err);
 
 # ifdef DEBUG
 		printf("SSL_connect=%d\n", rc);

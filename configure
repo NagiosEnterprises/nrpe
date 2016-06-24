@@ -7493,6 +7493,11 @@ fi
 			LDFLAGS="$LDFLAGS `$PKG_CONFIG $SSL_TYPE --libs-only-L 2>/dev/null`"
 			LIBS="$LIBS `$PKG_CONFIG $SSL_TYPE --libs-only-l 2>/dev/null`"
 			found_ssl=yes
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_SSL 1
+_ACEOF
+
 		fi
 	fi
 
