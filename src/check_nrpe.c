@@ -90,6 +90,10 @@ int have_log_opts = FALSE;
 
 int process_arguments(int, char **, int);
 int read_config_file(char *);
+const char *state_text (int result)
+int translate_state (char *state_text) {
+void set_timeout_state (char *state) {
+int parse_timeout_string (char *timeout_str)
 void usage(int result);
 void setup_ssl();
 void set_sig_hadlers();
@@ -638,7 +642,7 @@ void usage(int result)
 		printf(" -6           = bind to ipv6 only\n");
 		printf(" -n           = Do no use SSL\n");
 		printf
-			(" -u           = Make socket timeouts return UNKNOWN state instead of CRITICAL\n");
+			(" -u           = (DEPRECATED) Make timeouts return UNKNOWN instead of CRITICAL\n");
 		printf(" -V           = Show version\n");
 		printf(" -l           = Show license\n");
 		printf(" -d           = Don't use Anonymous Diffie Hellman\n");
