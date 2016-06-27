@@ -38,6 +38,7 @@ ENHANCEMENTS
   accept either version from check_nrpe. check_nrpe will try to send a
   version 3 packet first, and fall back to version 2. check_nrpe can be forced
   to only send version 2 packets if the switch `-2` is used. (John Frickson)
+- Added extended timeout syntax in the -t <secs>:<status> format. (ABrist)
 
 FIXES
 - Fixed configure to check more places for SSL headers/libs. (John Frickson)
