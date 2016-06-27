@@ -282,7 +282,7 @@ int add_ipv6_to_acl(char *ipv6) {
 	addrtok = strtok(ipv6tmp, "/");
 #endif
 	if(inet_pton(AF_INET6, addrtok, &addr) <= 0) {
-		syslog(LOG_ERR, "Invalid IPv6 address in ACL: %s\n", ipv6);
+		/* syslog(LOG_ERR, "Invalid IPv6 address in ACL: %s\n", ipv6); */
 		free(ipv6tmp);
 		return 0;
 		}
