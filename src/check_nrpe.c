@@ -90,10 +90,10 @@ int have_log_opts = FALSE;
 
 int process_arguments(int, char **, int);
 int read_config_file(char *);
-const char *state_text (int result)
-int translate_state (char *state_text) {
-void set_timeout_state (char *state) {
-int parse_timeout_string (char *timeout_str)
+const char *state_text (int result);
+int translate_state (char *state_text);
+void set_timeout_state (char *state);
+int parse_timeout_string (char *timeout_str);
 void usage(int result);
 void setup_ssl();
 void set_sig_hadlers();
@@ -1372,11 +1372,11 @@ void alarm_handler(int sig)
 	const char	msg1[] = "CHECK_NRPE STATE ";
 	const char	msg2[] = ": Socket timeout after ";
 	const char	msg3[] = " seconds.\n";
-	char		*text = state_text(timeout_return_code);
+	const char	*text = state_text(timeout_return_code);
 	size_t		lth1 = 0, lth2 = 0;
 
 	for (lth1 = 0; lth1 < 10; ++lth1)
-		if (text[lth1] = 0)
+		if (text[lth1] == 0)
 			break;
 
 	write(STDOUT_FILENO, msg1, sizeof(msg1) - 1);
