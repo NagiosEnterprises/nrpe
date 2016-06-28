@@ -1018,6 +1018,9 @@ int send_request()
 	} else {
 
 		pkt_size = (sizeof(v3_packet) - 1) + strlen(query) + 1;
+		if (pkt_size < sizeof(v2_packet))
+			pkt_size = sizeof(v2_packet);
+
 		v3_send_packet = calloc(1, pkt_size);
 		send_pkt = (char *)v3_send_packet;
 		/* initialize response packet data */
@@ -1140,6 +1143,9 @@ int read_response()
 		receive_packet.buffer[MAX_PACKETBUFFER_LENGTH - 1] = '\x0';
 		if (!strcmp(receive_packet.buffer, ""))
 			printf("CHECK_NRPE: No output returned from daemon.\n");
+		else if (strstr(receive_packet.buffer, "Invalid packet version.3") != NULL)
+			/* NSClient++ doesn't recognize it */
+			return -1;
 		else
 			printf("%s\n", receive_packet.buffer);
 	}
