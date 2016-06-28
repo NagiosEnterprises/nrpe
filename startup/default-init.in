@@ -88,7 +88,7 @@ start)
 	$MSG_CMD "Starting nrpe "
 	$START_CMD $NRPE_BIN -c $NRPE_CFG -d
 	RETVAL=$?
-	if test $PRT_STAT = log_end_msg; then
+	if test "$PRT_STAT" = log_end_msg; then
 		$PRT_STAT $RETVAL
 	else
 		$PRT_STAT
@@ -103,7 +103,7 @@ stop)
 	$MSG_CMD "Shutting down nrpe "
 	$TERM_CMD
 	RETVAL=$?
-	if test $PRT_STAT = log_end_msg; then
+	if test "$PRT_STAT" = log_end_msg; then
 		$PRT_STAT $RETVAL
 	else
 		$PRT_STAT
@@ -141,7 +141,7 @@ status)
 	$STAT_MSG
 	$STAT_CMD
 	RETVAL=$?
-	if test $PRT_STAT != log_end_msg; then
+	if test "$PRT_STAT" != log_end_msg; then
 		$PRT_STAT
 	fi
 	;;
