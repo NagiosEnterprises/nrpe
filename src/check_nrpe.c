@@ -46,6 +46,7 @@ int show_help = FALSE;
 int show_license = FALSE;
 int show_version = FALSE;
 int packet_ver = NRPE_PACKET_VERSION_3;
+int payload_size = 0;
 
 #ifdef HAVE_SSL
 # if (defined(__sun) && defined(SOLARIS_10)) || defined(_AIX) || defined(__hpux)
@@ -100,7 +101,7 @@ void set_sig_hadlers();
 int connect_to_remote();
 int send_request();
 int read_response();
-int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt);
+int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pkt);
 #ifdef HAVE_SSL
 static int verify_callback(int ok, X509_STORE_CTX * ctx);
 #endif
@@ -205,6 +206,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		{"ssl-logging", required_argument, 0, 's'},
 		{"timeout", required_argument, 0, 't'},
 		{"port", required_argument, 0, 'p'},
+		{"payload-size", required_argument, 0, 'P'},
 		{"help", no_argument, 0, 'h'},
 		{"license", no_argument, 0, 'l'},
 		{0, 0, 0, 0}
@@ -216,7 +218,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		return ERROR;
 
 	optind = 0;
-	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d::s:246hlnuV");
+	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d::s:P:246hlnuV");
 
 	while (1) {
 #ifdef HAVE_GETOPT_LONG
@@ -275,6 +277,17 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			}
 			server_port = atoi(optarg);
 			if (server_port <= 0)
+				return ERROR;
+			break;
+
+		case 'P':
+			if (from_config_file && payload_size > 0) {
+				syslog(LOG_WARNING, "WARNING: Command-line payload-size (-P) overrides "
+								"the config file option.");
+				break;
+			}
+			payload_size = atoi(optarg);
+			if (payload_size < 0)
 				return ERROR;
 			break;
 
@@ -477,6 +490,12 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		return ERROR;
 	}
 
+	if (payload_size > 0 && packet_ver != NRPE_PACKET_VERSION_2) {
+		syslog(LOG_ERR, "Error: if a fixed payload size is specified, "
+						"'-2' must also be specified");
+		return ERROR;
+	}
+
 	/* make sure required args were supplied */
 	if (server_name == NULL && show_help == FALSE && show_version == FALSE
 		&& show_license == FALSE)
@@ -630,7 +649,7 @@ void usage(int result)
 
 	if (result != OK || show_help == TRUE) {
 		printf("Usage: check_nrpe -H <host> [-2] [-4] [-6] [-n] [-u] [-V] [-l] [-d <num>]\n"
-			   "       [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n"
+			   "       [-P <size>] [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n"
 			   "       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n"
 			   "       [-f <cfg-file>] [-p <port>] [-t <interval>:<state>]\n"
 			   "       [-c <command>] [-a <arglist...>]\n");
@@ -651,6 +670,7 @@ void usage(int result)
 		printf("                    (This will be the default in a future release.)\n");
 		printf("                1 = Allow Anonymous Diffie Hellman\n");
 		printf("                2 = Force Anonymous Diffie Hellman\n");
+		printf(" <size>       = Specify non-default payload size for NSClient++\n");
 		printf
 			(" <ssl ver>    = The SSL/TLS version to use. Can be any one of: SSLv2 (only),\n");
 		printf("                SSLv2+ (or above), SSLv3 (only), SSLv3+ (or above),\n");
@@ -989,7 +1009,7 @@ int connect_to_remote()
 
 int send_request()
 {
-	v2_packet send_packet;
+	v2_packet *v2_send_packet = NULL;
 	v3_packet *v3_send_packet = NULL;
 	u_int32_t calculated_crc32;
 	int rc, bytes_to_send, pkt_size;
@@ -997,23 +1017,29 @@ int send_request()
 
 	if (packet_ver == NRPE_PACKET_VERSION_2) {
 		pkt_size = sizeof(v2_packet);
-		send_pkt = (char *)&send_packet;
+		if (payload_size > 0)
+			pkt_size = sizeof(v2_packet) - MAX_PACKETBUFFER_LENGTH + payload_size;
+		v2_send_packet = (v2_packet*)calloc(1, pkt_size);
+		send_pkt = (char *)v2_send_packet;
 
-		/* clear the response packet buffer */
-		memset(&send_packet, 0, sizeof(send_packet));
 		/* fill the packet with semi-random data */
-		randomize_buffer((char *)&send_packet, sizeof(send_packet));
+		randomize_buffer((char *)v2_send_packet, pkt_size);
 
 		/* initialize response packet data */
-		send_packet.packet_version = htons(packet_ver);
-		send_packet.packet_type = htons(QUERY_PACKET);
-		strncpy(&send_packet.buffer[0], query, MAX_PACKETBUFFER_LENGTH);
-		send_packet.buffer[MAX_PACKETBUFFER_LENGTH - 1] = '\x0';
+		v2_send_packet->packet_version = htons(packet_ver);
+		v2_send_packet->packet_type = htons(QUERY_PACKET);
+		if (payload_size > 0) {
+			strncpy(&v2_send_packet->buffer[0], query, payload_size);
+			v2_send_packet->buffer[payload_size - 1] = '\x0';
+		} else {
+			strncpy(&v2_send_packet->buffer[0], query, MAX_PACKETBUFFER_LENGTH);
+			v2_send_packet->buffer[MAX_PACKETBUFFER_LENGTH - 1] = '\x0';
+		}
 
 		/* calculate the crc 32 value of the packet */
-		send_packet.crc32_value = 0;
-		calculated_crc32 = calculate_crc32((char *)&send_packet, sizeof(send_packet));
-		send_packet.crc32_value = htonl(calculated_crc32);
+		v2_send_packet->crc32_value = 0;
+		calculated_crc32 = calculate_crc32(send_pkt, pkt_size);
+		v2_send_packet->crc32_value = htonl(calculated_crc32);
 
 	} else {
 
@@ -1027,7 +1053,6 @@ int send_request()
 		v3_send_packet->packet_version = htons(packet_ver);
 		v3_send_packet->packet_type = htons(QUERY_PACKET);
 		v3_send_packet->alignment = 0;
-/*		v3_send_packet->buffer_length = htonl(strlen(query) + 1); */
 		v3_send_packet->buffer_length = htonl(pkt_size - sizeof(v3_packet) + 1);
 		strcpy(&v3_send_packet->buffer[0], query);
 
@@ -1052,6 +1077,8 @@ int send_request()
 
 	if (v3_send_packet)
 		free(v3_send_packet);
+	if (v2_send_packet)
+		free(v2_send_packet);
 
 	if (rc == -1) {
 		printf("CHECK_NRPE: Error sending query to host.\n");
@@ -1064,7 +1091,7 @@ int send_request()
 
 int read_response()
 {
-	v2_packet receive_packet;
+	v2_packet *v2_receive_packet = NULL;
 	v3_packet *v3_receive_packet = NULL;
 	u_int32_t packet_crc32;
 	u_int32_t calculated_crc32;
@@ -1075,9 +1102,9 @@ int read_response()
 	set_sig_hadlers();
 
 #ifdef HAVE_SSL
-	rc = read_packet(sd, ssl, &receive_packet, &v3_receive_packet);
+	rc = read_packet(sd, ssl, &v2_receive_packet, &v3_receive_packet);
 #else
-	rc = read_packet(sd, NULL, &receive_packet, &v3_receive_packet);
+	rc = read_packet(sd, NULL, &v2_receive_packet, &v3_receive_packet);
 #endif
 
 	alarm(0);
@@ -1095,9 +1122,12 @@ int read_response()
 	/* recv() error */
 	if (rc < 0) {
 		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			free(v3_receive_packet);
+			if (v3_receive_packet)
+				free(v3_receive_packet);
 			return -1;
 		}
+		if (v2_receive_packet)
+			free(v2_receive_packet);
 		return STATE_UNKNOWN;
 
 	} else if (rc == 0) {
@@ -1105,8 +1135,11 @@ int read_response()
 		/* server disconnected */
 		printf
 			("CHECK_NRPE: Received 0 bytes from daemon.  Check the remote server logs for error messages.\n");
-		if (packet_ver == NRPE_PACKET_VERSION_3)
-			free(v3_receive_packet);
+		if (packet_ver == NRPE_PACKET_VERSION_3) {
+			if (v3_receive_packet)
+				free(v3_receive_packet);
+		} else if (v2_receive_packet)
+			free(v2_receive_packet);
 		return STATE_UNKNOWN;
 	}
 
@@ -1118,16 +1151,22 @@ int read_response()
 		v3_receive_packet->alignment = 0;
 		calculated_crc32 = calculate_crc32((char *)v3_receive_packet, pkt_size);
 	} else {
-		packet_crc32 = ntohl(receive_packet.crc32_value);
-		receive_packet.crc32_value = 0L;
-		calculated_crc32 = calculate_crc32((char *)&receive_packet, sizeof(receive_packet));
+		pkt_size = sizeof(v2_packet);
+		if (payload_size > 0)
+			pkt_size = sizeof(v2_packet) - MAX_PACKETBUFFER_LENGTH + payload_size;
+		packet_crc32 = ntohl(v2_receive_packet->crc32_value);
+		v2_receive_packet->crc32_value = 0L;
+		calculated_crc32 = calculate_crc32((char *)v2_receive_packet, pkt_size);
 	}
 
 	if (packet_crc32 != calculated_crc32) {
 		printf("CHECK_NRPE: Response packet had invalid CRC32.\n");
 		close(sd);
-		if (packet_ver == NRPE_PACKET_VERSION_3)
-			free(v3_receive_packet);
+		if (packet_ver == NRPE_PACKET_VERSION_3) {
+			if (v3_receive_packet)
+				free(v3_receive_packet);
+		} else if (v2_receive_packet)
+			free(v2_receive_packet);
 		return STATE_UNKNOWN;
 	}
 
@@ -1140,34 +1179,41 @@ int read_response()
 		else
 			printf("%s\n", v3_receive_packet->buffer);
 	} else {
-		result = ntohs(receive_packet.result_code);
-		receive_packet.buffer[MAX_PACKETBUFFER_LENGTH - 1] = '\x0';
-		if (!strcmp(receive_packet.buffer, ""))
+		result = ntohs(v2_receive_packet->result_code);
+		if (payload_size > 0)
+			v2_receive_packet->buffer[payload_size - 1] = '\x0';
+		else
+			v2_receive_packet->buffer[MAX_PACKETBUFFER_LENGTH - 1] = '\x0';
+		if (!strcmp(v2_receive_packet->buffer, ""))
 			printf("CHECK_NRPE: No output returned from daemon.\n");
-		else if (strstr(receive_packet.buffer, "Invalid packet version.3") != NULL)
+		else if (strstr(v2_receive_packet->buffer, "Invalid packet version.3") != NULL)
 			/* NSClient++ doesn't recognize it */
 			return -1;
 		else
-			printf("%s\n", receive_packet.buffer);
+			printf("%s\n", v2_receive_packet->buffer);
 	}
 
-	if (packet_ver == NRPE_PACKET_VERSION_3)
-		free(v3_receive_packet);
+	if (packet_ver == NRPE_PACKET_VERSION_3) {
+		if (v3_receive_packet)
+			free(v3_receive_packet);
+	} else if (v2_receive_packet)
+		free(v2_receive_packet);
 
 	return result;
 }
 
-int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt)
+int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pkt)
 {
-	int32_t common_size, tot_bytes, bytes_to_recv, buffer_size, bytes_read = 0;
+	v2_packet	packet;
+	int32_t pkt_size, common_size, tot_bytes, bytes_to_recv, buffer_size, bytes_read = 0;
 	int rc;
 	char *buff_ptr;
 
 	/* Read only the part that's common between versions 2 & 3 */
-	common_size = tot_bytes = bytes_to_recv = (char *)&v2_pkt->buffer - (char *)v2_pkt;
+	common_size = tot_bytes = bytes_to_recv = (char *)packet.buffer - (char *)&packet;
 
 	if (use_ssl == FALSE) {
-		rc = recvall(sock, (char *)v2_pkt, &tot_bytes, socket_timeout);
+		rc = recvall(sock, (char *)&packet, &tot_bytes, socket_timeout);
 
 		if (rc <= 0 || rc != bytes_to_recv) {
 			if (rc < bytes_to_recv) {
@@ -1179,23 +1225,33 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			return -1;
 		}
 
-		packet_ver = ntohs(v2_pkt->packet_version);
+		packet_ver = ntohs(packet.packet_version);
 		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
 			printf("CHECK_NRPE: Invalid packet version received from server.\n");
 			return -1;
 		}
 
-		if (ntohs(v2_pkt->packet_type) != RESPONSE_PACKET) {
+		if (ntohs(packet.packet_type) != RESPONSE_PACKET) {
 			printf("CHECK_NRPE: Invalid packet type received from server.\n");
 			return -1;
 		}
 
 		if (packet_ver == NRPE_PACKET_VERSION_2) {
-			buffer_size = sizeof(v2_packet) - common_size;
-			buff_ptr = (char *)v2_pkt + common_size;
-			memset(buff_ptr, 0, sizeof(v2_pkt->buffer));
+			pkt_size = sizeof(v2_packet);
+			if (payload_size > 0) {
+				pkt_size = common_size + payload_size;
+				buffer_size = payload_size;
+			} else
+				buffer_size = pkt_size - common_size;
+			if ((*v2_pkt = calloc(1, pkt_size)) == NULL) {
+				syslog(LOG_ERR, "Error: Could not allocate memory for packet");
+				return -1;
+			}
+			memcpy(*v2_pkt, &packet, common_size);
+			buff_ptr = (*v2_pkt)->buffer;
+			memset(buff_ptr, 0, buffer_size);
 		} else {
-			int32_t pkt_size = sizeof(v3_packet) - 1;
+			pkt_size = sizeof(v3_packet) - 1;
 
 			/* Read the alignment filler */
 			bytes_to_recv = sizeof(int16_t);
@@ -1218,7 +1274,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 				return -1;
 			}
 
-			memcpy(*v3_pkt, v2_pkt, common_size);
+			memcpy(*v3_pkt, &packet, common_size);
 			(*v3_pkt)->buffer_length = htonl(buffer_size);
 			buff_ptr = (*v3_pkt)->buffer;
 		}
@@ -1230,6 +1286,9 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			if (packet_ver == NRPE_PACKET_VERSION_3) {
 				free(*v3_pkt);
 				*v3_pkt = NULL;
+			} else {
+				free(*v2_pkt);
+				*v2_pkt = NULL;
 			}
 			if (rc < buffer_size)
 				printf
@@ -1242,9 +1301,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 #ifdef HAVE_SSL
 	else {
 		SSL *ssl = (SSL *) ssl_ptr;
-		int32_t pkt_size;
 
-		while (((rc = SSL_read(ssl, v2_pkt, bytes_to_recv)) <= 0)
+		while (((rc = SSL_read(ssl, &packet, bytes_to_recv)) <= 0)
 			   && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ)) {
 		}
 
@@ -1258,21 +1316,31 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			return -1;
 		}
 
-		packet_ver = ntohs(v2_pkt->packet_version);
+		packet_ver = ntohs(packet.packet_version);
 		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
 			printf("CHECK_NRPE: Invalid packet version received from server.\n");
 			return -1;
 		}
 
-		if (ntohs(v2_pkt->packet_type) != RESPONSE_PACKET) {
+		if (ntohs(packet.packet_type) != RESPONSE_PACKET) {
 			printf("CHECK_NRPE: Invalid packet type received from server.\n");
 			return -1;
 		}
 
 		if (packet_ver == NRPE_PACKET_VERSION_2) {
-			buffer_size = sizeof(v2_packet) - common_size;
-			buff_ptr = (char *)v2_pkt + common_size;
-			memset(buff_ptr, 0, sizeof(v2_pkt->buffer));
+			pkt_size = sizeof(v2_packet);
+			if (payload_size > 0) {
+				pkt_size = common_size + payload_size;
+				buffer_size = payload_size;
+			} else
+				buffer_size = pkt_size - common_size;
+			if ((*v2_pkt = calloc(1, pkt_size)) == NULL) {
+				syslog(LOG_ERR, "Error: Could not allocate memory for packet");
+				return -1;
+			}
+			memcpy(*v2_pkt, &packet, common_size);
+			buff_ptr = (*v2_pkt)->buffer;
+			memset(buff_ptr, 0, buffer_size);
 		} else {
 			pkt_size = sizeof(v3_packet) - 1;
 
@@ -1303,7 +1371,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 				return -1;
 			}
 
-			memcpy(*v3_pkt, v2_pkt, common_size);
+			memcpy(*v3_pkt, &packet, common_size);
 			(*v3_pkt)->buffer_length = htonl(buffer_size);
 			buff_ptr = (*v3_pkt)->buffer;
 		}
@@ -1326,6 +1394,9 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			if (packet_ver == NRPE_PACKET_VERSION_3) {
 				free(*v3_pkt);
 				*v3_pkt = NULL;
+			} else {
+				free(*v2_pkt);
+				*v2_pkt = NULL;
 			}
 			if (bytes_read != buffer_size) {
 				if (packet_ver == NRPE_PACKET_VERSION_3)
