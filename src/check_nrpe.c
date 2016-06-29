@@ -1027,7 +1027,8 @@ int send_request()
 		v3_send_packet->packet_version = htons(packet_ver);
 		v3_send_packet->packet_type = htons(QUERY_PACKET);
 		v3_send_packet->alignment = 0;
-		v3_send_packet->buffer_length = htonl(strlen(query) + 1);
+/*		v3_send_packet->buffer_length = htonl(strlen(query) + 1); */
+		v3_send_packet->buffer_length = htonl(pkt_size - sizeof(v3_packet) + 1);
 		strcpy(&v3_send_packet->buffer[0], query);
 
 		/* calculate the crc 32 value of the packet */
@@ -1389,9 +1390,6 @@ void alarm_handler(int sig)
 	write(STDOUT_FILENO, text, sizeof(lth1) - 1);
 	write(STDOUT_FILENO, msg2, sizeof(msg2) - 1);
 	write(STDOUT_FILENO, msg3, sizeof(msg3) - 1);
-
-	printf("CHECK_NRPE STATE %s: Socket timeout after %d seconds.\n",state_text(timeout_return_code),socket_timeout);
-
 
 	exit(timeout_return_code);
 }
