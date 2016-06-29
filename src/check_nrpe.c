@@ -528,7 +528,7 @@ int read_config_file(char *fname)
 			break;
 		while (strchr(delims, *bufp))
 			++bufp;
-		argv[argc] = strsep(&bufp, delims);
+		argv[argc] = my_strsep(&bufp, delims);
 		if (!argv[argc++])
 			break;
 	}
