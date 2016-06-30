@@ -243,8 +243,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'f':
 			if (from_config_file) {
-				syslog(LOG_ERR, "Error: The config file should not have a "
-								"config-file (-f) option.");
+				printf("Error: The config file should not have a config-file (-f) option.");
 				break;
 			}
 			config_file = strdup(optarg);
@@ -302,8 +301,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'c':
 			if (from_config_file) {
-				syslog(LOG_ERR, "Error: The config file should not have a "
-								"command (-c) option.");
+				printf("Error: The config file should not have a command (-c) option.");
 				return ERROR;
 				break;
 			}
@@ -312,8 +310,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'a':
 			if (from_config_file) {
-				syslog(LOG_ERR, "Error: The config file should not have "
-								"args (-a) arguments.");
+				printf("Error: The config file should not have args (-a) arguments.");
 				return ERROR;
 				break;
 			}
@@ -485,14 +482,14 @@ int process_arguments(int argc, char **argv, int from_config_file)
 	}
 
 	if ((has_cert && !has_priv_key) || (!has_cert && has_priv_key)) {
-		syslog(LOG_ERR, "Error: the client certificate and the private key "
-						"must both be given or neither");
+		printf("Error: the client certificate and the private key "
+				"must both be given or neither");
 		return ERROR;
 	}
 
 	if (payload_size > 0 && packet_ver != NRPE_PACKET_VERSION_2) {
-		syslog(LOG_ERR, "Error: if a fixed payload size is specified, "
-						"'-2' must also be specified");
+		printf("Error: if a fixed payload size is specified, "
+				"'-2' must also be specified");
 		return ERROR;
 	}
 
@@ -1456,10 +1453,14 @@ void alarm_handler(int sig)
 	for (lth1 = 0; lth1 < 10; ++lth1)
 		if (text[lth1] == 0)
 			break;
+	for (lth2 = 0; lth2 < 10; ++lth2)
+		if (timeout_txt[lth2] == 0)
+			break;
 
 	write(STDOUT_FILENO, msg1, sizeof(msg1) - 1);
-	write(STDOUT_FILENO, text, sizeof(lth1) - 1);
+	write(STDOUT_FILENO, text, lth1);
 	write(STDOUT_FILENO, msg2, sizeof(msg2) - 1);
+	write(STDOUT_FILENO, timeout_txt, lth2);
 	write(STDOUT_FILENO, msg3, sizeof(msg3) - 1);
 
 	exit(timeout_return_code);
