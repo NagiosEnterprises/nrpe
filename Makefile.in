@@ -172,13 +172,6 @@ install-groups-users:
 		macros/add_group_user $(DIST) $(NRPE_USER) $(NRPE_GROUP);\
 	fi
 
-solaris-package:
-	@if [ `uname -s` != "SunOS" ] ; then \
-		echo "It is recommended you be running on Solaris to build a Solaris package"; \
-	else \
-		cd package/solaris; $(MAKE) build ; $(MAKE) pkg ; cd ../..; \
-	fi
-
 clean:
 	cd $(SRC_BASE); $(MAKE) $@; cd ..
 	cd package/solaris; $(MAKE) $@; cd ../..
