@@ -46,6 +46,8 @@ if [ -f /etc/rc.status ]; then
 
 	. /etc/rc.status
 
+	_set_rc (){ return $RETVAL; }
+
 	# Set these commands/functions to SuSE etc. values
 	START_CMD="startproc -p $PID_FILE"
 	TERM_CMD="killproc -p $PID_FILE -TERM $NRPE_BIN"
@@ -91,7 +93,7 @@ start)
 	if test "$PRT_STAT" = log_end_msg; then
 		$PRT_STAT $RETVAL
 	else
-		$PRT_STAT
+		_set_rc; $PRT_STAT
 	fi
 	if [ $RETVAL = 0 ]; then
 		[ -d $LOCK_DIR ] && touch $LOCK_FILE || true
@@ -106,7 +108,7 @@ stop)
 	if test "$PRT_STAT" = log_end_msg; then
 		$PRT_STAT $RETVAL
 	else
-		$PRT_STAT
+		_set_rc; $PRT_STAT
 	fi
 	if [ $RETVAL = 0 ]; then
 		[ -d $LOCK_DIR ] && rm -f $LOCK_FILE
@@ -123,10 +125,10 @@ reload)
 	$MSG_CMD "Reloading nrpe "
 	$HUP_CMD
 	RETVAL=$?
-	if test $PRT_STAT = log_end_msg; then
+	if test "$PRT_STAT" = log_end_msg; then
 		$PRT_STAT $RETVAL
 	else
-		$PRT_STAT
+		_set_rc; $PRT_STAT
 	fi
 	;;
 
@@ -142,7 +144,7 @@ status)
 	$STAT_CMD
 	RETVAL=$?
 	if test "$PRT_STAT" != log_end_msg; then
-		$PRT_STAT
+		_set_rc; $PRT_STAT
 	fi
 	;;
 

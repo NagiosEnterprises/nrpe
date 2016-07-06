@@ -223,7 +223,7 @@ connection_timeout=300
 
 # SSL USE CLIENT CERTS
 # This options determines client certificate usage.
-# Values: 0 = Don't ask for or require client certificates
+# Values: 0 = Don't ask for or require client certificates (default)
 #         1 = Ask for client certificates
 #         2 = Require client certificates
 
