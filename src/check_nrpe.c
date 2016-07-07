@@ -243,7 +243,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'f':
 			if (from_config_file) {
-				printf("Error: The config file should not have a config-file (-f) option.");
+				printf("Error: The config file should not have a config-file (-f) option.\n");
 				break;
 			}
 			config_file = strdup(optarg);
@@ -301,7 +301,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'c':
 			if (from_config_file) {
-				printf("Error: The config file should not have a command (-c) option.");
+				printf("Error: The config file should not have a command (-c) option.\n");
 				return ERROR;
 				break;
 			}
@@ -310,7 +310,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'a':
 			if (from_config_file) {
-				printf("Error: The config file should not have args (-a) arguments.");
+				printf("Error: The config file should not have args (-a) arguments.\n");
 				return ERROR;
 				break;
 			}
@@ -483,13 +483,13 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 	if ((has_cert && !has_priv_key) || (!has_cert && has_priv_key)) {
 		printf("Error: the client certificate and the private key "
-				"must both be given or neither");
+				"must both be given or neither\n");
 		return ERROR;
 	}
 
 	if (payload_size > 0 && packet_ver != NRPE_PACKET_VERSION_2) {
 		printf("Error: if a fixed payload size is specified, "
-				"'-2' must also be specified");
+				"'-2' must also be specified\n");
 		return ERROR;
 	}
 
@@ -592,7 +592,8 @@ int translate_state (char *state_text) {
 
 void set_timeout_state (char *state) {
         if ((timeout_return_code = translate_state(state)) == ERROR)
-                printf("Timeout state must be a valid state name (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3).");
+                printf("Timeout state must be a valid state name (OK, "
+						"WARNING, CRITICAL, UNKNOWN) or integer (0-3).\n");
 }
 
 int parse_timeout_string (char *timeout_str)
@@ -624,7 +625,7 @@ int parse_timeout_string (char *timeout_str)
 	else if (atoi(timeout_val) > 0)
 		return atoi(timeout_val);
 	else {
-		printf("Timeout value must be a positive integer");
+		printf("Timeout value must be a positive integer\n");
 		exit (STATE_UNKNOWN);
 	}
 }
@@ -849,7 +850,7 @@ void setup_ssl()
 
 		if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
 			SSL_CTX_free(ctx);
-			printf("Error: Could not set SSL/TLS cipher list: %s", sslprm.cipher_list);
+			printf("Error: Could not set SSL/TLS cipher list: %s\n", sslprm.cipher_list);
 			exit(STATE_CRITICAL);
 		}
 	}
@@ -1130,8 +1131,8 @@ int read_response()
 	} else if (rc == 0) {
 
 		/* server disconnected */
-		printf
-			("CHECK_NRPE: Received 0 bytes from daemon.  Check the remote server logs for error messages.\n");
+		printf("CHECK_NRPE: Received 0 bytes from daemon.  Check "
+				"the remote server logs for error messages.\n");
 		if (packet_ver == NRPE_PACKET_VERSION_3) {
 			if (v3_receive_packet)
 				free(v3_receive_packet);
@@ -1215,8 +1216,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		if (rc <= 0 || rc != bytes_to_recv) {
 			if (rc < bytes_to_recv) {
 				if (packet_ver != NRPE_PACKET_VERSION_3)
-					printf
-						("CHECK_NRPE: Receive header underflow - only %d bytes received (%ld expected).\n",
+					printf("CHECK_NRPE: Receive header underflow - "
+							"only %d bytes received (%ld expected).\n",
 						 rc, sizeof(bytes_to_recv));
 			}
 			return -1;
@@ -1288,9 +1289,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 				*v2_pkt = NULL;
 			}
 			if (rc < buffer_size)
-				printf
-					("CHECK_NRPE: Receive underflow - only %d bytes received (%ld expected).\n",
-					 rc, sizeof(buffer_size));
+				printf("CHECK_NRPE: Receive underflow - only %d bytes received "
+						"(%ld expected).\n", rc, sizeof(buffer_size));
 			return -1;
 		} else
 			tot_bytes += rc;
@@ -1306,9 +1306,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		if (rc <= 0 || rc != bytes_to_recv) {
 			if (rc < bytes_to_recv) {
 				if (packet_ver != NRPE_PACKET_VERSION_3)
-					printf
-						("CHECK_NRPE: Receive header underflow - only %d bytes received (%ld expected).\n",
-						 rc, sizeof(bytes_to_recv));
+					printf("CHECK_NRPE: Receive header underflow - only %d bytes "
+							"received (%ld expected).\n", rc, sizeof(bytes_to_recv));
 			}
 			return -1;
 		}
