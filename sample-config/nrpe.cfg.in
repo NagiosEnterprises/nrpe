@@ -238,7 +238,7 @@ connection_timeout=300
 #         0x02 (2)  = Log remote IP address
 #         0x04 (4)  = Log SSL/TLS version of connections
 #         0x08 (8)  = Log which cipher is being used for the connection
-#         0x10 (26) = Log if client has a certificate
+#         0x10 (16) = Log if client has a certificate
 #         0x20 (32) = Log details of client's certificate if it has one
 #         -1 or 0xff or 0x2f = All of the above
 
