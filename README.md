@@ -5,6 +5,9 @@ For installation instructions and information on the design overview
 of the NRPE addon, please read the PDF documentation that is found in
 this directory: `docs/NRPE.pdf`
 
+If you are upgrading from a previous version, run 'update-cfg.pl' to
+add the new SSL parameters to your config file.
+
 
 Purpose
 -------
@@ -82,17 +85,13 @@ Running Under INETD or XINETD
 -----------------------------
 
 If you plan on running nrpe under inetd or xinetd and making use
-of TCP wrappers, you need to do the following things:
+of TCP wrappers, you need to add a line to your `/etc/services`
+file as follows (modify the port number as you see fit)
 
-1) Add a line to your `/etc/services` file as follows (modify the port
-   number as you see fit)
+     nrpe            5666/tcp    # NRPE
 
-    nrpe            5666/tcp    # NRPE
-
-2) Add entries for the NRPE daemon to either your inetd or xinetd
-   configuration files.  Which one your use will depend on which
-   superserver is installed on your system.  Both methods are described
-   below.
+The run `make install-inetd` to copy the appropriate file, or
+add the appropriate line to your `/etc/inetd.conf`.
 
    _NOTE: If you run nrpe under inetd or xinetd, the server_port
    and allowed_hosts variables in the nrpe configuration file are
@@ -100,70 +99,66 @@ of TCP wrappers, you need to do the following things:
 
 
 #### INETD
-If your system uses the inetd superserver **with** tcpwrappers, add an entry
-to `/etc/inetd.conf` as follows:
 
-    nrpe   stream   tcp   nowait   <user> /usr/sbin/tcpd <nrpebin> -c <nrpecfg> --inetd
-
-If your system uses the inetd superserver **without** tcpwrappers, add an
-entry to `/etc/inetd.conf` as follows:
-
-    nrpe   stream   tcp   nowait   <user> <nrpebin> -c <nrpecfg> --inetd
-
-
-- Replace `<user>` with the name of the user that the nrpe server should run as.
-  Example: `nagios`
-- Replace `<nrpebin>` with the path to the nrpe binary on your system.
-  Example: `/usr/local/nagios/nrpe`
-- Replace `<nrpecfg>` with the path to the nrpe config file on your system.
-  Example: `/usr/local/nagios/nrpe.cfg`
-
-
-#### XINETD
-If your system uses xinetd instead of inetd, you'll probably
-want to create a file called `nrpe` in your `/etc/xinetd.d`
-directory that contains the following entries:
+After running `make install-inetd`, your `/etc/inetd.conf` file will
+contain lines similar to the following:
 
 ```
-    # default: on
-    # description: NRPE
-    service nrpe
-    {
-        flags           = REUSE
-        socket_type     = stream
-        wait            = no
-        user            = <user>
-        server          = <nrpebin>
-        server_args     = -c <nrpecfg> --inetd
-        log_on_failure  += USERID
-        disable         = no
-        only_from       = <ipaddress1> <ipaddress2> ...
-    }
+	#
+	# Enable the following entry to enable the nrpe daemon
+	#nrpe stream tcp nowait nagios /usr/local/nagios/bin/nrpe nrpe -c /usr/local/nagios/etc/nr
+	# Enable the following entry if the nrpe daemon didn't link with libwrap
+	#nrpe stream tcp nowait nagios /usr/sbin/tcpd /usr/local/nagios/bin/nrpe -c /usr/local/nag
 ```
 
-- Replace `<user>` with the name of the user that the nrpe server should run as.
-- Replace `<nrpebin>` with the path to the nrpe binary on your system.
-- Replace `<nrpecfg>` with the path to the nrpe config file on your system.
-- Replace the `<ipaddress>` fields with the IP addresses of hosts which
-  are allowed to connect to the NRPE daemon.  This only works if xinetd was
-  compiled with support for tcpwrappers.
-
-3) Restart inetd or xinetd will the following command (pick the
-   on that is appropriate for your system:
+Un-comment the appropriate line, then Restart inetd:
 
     /etc/rc.d/init.d/inet restart
 
-   or
-
-    /etc/rc.d/init.d/xinetd restart
-
-   OpenBSD users can use the following command to restart inetd:
+OpenBSD users can use the following command to restart inetd:
 
     kill -HUP `cat /var/run/inet.pid`
 
-4) Add entries to your `/etc/hosts.allow` and `/etc/hosts.deny`
-   file to enable TCP wrapper protection for the nrpe service.
-   This is optional, although highly recommended.
+Then add entries to your `/etc/hosts.allow` and `/etc/hosts.deny`
+file to enable TCP wrapper protection for the nrpe service.
+This is optional, although highly recommended.
+
+
+#### XINETD
+
+If your system uses xinetd instead of inetd, `make install-inetd`
+will create a file called `nrpe` in your `/etc/xinetd.d`
+directory that contains a file similar to this:
+
+```
+    # default: off
+    # description: NRPE (Nagios Remote Plugin Executor)
+    service nrpe
+    {
+        disable         = yes
+        socket_type     = stream
+        port            = @NRPE_PORT@
+        wait            = no
+        user            = nagios
+        group           = nagios
+        server          = /usr/local/nagios/bin/nrpe
+        server_args     = -c /usr/local/nagios/etc/nrpe.cfg --inetd
+        only_from       = 127.0.0.1
+        log_on_failure  += USERID
+    }
+```
+
+- Replace `disable = yes` with `disable = no`
+- Replace the `127.0.0.1` field with the IP addresses of hosts which
+  are allowed to connect to the NRPE daemon.  This only works if xinetd was
+  compiled with support for tcpwrappers.
+- Add entries to your `/etc/hosts.allow` and `/etc/hosts.deny`
+  file to enable TCP wrapper protection for the nrpe service.
+  This is optional, although highly recommended.
+
+Restart xinetd:
+
+    /etc/rc.d/init.d/xinetd restart
 
 
 Configuring Things On The Nagios Host

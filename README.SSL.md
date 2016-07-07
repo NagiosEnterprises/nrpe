@@ -46,6 +46,9 @@ connections, or enforce more secure communication as your migration
 progresses. The new options are in the "SSL/TLS OPTIONS" section of
 nrpe.cfg, about two-thirds of the way down.
 
+If you are upgrading NRPE from a prior version, you can run the
+`update-cfg.pl` script to add the new parameters to your nrpe.cfg.
+
 The `ssl_version` directive lets you set which versions of SSL/TLS
 you want to allow. SSLv2, SSLv3, TLSv1, TLSv1.1 and TLSv1.2 are
 allowed, or those litereals with a `+` after them (as in TLSv1.1+).
