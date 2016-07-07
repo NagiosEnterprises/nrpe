@@ -40,7 +40,7 @@ new key is generated on each connection, based on the 2048-bit
 key generated.
 
 The NRPE configuration file has added new SSL/TLS options. The
-defaults currently will allow old check_nrpe clients to continue to
+defaults currently will allow old check_nrpe plugins to continue to
 connect to the nrpe daemon, but can report on "old style"
 connections, or enforce more secure communication as your migration
 progresses. The new options are in the "SSL/TLS OPTIONS" section of
@@ -58,8 +58,8 @@ The `ssl_use_adh` directive is **DEPRECATED**, even though it is new.
 Possible values are `0` to not allow ADH at all, `1` to allow ADH,
 and `2` to require ADH. The `2` should never be required, but it's
 there just in case it's needed, for whatever reason. `1` is currently
-the default, which allows older check_nrpe clients to connect using
-ADH. When all the clients are migrated to the newer version, it
+the default, which allows older check_nrpe plugins to connect using
+ADH. When all the plugins are migrated to the newer version, it
 should be set to `0`. In an upcoming version of NRPE, ADH will no
 longer be allowed at all. Note that if you use a `2` here, NRPE will
 override any `ssl_cipher_list` entries (below) to *only* allow ADH.
@@ -94,10 +94,10 @@ to syslog. OR (or add) values together to have more than one option
 enabled. Values are `0` for no additional logging (the default),
 `1` to log startup SSL/TLS parameters from the nrpe.cfg file, `2` to
 log the SSL/TLS version of connections, `4` to log which cipher is
-being used for the connection, `8` to log if client has a cert, and
-`16` to log details of client's certificate. `-1` will enable all.
-This can be especially helpful during client migration, so you can
-tell which clients have certificates, what SSL/TLS version is being
+being used for the connection, `8` to log if the plugin has a cert, and
+`16` to log details of plugin's certificate. `-1` will enable all.
+This can be especially helpful during plugin migration, so you can
+tell which plugins have certificates, what SSL/TLS version is being
 used, and which ciphers are being used.
 
 <a id=chk></a>
@@ -106,7 +106,7 @@ used, and which ciphers are being used.
 ###CHANGES IN THE CURRENT VERSION OF CHECK_NRPE
 ------------------------------------------------
 
-The check_nrpe client has also been updated to provide more secure
+The check_nrpe plugin has also been updated to provide more secure
 encryption and allow the use of client certificates. The command line
 has several new options, which are outlined below. Both the long and
 short arguments are presented.
