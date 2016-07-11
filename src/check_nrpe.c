@@ -196,8 +196,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		{"v2-packets-only", no_argument, 0, '2'},
 		{"ipv4", no_argument, 0, '4'},
 		{"ipv6", no_argument, 0, '6'},
-		{"no-adh", no_argument, 0, 'd'},
-		{"use-adh", optional_argument, 0, 'd'},
+		{"use-adh", required_argument, 0, 'd'},
 		{"ssl-version", required_argument, 0, 'S'},
 		{"cipher-list", required_argument, 0, 'L'},
 		{"client-cert", required_argument, 0, 'C'},
@@ -218,7 +217,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		return ERROR;
 
 	optind = 0;
-	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d::s:P:246hlnuV");
+	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:246hlnuV");
 
 	while (1) {
 #ifdef HAVE_GETOPT_LONG
@@ -363,12 +362,9 @@ int process_arguments(int argc, char **argv, int from_config_file)
 								"overrides the config file option.");
 				break;
 			}
-			if (optarg)
-				sslprm.allowDH = atoi(optarg);
-			else
-				sslprm.allowDH = 0;
-			if (sslprm.allowDH < 0 || sslprm.allowDH > 2)
+			if (!optarg || optarg[0] < '0' || optarg[0] > '2')
 				return ERROR;
+			sslprm.allowDH = atoi(optarg);
 			break;
 
 		case 'A':
@@ -646,7 +642,7 @@ void usage(int result)
 	printf("\n");
 
 	if (result != OK || show_help == TRUE) {
-		printf("Usage: check_nrpe -H <host> [-2] [-4] [-6] [-n] [-u] [-V] [-l] [-d <num>]\n"
+		printf("Usage: check_nrpe -H <host> [-2] [-4] [-6] [-n] [-u] [-V] [-l] [-d <dhopt>]\n"
 			   "       [-P <size>] [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n"
 			   "       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n"
 			   "       [-f <cfg-file>] [-p <port>] [-t <interval>:<state>]\n"
@@ -662,11 +658,10 @@ void usage(int result)
 			(" -u           = (DEPRECATED) Make timeouts return UNKNOWN instead of CRITICAL\n");
 		printf(" -V           = Show version\n");
 		printf(" -l           = Show license\n");
-		printf(" -d           = Don't use Anonymous Diffie Hellman\n");
-		printf(" <num>        = Anonymous Diffie Hellman use:\n");
+		printf(" <dhopt>      = Anonymous Diffie Hellman use:\n");
 		printf("                0 = Don't use Anonymous Diffie Hellman\n");
 		printf("                    (This will be the default in a future release.)\n");
-		printf("                1 = Allow Anonymous Diffie Hellman\n");
+		printf("                1 = Allow Anonymous Diffie Hellman (default)\n");
 		printf("                2 = Force Anonymous Diffie Hellman\n");
 		printf(" <size>       = Specify non-default payload size for NSClient++\n");
 		printf
@@ -840,8 +835,11 @@ void setup_ssl()
 		}
 
 		if (!sslprm.allowDH) {
-			if (strlen(sslprm.cipher_list) < sizeof(sslprm.cipher_list) - 6)
+			if (strlen(sslprm.cipher_list) < sizeof(sslprm.cipher_list) - 6) {
 				strcat(sslprm.cipher_list, ":!ADH");
+				if (sslprm.log_opts & SSL_LogStartup)
+					syslog(LOG_INFO, "New SSL Cipher List: %s", sslprm.cipher_list);
+			}
 		} else {
 			/* use anonymous DH ciphers */
 			if (sslprm.allowDH == 2)
