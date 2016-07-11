@@ -31,7 +31,6 @@
 #include "acl.h"
 
 #ifdef HAVE_SSL
-# include <ssl.h>
 # ifdef USE_SSL_DH
 #  include "../include/dh.h"
 # endif

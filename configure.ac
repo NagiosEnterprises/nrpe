@@ -98,6 +98,7 @@ AC_CONFIG_FILES([Makefile
 	startup/tmpfile.conf
 	startup/upstart-init
 	startup/rh-upstart-init
+	include/common.h
 ])
 
 dnl Checks for programs.

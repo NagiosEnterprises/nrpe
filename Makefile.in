@@ -57,7 +57,6 @@ default:
 	echo "     install-config       install the nrpe configuration file";\
 	echo "     install-inetd        install the startup files for inetd, launchd, etc.";\
 	echo "     install-init         install the startup files for init, systemd, etc.";\
-	echo "     solaris-package      create the solaris package";\
 	echo
 
 all:
@@ -174,13 +173,11 @@ install-groups-users:
 
 clean:
 	cd $(SRC_BASE); $(MAKE) $@; cd ..
-	cd package/solaris; $(MAKE) $@; cd ../..
 	rm -f core
 	rm -f *~ */*~
 
 distclean: clean
 	cd $(SRC_BASE); $(MAKE) $@; cd ..
-	cd package/solaris; $(MAKE) $@; cd ../..
 	rm -rf autom4te.cache
 	rm -f config.log config.status config.cache sample-config/nrpe.cfg $(SRC_INCLUDE)/config.h
 	rm -f startup/bsd-init startup/debian-init startup/default-init startup/default-inetd

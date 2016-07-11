@@ -23,6 +23,10 @@
 
 #include "config.h"
 
+#ifdef HAVE_SSL
+#include <@SSL_INC_PREFIX@@SSL_HDR@>
+#endif
+
 #define PROGRAM_VERSION "nrpe-3.0-PRE2"
 #define MODIFICATION_DATE "06-07-2016"
 

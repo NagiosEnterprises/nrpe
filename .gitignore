@@ -2,6 +2,7 @@ Makefile
 config.log
 config.status
 include/config.h
+include/common.h
 include/dh.h
 nrpe.spec
 paths
