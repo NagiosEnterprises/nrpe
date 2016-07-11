@@ -7274,7 +7274,7 @@ if test x$check_for_ssl = xyes; then
 # -------------------------------
 
 SSL_TYPE=openssl
-try_pkg_config=0
+try_pkg_config=1
 ssl_dir=
 ssl_inc_dir=
 ssl_lib_dir=
