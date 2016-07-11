@@ -756,7 +756,6 @@ with_logdir
 with_piddir
 with_pipedir
 enable_ssl
-with_ssl_type
 with_ssl
 with_ssl_inc
 with_ssl_lib
@@ -1422,8 +1421,6 @@ Optional Packages:
   --with-logdir=DIR       where log files should be placed
   --with-piddir=DIR       where the PID file should be placed
   --with-pipedir=DIR      where socket and pipe files should be placed
-	  --with-ssl-type=TYPE    replace TYPE with gnutls to use that instead of
-                          openssl
   --with-ssl=DIR          sets location of the SSL installation
   --with-ssl-inc=DIR      sets location of the SSL include files
   --with-ssl-lib=DIR      sets location of the SSL libraries
@@ -7296,13 +7293,6 @@ SSL_LIB_DIR=
 # gnutls/openssl.h
 # nss_compat_ossl/nss_compat_ossl.h
 
-# Which type - openssl, gnutls-openssl, nss
-
-# Check whether --with-ssl-type was given.
-if test "${with_ssl_type+set}" = set; then :
-  withval=$with_ssl_type; SSL_TYPE=$withval
-fi
-
 
 
 # Check whether --with-ssl was given.
@@ -7366,6 +7356,7 @@ case $SSL_TYPE in #(
     ssl_hdr_dirs=`echo "$dflt_hdrs" | sed -e 's/{AAA}/gnutls/g' | sed -e 's/{BBB}/gnutls/g'`
 		 ssl_lib_dirs=`echo "$dflt_libs" | sed -e 's/{AAA}/gnutls/g' | sed -e 's/{BBB}/gnutls/g'`
 		 SSL_INC_PREFIX=gnutls
+		 SSL_TYPE=gnutls_compat
 		 SSL_HDR=compat.h
 		 ssl_lib=libgnutls ;; #(
   nss) :
@@ -7511,7 +7502,7 @@ fi
 
 	if test x"$PKG_CONFIG" != x -a $try_pkg_config -ne 0 ; then
 		cflags=`$PKG_CONFIG $SSL_TYPE --cflags-only-I 2>/dev/null`
-		if test $? = 0; then
+		if test $? -eq 0; then
 			CFLAGS="$CFLAGS $cflags"
 			LDFLAGS="$LDFLAGS `$PKG_CONFIG $SSL_TYPE --libs-only-L 2>/dev/null`"
 			LIBS="$LIBS `$PKG_CONFIG $SSL_TYPE --libs-only-l 2>/dev/null`"
@@ -7542,7 +7533,9 @@ $as_echo_n "checking for SSL headers... " >&6; }
 			fi
 			if test -f "$dir/include/$SSL_HDR"; then
 				found_ssl=yes
-				SSL_INC_PREFIX=""
+				if test "$SSL_HDR" != compat.h ; then
+					SSL_INC_PREFIX=""
+				fi
 				CFLAGS="$CFLAGS -I$dir/include"
 				SSL_INC_DIR="$dir/include"
 				break
