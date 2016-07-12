@@ -1,0 +1,19 @@
+# nrpe - the Nagios Remote Plugin Executor
+#
+# nrpe is a program that runs plugins on this host
+# and reports the results back to a nagios server
+#
+# Copyright (c) 2016 Nagios(R) Core(TM) Development Team
+
+description		"the Nagios Remote Plugin Executor"
+
+oom score -800
+setgid @nrpe_group@
+setuid @nrpe_user@
+
+start on (local-filesystems and net-device-up IFACE!=lo)
+stop on runlevel [!2345]
+
+respawn
+
+exec @sbindir@/nrpe -c @pkgsysconfdir@/nrpe.cfg -f

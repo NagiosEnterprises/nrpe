@@ -1,0 +1,85 @@
+#!/bin/sh
+
+wrout () {
+	if test "$2" != "N/A"; then printf "  %-25s %s\n" "$1" "$2"; fi
+}
+
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo "Detected Environment:"
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+wrout "Operating System" "@opsys@"
+wrout "Architecture" "@arch@"
+wrout "Distribution type" "@dist_type@ Version @dist_ver@"
+wrout "Init type" "@init_type@"
+wrout "Inetd type" "@inetd_type@"
+echo
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo "Paths are:"
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+wrout "prefix" "@prefix@"
+wrout "exec_prefix" "@prefix@"
+if test "@PKG_NAME@" = "nagios"; then
+	wrout "bindir" "@bindir@"
+fi
+wrout "sbindir" "@sbindir@"
+wrout "sysconfdir" "@sysconfdir@"
+wrout "pkgsysconfdir" "@pkgsysconfdir@"
+if test "@PKG_NAME@" = "nagios"; then
+	wrout "privatesysconfdir" "@privatesysconfdir@"
+fi
+wrout "localstatedir" "@localstatedir@"
+wrout "pkglocalstatedir" "@pkglocalstatedir@"
+wrout "datarootdir" "@datarootdir@"
+wrout "datadir" "@datadir@"
+wrout "webdir" "@webdir@"
+wrout "localedir" "@localedir@"
+wrout "logdir" "@logdir@"
+wrout "piddir" "@piddir@"
+wrout "pipedir" "@pipedir@"
+wrout "spooldir" "@spooldir@"
+wrout "libexecdir" "@libexecdir@"
+wrout "brokersdir" "@brokersdir@"
+wrout "pluginsdir" "@pluginsdir@"
+wrout "cgibindir" "@cgibindir@"
+wrout "initdir" "@initdir@"
+wrout "inetddir" "@inetddir@"
+wrout "subsyslockdir" "@subsyslockdir@"
+echo
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo '@PKG_NAME@ files will be installed or created as follows:'
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+wrout "Config file" "@pkgsysconfdir@/@PKG_NAME@.cfg"
+wrout "Object config dir" "@objsysconfdir@"
+wrout "daemon" "@sbindir@/@PKG_NAME@"
+if test "@PKG_NAME@" = "nrpe"; then
+	wrout "check_@PKG_NAME@" "@pluginsdir@/check_@PKG_NAME@"
+fi
+if test "@PKG_NAME@" = "nagios"; then
+	wrout "nagiostats (prog)" "@bindir@/nagiostats"
+	wrout "Website password file" "@pkgsysconfdir@/passwd"
+	wrout "resource.cfg" "@privatesysconfdir@/resource.cfg"
+	wrout "event handlers dir" "@brokersdir@"
+	wrout "cgi program dir" "@cgibindir@"
+	wrout "website file dir" "@webdir@"
+	wrout "status.dat" "@pkglocalstatedir@/status.dat"
+	wrout "retention.dat" "@pkglocalstatedir@/retention.dat"
+	wrout "object cache dir" "@pkglocalstatedir@"
+	wrout "log file" "@logdir@/@PKG_NAME@.log"
+	wrout "log archive dir" "@logdir@/archives"
+	wrout "@PKG_NAME@.configtest" "@logdir@/@PKG_NAME@.configtest"
+	wrout "@PKG_NAME@.cmd" "@pipedir@/@PKG_NAME@.cmd"
+	wrout "@PKG_NAME@.qh" "@pipedir@/@PKG_NAME@.qh"
+	wrout "perfdata file dir" "@spooldir@"
+	wrout "checkresult files" "@spooldir@/checkresults"
+else
+	wrout "inetd config" "@inetddir@/@inetdname@"
+fi
+wrout "init script" "@initdir@/@initname@"
+wrout "@PKG_NAME@.conf (tmpfiles.d)" "@tmpfilesd@"
+wrout "@PKG_NAME@ lock file" "@piddir@/@PKG_NAME@.pid"
+wrout "language files" "@localedir@"
+wrout "init lock file" "@subsyslockfile@"
+wrout "init source file" "@src_init@"
+wrout "inetd source file" "@src_inetd@"
+echo
+echo "To show this list again, type './paths' at the prompt"

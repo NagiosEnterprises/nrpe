@@ -276,15 +276,23 @@ int add_ipv6_to_acl(char *ipv6) {
 		}
 
 	/* Parse the address itself */
+#ifdef HAVE_STRTOK_R
 	addrtok = strtok_r(ipv6tmp, "/", &addrsave);
+#else
+	addrtok = strtok(ipv6tmp, "/");
+#endif
 	if(inet_pton(AF_INET6, addrtok, &addr) <= 0) {
-		syslog(LOG_ERR, "Invalid IPv6 address in ACL: %s\n", ipv6);
+		/* syslog(LOG_ERR, "Invalid IPv6 address in ACL: %s\n", ipv6); */
 		free(ipv6tmp);
 		return 0;
 		}
 
 	/* Check whether there is a netmask */
+#ifdef HAVE_STRTOK_R
 	addrtok = strtok_r(NULL, "/", &addrsave);
+#else
+	addrtok = strtok(NULL, "/");
+#endif
 	if(NULL != addrtok) {
 		/* If so, build a netmask */
 
@@ -458,14 +466,15 @@ int add_domain_to_acl(char *domain) {
  * 0 - on failure
  */
 
-int is_an_allowed_host(int family, void *host) {
-	struct ip_acl *ip_acl_curr = ip_acl_head;
-	int		nbytes;
-	int		x;
-	struct dns_acl *dns_acl_curr = dns_acl_head;
-	struct in_addr addr;
-	struct in6_addr addr6;
-	struct hostent *he;
+int is_an_allowed_host(int family, void *host)
+{
+	struct ip_acl		*ip_acl_curr = ip_acl_head;
+	int					nbytes;
+	int					x;
+	struct dns_acl		*dns_acl_curr = dns_acl_head;
+	struct sockaddr_in	*addr;
+	struct sockaddr_in6	addr6;
+	struct addrinfo		*res, *ai;
 
 	while (ip_acl_curr != NULL) {
 		if(ip_acl_curr->family == family) {
@@ -498,34 +507,31 @@ int is_an_allowed_host(int family, void *host) {
         }
 
 	while(dns_acl_curr != NULL) {
-   		he = gethostbyname(dns_acl_curr->domain);
-		if (he == NULL) return 0;
+		if (!getaddrinfo(dns_acl_curr->domain, NULL, NULL, &res)) {
 
-		while (*he->h_addr_list) {
-			switch(he->h_addrtype) {
-			case AF_INET:
-				memmove((char *)&addr,*he->h_addr_list++, sizeof(addr));
-				if (addr.s_addr == ((struct in_addr *)host)->s_addr) return 1;
-				break;
-			case AF_INET6:
-				memcpy((char *)&addr6, *he->h_addr_list++, sizeof(addr6));
-				for(x = 0; x < nbytes; x++) {
-					if(addr6.s6_addr[x] != 
-							((struct in6_addr *)host)->s6_addr[x]) {
-						break;
-						}
-					}
-				if(x == nbytes) { 
-					/* All bytes in host's address match the ACL */
-					return 1;
-					}
-				break;
+			for (ai = res; ai; ai = ai->ai_next) {
+
+				switch(ai->ai_family) {
+
+				case AF_INET:
+					addr = (struct sockaddr_in*)(ai->ai_addr);
+					if (addr->sin_addr.s_addr == ((struct in_addr*)host)->s_addr)
+						return 1;
+					break;
+
+				case AF_INET6:
+					memcpy((char*)&addr6, ai->ai_addr, sizeof(addr6));
+					if (!memcmp(&addr6.sin6_addr, &host, sizeof(addr6.sin6_addr)))
+						return 1;
+					break;
 				}
 			}
-		dns_acl_curr = dns_acl_curr->next;
+
+			dns_acl_curr = dns_acl_curr->next;
 		}
-	return 0;
 	}
+	return 0;
+}
 
 /* The trim() function takes a source string and copies it to the destination string,
  * stripped of leading and training whitespace. The destination string must be 
@@ -535,8 +541,8 @@ int is_an_allowed_host(int family, void *host) {
 void trim( char *src, char *dest) {
 	char *sptr, *dptr;
 
-	for( sptr = src; isblank( *sptr) && *sptr; sptr++); /* Jump past leading spaces */
-	for( dptr = dest; !isblank( *sptr) && *sptr; ) {
+	for( sptr = src; isspace( *sptr) && *sptr; sptr++); /* Jump past leading spaces */
+	for( dptr = dest; !isspace( *sptr) && *sptr; ) {
 		*dptr = *sptr;
 		sptr++;
 		dptr++;
@@ -545,20 +551,24 @@ void trim( char *src, char *dest) {
 	return;
 }
 
-/* This function splits allowed_hosts to substrings with comma(,) as a delimeter.
+/* This function splits allowed_hosts to substrings with comma(,) as a delimiter.
  * It doesn't check validness of ACL record (add_ipv4_to_acl() and add_domain_to_acl() do),
  * just trims spaces from ACL records.
  * After this it sends ACL records to add_ipv4_to_acl() or add_domain_to_acl().
  */
 
 void parse_allowed_hosts(char *allowed_hosts) {
-	char *hosts = strdup( allowed_hosts);	/* Copy since strtok* modifes original */
+	char *hosts = strdup( allowed_hosts);	/* Copy since strtok* modifies original */
 	char *saveptr;
 	char *tok;
 	const char *delim = ",";
 	char *trimmed_tok;
 
-	tok = strtok_r( hosts, delim, &saveptr);
+#ifdef HAVE_STRTOK_R
+	tok = strtok_r(hosts, delim, &saveptr);
+#else
+	tok = strtok(hosts, delim);
+#endif
 	while( tok) {
 		trimmed_tok = malloc( sizeof( char) * ( strlen( tok) + 1));
 		trim( tok, trimmed_tok);
@@ -569,7 +579,11 @@ void parse_allowed_hosts(char *allowed_hosts) {
 			}
 		}
 		free( trimmed_tok);
-		tok = strtok_r(( char *)0, delim, &saveptr);
+#ifdef HAVE_STRTOK_R
+		tok = strtok_r(NULL, delim, &saveptr);
+#else
+		tok = strtok(NULL, delim);
+#endif
 	}
 
 	free( hosts);

@@ -2,18 +2,69 @@
 NRPE Changelog
 **************
 
-2.16 = xx/xx/xxxx
+3.0 = xx/xx/xxxx
 -----------------
+SECURITY
+- Fix for CVE-2014-2913
+- Added function to clean the environment before forking. (John Frickson)
+
 ENHANCEMENTS
+- Added support for optional config file to check_nrpe. With the new SSL
+  parameters, the line was getting long. The config file is specified with
+  --config-file=<path> or -f <path> parameters. The config file must look
+  like command line options, but the options can be on separate lines. It
+  MUST NOT include --config-file (-f), --command (-c) or --args (-a). If any
+  options are in both the config file and on the command line, the command line
+  options are used.
+- make can now add users and groups using "make install-groups-users" (John Frickson)
+- Added "nrpe-uninstall" script to the same directory nrpe get installed to (John Frickson)
+- Updated code so configure && make will work on AIX, HP-UX, Solaris, OS X.
+  There should be no errors or warnings. Let me know if any errors or
+  warning appear (John Frickson)
+- Added command-line option to prevent forking, since some of the init
+  replacements (such as systemd, etc.) don't want daemons to fork (John Frickson)
+- Added autoconf macros and additional files to better support multi-platform
+  config and compile. The default will still set up to install to
+  /usr/local/nagios but I added a new configure option:
+  '--enable-install-method=<method>'. If <method> is 'opt', everything will
+  install to '/opt/nagios'. If <method> is 'os', installation will be to O/S-
+  and distribution-specific locations, such as /usr/sbin, /usr/lib/nagios,
+  /etc/nagios, and so on.
+- Added additional init and inetd config files to support more systems,
+  including SuSE, Debian, Slackware, Gentoo, *BSD, AIX, HP-UX, Solaris, OS X.
 - Added listen_queue_size as configuration option (Vadim Antipov, Kaspersky Lab)
+- Reworked SSL/TLS. See the README.SSL.md file for full info. (John Frickson)
+- Added support for version 3 variable sized packets up to 64KB. nrpe will
+  accept either version from check_nrpe. check_nrpe will try to send a
+  version 3 packet first, and fall back to version 2. check_nrpe can be forced
+  to only send version 2 packets if the switch `-2` is used. (John Frickson)
+- Added extended timeout syntax in the -t <secs>:<status> format. (ABrist)
 
 FIXES
+- Fixed configure to check more places for SSL headers/libs. (John Frickson)
 - Added ifdefs for complete_SSL_shutdown to compile without SSL. (Matthew L. Daniel)
+- Renamed configure.in to configure.ac and added check for sigaction (John Frickson)
+- Replaced all instances of signal() with sigaction() + blocking (John Frickson)
+- check_nrpe does not parse passed arguments correctly (John Frickson)
+- NRPE should not start if cannot write pid file (John Frickson)
+- Fixed out-of-bounds error (return code 255) for some failures (John Frickson)
+- Connection Timeout and Connection Refused messages need a new line (Andrew Widdersheim)
+- allowed_hosts doesn't work, if one of the hostnames can't be resolved by dns (John Frickson)
+- allowed_hosts doesn't work with a hostname resolving to an IPv6 address (John Frickson)
+- Return UNKNOWN when issues occur (Andrew Widdersheim)
+- NRPE returns OK if check can't be executed (Andrew Widdersheim)
+- nrpe 2.15 [regression in Added SRC support on AIX - 2.14] (frphoebus)
+- compile nrpe - Solaris 9 doesn't have isblank() (lilo, John Frickson)
+- sample configuration for check_load has crazy sample load avg (ernestoongaro)
+
+
 
 2.15 - 09/06/2013
 -----------------
 - Now compiles on HP-UX (Grant Byers)
 - Added support for IPv6 (Leo Baltus, Eric Stanley)
+
+
 
 2.14 - 12/21/2012
 -----------------
@@ -23,11 +74,14 @@ FIXES
 - Updated RPM SPEC file to support creating RPMs on AIX (Eric Stanley)
 - Updated logging to support compiling on AIX (Eric Stanley)
 
+
+
 2.13 - 11/11/2011
 -----------------
 - Applied Kaspersky Labs supplied patch for extending allowed_hosts (Konstantin Malov)
 - Fixed bug in allowed_hosts parsing (Eric Stanley)
 - Updated to support compiling on Solaris 10 (thanks to Kevin Pendleton)
+
 
 
 2.12 - 03/10/2008
@@ -41,6 +95,7 @@ FIXES
 - Added lib64 library paths to configure script for 64-bit systems (John Maag)
 - Added --with-ssl-lib configure script option
 - Added --with-log-facility option to control syslog logging (Ryan Ordway and Brian Seklecki)
+
 
 
 2.10 - 10/19/2007

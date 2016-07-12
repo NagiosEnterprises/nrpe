@@ -270,7 +270,7 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 	struct pr_chunk *cnk = NULL;
 	struct pr_chunk_x *clist = NULL;
 	int max_pos;
-	size_t ret = -1;
+	size_t ret = (size_t)-1;
 
 	VA_COPY(args, args_in);
 

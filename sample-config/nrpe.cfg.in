@@ -1,8 +1,8 @@
 #############################################################################
-# Sample NRPE Config File 
+# Sample NRPE Config File
 # Written by: Ethan Galstad (nagios@nagios.org)
-# 
-# Last Modified: 11-23-2007
+#
+# Last Modified: 2016-05-10
 #
 # NOTES:
 # This is a sample configuration file for the NRPE daemon.  It needs to be
@@ -23,7 +23,7 @@ log_facility=@log_facility@
 # number.  The file is only written if the NRPE daemon is started by the root
 # user and is running in standalone mode.
 
-pid_file=/var/run/nrpe.pid
+pid_file=@piddir@/nrpe.pid
 
 
 
@@ -54,9 +54,9 @@ server_port=@nrpe_port@
 
 
 # NRPE USER
-# This determines the effective user that the NRPE daemon should run as.  
+# This determines the effective user that the NRPE daemon should run as.
 # You can either supply a username or a UID.
-# 
+#
 # NOTE: This option is ignored if NRPE is running under either inetd or xinetd
 
 nrpe_user=@nrpe_user@
@@ -64,9 +64,9 @@ nrpe_user=@nrpe_user@
 
 
 # NRPE GROUP
-# This determines the effective group that the NRPE daemon should run as.  
+# This determines the effective group that the NRPE daemon should run as.
 # You can either supply a group name or a GID.
-# 
+#
 # NOTE: This option is ignored if NRPE is running under either inetd or xinetd
 
 nrpe_group=@nrpe_group@
@@ -74,9 +74,9 @@ nrpe_group=@nrpe_group@
 
 
 # ALLOWED HOST ADDRESSES
-# This is an optional comma-delimited list of IP address or hostnames 
+# This is an optional comma-delimited list of IP address or hostnames
 # that are allowed to talk to the NRPE daemon. Network addresses with a bit mask
-# (i.e. 192.168.1.0/24) are also supported. Hostname wildcards are not currently 
+# (i.e. 192.168.1.0/24) are also supported. Hostname wildcards are not currently
 # supported.
 #
 # Note: The daemon only does rudimentary checking of the client's IP
@@ -87,16 +87,16 @@ nrpe_group=@nrpe_group@
 # NOTE: This option is ignored if NRPE is running under either inetd or xinetd
 
 allowed_hosts=127.0.0.1
- 
+
 
 
 # COMMAND ARGUMENT PROCESSING
 # This option determines whether or not the NRPE daemon will allow clients
 # to specify arguments to commands that are executed.  This option only works
 # if the daemon was configured with the --enable-command-args configure script
-# option.  
+# option.
 #
-# *** ENABLING THIS OPTION IS A SECURITY RISK! *** 
+# *** ENABLING THIS OPTION IS A SECURITY RISK! ***
 # Read the SECURITY file for information on some of the security implications
 # of enabling this variable.
 #
@@ -109,15 +109,15 @@ dont_blame_nrpe=0
 # BASH COMMAND SUBTITUTION
 # This option determines whether or not the NRPE daemon will allow clients
 # to specify arguments that contain bash command substitutions of the form
-# $(...).  This option only works if the daemon was configured with both 
-# the --enable-command-args and --enable-bash-command-substitution configure 
+# $(...).  This option only works if the daemon was configured with both
+# the --enable-command-args and --enable-bash-command-substitution configure
 # script options.
 #
-# *** ENABLING THIS OPTION IS A HIGH SECURITY RISK! *** 
+# *** ENABLING THIS OPTION IS A HIGH SECURITY RISK! ***
 # Read the SECURITY file for information on some of the security implications
 # of enabling this variable.
 #
-# Values: 0=do not allow bash command substitutions, 
+# Values: 0=do not allow bash command substitutions,
 #         1=allow bash command substitutions
 
 allow_bash_command_substitution=0
@@ -130,9 +130,9 @@ allow_bash_command_substitution=0
 # command line from the command definition.
 #
 # *** THIS EXAMPLE MAY POSE A POTENTIAL SECURITY RISK, SO USE WITH CAUTION! ***
-# Usage scenario: 
+# Usage scenario:
 # Execute restricted commmands using sudo.  For this to work, you need to add
-# the nagios user to your /etc/sudoers.  An example entry for alllowing 
+# the nagios user to your /etc/sudoers.  An example entry for alllowing
 # execution of the plugins from might be:
 #
 # nagios          ALL=(ALL) NOPASSWD: /usr/lib/nagios/plugins/
@@ -141,7 +141,7 @@ allow_bash_command_substitution=0
 # without asking for a password.  If you do this, make sure you don't give
 # random users write access to that directory or its contents!
 
-# command_prefix=/usr/bin/sudo 
+# command_prefix=/usr/bin/sudo
 
 
 
@@ -173,7 +173,7 @@ connection_timeout=300
 
 
 
-# WEEK RANDOM SEED OPTION
+# WEAK RANDOM SEED OPTION
 # This directive allows you to use SSL even if your system does not have
 # a /dev/random or /dev/urandom (on purpose or because the necessary patches
 # were not applied). The random number generator will be seeded from a file
@@ -183,6 +183,66 @@ connection_timeout=300
 # Values: 0=only seed from /dev/[u]random, 1=also seed from weak randomness
 
 #allow_weak_random_seed=1
+
+
+
+# SSL/TLS OPTIONS
+# These directives allow you to specify how to use SSL/TLS.
+
+# SSL VERSION
+# This can be any of: SSLv2 (only use SSLv2), SSLv2+ (use any version),
+#        SSLv3 (only use SSLv3), SSLv3+ (use SSLv3 or above), TLSv1 (only use
+#        TLSv1), TLSv1+ (use TLSv1 or above), TLSv1.1 (only use TLSv1.1),
+#        TLSv1.1+ (use TLSv1.1 or above), TLSv1.2 (only use TLSv1.2),
+#        TLSv1.2+ (use TLSv1.2 or above)
+# If an "or above" version is used, the best will be negotiated. So if both
+# ends are able to do TLSv1.2 and use specify SSLv2, you will get TLSv1.2.
+
+#ssl_version=SSLv2+
+
+# SSL USE ADH
+# This is for backward compatibility and is DEPRECATED. Set to 1 to enable
+# ADH or 2 to require ADH. 1 is currently the default but will be changed
+# in a later version.
+
+#ssl_use_adh=1
+
+# SSL CIPHER LIST
+# This lists which ciphers can be used. For backward compatibility, this
+# defaults to 'ssl_cipher_list=ALL:!MD5:@STRENGTH' in this version but
+# will be changed to something like the example below in a later version of NRPE.
+
+#ssl_cipher_list=ALL:!MD5:@STRENGTH
+#ssl_cipher_list=ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!RC4:!MD5:@STRENGTH
+
+# SSL Certificate and Private Key Files
+
+#ssl_cacert_file=/etc/ssl/servercerts/ca-cert.pem
+#ssl_cert_file=/etc/ssl/servercerts/nagios-cert.pem
+#ssl_privatekey_file=/etc/ssl/servercerts/nagios-key.pem
+
+# SSL USE CLIENT CERTS
+# This options determines client certificate usage.
+# Values: 0 = Don't ask for or require client certificates (default)
+#         1 = Ask for client certificates
+#         2 = Require client certificates
+
+#ssl_client_certs=0
+
+# SSL LOGGING
+# This option determines which SSL messages are send to syslog. OR values
+# together to specify multiple options.
+
+# Values: 0x00 (0)  = No additional logging (default)
+#         0x01 (1)  = Log startup SSL/TLS parameters
+#         0x02 (2)  = Log remote IP address
+#         0x04 (4)  = Log SSL/TLS version of connections
+#         0x08 (8)  = Log which cipher is being used for the connection
+#         0x10 (16) = Log if client has a certificate
+#         0x20 (32) = Log details of client's certificate if it has one
+#         -1 or 0xff or 0x2f = All of the above
+
+#ssl_logging=0x00
 
 
 
@@ -224,20 +284,20 @@ connection_timeout=300
 
 # The following examples use hardcoded command arguments...
 
-command[check_users]=@libexecdir@/check_users -w 5 -c 10
-command[check_load]=@libexecdir@/check_load -w 15,10,5 -c 30,25,20
-command[check_hda1]=@libexecdir@/check_disk -w 20% -c 10% -p /dev/hda1
-command[check_zombie_procs]=@libexecdir@/check_procs -w 5 -c 10 -s Z
-command[check_total_procs]=@libexecdir@/check_procs -w 150 -c 200 
+command[check_users]=@pluginsdir@/check_users -w 5 -c 10
+command[check_load]=@pluginsdir@/check_load -w 15,10,5 -c 30,25,20
+command[check_hda1]=@pluginsdir@/check_disk -w 20% -c 10% -p /dev/hda1
+command[check_zombie_procs]=@pluginsdir@/check_procs -w 5 -c 10 -s Z
+command[check_total_procs]=@pluginsdir@/check_procs -w 150 -c 200
 
 
 # The following examples allow user-supplied arguments and can
-# only be used if the NRPE daemon was compiled with support for 
+# only be used if the NRPE daemon was compiled with support for
 # command arguments *AND* the dont_blame_nrpe directive in this
 # config file is set to '1'.  This poses a potential security risk, so
 # make sure you read the SECURITY file before doing this.
 
-#command[check_users]=@libexecdir@/check_users -w $ARG1$ -c $ARG2$
-#command[check_load]=@libexecdir@/check_load -w $ARG1$ -c $ARG2$
-#command[check_disk]=@libexecdir@/check_disk -w $ARG1$ -c $ARG2$ -p $ARG3$
-#command[check_procs]=@libexecdir@/check_procs -w $ARG1$ -c $ARG2$ -s $ARG3$
+#command[check_users]=@pluginsdir@/check_users -w $ARG1$ -c $ARG2$
+#command[check_load]=@pluginsdir@/check_load -w $ARG1$ -c $ARG2$
+#command[check_disk]=@pluginsdir@/check_disk -w $ARG1$ -c $ARG2$ -p $ARG3$
+#command[check_procs]=@pluginsdir@/check_procs -w $ARG1$ -c $ARG2$ -s $ARG3$

@@ -1,0 +1,35 @@
+#!/bin/sh
+#
+# Copyright (c) 2016 Nagios(R) Core(TM) Development Team
+#
+# PROVIDE: nrpe
+# REQUIRE: DAEMON
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+: ${nrpe@bsd_enable@:="NO"}
+: ${nrpe_configfile:="@pkgsysconfdir@/nrpe.cfg"}
+
+name=nrpe
+command="@sbindir@/nrpe"
+command_args="-c $nrpe_configfile -d"
+pidfile="@piddir@/nrpe.pid"
+extra_commands=reload
+sig_reload=HUP
+rcvar=nrpe@bsd_enable@
+load_rc_config "$name"
+required_files="$nrpe_configfile"
+sig_reload=HUP
+
+start_precmd=nrpe_prestart
+
+nrpe_prestart()
+{
+	[ -n "$nrpe_pidfile" ] &&
+		warn "No longer necessary to set nrpe_pidfile in rc.conf[.local]"
+
+	install -d -o @nrpe_user@ ${pidfile%/*}
+}
+
+run_rc_command "$1"

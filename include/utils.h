@@ -29,35 +29,27 @@
  *
  ************************************************************************************************/
 
-#ifndef _UTILS_H
-#define _UTILS_H
+#ifndef NRPE_UTILS_H_INCLUDED
+#define NRPE_UTILS_H_INCLUDED
 
 #include "../include/config.h"
 
-
 void generate_crc32_table(void);
-unsigned long calculate_crc32(char *, int);
-
-void randomize_buffer(char *,int);
-
-int my_tcp_connect(char *,int,int *);
-int my_connect(const char *, struct sockaddr_storage *, u_short, int, 
-		const char *);
-
-void add_listen_addr(struct addrinfo **, int, char *, int);
-
-void strip(char *);
-
-int sendall(int,char *,int *);
-int recvall(int,char *,int *,int);
-
-char *my_strsep(char **,const char *);
-
+unsigned long calculate_crc32(char*, int);
+void randomize_buffer(char*,int);
+int my_tcp_connect(char*, int, int*);
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
+int my_connect(const char*, struct sockaddr_storage*, u_short, int, const char*);
+#else
+int my_connect(const char*, struct sockaddr*, u_short, int, const char*);
+#endif
+void add_listen_addr(struct addrinfo**, int, char*, int);
+int clean_environ(const char *keep_env_vars, const char *nrpe_user);
+char* strip(char*);
+int sendall(int, char*, int*);
+int recvall(int, char*, int*, int);
+char *my_strsep(char**, const char*);
+int b64_decode(unsigned char *encoded);
 void display_license(void);
 
 #endif
-
-
-
-
-
