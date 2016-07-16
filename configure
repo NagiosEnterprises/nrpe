@@ -3867,7 +3867,8 @@ $as_echo "$src_inetd" >&6; }
 
 
 if test "$dist_type" = solaris -a "$dist_ver" != smf11; then
-	$as_echo "#define SOLARIS_10 yes" >>confdefs.h
+
+$as_echo "#define SOLARIS_10 1" >>confdefs.h
 
 fi
 
@@ -6795,10 +6796,12 @@ fi
 
 ac_fn_c_check_func "$LINENO" "seteuid" "ac_cv_func_seteuid"
 if test "x$ac_cv_func_seteuid" = xyes; then :
-  $as_echo "#define SETEUID(id) seteuid(id)" >>confdefs.h
+
+$as_echo "#define SETEUID(id) seteuid(id)" >>confdefs.h
 
 else
-  $as_echo "#define SETEUID(id) setresuid((uid_t) -1, id, (uid_t) -1)" >>confdefs.h
+
+$as_echo "#define SETEUID(id) setresuid((uid_t) -1, id, (uid_t) -1)" >>confdefs.h
 
 
 fi
@@ -7132,7 +7135,8 @@ int a = rfc931_timeout;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  $as_echo "#define HAVE_RFC931_TIMEOUT 1" >>confdefs.h
+
+$as_echo "#define HAVE_RFC931_TIMEOUT 1" >>confdefs.h
 
 fi
 rm -f core conftest.err conftest.$ac_objext \
@@ -7690,7 +7694,8 @@ $as_echo "no" >&6; }
 fi
 
 
-			$as_echo "#define USE_SSL_DH 1" >>confdefs.h
+
+$as_echo "#define USE_SSL_DH 1" >>confdefs.h
 
 			# Generate DH parameters
 			if test -f "$sslbin"; then

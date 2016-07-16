@@ -61,7 +61,7 @@ AC_NAGIOS_GET_PATHS
 AC_NAGIOS_GET_FILES
 
 if test "$dist_type" = solaris -a "$dist_ver" != smf11; then
-	AC_DEFINE(SOLARIS_10,yes)
+	AC_DEFINE(SOLARIS_10, [1], [Set to 1 if we are on Solaris 10])
 fi
 
 dnl Do they just want to see where things will go?
@@ -171,8 +171,8 @@ AC_CHECK_TYPES([struct sockaddr_storage],[],[],[#include <sys/socket.h>])
 
 dnl Should we use seteuid() or setresuid()?
 AC_CHECK_FUNC(seteuid,
-	AC_DEFINE(SETEUID(id),[seteuid(id)]),
-	AC_DEFINE(SETEUID(id),[setresuid((uid_t) -1, id, (uid_t) -1)])
+	AC_DEFINE(SETEUID(id),[seteuid(id)],[Set if we should use seteuid()]),
+	AC_DEFINE(SETEUID(id),[setresuid((uid_t) -1, id, (uid_t) -1)],[Set if we should use setresuid()])
 )
 
 dnl Check for asprintf() and friends...
@@ -241,7 +241,8 @@ AC_CHECK_LIB(wrap,main,[
 	LIBWRAPLIBS="$LIBWRAPLIBS -lwrap"
 	AC_DEFINE(HAVE_LIBWRAP,[1],[Have the TCP wrappers library])
 	AC_TRY_LINK([#include <tcpd.h>
-		],[int a = rfc931_timeout;],AC_DEFINE(HAVE_RFC931_TIMEOUT))
+		],[int a = rfc931_timeout;],
+		  [AC_DEFINE(HAVE_RFC931_TIMEOUT, [1], [Set to 1 if you have rfc931_timeout])])
 	])
 AC_CHECK_FUNCS(strdup strstr strtoul strtok_r initgroups closesocket sigaction)
 
