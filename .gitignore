@@ -1,4 +1,5 @@
 Makefile
+/configure
 config.log
 config.status
 include/config.h
