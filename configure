@@ -1388,7 +1388,7 @@ Optional Features:
                           '--enable-install-method', so you can see the
                           destinations before a full './configure', 'make',
                           'make install' process.
-  --enable-ssl            enables native SSL support
+  --disable-ssl           disables native SSL support [default=check]
   --enable-command-args   allows clients to specify command arguments. ***
                           THIS IS A SECURITY RISK! *** Read the SECURITY file
                           before using this option!
