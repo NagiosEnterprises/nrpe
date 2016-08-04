@@ -2,7 +2,13 @@
 NRPE Changelog
 **************
 
-3.0 = xx/xx/xxxx
+3.0.x - xxxx-xx-xx
+------------------
+FIXES
+- _set_rc: command not found reported by init script
+
+
+3.0 - 2016-08-01
 -----------------
 SECURITY
 - Fix for CVE-2014-2913
