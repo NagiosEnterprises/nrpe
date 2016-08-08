@@ -285,7 +285,7 @@ connection_timeout=300
 # The following examples use hardcoded command arguments...
 
 command[check_users]=@pluginsdir@/check_users -w 5 -c 10
-command[check_load]=@pluginsdir@/check_load -w 15,10,5 -c 30,25,20
+command[check_load]=@pluginsdir@/check_load -r -w .15,.10,.05 -c .30,.25,.20
 command[check_hda1]=@pluginsdir@/check_disk -w 20% -c 10% -p /dev/hda1
 command[check_zombie_procs]=@pluginsdir@/check_procs -w 5 -c 10 -s Z
 command[check_total_procs]=@pluginsdir@/check_procs -w 150 -c 200
