@@ -192,7 +192,7 @@ MAKE=%{_make} ./configure \
 %if %{islinux}
 install -d -m 0755 ${RPM_BUILD_ROOT}%{_init_dir}
 %endif
-DESTDIR=${RPM_BUILD_ROOT} %{_make} install install-daemon-config
+DESTDIR=${RPM_BUILD_ROOT} %{_make} install install-config
 #install -d -m 0755 ${RPM_BUILD_ROOT}%{_sysconfdir}
 #install -d -m 0755 ${RPM_BUILD_ROOT}%{_bindir}
 #install -d -m 0755 ${RPM_BUILD_ROOT}%{_libexecdir}
@@ -228,6 +228,8 @@ rm -rf $RPM_BUILD_ROOT
 %doc Changelog LEGAL README 
 
 %changelog
+* Thu Aug 18 2016 John Frickson jfrickson<@>nagios.com
+- Changed 'make install-daemon-config' to 'make install-config'
 * Mon Mar 12 2012 Eric Stanley estanley<@>nagios.com
 - Created autoconf input file 
 - Updated to support building on AIX
