@@ -219,7 +219,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(600,%{nsusr},%{nsgrp})
 %config(noreplace) %{_sysconfdir}/*.cfg
 %defattr(755,%{nsusr},%{nsgrp})
-%doc Changelog LEGAL README 
+%doc Changelog LEGAL README.md README.SSL.md SECURITY.md
 
 %files plugin
 %defattr(755,%{nsusr},%{nsgrp})
