@@ -176,10 +176,14 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Thu Aug 18 2016 John Frickson jfrickson<@>nagios.com
 - Changed 'make install-daemon-config' to 'make install-config'
+- Added make targets 'install-groups-users' and 'install-init'
+- Misc. changes
+
 * Mon Mar 12 2012 Eric Stanley estanley<@>nagios.com
 - Created autoconf input file 
 - Updated to support building on AIX
 - Updated install to use make install*
+
 * Mon Jan 23 2006 Andreas Kasenides ank<@>cs.ucy.ac.cy
 - fixed nrpe.cfg relocation to sample-config
 - replaced Copyright label with License
