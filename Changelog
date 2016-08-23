@@ -8,6 +8,8 @@ FIXES
 - _set_rc: command not found reported by init script (John Frickson)
 - Version string contains name (John Frickson)
 - Changes to get 'rpmbuild' to work - nrpe.spec file outdated (John Frickson)
+- typo in startup/default-xinetd.in (Philippe Kueck)
+- debug output missing command name (Philippe Kueck)
 
 
 3.0 - 2016-08-01
