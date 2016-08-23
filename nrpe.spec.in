@@ -26,6 +26,7 @@
 %define nsusr @nrpe_user@
 %define nsgrp @nrpe_group@
 %define nsport @nrpe_port@
+%define ns_src_tmpfile "@src_tmpfile@"
 
 # Reserve option to override port setting with:
 # rpm -ba|--rebuild --define 'nsport 5666'
@@ -163,7 +164,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(600,%{nsusr},%{nsgrp})
 %config(noreplace) %{_sysconfdir}/*.cfg
 %defattr(755,%{nsusr},%{nsgrp})
+%if %{ns_src_tmpfile} != ""
 @tmpfilesd@
+%endif
 %{_bindir}/nrpe-uninstall
 %doc Changelog LEGAL README.md README.SSL.md SECURITY.md
 
