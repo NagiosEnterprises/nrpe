@@ -5,7 +5,9 @@ NRPE Changelog
 3.0.x - xxxx-xx-xx
 ------------------
 FIXES
-- _set_rc: command not found reported by init script
+- _set_rc: command not found reported by init script (John Frickson)
+- Version string contains name (John Frickson)
+- Changes to get 'rpmbuild' to work - nrpe.spec file outdated (John Frickson)
 
 
 3.0 - 2016-08-01
