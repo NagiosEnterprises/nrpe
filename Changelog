@@ -11,6 +11,7 @@ FIXES
 - typo in startup/default-xinetd.in (Philippe Kueck)
 - debug output missing command name (Philippe Kueck)
 - /usr/lib/tmpfiles.d/ndo2db.conf should have 'd' type, not 'D' (John Frickson)
+- Fixes in parse_allowed_hosts() and called functions (John Frickson)
 
 
 3.0 - 2016-08-01
