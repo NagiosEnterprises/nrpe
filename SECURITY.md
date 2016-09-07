@@ -64,7 +64,7 @@ To help prevent some nasty things from being done by evil
 clients, the following metacharacters are not allowed
 in client command arguments:
 
-	| ` & > < ' " \ [ ] { } ; !
+	| ` & > < ' \ [ ] { } ; ! \r \n
 
 Any client request which contains the above mentioned metachars
 is discarded.
