@@ -171,14 +171,14 @@ run the nrpe daemon: `db_server` and `bobs_workstation`.
 As root, do the following:
 
         mkdir -p -m 750 /usr/local/nagios/etc/ssl
-        chown root.nagios /usr/local/nagios/etc/ssl
+        chown root:nagios /usr/local/nagios/etc/ssl
         cd /usr/local/nagios/etc/ssl
         mkdir -m 750 ca
-        chown root.root ca
+        chown root:root ca
         mkdir -m 750 server_certs
-        chown root.nagios server_certs
+        chown root:nagios server_certs
         mkdir -m 750 client_certs
-        chown root.nagios client_certs
+        chown root:nagios client_certs
 
 
 ####Create Certificate Authority
