@@ -229,7 +229,7 @@ If you have the default `/etc/openssl.cnf`, either change it, or as root, do:
         mkdir demoCA/newcerts
         touch demoCA/index.txt
 		echo "01" > demoCA/serial
-        chown -R root.root demoCA
+        chown -R root:root demoCA
         chmod 700 demoCA
         chmod 700 demoCA/newcerts
         chmod 600 demoCA/serial
@@ -242,13 +242,13 @@ Now, sign the CSRs. As root, do the following:
            -keyfile ca/ca_key.pem -cert ca/ca_cert.pem \
            -in server_certs/db_server.csr \
            -out server_certs/db_server.pem
-        chown root.nagios server_certs/db_server.pem
+        chown root:nagios server_certs/db_server.pem
         chmod 440 server_certs/db_server.pem
         openssl ca -days 365 -notext -md sha256 \
            -keyfile ca/ca_key.pem -cert ca/ca_cert.pem \
            -in server_certs/bobs_workstation.csr \
            -out server_certs/bobs_workstation.pem
-        chown root.nagios server_certs/bobs_workstation.pem
+        chown root:nagios server_certs/bobs_workstation.pem
         chmod 440 server_certs/bobs_workstation.pem
 
 Now, copy the `db_server.pem` and `db_server.key` files to the
@@ -271,7 +271,7 @@ running the check_nrpe program.
            -keyfile ca/ca_key.pem -cert ca/ca_cert.pem \
            -in client_certs/nag_serv.csr \
            -out client_certs/nag_serv.pem
-        chown root.nagios client_certs/nag_serv.pem
+        chown root:nagios client_certs/nag_serv.pem
         chmod 440 client_certs/nag_serv.pem
 
 Now, copy the `nag_serv.pem`, `nag_serv.key` and `ca/ca_cert.pem`
