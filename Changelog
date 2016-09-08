@@ -2,7 +2,7 @@
 NRPE Changelog
 **************
 
-3.0.x - xxxx-xx-xx
+3.0.1 - 2016-09-08
 ------------------
 FIXES
 - _set_rc: command not found reported by init script (John Frickson)
