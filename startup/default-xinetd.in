@@ -4,7 +4,7 @@ service nrpe
 {
     disable         = yes
     socket_type     = stream
-    port            = @npre_port@
+    port            = @nrpe_port@
     wait            = no
     user            = @nrpe_user@
     group           = @nrpe_group@

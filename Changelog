@@ -2,7 +2,20 @@
 NRPE Changelog
 **************
 
-3.0 = xx/xx/xxxx
+3.0.1 - 2016-09-08
+------------------
+FIXES
+- _set_rc: command not found reported by init script (John Frickson)
+- Version string contains name (John Frickson)
+- Changes to get 'rpmbuild' to work - nrpe.spec file outdated (John Frickson)
+- typo in startup/default-xinetd.in (Philippe Kueck)
+- debug output missing command name (Philippe Kueck)
+- /usr/lib/tmpfiles.d/ndo2db.conf should have 'd' type, not 'D' (John Frickson)
+- Fixes in parse_allowed_hosts() and called functions (Jobst Schmalenbach / John Frickson)
+- nrpe.cfg: 'debug' statement needs to be first in file (Jobst Schmalenbach / John Frickson)
+
+
+3.0 - 2016-08-01
 -----------------
 SECURITY
 - Fix for CVE-2014-2913

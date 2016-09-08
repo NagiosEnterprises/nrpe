@@ -2,7 +2,7 @@
  *
  * COMMON.H - NRPE Common Include File
  * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 07-28-2016
+ * Last Modified: 09-08-2016
  *
  * License:
  *
@@ -27,8 +27,8 @@
 #include <@SSL_INC_PREFIX@@SSL_HDR@>
 #endif
 
-#define PROGRAM_VERSION "3.0"
-#define MODIFICATION_DATE "07-28-2016"
+#define PROGRAM_VERSION "3.0.1"
+#define MODIFICATION_DATE "09-08-2016"
 
 #define OK							0
 #define ERROR						-1

@@ -18,6 +18,15 @@ log_facility=@log_facility@
 
 
 
+# DEBUGGING OPTION
+# This option determines whether or not debugging messages are logged to the
+# syslog facility.
+# Values: 0=debugging off, 1=debugging on
+
+debug=0
+
+
+
 # PID FILE
 # The name of the file in which the NRPE daemon should write it's process ID
 # number.  The file is only written if the NRPE daemon is started by the root
@@ -142,15 +151,6 @@ allow_bash_command_substitution=0
 # random users write access to that directory or its contents!
 
 # command_prefix=/usr/bin/sudo
-
-
-
-# DEBUGGING OPTION
-# This option determines whether or not debugging messages are logged to the
-# syslog facility.
-# Values: 0=debugging off, 1=debugging on
-
-debug=0
 
 
 

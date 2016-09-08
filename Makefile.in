@@ -9,6 +9,9 @@
 SRC_BASE=./src/
 SRC_INCLUDE=./include/
 
+# Mainly used for rpmbuild
+# DESTDIR=
+
 CC=@CC@
 CFLAGS=@CFLAGS@ @DEFS@
 LDFLAGS=@LDFLAGS@ @LIBS@
@@ -17,12 +20,12 @@ INSTALL=@INSTALL@
 GREP=@GREP@
 EGREP=@EGREP@
 
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-CFGDIR=@pkgsysconfdir@
-BINDIR=@bindir@
-SBINDIR=@sbindir@
-LIBEXECDIR=@libexecdir@
+prefix=$(DESTDIR)@prefix@
+exec_prefix=$(DESTDIR)@exec_prefix@
+CFGDIR=$(DESTDIR)@pkgsysconfdir@
+BINDIR=$(DESTDIR)@bindir@
+SBINDIR=$(DESTDIR)@sbindir@
+LIBEXECDIR=$(DESTDIR)@libexecdir@
 NAGIOS_INSTALL_OPTS=@NAGIOS_INSTALL_OPTS@
 NRPE_INSTALL_OPTS=@NRPE_INSTALL_OPTS@
 OPSYS=@opsys@
@@ -33,11 +36,11 @@ NAGIOS_USER=@nagios_user@
 NAGIOS_GROUP=@nagios_group@
 
 INIT_TYPE=@init_type@
-INIT_DIR=@initdir@
+INIT_DIR=$(DESTDIR)@initdir@
 INIT_OPTS=-o root -g root
 INIT_FILE=@initname@
 INETD_TYPE=@inetd_type@
-INETD_DIR=@inetddir@
+INETD_DIR=$(DESTDIR)@inetddir@
 INETD_FILE=@inetdname@
 SRC_INETD=@src_inetd@
 SRC_INIT=@src_init@
@@ -186,6 +189,7 @@ distclean: clean
 	rm -f startup/newbsd-init startup/openbsd-init startup/openrc-conf
 	rm -f startup/openrc-init startup/rh-upstart-init startup/solaris-init.xml
 	rm -f startup/solaris-inetd.xml startup/tmpfile.conf startup/upstart-init
+	rm -f nrpe.spec uninstall include/common.h
 	rm -f Makefile
 
 devclean: distclean

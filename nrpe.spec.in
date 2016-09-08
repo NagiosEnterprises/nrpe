@@ -8,7 +8,7 @@
 	%define _make gmake
 %endif
 %if %{islinux}
-	%define _init_dir /etc/init.d
+	%define _init_dir @initdir@
 	%define _exec_prefix %{_prefix}/sbin
 	%define _bindir %{_prefix}/sbin
 	%define _sbindir %{_prefix}/lib/nagios/cgi
@@ -26,6 +26,7 @@
 %define nsusr @nrpe_user@
 %define nsgrp @nrpe_group@
 %define nsport @nrpe_port@
+%define ns_src_tmpfile "@src_tmpfile@"
 
 # Reserve option to override port setting with:
 # rpm -ba|--rebuild --define 'nsport 5666'
@@ -44,7 +45,7 @@ Group: Application/System
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-buildroot
 Prefix: %{_prefix}
-Prefix: /etc/init.d
+Prefix: @initdir@
 Prefix: /etc/nagios
 %if %{isaix}
 Requires: nagios-plugins
@@ -80,38 +81,6 @@ Nagios-related applications.
 %prep
 %setup -q
 
-
-%pre
-# Create `nagios' group on the system if necessary
-%if %{isaix}
-lsgroup %{nsgrp} > /dev/null 2> /dev/null
-if [ $? -eq 2 ] ; then
-	mkgroup %{nsgrp} || %nnmmsg Unexpected error adding group "%{nsgrp}". Aborting install process.
-fi
-%endif
-%if %{islinux}
-getent group %{nsgrp} > /dev/null 2> /dev/null
-if [ $? -ne 0 ] ; then
-	groupadd %{nsgrp} || %nnmmsg Unexpected error adding group "%{nsgrp}". Aborting install process.
-fi
-%endif
-
-# Create `nrpe' user on the system if necessary
-%if %{isaix}
-lsuser %{nsusr} > /dev/null 2> /dev/null
-if [ $? -eq 2 ] ; then
-	useradd -d %{nshome} -c "%{nsusr}" -g %{nsgrp} %{nsusr} || \
-		%nnmmsg Unexpected error adding user "%{nsusr}". Aborting install process.
-fi
-%endif
-%if %{islinux}
-getent passwd %{nsusr} > /dev/null 2> /dev/null
-if [ $? -ne 0 ] ; then
-	useradd -r -d %{nshome} -c "%{nsusr}" -g %{nsgrp} %{nsusr} || \
-		%nnmmsg Unexpected error adding user "%{nsusr}". Aborting install process.
-fi
-%endif
-
 %if %{isaix}
 # Check to see if the nrpe service is running and, if so, stop it.
 /usr/bin/lssrc -s nrpe > /dev/null 2> /dev/null
@@ -120,20 +89,6 @@ if [ $? -eq 0 ] ; then
 	if [ "$status" = "active" ] ; then
 		/usr/bin/stopsrc -s nrpe
 	fi
-fi
-%endif
-
-%if %{islinux}
-# if LSB standard /etc/init.d does not exist,
-# create it as a symlink to the first match we find
-if [ -d /etc/init.d -o -L /etc/init.d ]; then
-  : # we're done
-elif [ -d /etc/rc.d/init.d ]; then
-  ln -s /etc/rc.d/init.d /etc/init.d
-elif [ -d /usr/local/etc/rc.d ]; then
-  ln -s  /usr/local/etc/rc.d /etc/init.d
-elif [ -d /sbin/init.d ]; then
-  ln -s /sbin/init.d /etc/init.d
 fi
 %endif
 
@@ -192,18 +147,8 @@ MAKE=%{_make} ./configure \
 %if %{islinux}
 install -d -m 0755 ${RPM_BUILD_ROOT}%{_init_dir}
 %endif
-DESTDIR=${RPM_BUILD_ROOT} %{_make} install install-daemon-config
-#install -d -m 0755 ${RPM_BUILD_ROOT}%{_sysconfdir}
-#install -d -m 0755 ${RPM_BUILD_ROOT}%{_bindir}
-#install -d -m 0755 ${RPM_BUILD_ROOT}%{_libexecdir}
+DESTDIR=${RPM_BUILD_ROOT} %{_make} install-groups-users install install-config install-init
 
-# install templated configuration files
-#cp sample-config/nrpe.cfg ${RPM_BUILD_ROOT}%{_sysconfdir}/nrpe.cfg
-#%if %{isaix}
-#cp init-script ${RPM_BUILD_ROOT}%{_init_dir}/nrpe
-#%endif
-#cp src/nrpe ${RPM_BUILD_ROOT}%{_bindir}
-#cp src/check_nrpe ${RPM_BUILD_ROOT}%{_libexecdir}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -212,26 +157,36 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %if %{islinux}
 %defattr(755,root,root)
-/etc/init.d/nrpe
+@initdir@/@initname@
 %endif
 %{_bindir}/nrpe
 %dir %{_sysconfdir}
 %defattr(600,%{nsusr},%{nsgrp})
 %config(noreplace) %{_sysconfdir}/*.cfg
 %defattr(755,%{nsusr},%{nsgrp})
-%doc Changelog LEGAL README 
+%if %{ns_src_tmpfile} != ""
+@tmpfilesd@
+%endif
+%{_bindir}/nrpe-uninstall
+%doc Changelog LEGAL README.md README.SSL.md SECURITY.md
 
 %files plugin
 %defattr(755,%{nsusr},%{nsgrp})
 %{_libexecdir}
 %defattr(644,%{nsusr},%{nsgrp})
-%doc Changelog LEGAL README 
+%doc Changelog LEGAL README.md
 
 %changelog
+* Thu Aug 18 2016 John Frickson jfrickson<@>nagios.com
+- Changed 'make install-daemon-config' to 'make install-config'
+- Added make targets 'install-groups-users' and 'install-init'
+- Misc. changes
+
 * Mon Mar 12 2012 Eric Stanley estanley<@>nagios.com
 - Created autoconf input file 
 - Updated to support building on AIX
 - Updated install to use make install*
+
 * Mon Jan 23 2006 Andreas Kasenides ank<@>cs.ucy.ac.cy
 - fixed nrpe.cfg relocation to sample-config
 - replaced Copyright label with License

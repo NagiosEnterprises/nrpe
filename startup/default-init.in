@@ -29,6 +29,7 @@ PID_FILE=@piddir@/nrpe.pid
 test -x $NRPE_BIN || exit 5
 
 RETVAL=0
+_set_rc (){ return; }
 
 # Default these commands/functions to RedHat/CentOS etc. values
 MSG_CMD="echo -n"

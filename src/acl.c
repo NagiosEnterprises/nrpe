@@ -28,6 +28,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "../include/config.h"
+
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -256,8 +258,7 @@ int add_ipv4_to_acl(char *ipv4) {
 
 int add_ipv6_to_acl(char *ipv6) {
 	char	*ipv6tmp;
-	char 	*addrtok;
-	char	*addrsave;
+	char	*addr_part, *mask_part;
 	struct in6_addr addr;
 	struct in6_addr mask;
 	int		maskval;
@@ -275,31 +276,25 @@ int add_ipv6_to_acl(char *ipv6) {
 		return 0;
 		}
 
+	addr_part = ipv6tmp;
+	mask_part = strchr(ipv6tmp, '/');
+	if (mask_part) {
+		*mask_part = '\0';
+		++mask_part;
+	}
+
 	/* Parse the address itself */
-#ifdef HAVE_STRTOK_R
-	addrtok = strtok_r(ipv6tmp, "/", &addrsave);
-#else
-	addrtok = strtok(ipv6tmp, "/");
-#endif
-	if(inet_pton(AF_INET6, addrtok, &addr) <= 0) {
-		/* syslog(LOG_ERR, "Invalid IPv6 address in ACL: %s\n", ipv6); */
+	if(inet_pton(AF_INET6, addr_part, &addr) <= 0) {
 		free(ipv6tmp);
 		return 0;
 		}
 
 	/* Check whether there is a netmask */
-#ifdef HAVE_STRTOK_R
-	addrtok = strtok_r(NULL, "/", &addrsave);
-#else
-	addrtok = strtok(NULL, "/");
-#endif
-	if(NULL != addrtok) {
+	if (mask_part && *mask_part) {
 		/* If so, build a netmask */
-
 		/* Get the number of bits in the mask */
-		maskval = atoi(addrtok);
+		maskval = atoi(mask_part);
 		if(maskval < 0 || maskval > 128) {
-			syslog(LOG_ERR, "Invalid IPv6 netmask in ACL: %s\n", ipv6);
 			free(ipv6tmp);
 			return 0;
 			}

@@ -1546,7 +1546,7 @@ void handle_connection(int sock)
 	/* log info to syslog facility */
 	if (debug == TRUE)
 		syslog(LOG_DEBUG, "Host %s is asking for command '%s' to be run...",
-			   remote_host, receive_packet.buffer);
+			   remote_host, command_name);
 
 	/* if this is the version check command, just spew it out */
 	if (!strcmp(command_name, NRPE_HELLO_COMMAND)) {
