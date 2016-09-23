@@ -724,6 +724,8 @@ int read_config_file(char *filename)
 		} else if (!strcmp(varname, "allowed_hosts")) {
 			allowed_hosts = strdup(varvalue);
 			parse_allowed_hosts(allowed_hosts);
+			if (debug == TRUE)
+				show_acl_lists();
 
 		} else if (strstr(input_line, "command[")) {
 			temp_buffer = strtok(varname, "[");
@@ -1220,12 +1222,21 @@ void wait_for_connections(void)
 void setup_wait_conn(void)
 {
 	struct addrinfo *ai;
+	char	addrstr[100];
+	void	*ptr;
 
 	add_listen_addr(&listen_addrs, address_family,
 					(strcmp(server_address, "") == 0) ? NULL : server_address, server_port);
 
-	for (ai = listen_addrs; ai; ai = ai->ai_next)
+	for (ai = listen_addrs; ai; ai = ai->ai_next) {
+		if (debug == TRUE) {
+			inet_ntop (ai->ai_family, ai->ai_addr->sa_data, addrstr, 100);
+			ptr = &((struct sockaddr_in *) ai->ai_addr)->sin_addr;
+			inet_ntop (ai->ai_family, ptr, addrstr, 100);
+			syslog(LOG_INFO, "SETUP_WAIT_CONN FOR: IPv4 address: %s (%s)\n", addrstr, ai->ai_canonname);
+		}
 		create_listener(ai);
+	}
 
 	if (!num_listen_socks) {
 		syslog(LOG_ERR, "Cannot bind to any address.");
@@ -1372,6 +1383,9 @@ void conn_check_peer(int sock)
 		break;
 	}
 
+	if (debug == TRUE)
+		syslog(LOG_INFO, "CONN_CHECK_PEER: is this a blessed machine: %s port %d\n",
+			 remote_host, nptr->sin_port);
 
 	/* is this is a blessed machine? */
 	if (allowed_hosts) {
