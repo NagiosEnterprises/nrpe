@@ -1,261 +1,251 @@
-/************************************************************************
- *
- * NRPE Common Header File
- * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 11-23-2007
- *
- * License:
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- ************************************************************************/
+/* include/config.h.in.  Generated from configure.ac by autoheader.  */
 
-#ifndef _CONFIG_H
-#define _CONFIG_H
+/* Default port for NRPE daemon */
+#undef DEFAULT_SERVER_PORT
 
-#include <stdio.h>
-#include <stdlib.h>
-
-
-#define DEFAULT_SERVER_PORT	@nrpe_port@	/* default port to use */
-
-#define NRPE_LOG_FACILITY       @log_facility@
-
-#undef ENABLE_COMMAND_ARGUMENTS
+/* Enable bash command substitution */
 #undef ENABLE_BASH_COMMAND_SUBSTITUTION
-#undef socklen_t
-#undef HAVE_GETOPT_LONG
-#undef HAVE_LIBWRAP
-#undef STDC_HEADERS
-#undef HAVE_STRDUP
-#undef HAVE_STRSTR
-#undef HAVE_STRTOUL
-#undef HAVE_STRTOK_R
-#undef HAVE_INITGROUPS
+
+/* Enable command-line arguments */
+#undef ENABLE_COMMAND_ARGUMENTS
+
+/* Define to the type of elements in the array set by `getgroups'. Usually
+   this is either `int' or `gid_t'. */
+#undef GETGROUPS_T
+
+/* Define to 1 if you have the <arpa/inet.h> header file. */
+#undef HAVE_ARPA_INET_H
+
+/* Define if system has C99 compatible vsnprintf */
+#undef HAVE_C99_VSNPRINTF
+
+/* Define to 1 if you have the `closesocket' function. */
 #undef HAVE_CLOSESOCKET
-#undef HAVE_SIGACTION
+
+/* Define to 1 if you have the <ctype.h> header file. */
+#undef HAVE_CTYPE_H
+
+/* Define to 1 if you have the <dirent.h> header file. */
+#undef HAVE_DIRENT_H
+
+/* Define to 1 if you have the <errno.h> header file. */
+#undef HAVE_ERRNO_H
+
+/* Define to 1 if you have the <fcntl.h> header file. */
+#undef HAVE_FCNTL_H
+
+/* Define to 1 if you have the <getopt.h> header file. */
+#undef HAVE_GETOPT_H
+
+/* Define to 1 if you have the `getopt_long' function. */
+#undef HAVE_GETOPT_LONG
+
+/* Define to 1 if you have the <grp.h> header file. */
+#undef HAVE_GRP_H
+
+/* Define to 1 if you have the `initgroups' function. */
+#undef HAVE_INITGROUPS
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Have the krb5.h header file */
+#undef HAVE_KRB5_H
+
+/* Have the TCP wrappers library */
+#undef HAVE_LIBWRAP
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the <netdb.h> header file. */
+#undef HAVE_NETDB_H
+
+/* Define to 1 if you have the <netinet/in.h> header file. */
+#undef HAVE_NETINET_IN_H
+
+/* Define to 1 if you have the <paths.h> header file. */
+#undef HAVE_PATHS_H
+
+/* Define to 1 if you have the <pwd.h> header file. */
+#undef HAVE_PWD_H
+
+/* Set to 1 if you have rfc931_timeout */
 #undef HAVE_RFC931_TIMEOUT
 
-#undef SIZEOF_INT
-#undef SIZEOF_SHORT
-#undef SIZEOF_LONG
+/* Define to 1 if you have the `sigaction' function. */
+#undef HAVE_SIGACTION
 
-/* #undef const */
-#undef USE_SSL_DH
-
-/* stupid stuff for u_int32_t */
-#undef U_INT32_T_IS_USHORT
-#undef U_INT32_T_IS_UINT
-#undef U_INT32_T_IS_ULONG
-#undef U_INT32_T_IS_UINT32_T
-
-#ifdef U_INT32_T_IS_USHORT
-typedef unsigned short u_int32_t;
-#endif
-#ifdef U_INT32_T_IS_ULONG
-typedef unsigned long u_int32_t;
-#endif
-#ifdef U_INT32_T_IS_UINT
-typedef unsigned int u_int32_t;
-#endif
-#ifdef U_INT32_T_IS_UINT32_t
-typedef uint32_t u_int32_t;
-#endif
-
-/* stupid stuff for int32_t */
-#undef INT32_T_IS_SHORT
-#undef INT32_T_IS_INT
-#undef INT32_T_IS_LONG
-
-#ifdef INT32_T_IS_USHORT
-typedef short int32_t;
-#endif
-#ifdef INT32_T_IS_ULONG
-typedef long int32_t;
-#endif
-#ifdef INT32_T_IS_UINT
-typedef int int32_t;
-#endif
-
-
-/***** ASPRINTF() AND FRIENDS *****/
-
-#undef HAVE_VSNPRINTF
-#undef HAVE_SNPRINTF
-#undef HAVE_ASPRINTF
-#undef HAVE_VASPRINTF
-#undef HAVE_C99_VSNPRINTF
-#undef HAVE_VA_COPY
-#undef HAVE___VA_COPY
-
-
-#define SOCKET_SIZE_TYPE ""
-#define GETGROUPS_T ""
-#define RETSIGTYPE ""
-#undef HAVE_STRUCT_SOCKADDR_STORAGE
-
-/* Use seteuid() or setresuid() depending on the platform */
-#undef SETEUID
-
-/* Is this a Solaris 10 machine? */
-#undef SOLARIS_10
-
-#undef HAVE_GETOPT_H
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#endif
-
-#undef HAVE_STRINGS_H
-#undef HAVE_STRING_H
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif
-#ifdef HAVE_STRINGS_H
-#include <string.h>
-#endif
-
-#undef HAVE_UNISTD_H
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-
+/* Define to 1 if you have the <signal.h> header file. */
 #undef HAVE_SIGNAL_H
-#ifdef HAVE_SIGNAL_H
-#include <signal.h>
-#endif
 
-#undef HAVE_SYSLOG_H
-#ifdef HAVE_SYSLOG_H
-#include <syslog.h>
-#endif
-
-#undef HAVE_SYS_STAT_H
-#ifdef HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
-
-#undef HAVE_FCNTL_H
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-
-#undef HAVE_SYS_TYPES_H
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-
-#undef HAVE_SYS_WAIT_H
-#ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
-#endif
-
-#ifndef WEXITSTATUS
-# define WEXITSTATUS(stat_val) ((unsigned)(stat_val) >> 8)
-#endif
-#ifndef WIFEXITED
-# define WIFEXITED(stat_val) (((stat_val) & 255) == 0)
-#endif
-
-#undef HAVE_ERRNO_H
-#ifdef HAVE_ERRNO_H
-#include <errno.h>
-#endif
-
-/* needed for the time_t structures we use later... */
-#undef TIME_WITH_SYS_TIME
-#undef HAVE_SYS_TIME_H
-#if TIME_WITH_SYS_TIME
-# include <sys/time.h>
-# include <time.h>
-#else
-# if HAVE_SYS_TIME_H
-#  include <sys/time.h>
-# else
-#  include <time.h>
-# endif
-#endif
-
-
-#undef HAVE_SYS_SOCKET_H
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
-/* Define to 'int' if <sys/socket.h> does not define */
-#undef socklen_t
-
+/* Define to 1 if you have the <socket.h> header file. */
 #undef HAVE_SOCKET_H
-#ifdef HAVE_SOCKET_H
-#include <socket.h>
-#endif
 
-#undef HAVE_TCPD_H
-#ifdef HAVE_TCPD_H
-#include <tcpd.h>
-#endif
-
-#undef HAVE_NETINET_IN_H
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-
-#undef HAVE_ARPA_INET_H
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-
-#undef HAVE_NETDB_H
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-
-#undef HAVE_CTYPE_H
-#ifdef HAVE_CTYPE_H
-#include <ctype.h>
-#endif
-
-#undef HAVE_PWD_H
-#ifdef HAVE_PWD_H
-#include <pwd.h>
-#endif
-
-#undef HAVE_GRP_H
-#ifdef HAVE_GRP_H
-#include <grp.h>
-#endif
-
-#undef HAVE_DIRENT_H
-#ifdef HAVE_DIRENT_H
-#include <dirent.h>
-#endif
-
+/* Have SSL support */
 #undef HAVE_SSL
 
-#undef HAVE_KRB5_H
-#ifdef HAVE_KRB5_H
-#include <krb5.h>
-#endif
-
-#undef HAVE_INTTYPES_H
+/* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
-#ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
-#else
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#endif
-#endif
 
-#endif
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the `strdup' function. */
+#undef HAVE_STRDUP
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the `strstr' function. */
+#undef HAVE_STRSTR
+
+/* Define to 1 if you have the `strtok_r' function. */
+#undef HAVE_STRTOK_R
+
+/* Define to 1 if you have the `strtoul' function. */
+#undef HAVE_STRTOUL
+
+/* Define to 1 if the system has the type `struct sockaddr_storage'. */
+#undef HAVE_STRUCT_SOCKADDR_STORAGE
+
+/* Define to 1 if you have the <syslog.h> header file. */
+#undef HAVE_SYSLOG_H
+
+/* Define to 1 if you have the <sys/resource.h> header file. */
+#undef HAVE_SYS_RESOURCE_H
+
+/* Define to 1 if you have the <sys/socket.h> header file. */
+#undef HAVE_SYS_SOCKET_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#undef HAVE_SYS_TIME_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/wait.h> header file. */
+#undef HAVE_SYS_WAIT_H
+
+/* Define to 1 if you have the <tcpd.h> header file. */
+#undef HAVE_TCPD_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Whether va_copy() is available */
+#undef HAVE_VA_COPY
+
+/* Whether __va_copy() is available */
+#undef HAVE___VA_COPY
+
+/* int32_t is uint */
+#undef INT32_T_IS_UINT
+
+/* int32_t is ulong */
+#undef INT32_T_IS_ULONG
+
+/* int32_t is ushort */
+#undef INT32_T_IS_USHORT
+
+/* NRPE syslog facility */
+#undef NRPE_LOG_FACILITY
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Define as the return type of signal handlers (`int' or `void'). */
+#undef RETSIGTYPE
+
+/* Set if we should use setresuid() */
+#undef SETEUID
+
+/* The size of `int', as computed by sizeof. */
+#undef SIZEOF_INT
+
+/* The size of `long', as computed by sizeof. */
+#undef SIZEOF_LONG
+
+/* The size of `short', as computed by sizeof. */
+#undef SIZEOF_SHORT
+
+/* Socket Size Type */
+#undef SOCKET_SIZE_TYPE
+
+/* Set to 1 if we are on Solaris 10 */
+#undef SOLARIS_10
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+#undef TIME_WITH_SYS_TIME
+
+/* Define to 1 if your <sys/time.h> declares `struct tm'. */
+#undef TM_IN_SYS_TIME
+
+/* Set to 1 to use SSL DH */
+#undef USE_SSL_DH
+
+/* u_int32_t is uint */
+#undef U_INT32_T_IS_UINT
+
+/* u_int32_t is uint32_t */
+#undef U_INT32_T_IS_UINT32_T
+
+/* u_int32_t is ulong */
+#undef U_INT32_T_IS_ULONG
+
+/* u_int32_t is ushort */
+#undef U_INT32_T_IS_USHORT
+
+/* Define to empty if `const' does not conform to ANSI C. */
+#undef const
+
+/* Define to `int' if <sys/types.h> doesn't define. */
+#undef gid_t
+
+/* Define to `int' if <sys/types.h> does not define. */
+#undef int32_t
+
+/* Define to `int' if <sys/types.h> does not define. */
+#undef mode_t
+
+/* Define to `int' if <sys/types.h> does not define. */
+#undef pid_t
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#undef size_t
+
+/* type to use in place of socklen_t if not defined */
+#undef socklen_t
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#undef u_int32_t
+
+/* Define to `int' if <sys/types.h> doesn't define. */
+#undef uid_t
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#undef uint32_t
