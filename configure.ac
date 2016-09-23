@@ -296,7 +296,7 @@ AC_TRY_COMPILE([#include <stdlib.h>
 
 dnl Does user want to check for SSL?
 AC_ARG_ENABLE([ssl],
-	AS_HELP_STRING([--enable-ssl],[enables native SSL support]),[
+	AS_HELP_STRING([--disable-ssl],[disables native SSL support @<:@default=check@:>@]),[
 	if test x$enableval = xyes; then
 		check_for_ssl=yes
 	else
