@@ -13,6 +13,11 @@ FIXES
 - /usr/lib/tmpfiles.d/ndo2db.conf should have 'd' type, not 'D' (John Frickson)
 - Fixes in parse_allowed_hosts() and called functions (Jobst Schmalenbach / John Frickson)
 - nrpe.cfg: 'debug' statement needs to be first in file (Jobst Schmalenbach / John Frickson)
+- Added missing debugging syslog entries, and changed printf()'s to syslog()'s. (Jobst Schmalenbach)
+- Fix help output for ssl option (configure) (Ruben Kerkhof)
+- Fixes to README.SSL.md and SECURITY.md (Elan Ruusamäe)
+- Changed the 'check_load' command in nrpe.cfg.in (minusdavid)
+- Cleanup of config.h.in suggested by Ruben Kerkhof
 
 
 3.0 - 2016-08-01
