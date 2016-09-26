@@ -18,6 +18,7 @@ FIXES
 - Fixes to README.SSL.md and SECURITY.md (Elan Ruusamäe)
 - Changed the 'check_load' command in nrpe.cfg.in (minusdavid)
 - Cleanup of config.h.in suggested by Ruben Kerkhof
+- Minor change to logging in check_nrpe (John Frickson)
 
 
 3.0 - 2016-08-01
