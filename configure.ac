@@ -60,7 +60,7 @@ AC_NAGIOS_GET_INETD
 AC_NAGIOS_GET_PATHS
 AC_NAGIOS_GET_FILES
 
-if test "$dist_type" = solaris -a "$dist_ver" != smf11; then
+if test "$dist_type" = solaris -a "$dist_ver" = 10; then
 	AC_DEFINE(SOLARIS_10,yes)
 fi
 
