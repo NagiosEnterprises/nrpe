@@ -237,8 +237,8 @@ void init_ssl(void)
 #ifdef HAVE_SSL
 	DH       *dh;
 	char      seedfile[FILENAME_MAX];
-	int       i, c, x;
-	int       ssl_opts = SSL_OP_ALL | SSL_OP_SINGLE_DH_USE, vrfy;
+	int       i, c, x, vrfy;
+	long      ssl_opts = SSL_OP_ALL | SSL_OP_SINGLE_DH_USE;
 
 	if (use_ssl == FALSE) {
 		if (debug == TRUE)
@@ -2167,8 +2167,8 @@ void my_connection_sighandler(int sig)
 /* drops privileges */
 int drop_privileges(char *user, char *group, int full_drop)
 {
-	uid_t     uid = -1;
-	gid_t     gid = -1;
+	uid_t     uid = (uid_t)-1;
+	gid_t     gid = (gid_t)-1;
 	struct group *grp;
 	struct passwd *pw;
 
@@ -2694,7 +2694,6 @@ int process_arguments(int argc, char **argv)
 
 		default:
 			return ERROR;
-			break;
 		}
 	}
 

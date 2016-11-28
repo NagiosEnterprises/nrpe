@@ -307,7 +307,7 @@ AC_ARG_ENABLE([ssl],
 dnl Optional SSL library and include paths
 if test x$check_for_ssl = xyes; then
 	# need_dh should only be set for NRPE
-	need_dh=yes
+	need_dh=no
 	AC_NAGIOS_GET_SSL
 fi
 

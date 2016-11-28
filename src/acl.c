@@ -78,16 +78,12 @@ int isvalidchar(int c) {
         switch (c) {
         case '.':
                 return 4;
-                break;
         case '/':
                 return 5;
-                break;
         case '-':
                 return 6;
-                break;
         case ',':
                 return 7;
-                break;
         default:
                 return 0;
         }

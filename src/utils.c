@@ -31,6 +31,9 @@
 
 #include "../include/common.h"
 #include "../include/utils.h"
+#ifdef HAVE_PATHS_H
+#include <paths.h>
+#endif
 
 #ifndef HAVE_ASPRINTF
 extern int asprintf(char **ptr, const char *format, ...);

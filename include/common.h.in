@@ -23,8 +23,14 @@
 
 #include "config.h"
 
+#define SSL_TYPE_@SSL_TYPE@
+
 #ifdef HAVE_SSL
 #include <@SSL_INC_PREFIX@@SSL_HDR@>
+# ifdef SSL_TYPE_openssl
+#  include <@SSL_INC_PREFIX@err.h>
+#  include <@SSL_INC_PREFIX@rand.h>
+# endif
 #endif
 
 #define PROGRAM_VERSION "3.0.1"

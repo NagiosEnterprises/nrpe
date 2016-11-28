@@ -58,7 +58,7 @@ const SSL_METHOD *meth;
 SSL_CTX *ctx;
 SSL *ssl;
 int use_ssl = TRUE;
-int ssl_opts = SSL_OP_ALL;
+long ssl_opts = SSL_OP_ALL;
 #else
 int use_ssl = FALSE;
 #endif
@@ -307,7 +307,6 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			if (from_config_file) {
 				printf("Error: The config file should not have a command (-c) option.\n");
 				return ERROR;
-				break;
 			}
 			command_name = strdup(optarg);
 			break;
@@ -316,7 +315,6 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			if (from_config_file) {
 				printf("Error: The config file should not have args (-a) arguments.\n");
 				return ERROR;
-				break;
 			}
 			argindex = optind;
 			break;
@@ -454,7 +452,6 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		default:
 			return ERROR;
-			break;
 		}
 	}
 
@@ -479,7 +476,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			query[sizeof(query) - 1] = '\x0';
 		}
 	}
-
+	printf("Query: |%s|\n", query);
 	if (!from_config_file && config_file != NULL) {
 		if ((rc = read_config_file(config_file)) != OK)
 			return rc;
