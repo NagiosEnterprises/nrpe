@@ -459,12 +459,14 @@ int process_arguments(int argc, char **argv, int from_config_file)
 	}
 
 	/* determine (base) command query */
-	snprintf(query, sizeof(query), "%s",
-			 (command_name == NULL) ? DEFAULT_NRPE_COMMAND : command_name);
-	query[sizeof(query) - 1] = '\x0';
+	if (!from_config_file) {
+		snprintf(query, sizeof(query), "%s",
+				 (command_name == NULL) ? DEFAULT_NRPE_COMMAND : command_name);
+		query[sizeof(query) - 1] = '\x0';
+	}
 
 	/* get the command args */
-	if (argindex > 0) {
+	if (!from_config_file && argindex > 0) {
 
 		for (c = argindex - 1; c < argc; c++) {
 
