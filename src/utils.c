@@ -450,55 +450,6 @@ char *my_strsep(char **stringp, const char *delim)
 	return begin;
 }
 
-int b64_decode(unsigned char *encoded)
-{
-	static const char *b64 = {
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-	};
-	int i, j, l, padding = 0;
-	unsigned char c[4], *outp = encoded;
-
-	union {
-		unsigned c3;
-		struct {
-			unsigned f1:6;
-			unsigned f2:6;
-			unsigned f3:6;
-			unsigned f4:6;
-		} fields;
-	} enc;
-
-	enc.c3 = 0;
-	l = strlen((char *)encoded);
-	for (i = 0; i < l; i += 4) {
-		for (j = 0; j < 4; ++j) {
-			if (encoded[i + j] == '=') {
-				c[j] = 0;
-				++padding;
-			} else if (encoded[i + j] >= 'A' && encoded[i + j] <= 'Z')
-				c[j] = encoded[i + j] - 'A';
-			else if (encoded[i + j] >= 'a' && encoded[i + j] <= 'z')
-				c[j] = encoded[i + j] - 'a' + 26;
-			else if (encoded[i + j] >= '0' && encoded[i + j] <= '9')
-				c[j] = encoded[i + j] - '0' + 52;
-			else if (encoded[i + j] == '+')
-				c[j] = encoded[i + j] - '+' + 62;
-			else
-				c[j] = encoded[i + j] - '/' + 63;
-		}
-		enc.fields.f1 = c[3];
-		enc.fields.f2 = c[2];
-		enc.fields.f3 = c[1];
-		enc.fields.f4 = c[0];
-		*outp++ = (enc.c3 >> 16) & 0xff;
-		*outp++ = (enc.c3 >> 8) & 0xff;
-		*outp++ = (enc.c3) & 0xff;
-	}
-	*outp = '\0';
-
-	return outp - encoded - padding;
-}
-
 /* show license */
 void display_license(void)
 {

@@ -12,6 +12,7 @@ FIXES
 - Cleanup of config.h.in suggested by Ruben Kerkhof
 - Minor change to logging in check_nrpe (John Frickson)
 - Solaris 11 detection is broken in configure (John Frickson)
+- Removed function `b64_decode` which wasn't being used (John Frickson)
 
 
 3.0.1 - 2016-09-08

@@ -49,7 +49,6 @@ char* strip(char*);
 int sendall(int, char*, int*);
 int recvall(int, char*, int*, int);
 char *my_strsep(char**, const char*);
-int b64_decode(unsigned char *encoded);
 void display_license(void);
 
 #endif
