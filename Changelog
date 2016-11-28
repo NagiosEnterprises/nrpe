@@ -14,6 +14,7 @@ FIXES
 - Solaris 11 detection is broken in configure (John Frickson)
 - Removed function `b64_decode` which wasn't being used (John Frickson)
 - check_nrpe ignores -a option when -f option is specified (John Frickson)
+- Added missing LICENSE file (John Frickson)
 
 
 3.0.1 - 2016-09-08
