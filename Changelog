@@ -16,6 +16,7 @@ FIXES
 - check_nrpe ignores -a option when -f option is specified (John Frickson)
 - Added missing LICENSE file (John Frickson)
 - Off-by-one BO in my_system() (John Frickson)
+- Got rid of some compiler warnings (Stefan Krüger / John Frickson)
 
 
 3.0.1 - 2016-09-08
