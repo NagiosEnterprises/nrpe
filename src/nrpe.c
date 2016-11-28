@@ -2125,7 +2125,7 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 					break;
 			}
 			if (tot_bytes < output_size)	/* If buffer is full, discard the rest */
-				strncat(*output, buffer, output_size - tot_bytes);
+				strncat(*output, buffer, output_size - tot_bytes - 1);
 			tot_bytes += bytes_read;
 		}
 
