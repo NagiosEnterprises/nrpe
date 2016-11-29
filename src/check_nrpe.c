@@ -225,12 +225,14 @@ int process_arguments(int argc, char **argv, int from_config_file)
 	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:246hlnuV");
 
 	while (1) {
+		if (argindex > 0)
+			break;
 #ifdef HAVE_GETOPT_LONG
 		c = getopt_long(argc, argv, optchars, long_options, &option_index);
 #else
 		c = getopt(argc, argv, optchars);
 #endif
-		if (c == -1 || c == EOF || argindex > 0)
+		if (c == -1 || c == EOF)
 			break;
 
 		/* process all arguments */
@@ -476,7 +478,6 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			query[sizeof(query) - 1] = '\x0';
 		}
 	}
-	printf("Query: |%s|\n", query);
 	if (!from_config_file && config_file != NULL) {
 		if ((rc = read_config_file(config_file)) != OK)
 			return rc;
