@@ -58,7 +58,7 @@ const SSL_METHOD *meth;
 SSL_CTX *ctx;
 SSL *ssl;
 int use_ssl = TRUE;
-long ssl_opts = SSL_OP_ALL;
+unsigned long ssl_opts = SSL_OP_ALL;
 #else
 int use_ssl = FALSE;
 #endif

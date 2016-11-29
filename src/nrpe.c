@@ -235,10 +235,10 @@ int init(void)
 void init_ssl(void)
 {
 #ifdef HAVE_SSL
-	DH       *dh;
-	char      seedfile[FILENAME_MAX];
-	int       i, c, x, vrfy;
-	long      ssl_opts = SSL_OP_ALL | SSL_OP_SINGLE_DH_USE;
+	DH            *dh;
+	char          seedfile[FILENAME_MAX];
+	int           i, c, x, vrfy;
+	unsigned long ssl_opts = SSL_OP_ALL | SSL_OP_SINGLE_DH_USE;
 
 	if (use_ssl == FALSE) {
 		if (debug == TRUE)
@@ -2396,7 +2396,6 @@ void sighandler(int sig)
 void child_sighandler(int sig)
 {
 	exit(0);					/* terminate */
-	return;						/* so the compiler doesn't complain... */
 }
 
 /* tests whether or not a client request is valid */
