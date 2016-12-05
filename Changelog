@@ -17,6 +17,7 @@ FIXES
 - Added missing LICENSE file (John Frickson)
 - Off-by-one BO in my_system() (John Frickson)
 - Got rid of some compiler warnings (Stefan Krüger / John Frickson)
+- Add SOURCE_DATE_EPOCH specification support for reproducible builds. (Bas Couwenberg)
 
 
 3.0.1 - 2016-09-08
