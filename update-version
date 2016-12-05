@@ -20,11 +20,11 @@ fi
 
 # Get date (two formats)
 if [ -n "$2" ]; then
-    LONGDATE=`date -d "$2" "+%B %d, %Y"`
-    SHORTDATE=`date -d "$2" "+%m-%d-%Y"`
+    LONGDATE=$(LC_ALL=C date -u -d "$2" "+%B %d, %Y")
+    SHORTDATE=$(date -u -d "$2" "+%m-%d-%Y")
 else
-    LONGDATE=`date "+%B %d, %Y"`
-    SHORTDATE=`date "+%m-%d-%Y"`
+    LONGDATE=$(LC_ALL=C date -u -d "@${SOURCE_DATE_EPOCH:-$(date +%s)}" "+%B %d, %Y")
+    SHORTDATE=$(date -u -d "@${SOURCE_DATE_EPOCH:-$(date +%s)}" "+%m-%d-%Y")
 fi
 
 # Current version number
