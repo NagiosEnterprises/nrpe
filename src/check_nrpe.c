@@ -809,10 +809,23 @@ void setup_ssl()
 			exit(STATE_CRITICAL);
 		}
 
-		if (sslprm.ssl_min_ver >= SSLv3) {
-			ssl_opts |= SSL_OP_NO_SSLv2;
-			if (sslprm.ssl_min_ver >= TLSv1)
+		switch(sslprm.ssl_min_ver) {
+			case SSLv2:
+			case SSLv2_plus:
+				break;
+			case TLSv1_2:
+			case TLSv1_2_plus:
+				ssl_opts |= SSL_OP_NO_TLSv1_1;
+			case TLSv1_1:
+			case TLSv1_1_plus:
+				ssl_opts |= SSL_OP_NO_TLSv1;
+			case TLSv1:
+			case TLSv1_plus:
 				ssl_opts |= SSL_OP_NO_SSLv3;
+			case SSLv3:
+			case SSLv3_plus:
+				ssl_opts |= SSL_OP_NO_SSLv2;
+				break;
 		}
 		SSL_CTX_set_options(ctx, ssl_opts);
 
