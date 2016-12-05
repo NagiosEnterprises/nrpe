@@ -169,12 +169,8 @@ int main(int argc, char **argv)
 		result = read_response();	/* Get the response */
 	}
 
-	if (result != -1) {
-		if (force_v2_packet = 0 && packet_ver == NRPE_PACKET_VERSION_2)
-			syslog(LOG_INFO, "Remote %s accepted a Version %d Packet", rem_host, packet_ver);
-		else
-			syslog(LOG_DEBUG, "Remote %s accepted a Version %d Packet", rem_host, packet_ver);
-	}
+	if (result != -1 && force_v2_packet == 0 && packet_ver == NRPE_PACKET_VERSION_2)
+		syslog(LOG_DEBUG, "Remote %s accepted a Version %d Packet", rem_host, packet_ver);
 
 	return result;
 }
