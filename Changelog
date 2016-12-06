@@ -20,6 +20,7 @@ FIXES
 - Add SOURCE_DATE_EPOCH specification support for reproducible builds. (Bas Couwenberg)
 - nrpe 3.0.1 allows TLSv1 and TLSv1.1 when I configure for TLSv1.2+ (John Frickson)
 - "Remote %s accepted a Version %s Packet", please add to debug (John Frickson)
+- nrpe 3.0.1 segfaults when key and/or cert are broken symlinks (John Frickson)
 
 
 3.0.1 - 2016-09-08

@@ -325,11 +325,14 @@ void init_ssl(void)
 	SSL_CTX_set_options(ctx, ssl_opts);
 
 	if (sslprm.cert_file != NULL) {
+		char	errstr[120] = { "" };
 		if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
 			SSL_CTX_free(ctx);
-			while ((x = ERR_get_error()) != 0)
+			while ((x = ERR_get_error()) != 0) {
+				ERR_error_string(x, errstr);
 				syslog(LOG_ERR, "Error: could not use certificate file %s : %s",
-					   sslprm.cert_file, ERR_error_string(x, NULL));
+					   sslprm.cert_file, errstr);
+			}
 			exit(STATE_CRITICAL);
 		}
 		if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
