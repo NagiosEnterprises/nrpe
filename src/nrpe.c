@@ -929,8 +929,10 @@ int read_config_dir(char *dirname)
 		if (S_ISDIR(buf.st_mode)) {
 
 			/* ignore current, parent and hidden directory entries */
-			if (dirfile[i]->d_name[0] == '.')
+			if (dirfile[i]->d_name[0] == '.') {
+				free(dirfile[i]);
 				continue;
+			}
 
 			/* process the config directory */
 			result = read_config_dir(config_file);
