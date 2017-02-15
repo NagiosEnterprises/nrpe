@@ -886,35 +886,36 @@ int read_config_file(char *filename)
 /* process all config files in a specific config directory (with directory recursion) */
 int read_config_dir(char *dirname)
 {
-	struct dirent *dirfile;
+	struct dirent **dirfile;
 	struct stat buf;
 	char      config_file[MAX_FILENAME_LENGTH];
-	DIR      *dirp;
 	int       result = OK;
-	int       x;
+	int       x,i,n;
 
-	/* open the directory for reading */
-	dirp = opendir(dirname);
-	if (dirp == NULL) {
+	/* read and sort the directory contents */
+	n = scandir(dirname, &dirfile, 0, alphasort);
+	if (n < 0) {
 		syslog(LOG_ERR, "Could not open config directory '%s' for reading.\n", dirname);
 		return ERROR;
 	}
 
 	/* process all files in the directory... */
-	while ((dirfile = readdir(dirp)) != NULL) {
+	for (i = 0; i < n; i++) {
 
 		/* create the full path to the config file or subdirectory */
-		snprintf(config_file, sizeof(config_file) - 1, "%s/%s", dirname, dirfile->d_name);
+		snprintf(config_file, sizeof(config_file) - 1, "%s/%s", dirname, dirfile[i]->d_name);
 		config_file[sizeof(config_file) - 1] = '\x0';
 		stat(config_file, &buf);
 
 		/* process this if it's a config file... */
-		x = strlen(dirfile->d_name);
-		if (x > 4 && !strcmp(dirfile->d_name + (x - 4), ".cfg")) {
+		x = strlen(dirfile[i]->d_name);
+		if (x > 4 && !strcmp(dirfile[i]->d_name + (x - 4), ".cfg")) {
 
 			/* only process normal files */
-			if (!S_ISREG(buf.st_mode))
+			if (!S_ISREG(buf.st_mode)) {
+				free(dirfile[i]);
 				continue;
+			}
 
 			/* process the config file */
 			result = read_config_file(config_file);
@@ -928,8 +929,10 @@ int read_config_dir(char *dirname)
 		if (S_ISDIR(buf.st_mode)) {
 
 			/* ignore current, parent and hidden directory entries */
-			if (dirfile->d_name[0] == '.')
+			if (dirfile[i]->d_name[0] == '.') {
+				free(dirfile[i]);
 				continue;
+			}
 
 			/* process the config directory */
 			result = read_config_dir(config_file);
@@ -938,9 +941,11 @@ int read_config_dir(char *dirname)
 			if (result == ERROR)
 				break;
 		}
+
+		free(dirfile[i]);
 	}
 
-	closedir(dirp);
+	free(dirfile);
 	return result;
 }
 
