@@ -22,6 +22,7 @@ FIXES
 - "Remote %s accepted a Version %s Packet", please add to debug (John Frickson)
 - nrpe 3.0.1 segfaults when key and/or cert are broken symlinks (John Frickson)
 - Fixed a couple of typos in docs/NRPE.* files (Ludmil Meltchev)
+- Changed release date to ISO format (yyyy-mm-dd) (John Frickson)
 
 
 3.0.1 - 2016-09-08

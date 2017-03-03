@@ -21,17 +21,17 @@ fi
 # Get date (two formats)
 if [ -n "$2" ]; then
     LONGDATE=$(LC_ALL=C date -u -d "$2" "+%B %d, %Y")
-    SHORTDATE=$(date -u -d "$2" "+%m-%d-%Y")
+    SHORTDATE=$(date -u -d "$2" "+%Y-%m-%d")
 else
     LONGDATE=$(LC_ALL=C date -u -d "@${SOURCE_DATE_EPOCH:-$(date +%s)}" "+%B %d, %Y")
-    SHORTDATE=$(date -u -d "@${SOURCE_DATE_EPOCH:-$(date +%s)}" "+%m-%d-%Y")
+    SHORTDATE=$(date -u -d "@${SOURCE_DATE_EPOCH:-$(date +%s)}" "+%Y-%m-%d")
 fi
 
 # Current version number
 CURRENTVERSION=3.0.1
 
 # Last date
-LASTDATE=09-08-2016
+LASTDATE=2016-09-08
 
 if [ "x$1" = "x" ]
 then
