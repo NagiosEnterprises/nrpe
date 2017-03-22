@@ -49,7 +49,7 @@
 
 extern int debug;
 
-/* This function checks if a char argumnet from valid char range.
+/* This function checks if a char argument from valid char range.
  * Valid range is: ASCII only, a number or a letter, a space, a dot, a slash, a dash, a comma.
  *
  * Returns:
