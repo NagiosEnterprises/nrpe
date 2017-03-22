@@ -479,7 +479,7 @@ int add_domain_to_acl(char *domain) {
         }
 }
 
-/* Checks connectiong host in ACL
+/* Checks connection host in ACL
  *
  * Returns:
  * 1 - on success
