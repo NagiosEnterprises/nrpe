@@ -38,7 +38,7 @@ pid_file=@piddir@/nrpe.pid
 
 # PORT NUMBER
 # Port number we should wait for connections on.
-# NOTE: This must be a non-priviledged port (i.e. > 1024).
+# NOTE: This must be a non-privileged port (i.e. > 1024).
 # NOTE: This option is ignored if NRPE is running under either inetd or xinetd
 
 server_port=@nrpe_port@
