@@ -596,22 +596,22 @@ void set_timeout_state (char *state) {
 
 int parse_timeout_string (char *timeout_str)
 {
-	char *seperated_str;
+	char *separated_str;
 	char *timeout_val = NULL;
 	char *timeout_sta = NULL;
 
 	if (strstr(timeout_str, ":") == NULL)
 		timeout_val = timeout_str;
 	else if (strncmp(timeout_str, ":", 1) == 0) {
-		seperated_str = strtok(timeout_str, ":");
-		if (seperated_str != NULL)
-			timeout_sta = seperated_str;
+		separated_str = strtok(timeout_str, ":");
+		if (separated_str != NULL)
+			timeout_sta = separated_str;
 	} else {
-		seperated_str = strtok(timeout_str, ":");
-		timeout_val = seperated_str;
-		seperated_str = strtok(NULL, ":");
-		if (seperated_str != NULL) {
-			timeout_sta = seperated_str;
+		separated_str = strtok(timeout_str, ":");
+		timeout_val = separated_str;
+		separated_str = strtok(NULL, ":");
+		if (separated_str != NULL) {
+			timeout_sta = separated_str;
 		}
 	}
 
