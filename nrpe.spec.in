@@ -32,7 +32,7 @@
 # rpm -ba|--rebuild --define 'nsport 5666'
 %{?port:%define nsport %{port}}
 
-# Macro that print mesages to syslog at package (un)install time
+# Macro that print messages to syslog at package (un)install time
 %define nnmmsg logger -t %{name}/rpm
 
 Summary: Host/service/network monitoring agent for Nagios
