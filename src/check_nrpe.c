@@ -98,7 +98,7 @@ void set_timeout_state (char *state);
 int parse_timeout_string (char *timeout_str);
 void usage(int result);
 void setup_ssl();
-void set_sig_hadlers();
+void set_sig_handlers();
 int connect_to_remote();
 int send_request();
 int read_response();
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 
 	generate_crc32_table();		/* generate the CRC 32 table */
 	setup_ssl();				/* Do all the SSL/TLS set up */
-	set_sig_hadlers();			/* initialize alarm signal handling */
+	set_sig_handlers();			/* initialize alarm signal handling */
 	result = connect_to_remote();	/* Make the connection */
 	if (result != STATE_OK) {
 		alarm(0);
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 
 		/* Rerun the setup */
 		setup_ssl();
-		set_sig_hadlers();
+		set_sig_handlers();
 		result = connect_to_remote();	/* Connect */
 		if (result != STATE_OK) {
 			alarm(0);
@@ -870,7 +870,7 @@ void setup_ssl()
 #endif
 }
 
-void set_sig_hadlers()
+void set_sig_handlers()
 {
 #ifdef HAVE_SIGACTION
 	struct sigaction sig_action;
@@ -1110,7 +1110,7 @@ int read_response()
 	int rc, result;
 
 	alarm(0);
-	set_sig_hadlers();
+	set_sig_handlers();
 
 #ifdef HAVE_SSL
 	rc = read_packet(sd, ssl, &v2_receive_packet, &v3_receive_packet);
