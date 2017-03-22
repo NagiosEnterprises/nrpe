@@ -129,7 +129,7 @@ master.
 
 * To get the latest version of `autoconf-macros` into your parent project:
 
-           git subtgree pull --squash --prefix=macros autoconf-macros master
+           git subtree pull --squash --prefix=macros autoconf-macros master
 
 
 
