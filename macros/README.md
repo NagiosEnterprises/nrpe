@@ -94,7 +94,7 @@ on a simple program to make sure a compile and link will work correctly.
 ## Usage
 
 This repo is intended to be used as a git subtree, so changes will
-automatically propogate, and still be reasonably easy to use.
+automatically propagate, and still be reasonably easy to use.
 
 * First, Create, checkout, clone, or branch your project. If you do an
 `ls -AF` it might look something like this:
