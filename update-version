@@ -73,8 +73,8 @@ perl -i -p -e "s/PKG_REL_DATE=.*\"/PKG_REL_DATE=\"$SHORTDATE\"/;" configure.ac
 autoconf
 
 # Update RPM spec file with version number
-perl -i -p -e "s/%define version .*/%define version $1/;" nrpe.spec
-perl -i -p -e "if( /\%define _docdir/) { s/$CURRENTVERSION/$1/; }" nrpe.spec
+perl -i -p -e "s/%define version .*/%define version $1/;" nrpe.spec.in
+perl -i -p -e "if( /\%define _docdir/) { s/$CURRENTVERSION/$1/; }" nrpe.spec.in
 
 # Update this file with version number and last date
 perl -i -p -e "s/^CURRENTVERSION=.*/CURRENTVERSION=$newversion/;" update-version
