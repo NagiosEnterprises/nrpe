@@ -1,5 +1,5 @@
 [Unit]
-Description=Nagios Remote Program Executor
+Description=Nagios Remote Plugin Executor
 Documentation=http://www.nagios.org/documentation
 Before=nrpe.service
 Conflicts=nrpe.service
