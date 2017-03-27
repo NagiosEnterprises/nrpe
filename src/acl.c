@@ -49,7 +49,7 @@
 
 extern int debug;
 
-/* This function checks if a char argumnet from valid char range.
+/* This function checks if a char argument from valid char range.
  * Valid range is: ASCII only, a number or a letter, a space, a dot, a slash, a dash, a comma.
  *
  * Returns:
@@ -228,7 +228,7 @@ int add_ipv4_to_acl(char *ipv4) {
                 return 0;
         }
 
-        /* Conver ip and mask to unsigned long */
+        /* Convert ip and mask to unsigned long */
         ip = htonl((data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3]);
         mask =  htonl(-1 << (32 - data[4]));
 
@@ -479,7 +479,7 @@ int add_domain_to_acl(char *domain) {
         }
 }
 
-/* Checks connectiong host in ACL
+/* Checks connection host in ACL
  *
  * Returns:
  * 1 - on success

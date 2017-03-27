@@ -1271,7 +1271,7 @@ void setup_wait_conn(void)
 				   "Warning: Daemon is configured to accept command arguments with bash command substitutions!");
 		else
 			syslog(LOG_NOTICE,
-				   "Warning: Daemon is configured to accept command arguments with bash command substitutions, but is not configured to accept command argements from clients. Enable command arguments if you wish to allow command arguments with bash command substitutions.");
+				   "Warning: Daemon is configured to accept command arguments with bash command substitutions, but is not configured to accept command arguments from clients. Enable command arguments if you wish to allow command arguments with bash command substitutions.");
 	}
 # endif
 #endif

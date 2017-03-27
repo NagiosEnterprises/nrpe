@@ -98,7 +98,7 @@ void set_timeout_state (char *state);
 int parse_timeout_string (char *timeout_str);
 void usage(int result);
 void setup_ssl();
-void set_sig_hadlers();
+void set_sig_handlers();
 int connect_to_remote();
 int send_request();
 int read_response();
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 
 	generate_crc32_table();		/* generate the CRC 32 table */
 	setup_ssl();				/* Do all the SSL/TLS set up */
-	set_sig_hadlers();			/* initialize alarm signal handling */
+	set_sig_handlers();			/* initialize alarm signal handling */
 	result = connect_to_remote();	/* Make the connection */
 	if (result != STATE_OK) {
 		alarm(0);
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 
 		/* Rerun the setup */
 		setup_ssl();
-		set_sig_hadlers();
+		set_sig_handlers();
 		result = connect_to_remote();	/* Connect */
 		if (result != STATE_OK) {
 			alarm(0);
@@ -596,22 +596,22 @@ void set_timeout_state (char *state) {
 
 int parse_timeout_string (char *timeout_str)
 {
-	char *seperated_str;
+	char *separated_str;
 	char *timeout_val = NULL;
 	char *timeout_sta = NULL;
 
 	if (strstr(timeout_str, ":") == NULL)
 		timeout_val = timeout_str;
 	else if (strncmp(timeout_str, ":", 1) == 0) {
-		seperated_str = strtok(timeout_str, ":");
-		if (seperated_str != NULL)
-			timeout_sta = seperated_str;
+		separated_str = strtok(timeout_str, ":");
+		if (separated_str != NULL)
+			timeout_sta = separated_str;
 	} else {
-		seperated_str = strtok(timeout_str, ":");
-		timeout_val = seperated_str;
-		seperated_str = strtok(NULL, ":");
-		if (seperated_str != NULL) {
-			timeout_sta = seperated_str;
+		separated_str = strtok(timeout_str, ":");
+		timeout_val = separated_str;
+		separated_str = strtok(NULL, ":");
+		if (separated_str != NULL) {
+			timeout_sta = separated_str;
 		}
 	}
 
@@ -870,7 +870,7 @@ void setup_ssl()
 #endif
 }
 
-void set_sig_hadlers()
+void set_sig_handlers()
 {
 #ifdef HAVE_SIGACTION
 	struct sigaction sig_action;
@@ -1110,7 +1110,7 @@ int read_response()
 	int rc, result;
 
 	alarm(0);
-	set_sig_hadlers();
+	set_sig_handlers();
 
 #ifdef HAVE_SSL
 	rc = read_packet(sd, ssl, &v2_receive_packet, &v3_receive_packet);

@@ -34,8 +34,8 @@ used in subsequent macros.
 > Output Variables : dist_type, dist_ver
 
 This macro detects the distribution type. For Linux, this would be rh
-(for Red Hat and derivitives), suse (OpenSUSE, SLES, derivitives), gentoo
-(Gentoo and derivitives), debian (Debian and derivitives), and so on.
+(for Red Hat and derivatives), suse (OpenSUSE, SLES, derivatives), gentoo
+(Gentoo and derivatives), debian (Debian and derivatives), and so on.
 For BSD, this would be openbsd, netbsd, freebsd, dragonfly, etc. It can
 also be aix, solaris, osx, and so on for Unix operating systems.
 
@@ -94,7 +94,7 @@ on a simple program to make sure a compile and link will work correctly.
 ## Usage
 
 This repo is intended to be used as a git subtree, so changes will
-automatically propogate, and still be reasonably easy to use.
+automatically propagate, and still be reasonably easy to use.
 
 * First, Create, checkout, clone, or branch your project. If you do an
 `ls -AF` it might look something like this:
@@ -129,7 +129,7 @@ master.
 
 * To get the latest version of `autoconf-macros` into your parent project:
 
-           git subtgree pull --squash --prefix=macros autoconf-macros master
+           git subtree pull --squash --prefix=macros autoconf-macros master
 
 
 

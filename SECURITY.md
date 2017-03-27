@@ -46,7 +46,7 @@ do two things:
 
 #### ENABLING BASH COMMAND SUBSTITUTION ####
 
-To enable support for arguments containing bash command substitions, 
+To enable support for arguments containing bash command substitutions, 
 you must do two things:
 
    1.  Enable arguments as described above
