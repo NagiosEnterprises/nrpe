@@ -2,7 +2,7 @@
 NRPE Changelog
 **************
 
-3.0.x - 2016-xx-xx
+3.0.x - 201x-xx-xx
 ------------------
 FIXES
 - Added missing debugging syslog entries, and changed printf()'s to syslog()'s. (Jobst Schmalenbach)
@@ -23,6 +23,10 @@ FIXES
 - nrpe 3.0.1 segfaults when key and/or cert are broken symlinks (John Frickson)
 - Fixed a couple of typos in docs/NRPE.* files (Ludmil Meltchev)
 - Changed release date to ISO format (yyyy-mm-dd) (John Frickson)
+- Fix systemd unit description (Bas Couwenberg)
+- Add reload command to systemd service file (Bas Couwenberg)
+- fix file not found error when updating version (Sven Nierlein)
+- Spelling fixes (Josh Soref)
 
 
 3.0.1 - 2016-09-08
