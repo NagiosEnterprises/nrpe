@@ -246,6 +246,13 @@ connection_timeout=300
 
 
 
+# NASTY METACHARACTERS
+# This option allows you to override the list of characters that cannot
+# be passed to the NRPE daemon.
+
+# nasty_metachars="|`&><'\\[]{};\r\n"
+
+
 # INCLUDE CONFIG FILE
 # This directive allows you to include definitions from an external config file.
 

@@ -2,8 +2,11 @@
 NRPE Changelog
 **************
 
-3.0.x - 201x-xx-xx
+3.x.x - 201x-xx-xx
 ------------------
+ENHANCEMENTS
+- Added option to nrpe.cfg.in that can override hard-coded NASTY_METACHARS (John Frickson)
+
 FIXES
 - Added missing debugging syslog entries, and changed printf()'s to syslog()'s. (Jobst Schmalenbach)
 - Fix help output for ssl option (configure) (Ruben Kerkhof)

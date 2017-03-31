@@ -106,6 +106,7 @@ int       debug = FALSE;
 int       use_src = FALSE;		/* Define parameter for SRC option */
 int       no_forking = FALSE;
 int       listen_queue_size = DEFAULT_LISTEN_QUEUE_SIZE;
+char     *nasty_metachars = NULL;
 
 /* SSL/TLS parameters */
 typedef enum _SSL_VER {
@@ -183,6 +184,9 @@ int main(int argc, char **argv)
 		syslog(LOG_ERR, "Config file '%s' contained errors, aborting...", config_file);
 		return STATE_CRITICAL;
 	}
+
+	if (!nasty_metachars)
+		nasty_metachars = strdup(NASTY_METACHARS);
 
 	/* initialize macros */
 	for (x = 0; x < MAX_COMMAND_ARGUMENTS; x++)
@@ -889,6 +893,9 @@ int read_config_file(char *filename)
 
 		} else if (!strcmp(varname, "keep_env_vars"))
 			keep_env_vars = strdup(varvalue);
+
+		else if (!strcmp(varname, "nasty_metachars"))
+			nasty_metachars = strdup(varvalue);
 
 		else {
 			syslog(LOG_WARNING, "Unknown option specified in config file '%s' - Line %d\n",
@@ -2543,7 +2550,7 @@ int contains_nasty_metachars(char *str)
 	if (str == NULL)
 		return FALSE;
 
-	result = strcspn(str, NASTY_METACHARS);
+	result = strcspn(str, nasty_metachars);
 	if (result != strlen(str))
 		return TRUE;
 
