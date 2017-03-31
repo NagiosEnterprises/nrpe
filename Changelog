@@ -33,6 +33,7 @@ FIXES
 - Add reload command to systemd service file (Bas Couwenberg)
 - fix file not found error when updating version (Sven Nierlein)
 - Spelling fixes (Josh Soref)
+- Return UNKNOWN when check_nrpe cannot communicate with nrpe and -u set (John Frickson)
 
 
 3.0.1 - 2016-09-08

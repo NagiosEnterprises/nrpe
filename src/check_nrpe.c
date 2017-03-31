@@ -674,7 +674,7 @@ void usage(int result)
 		printf(" -6           = bind to ipv6 only\n");
 		printf(" -n           = Do no use SSL\n");
 		printf
-			(" -u           = (DEPRECATED) Make timeouts return UNKNOWN instead of CRITICAL\n");
+			(" -u           = Make connection problems return UNKNOWN instead of CRITICAL\n");
 		printf(" -V           = Show version\n");
 		printf(" -l           = Show license\n");
 		printf(" <dhopt>      = Anonymous Diffie Hellman use:\n");
@@ -917,7 +917,7 @@ int connect_to_remote()
 	/* try to connect to the host at the given port number */
 	if ((sd =
 		 my_connect(server_name, &hostaddr, server_port, address_family, bind_address)) < 0)
-		exit(STATE_CRITICAL);
+		exit(timeout_return_code);
 
 	result = STATE_OK;
 	addrlen = sizeof(addr);
