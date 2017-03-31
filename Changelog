@@ -8,7 +8,7 @@ ENHANCEMENTS
 - Added option to nrpe.cfg.in that can override hard-coded NASTY_METACHARS (John Frickson)
 - While processing 'include_dir' statement, sort the files (Philippe Kueck / John Frickson)
 - nrpe can now write to a log file using 'log_file=' in nrpe.cfg (John Frickson)
-- check_nrpe can now write to a log file using '--log_file=' or '-g' options (John Frickson)
+- check_nrpe can now write to a log file using '--log-file=' or '-g' options (John Frickson)
 
 FIXES
 - Added missing debugging syslog entries, and changed printf()'s to syslog()'s. (Jobst Schmalenbach)
