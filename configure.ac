@@ -243,7 +243,7 @@ AC_CHECK_LIB(wrap,main,[
 	AC_TRY_LINK([#include <tcpd.h>
 		],[int a = rfc931_timeout;],AC_DEFINE(HAVE_RFC931_TIMEOUT))
 	])
-AC_CHECK_FUNCS(strdup strstr strtoul strtok_r initgroups closesocket sigaction)
+AC_CHECK_FUNCS(strdup strstr strtoul strtok_r initgroups closesocket sigaction scandir)
 
 dnl socklen_t check - from curl
 AC_CHECK_TYPE([socklen_t], ,[

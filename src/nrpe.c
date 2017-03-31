@@ -912,12 +912,28 @@ int read_config_file(char *filename)
 int read_config_dir(char *dirname)
 {
 	struct dirent *dirfile;
+#ifdef HAVE_SCANDIR
+	struct dirent **dirfiles;
+	int       x, i, n;
+#else
+	DIR      *dirp;
+	int       x;
+#endif
 	struct stat buf;
 	char      config_file[MAX_FILENAME_LENGTH];
-	DIR      *dirp;
 	int       result = OK;
-	int       x;
 
+#ifdef HAVE_SCANDIR
+	/* read and sort the directory contents */
+	n = scandir(dirname, &dirfiles, 0, alphasort);
+	if (n < 0) {
+		syslog(LOG_ERR, "Could not open config directory '%s' for reading.\n", dirname);
+		return ERROR;
+	}
+
+	for (i = 0; i < n; i++) {
+		dirfile = dirfiles[i];
+#else
 	/* open the directory for reading */
 	dirp = opendir(dirname);
 	if (dirp == NULL) {
@@ -925,8 +941,10 @@ int read_config_dir(char *dirname)
 		return ERROR;
 	}
 
-	/* process all files in the directory... */
 	while ((dirfile = readdir(dirp)) != NULL) {
+#endif
+
+		/* process all files in the directory... */
 
 		/* create the full path to the config file or subdirectory */
 		snprintf(config_file, sizeof(config_file) - 1, "%s/%s", dirname, dirfile->d_name);
@@ -962,10 +980,18 @@ int read_config_dir(char *dirname)
 			/* break out if we encountered an error */
 			if (result == ERROR)
 				break;
+
 		}
 	}
 
+#ifdef HAVE_SCANDIR
+	for (i = 0; i < n; i++)
+		free(dirfiles[i]);
+	free(dirfiles);
+#else
 	closedir(dirp);
+#endif
+
 	return result;
 }
 

@@ -73,6 +73,9 @@
 /* Define to 1 if you have the `sigaction' function. */
 #undef HAVE_SIGACTION
 
+/* Define to 1 if you have the `scandir' function. */
+#undef HAVE_SCANDIR
+
 /* Set to 1 if you have rfc931_timeout */
 #undef HAVE_RFC931_TIMEOUT
 
