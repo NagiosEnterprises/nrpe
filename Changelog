@@ -34,6 +34,7 @@ FIXES
 - fix file not found error when updating version (Sven Nierlein)
 - Spelling fixes (Josh Soref)
 - Return UNKNOWN when check_nrpe cannot communicate with nrpe and -u set (John Frickson)
+- xinetd.d parameter causes many messages in log file (John Frickson)
 
 
 3.0.1 - 2016-09-08
