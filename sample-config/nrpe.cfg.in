@@ -18,6 +18,14 @@ log_facility=@log_facility@
 
 
 
+# LOG FILE
+# If a log file is specified in this option, nrpe will write to
+# that file instead of using syslog.
+
+#log_file=@logdir@/nrpe.log
+
+
+
 # DEBUGGING OPTION
 # This option determines whether or not debugging messages are logged to the
 # syslog facility.

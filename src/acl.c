@@ -42,7 +42,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <netdb.h>
-#include <syslog.h>
 #include <stdarg.h>
 
 #include "../include/acl.h"
@@ -142,11 +141,11 @@ int add_ipv4_to_acl(char *ipv4) {
         struct ip_acl *ip_acl_curr;
 
 		if(debug == TRUE)
-			syslog(LOG_INFO, "add_ipv4_to_acl: checking ip-address >%s<", ipv4);
+			logit(LOG_INFO, "add_ipv4_to_acl: checking ip-address >%s<", ipv4);
 
         /* Check for min and max IPv4 valid length */
 		if (len < 7 || len > 18) {
-			syslog(LOG_INFO, "add_ipv4_to_acl: Error, ip-address >%s< incorrect length", ipv4);
+			logit(LOG_INFO, "add_ipv4_to_acl: Error, ip-address >%s< incorrect length", ipv4);
 			return 0;
 		}
 
@@ -158,7 +157,7 @@ int add_ipv4_to_acl(char *ipv4) {
 			/* Return 0 on error state */
 			if (state == -1) {
 				if(debug == TRUE)
-					syslog(LOG_INFO, "add_ipv4_to_acl: Error, ip-address >%s< incorrect "
+					logit(LOG_INFO, "add_ipv4_to_acl: Error, ip-address >%s< incorrect "
 								"format, continue with next check ...", ipv4);
 				return 0;
 			}
@@ -209,7 +208,7 @@ int add_ipv4_to_acl(char *ipv4) {
                 break;
         default:
                 /* Bad states */
-                syslog(LOG_INFO, "add_ipv4_to_acl: Error, ip-address >%s< bad state", ipv4);
+                logit(LOG_INFO, "add_ipv4_to_acl: Error, ip-address >%s< bad state", ipv4);
                 return 0;
         }
 
@@ -218,13 +217,13 @@ int add_ipv4_to_acl(char *ipv4) {
          */
         for (i=0; i < 4; i++) {
                 if (data[i] < 0 || data[i] > 255) {
-                        syslog(LOG_ERR,"Invalid IPv4 address/network format(%s) in allowed_hosts option\n",ipv4);
+                        logit(LOG_ERR,"Invalid IPv4 address/network format(%s) in allowed_hosts option\n",ipv4);
                         return 0;
                 }
         }
 
         if (data[4] < 0 || data[4] > 32) {
-                syslog(LOG_ERR,"Invalid IPv4 network mask format(%s) in allowed_hosts option\n",ipv4);
+                logit(LOG_ERR,"Invalid IPv4 network mask format(%s) in allowed_hosts option\n",ipv4);
                 return 0;
         }
 
@@ -234,13 +233,13 @@ int add_ipv4_to_acl(char *ipv4) {
 
         /* Wrong network address */
         if ( (ip & mask) != ip) {
-                syslog(LOG_ERR,"IP address and mask do not match in %s\n",ipv4);
+                logit(LOG_ERR,"IP address and mask do not match in %s\n",ipv4);
                 return 0;
         }
 
         /* Add addr to ip_acl list */
         if ( (ip_acl_curr = malloc(sizeof(*ip_acl_curr))) == NULL) {
-                syslog(LOG_ERR,"Can't allocate memory for ACL, malloc error\n");
+                logit(LOG_ERR,"Can't allocate memory for ACL, malloc error\n");
                 return 0;
         }
 
@@ -258,7 +257,7 @@ int add_ipv4_to_acl(char *ipv4) {
         ip_acl_prev = ip_acl_curr;
 
         if(debug == TRUE)
-          syslog(LOG_INFO, "add_ipv4_to_acl: ip-address >%s< correct, adding.", ipv4);
+          logit(LOG_INFO, "add_ipv4_to_acl: ip-address >%s< correct, adding.", ipv4);
 
         return 1;
 }
@@ -284,7 +283,7 @@ int add_ipv6_to_acl(char *ipv6) {
 		messages if needed */
 	ipv6tmp = strdup(ipv6);
 	if(NULL == ipv6tmp) {
-		syslog(LOG_ERR, "Memory allocation failed for copy of address: %s\n", 
+		logit(LOG_ERR, "Memory allocation failed for copy of address: %s\n", 
 				ipv6);
 		return 0;
 		}
@@ -340,7 +339,7 @@ int add_ipv6_to_acl(char *ipv6) {
 	/* Add address to ip_acl list */
 	ip_acl_curr = malloc(sizeof(*ip_acl_curr));
 	if(NULL == ip_acl_curr) {
-		syslog(LOG_ERR, "Memory allocation failed for ACL: %s\n", ipv6);
+		logit(LOG_ERR, "Memory allocation failed for ACL: %s\n", ipv6);
 		return 0;
 		}
 
@@ -401,7 +400,7 @@ int add_domain_to_acl(char *domain) {
         struct dns_acl *dns_acl_curr;
 
         if (len > 63) {
-                syslog(LOG_INFO,
+                logit(LOG_INFO,
 					   "ADD_DOMAIN_TO_ACL: Error, did not add >%s< to acl list, too long!",
 					   domain);
                 return 0;
@@ -443,7 +442,7 @@ int add_domain_to_acl(char *domain) {
                         }
                         break;
                 default:
-                        syslog(LOG_INFO,
+                        logit(LOG_INFO,
 							   "ADD_DOMAIN_TO_ACL: Error, did not add >%s< to acl list, "
 								"invalid chars!", domain);
 					/* Not valid chars */
@@ -456,7 +455,7 @@ int add_domain_to_acl(char *domain) {
         case 1: case 4: case 5:
                 /* Add name to domain ACL list */
                 if ( (dns_acl_curr = malloc(sizeof(*dns_acl_curr))) == NULL) {
-                        syslog(LOG_ERR,"Can't allocate memory for ACL, malloc error\n");
+                        logit(LOG_ERR,"Can't allocate memory for ACL, malloc error\n");
                         return 0;
                 }
                 strcpy(dns_acl_curr->domain, domain);
@@ -469,10 +468,10 @@ int add_domain_to_acl(char *domain) {
 
                 dns_acl_prev = dns_acl_curr;
                 if(debug == TRUE)
-                     syslog(LOG_INFO, "ADD_DOMAIN_TO_ACL: added >%s< to acl list!", domain);
+                     logit(LOG_INFO, "ADD_DOMAIN_TO_ACL: added >%s< to acl list!", domain);
                 return 1;
         default:
-                syslog(LOG_INFO,
+                logit(LOG_INFO,
 					   "ADD_DOMAIN_TO_ACL: ERROR, did not add >%s< to acl list, "
 						"check allowed_host in config file!", domain);
                 return 0;
@@ -503,7 +502,7 @@ int is_an_allowed_host(int family, void *host)
 			case AF_INET:
 				if (debug == TRUE) {
 					tmp.s_addr = ((struct in_addr*)host)->s_addr;
-					syslog(LOG_INFO, "is_an_allowed_host (AF_INET): is host >%s< "
+					logit(LOG_INFO, "is_an_allowed_host (AF_INET): is host >%s< "
 							"an allowed host >%s<\n",
 						 inet_ntoa(tmp), inet_ntoa(ip_acl_curr->addr));
 				}
@@ -511,7 +510,7 @@ int is_an_allowed_host(int family, void *host)
 						ip_acl_curr->mask.s_addr) == 
 						ip_acl_curr->addr.s_addr) {
 					if (debug == TRUE)
-						syslog(LOG_INFO, "is_an_allowed_host (AF_INET): host is in allowed host list!");
+						logit(LOG_INFO, "is_an_allowed_host (AF_INET): host is in allowed host list!");
 					return 1;
 					}
 				break;
@@ -545,7 +544,7 @@ int is_an_allowed_host(int family, void *host)
 				case AF_INET:
 					if(debug == TRUE) {
 						tmp.s_addr=((struct in_addr *)host)->s_addr;
-						syslog(LOG_INFO, "is_an_allowed_host (AF_INET): is host >%s< "
+						logit(LOG_INFO, "is_an_allowed_host (AF_INET): is host >%s< "
 								"an allowed host >%s<\n",
 							 inet_ntoa(tmp), dns_acl_curr->domain);
 					}
@@ -553,7 +552,7 @@ int is_an_allowed_host(int family, void *host)
 					addr = (struct sockaddr_in*)(ai->ai_addr);
 					if (addr->sin_addr.s_addr == ((struct in_addr*)host)->s_addr) {
 						if (debug == TRUE)
-							syslog(LOG_INFO, "is_an_allowed_host (AF_INET): "
+							logit(LOG_INFO, "is_an_allowed_host (AF_INET): "
 									"host is in allowed host list!");
 						return 1;
 					}
@@ -605,7 +604,7 @@ void parse_allowed_hosts(char *allowed_hosts) {
 	char *trimmed_tok;
 
 	if (debug == TRUE)
-		syslog(LOG_INFO,
+		logit(LOG_INFO,
 			 "parse_allowed_hosts: parsing the allowed host string >%s< to add to ACL list\n",
 			 allowed_hosts);
 
@@ -613,7 +612,7 @@ void parse_allowed_hosts(char *allowed_hosts) {
 	tok = strtok_r(hosts, delim, &saveptr);
 #else
 	if (debug == TRUE)
-		syslog(LOG_INFO,"parse_allowed_hosts: using strtok, this might lead to "
+		logit(LOG_INFO,"parse_allowed_hosts: using strtok, this might lead to "
 				"problems in the allowed_hosts string determination!\n");
 	tok = strtok(hosts, delim);
 #endif
@@ -621,13 +620,13 @@ void parse_allowed_hosts(char *allowed_hosts) {
 		trimmed_tok = malloc( sizeof( char) * ( strlen( tok) + 1));
 		trim( tok, trimmed_tok);
 		if(debug == TRUE)
-			syslog(LOG_DEBUG, "parse_allowed_hosts: ADDING this record (%s) to ACL list!\n", trimmed_tok);
+			logit(LOG_DEBUG, "parse_allowed_hosts: ADDING this record (%s) to ACL list!\n", trimmed_tok);
 		if( strlen( trimmed_tok) > 0) {
 			if (!add_ipv4_to_acl(trimmed_tok) && !add_ipv6_to_acl(trimmed_tok) 
 					&& !add_domain_to_acl(trimmed_tok)) {
-				syslog(LOG_ERR,"Can't add to ACL this record (%s). Check allowed_hosts option!\n",trimmed_tok);
+				logit(LOG_ERR,"Can't add to ACL this record (%s). Check allowed_hosts option!\n",trimmed_tok);
 			} else if (debug == TRUE)
-				syslog(LOG_DEBUG,"parse_allowed_hosts: Record added to ACL list!\n");
+				logit(LOG_DEBUG,"parse_allowed_hosts: Record added to ACL list!\n");
 		}
 		free( trimmed_tok);
 #ifdef HAVE_STRTOK_R
@@ -667,16 +666,16 @@ void show_acl_lists(void)
 	struct ip_acl *ip_acl_curr = ip_acl_head;
 	struct dns_acl *dns_acl_curr = dns_acl_head;
 
-	syslog(LOG_INFO, "Showing ACL lists for both IP and DOMAIN acl's:\n" );
+	logit(LOG_INFO, "Showing ACL lists for both IP and DOMAIN acl's:\n" );
 
 	while (ip_acl_curr != NULL) {
-		syslog(LOG_INFO, "   IP ACL: %s/%u %u\n", inet_ntoa(ip_acl_curr->addr),
+		logit(LOG_INFO, "   IP ACL: %s/%u %u\n", inet_ntoa(ip_acl_curr->addr),
 			 prefix_from_mask(ip_acl_curr->mask), ip_acl_curr->addr.s_addr);
 		ip_acl_curr = ip_acl_curr->next;
 	}
 
 	while (dns_acl_curr != NULL) {
-		syslog(LOG_INFO, "  DNS ACL: %s\n", dns_acl_curr->domain);
+		logit(LOG_INFO, "  DNS ACL: %s\n", dns_acl_curr->domain);
 		dns_acl_curr = dns_acl_curr->next;
 	}
 }

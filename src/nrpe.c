@@ -107,6 +107,7 @@ int       use_src = FALSE;		/* Define parameter for SRC option */
 int       no_forking = FALSE;
 int       listen_queue_size = DEFAULT_LISTEN_QUEUE_SIZE;
 char     *nasty_metachars = NULL;
+extern char *log_file;
 
 /* SSL/TLS parameters */
 typedef enum _SSL_VER {
@@ -181,9 +182,11 @@ int main(int argc, char **argv)
 	result = read_config_file(config_file);
 	/* exit if there are errors... */
 	if (result == ERROR) {
-		syslog(LOG_ERR, "Config file '%s' contained errors, aborting...", config_file);
+		logit(LOG_ERR, "Config file '%s' contained errors, aborting...", config_file);
 		return STATE_CRITICAL;
 	}
+
+	open_log_file();
 
 	if (!nasty_metachars)
 		nasty_metachars = strdup(NASTY_METACHARS);
@@ -246,7 +249,7 @@ void init_ssl(void)
 
 	if (use_ssl == FALSE) {
 		if (debug == TRUE)
-			syslog(LOG_INFO, "INFO: SSL/TLS NOT initialized. Network encryption DISABLED.");
+			logit(LOG_INFO, "INFO: SSL/TLS NOT initialized. Network encryption DISABLED.");
 		return;
 	}
 
@@ -271,7 +274,7 @@ void init_ssl(void)
 				RAND_write_file(seedfile);
 
 		if (RAND_status() == 0) {
-			syslog(LOG_ERR,
+			logit(LOG_ERR,
 				   "Warning: SSL/TLS uses a weak random seed which is highly discouraged");
 			srand(time(NULL));
 			for (i = 0; i < 500 && RAND_status() == 0; i++) {
@@ -303,7 +306,7 @@ void init_ssl(void)
 
 	ctx = SSL_CTX_new(meth);
 	if (ctx == NULL) {
-		syslog(LOG_ERR, "Error: could not create SSL context");
+		logit(LOG_ERR, "Error: could not create SSL context");
 		SSL_CTX_free(ctx);
 		exit(STATE_CRITICAL);
 	}
@@ -334,14 +337,14 @@ void init_ssl(void)
 			SSL_CTX_free(ctx);
 			while ((x = ERR_get_error()) != 0) {
 				ERR_error_string(x, errstr);
-				syslog(LOG_ERR, "Error: could not use certificate file %s : %s",
+				logit(LOG_ERR, "Error: could not use certificate file %s : %s",
 					   sslprm.cert_file, errstr);
 			}
 			exit(STATE_CRITICAL);
 		}
 		if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
 			SSL_CTX_free(ctx);
-			syslog(LOG_ERR, "Error: could not use private key file '%s'",
+			logit(LOG_ERR, "Error: could not use private key file '%s'",
 				   sslprm.privatekey_file);
 			exit(STATE_CRITICAL);
 		}
@@ -354,7 +357,7 @@ void init_ssl(void)
 		SSL_CTX_set_verify(ctx, vrfy, verify_callback);
 		if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
 			SSL_CTX_free(ctx);
-			syslog(LOG_ERR, "Error: could not use CA certificate '%s'", sslprm.cacert_file);
+			logit(LOG_ERR, "Error: could not use CA certificate '%s'", sslprm.cacert_file);
 			exit(STATE_CRITICAL);
 		}
 	}
@@ -375,12 +378,12 @@ void init_ssl(void)
 
 	if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
 		SSL_CTX_free(ctx);
-		syslog(LOG_ERR, "Error: Could not set SSL/TLS cipher list");
+		logit(LOG_ERR, "Error: Could not set SSL/TLS cipher list");
 		exit(STATE_CRITICAL);
 	}
 
 	if (debug == TRUE)
-		syslog(LOG_INFO, "INFO: SSL/TLS initialized. All network traffic will be encrypted.");
+		logit(LOG_INFO, "INFO: SSL/TLS initialized. All network traffic will be encrypted.");
 #endif
 }
 
@@ -389,21 +392,21 @@ void log_ssl_startup(void)
 #ifdef HAVE_SSL
 	char     *vers;
 
-	syslog(LOG_INFO, "SSL Certificate File: %s", sslprm.cert_file ? sslprm.cert_file : "None");
-	syslog(LOG_INFO, "SSL Private Key File: %s",
+	logit(LOG_INFO, "SSL Certificate File: %s", sslprm.cert_file ? sslprm.cert_file : "None");
+	logit(LOG_INFO, "SSL Private Key File: %s",
 		   sslprm.privatekey_file ? sslprm.privatekey_file : "None");
-	syslog(LOG_INFO, "SSL CA Certificate File: %s",
+	logit(LOG_INFO, "SSL CA Certificate File: %s",
 		   sslprm.cacert_file ? sslprm.cacert_file : "None");
 	if (sslprm.allowDH < 2)
-		syslog(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
+		logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
 	else
-		syslog(LOG_INFO, "SSL Cipher List: ADH");
-	syslog(LOG_INFO, "SSL Allow ADH: %s",
+		logit(LOG_INFO, "SSL Cipher List: ADH");
+	logit(LOG_INFO, "SSL Allow ADH: %s",
 		   sslprm.allowDH == 0 ? "No" : (sslprm.allowDH == 1 ? "Allow" : "Require"));
-	syslog(LOG_INFO, "SSL Client Certs: %s",
+	logit(LOG_INFO, "SSL Client Certs: %s",
 		   sslprm.client_certs == 0 ? "Don't Ask" : (sslprm.client_certs ==
 													 1 ? "Accept" : "Require"));
-	syslog(LOG_INFO, "SSL Log Options: 0x%02x", sslprm.log_opts);
+	logit(LOG_INFO, "SSL Log Options: 0x%02x", sslprm.log_opts);
 	switch (sslprm.ssl_min_ver) {
 	case SSLv2:
 		vers = "SSLv2";
@@ -439,7 +442,7 @@ void log_ssl_startup(void)
 		vers = "INVALID VALUE!";
 		break;
 	}
-	syslog(LOG_INFO, "SSL Version: %s", vers);
+	logit(LOG_INFO, "SSL Version: %s", vers);
 #endif
 }
 
@@ -537,7 +540,7 @@ void run_daemon(void)
 
 	if (pid != 0) {
 		if (pid == -1) {
-			syslog(LOG_ERR, "fork() failed with error %d, bailing out...", errno);
+			logit(LOG_ERR, "fork() failed with error %d, bailing out...", errno);
 			exit(STATE_CRITICAL);
 		}
 
@@ -587,7 +590,7 @@ void set_stdio_sigs(void)
 	signal(SIGHUP, sighandler);
 #endif	 /* HAVE_SIGACTION */
 
-	syslog(LOG_NOTICE, "Starting up daemon");	/* log info to syslog facility */
+	logit(LOG_NOTICE, "Starting up daemon");	/* log info */
 	if (write_pid_file() == ERROR)	/* write pid file */
 		exit(STATE_CRITICAL);
 
@@ -606,14 +609,17 @@ void cleanup(void)
 		result = read_config_file(config_file);	/* read the config file */
 
 		if (result == ERROR) {	/* exit if there are errors... */
-			syslog(LOG_ERR, "Config file '%s' contained errors, bailing out...", config_file);
+			logit(LOG_ERR, "Config file '%s' contained errors, bailing out...", config_file);
 			exit(STATE_CRITICAL);
 		}
+		open_log_file();
 		return;
 	}
 
 	remove_pid_file();			/* remove pid file */
-	syslog(LOG_NOTICE, "Daemon shutdown\n");
+	logit(LOG_NOTICE, "Daemon shutdown\n");
+
+	close_log_file();			/* close the log file */
 }
 
 #ifdef HAVE_SSL
@@ -637,7 +643,7 @@ int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 	X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert), issuer, 256);
 
 	if (!preverify_ok && (sslprm.log_opts & SSL_LogCertDetails)) {
-		syslog(LOG_ERR, "SSL Client has an invalid certificate: %s (issuer=%s) err=%d:%s",
+		logit(LOG_ERR, "SSL Client has an invalid certificate: %s (issuer=%s) err=%d:%s",
 			   name, issuer, err, X509_verify_cert_error_string(err));
 	}
 
@@ -664,7 +670,7 @@ int read_config_file(char *filename)
 
 	/* exit if we couldn't open the config file */
 	if (fp == NULL) {
-		syslog(LOG_ERR, "Unable to open config file '%s' for reading\n", filename);
+		logit(LOG_ERR, "Unable to open config file '%s' for reading\n", filename);
 		return ERROR;
 	}
 
@@ -692,7 +698,7 @@ int read_config_file(char *filename)
 		/* get the variable name */
 		varname = strtok(input_line, "=");
 		if (varname == NULL) {
-			syslog(LOG_ERR, "No variable name specified in config file '%s' - Line %d\n",
+			logit(LOG_ERR, "No variable name specified in config file '%s' - Line %d\n",
 				   filename, line);
 			return ERROR;
 		}
@@ -700,7 +706,7 @@ int read_config_file(char *filename)
 		/* get the variable value */
 		varvalue = strtok(NULL, "\n");
 		if (varvalue == NULL) {
-			syslog(LOG_ERR, "No variable value specified in config file '%s' - Line %d\n",
+			logit(LOG_ERR, "No variable value specified in config file '%s' - Line %d\n",
 				   filename, line);
 			return ERROR;
 
@@ -716,19 +722,19 @@ int read_config_file(char *filename)
 
 			/* process the config directory... */
 			if (read_config_dir(config_file) == ERROR)
-				syslog(LOG_ERR, "Continuing with errors...");
+				logit(LOG_ERR, "Continuing with errors...");
 
 		} else if (!strcmp(varname, "include") || !strcmp(varname, "include_file")) {
 			/* allow users to specify individual config files to include */
 
 			/* process the config file... */
 			if (read_config_file(varvalue) == ERROR)
-				syslog(LOG_ERR, "Continuing with errors...");
+				logit(LOG_ERR, "Continuing with errors...");
 
 		} else if (!strcmp(varname, "server_port")) {
 			server_port = atoi(varvalue);
 			if (server_port < 1024) {
-				syslog(LOG_ERR,
+				logit(LOG_ERR,
 					   "Invalid port number specified in config file '%s' - Line %d\n",
 					   filename, line);
 				return ERROR;
@@ -751,7 +757,7 @@ int read_config_file(char *filename)
 			temp_buffer = strtok(varname, "[");
 			temp_buffer = strtok(NULL, "]");
 			if (temp_buffer == NULL) {
-				syslog(LOG_ERR, "Invalid command specified in config file '%s' - Line %d\n",
+				logit(LOG_ERR, "Invalid command specified in config file '%s' - Line %d\n",
 					   filename, line);
 				return ERROR;
 			}
@@ -779,7 +785,7 @@ int read_config_file(char *filename)
 		else if (!strcmp(varname, "command_timeout")) {
 			command_timeout = atoi(varvalue);
 			if (command_timeout < 1) {
-				syslog(LOG_ERR,
+				logit(LOG_ERR,
 					   "Invalid command_timeout specified in config file '%s' - Line %d\n",
 					   filename, line);
 				return ERROR;
@@ -787,7 +793,7 @@ int read_config_file(char *filename)
 		} else if (!strcmp(varname, "connection_timeout")) {
 			connection_timeout = atoi(varvalue);
 			if (connection_timeout < 1) {
-				syslog(LOG_ERR,
+				logit(LOG_ERR,
 					   "Invalid connection_timeout specified in config file '%s' - Line %d\n",
 					   filename, line);
 				return ERROR;
@@ -796,7 +802,7 @@ int read_config_file(char *filename)
 		} else if (!strcmp(varname, "ssl_shutdown_timeout")) {
 			ssl_shutdown_timeout = atoi(varvalue);
 			if (ssl_shutdown_timeout < 1) {
-				syslog(LOG_ERR,
+				logit(LOG_ERR,
 					   "Invalid ssl_shutdown_timeout specified in config file '%s' - Line %d\n",
 					   filename, line);
 				return ERROR;
@@ -811,7 +817,7 @@ int read_config_file(char *filename)
 		else if (!strcmp(varname, "listen_queue_size")) {
 			listen_queue_size = atoi(varvalue);
 			if (listen_queue_size == 0) {
-				syslog(LOG_ERR,
+				logit(LOG_ERR,
 					   "Invalid listen queue size specified in config file '%s' - Line %d\n",
 					   filename, line);
 				return ERROR;
@@ -839,7 +845,7 @@ int read_config_file(char *filename)
 			else if (!strcmp(varvalue, "TLSv1.2+"))
 				sslprm.ssl_min_ver = TLSv1_2_plus;
 			else {
-				syslog(LOG_ERR, "Invalid ssl version specified in config file '%s' - Line %d",
+				logit(LOG_ERR, "Invalid ssl version specified in config file '%s' - Line %d",
 					   filename, line);
 				return ERROR;
 			}
@@ -847,7 +853,7 @@ int read_config_file(char *filename)
 		} else if (!strcmp(varname, "ssl_use_adh")) {
 			sslprm.allowDH = atoi(varvalue);
 			if (sslprm.allowDH < 0 || sslprm.allowDH > 2) {
-				syslog(LOG_ERR,
+				logit(LOG_ERR,
 					   "Invalid use adh value specified in config file '%s' - Line %d",
 					   filename, line);
 				return ERROR;
@@ -872,7 +878,7 @@ int read_config_file(char *filename)
 		else if (!strcmp(varname, "ssl_client_certs")) {
 			sslprm.client_certs = atoi(varvalue);
 			if ((int)sslprm.client_certs < 0 || sslprm.client_certs > Require_Cert) {
-				syslog(LOG_ERR,
+				logit(LOG_ERR,
 					   "Invalid client certs value specified in config file '%s' - Line %d",
 					   filename, line);
 				return ERROR;
@@ -887,7 +893,7 @@ int read_config_file(char *filename)
 				closelog();
 				openlog("nrpe", LOG_PID, log_facility);
 			} else
-				syslog(LOG_WARNING,
+				logit(LOG_WARNING,
 					   "Invalid log_facility specified in config file '%s' - Line %d\n",
 					   filename, line);
 
@@ -897,8 +903,11 @@ int read_config_file(char *filename)
 		else if (!strcmp(varname, "nasty_metachars"))
 			nasty_metachars = strdup(varvalue);
 
+		else if (!strcmp(varname, "log_file"))
+			log_file = strdup(varvalue);
+
 		else {
-			syslog(LOG_WARNING, "Unknown option specified in config file '%s' - Line %d\n",
+			logit(LOG_WARNING, "Unknown option specified in config file '%s' - Line %d\n",
 				   filename, line);
 			continue;
 		}
@@ -927,7 +936,7 @@ int read_config_dir(char *dirname)
 	/* read and sort the directory contents */
 	n = scandir(dirname, &dirfiles, 0, alphasort);
 	if (n < 0) {
-		syslog(LOG_ERR, "Could not open config directory '%s' for reading.\n", dirname);
+		logit(LOG_ERR, "Could not open config directory '%s' for reading.\n", dirname);
 		return ERROR;
 	}
 
@@ -937,7 +946,7 @@ int read_config_dir(char *dirname)
 	/* open the directory for reading */
 	dirp = opendir(dirname);
 	if (dirp == NULL) {
-		syslog(LOG_ERR, "Could not open config directory '%s' for reading.\n", dirname);
+		logit(LOG_ERR, "Could not open config directory '%s' for reading.\n", dirname);
 		return ERROR;
 	}
 
@@ -1076,7 +1085,7 @@ int add_command(char *command_name, char *command_line)
 	command_list = new_command;
 
 	if (debug == TRUE)
-		syslog(LOG_DEBUG, "Added command[%s]=%s\n", command_name, command_line);
+		logit(LOG_DEBUG, "Added command[%s]=%s\n", command_name, command_line);
 
 	return OK;
 }
@@ -1105,13 +1114,13 @@ void create_listener(struct addrinfo *ai)
 		return;
 
 	if (num_listen_socks >= MAX_LISTEN_SOCKS) {
-		syslog(LOG_ERR, "Too many listen sockets. Enlarge MAX_LISTEN_SOCKS");
+		logit(LOG_ERR, "Too many listen sockets. Enlarge MAX_LISTEN_SOCKS");
 		exit(1);
 	}
 
 	if ((ret = getnameinfo(ai->ai_addr, ai->ai_addrlen, ntop, sizeof(ntop),
 						   strport, sizeof(strport), NI_NUMERICHOST | NI_NUMERICSERV)) != 0) {
-		syslog(LOG_ERR, "getnameinfo failed: %.100s", gai_strerror(ret));
+		logit(LOG_ERR, "getnameinfo failed: %.100s", gai_strerror(ret));
 		return;
 	}
 
@@ -1119,7 +1128,7 @@ void create_listener(struct addrinfo *ai)
 	listen_sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 	if (listen_sock < 0) {
 		/* kernel may not support ipv6 */
-		syslog(LOG_ERR, "socket: %.100s", strerror(errno));
+		logit(LOG_ERR, "socket: %.100s", strerror(errno));
 		return;
 	}
 
@@ -1128,7 +1137,7 @@ void create_listener(struct addrinfo *ai)
 
 	/* set the reuse address flag so we don't get errors when restarting */
 	if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0) {
-		syslog(LOG_ERR, "setsockopt SO_REUSEADDR: %s", strerror(errno));
+		logit(LOG_ERR, "setsockopt SO_REUSEADDR: %s", strerror(errno));
 		return;
 	}
 #ifdef IPV6_V6ONLY
@@ -1142,7 +1151,7 @@ void create_listener(struct addrinfo *ai)
 
 	/* Bind the socket to the desired port. */
 	if (bind(listen_sock, ai->ai_addr, ai->ai_addrlen) < 0) {
-		syslog(LOG_ERR, "Bind to port %s on %s failed: %.200s.",
+		logit(LOG_ERR, "Bind to port %s on %s failed: %.200s.",
 			   strport, ntop, strerror(errno));
 		close(listen_sock);
 		return;
@@ -1152,11 +1161,11 @@ void create_listener(struct addrinfo *ai)
 
 	/* Start listening on the port. */
 	if (listen(listen_sock, listen_queue_size) < 0) {
-		syslog(LOG_ERR, "listen on [%s]:%s: %.100s", ntop, strport, strerror(errno));
+		logit(LOG_ERR, "listen on [%s]:%s: %.100s", ntop, strport, strerror(errno));
 		exit(1);
 	}
 
-	syslog(LOG_INFO, "Server listening on %s port %s.", ntop, strport);
+	logit(LOG_INFO, "Server listening on %s port %s.", ntop, strport);
 }
 
 /* Close all listening sockets */
@@ -1248,9 +1257,9 @@ void wait_for_connections(void)
 			/* handle the client connection */
 			handle_connection(new_sd);
 
-			/* log info to syslog facility */
+			/* log info */
 			if (debug == TRUE)
-				syslog(LOG_DEBUG, "Connection from %s closed.", remote_host);
+				logit(LOG_DEBUG, "Connection from %s closed.", remote_host);
 
 			/* close socket prior to exiting */
 			close(new_sd);
@@ -1282,37 +1291,37 @@ void setup_wait_conn(void)
 			inet_ntop (ai->ai_family, ai->ai_addr->sa_data, addrstr, 100);
 			ptr = &((struct sockaddr_in *) ai->ai_addr)->sin_addr;
 			inet_ntop (ai->ai_family, ptr, addrstr, 100);
-			syslog(LOG_INFO, "SETUP_WAIT_CONN FOR: IPv4 address: %s (%s)\n", addrstr, ai->ai_canonname);
+			logit(LOG_INFO, "SETUP_WAIT_CONN FOR: IPv4 address: %s (%s)\n", addrstr, ai->ai_canonname);
 		}
 		create_listener(ai);
 	}
 
 	if (!num_listen_socks) {
-		syslog(LOG_ERR, "Cannot bind to any address.");
+		logit(LOG_ERR, "Cannot bind to any address.");
 		exit(1);
 	}
 
 	/* log warning about command arguments */
 #ifdef ENABLE_COMMAND_ARGUMENTS
 	if (allow_arguments == TRUE)
-		syslog(LOG_NOTICE,
+		logit(LOG_NOTICE,
 			   "Warning: Daemon is configured to accept command arguments from clients!");
 # ifdef ENABLE_BASH_COMMAND_SUBSTITUTION
 	if (TRUE == allow_bash_cmd_subst) {
 		if (TRUE == allow_arguments)
-			syslog(LOG_NOTICE,
+			logit(LOG_NOTICE,
 				   "Warning: Daemon is configured to accept command arguments with bash command substitutions!");
 		else
-			syslog(LOG_NOTICE,
+			logit(LOG_NOTICE,
 				   "Warning: Daemon is configured to accept command arguments with bash command substitutions, but is not configured to accept command arguments from clients. Enable command arguments if you wish to allow command arguments with bash command substitutions.");
 	}
 # endif
 #endif
 
-	syslog(LOG_INFO, "Listening for connections on port %d", server_port);
+	logit(LOG_INFO, "Listening for connections on port %d", server_port);
 
 	if (allowed_hosts)
-		syslog(LOG_INFO, "Allowing connections from: %s\n", allowed_hosts);
+		logit(LOG_INFO, "Allowing connections from: %s\n", allowed_hosts);
 }
 
 int wait_conn_fork(int sock)
@@ -1332,7 +1341,7 @@ int wait_conn_fork(int sock)
 	}
 
 	if (pid < 0) {
-		syslog(LOG_ERR, "fork() failed with error %d, bailing out...", errno);
+		logit(LOG_ERR, "fork() failed with error %d, bailing out...", errno);
 		exit(STATE_CRITICAL);
 	}
 
@@ -1340,7 +1349,7 @@ int wait_conn_fork(int sock)
 	pid = fork();
 
 	if (pid < 0) {
-		syslog(LOG_ERR, "fork() failed with error %d, bailing out...", errno);
+		logit(LOG_ERR, "fork() failed with error %d, bailing out...", errno);
 		exit(STATE_CRITICAL);
 	}
 
@@ -1352,8 +1361,8 @@ int wait_conn_fork(int sock)
 
 	/* hey, there was an error... */
 	if (sock < 0) {
-		/* log error to syslog facility */
-		syslog(LOG_ERR, "Network server accept failure (%d: %s)",
+		/* log error */
+		logit(LOG_ERR, "Network server accept failure (%d: %s)",
 			   errno, strerror(errno));
 		exit(STATE_OK);
 	}
@@ -1400,8 +1409,8 @@ void conn_check_peer(int sock)
 	rc = getpeername(sock, (struct sockaddr *)&addr, &addrlen);
 
 	if (rc < 0) {
-		/* log error to syslog facility */
-		syslog(LOG_ERR, "Error: Network server getpeername() failure (%d: %s)",
+		/* log error */
+		logit(LOG_ERR, "Error: Network server getpeername() failure (%d: %s)",
 			   errno, strerror(errno));
 
 		/* close socket prior to exiting */
@@ -1433,7 +1442,7 @@ void conn_check_peer(int sock)
 	}
 
 	if (debug == TRUE)
-		syslog(LOG_INFO, "CONN_CHECK_PEER: is this a blessed machine: %s port %d\n",
+		logit(LOG_INFO, "CONN_CHECK_PEER: is this a blessed machine: %s port %d\n",
 			 remote_host, nptr->sin_port);
 
 	/* is this is a blessed machine? */
@@ -1445,17 +1454,17 @@ void conn_check_peer(int sock)
 #endif
 
 		case AF_INET:
-			/* log info to syslog facility */
+			/* log info */
 			if (debug == TRUE || (sslprm.log_opts & SSL_LogIpAddr))
-				syslog(LOG_DEBUG, "Connection from %s port %d", remote_host, nptr->sin_port);
+				logit(LOG_DEBUG, "Connection from %s port %d", remote_host, nptr->sin_port);
 
 			if (!is_an_allowed_host(AF_INET, (void *)&(nptr->sin_addr))) {
-				/* log error to syslog facility */
-				syslog(LOG_ERR, "Host %s is not allowed to talk to us!", remote_host);
+				/* log error */
+				logit(LOG_ERR, "Host %s is not allowed to talk to us!", remote_host);
 
-				/* log info to syslog facility */
+				/* log info */
 				if (debug == TRUE)
-					syslog(LOG_DEBUG, "Connection from %s closed.", remote_host);
+					logit(LOG_DEBUG, "Connection from %s closed.", remote_host);
 
 				/* close socket prior to exiting */
 				close(sock);
@@ -1463,37 +1472,37 @@ void conn_check_peer(int sock)
 
 			} else {
 
-				/* log info to syslog facility */
+				/* log info */
 				if (debug == TRUE) {
-					syslog(LOG_DEBUG, "Host address is in allowed_hosts");
+					logit(LOG_DEBUG, "Host address is in allowed_hosts");
 				}
 
 			}
 			break;
 
 		case AF_INET6:
-			/* log info to syslog facility */
+			/* log info */
 			strcpy(remote_host, ipstr);
 			if (debug == TRUE || (sslprm.log_opts & SSL_LogIpAddr)) {
-				syslog(LOG_DEBUG, "Connection from %s port %d", ipstr, nptr6->sin6_port);
+				logit(LOG_DEBUG, "Connection from %s port %d", ipstr, nptr6->sin6_port);
 			}
 
 			if (!is_an_allowed_host(AF_INET6, (void *)&(nptr6->sin6_addr))) {
-				/* log error to syslog facility */
-				syslog(LOG_ERR, "Host %s is not allowed to talk to us!", ipstr);
+				/* log error */
+				logit(LOG_ERR, "Host %s is not allowed to talk to us!", ipstr);
 
-				/* log info to syslog facility */
+				/* log info */
 				if (debug == TRUE)
-					syslog(LOG_DEBUG, "Connection from %s closed.", ipstr);
+					logit(LOG_DEBUG, "Connection from %s closed.", ipstr);
 
 				/* close socket prior to exiting */
 				close(sock);
 				exit(STATE_OK);
 
 			} else {
-				/* log info to syslog facility */
+				/* log info */
 				if (debug == TRUE)
-					syslog(LOG_DEBUG, "Host address is in allowed_hosts");
+					logit(LOG_DEBUG, "Host address is in allowed_hosts");
 			}
 			break;
 		}
@@ -1505,10 +1514,10 @@ void conn_check_peer(int sock)
 	fromhost(&req);
 
 	if (!hosts_access(&req)) {
-		syslog(LOG_DEBUG, "Connection refused by TCP wrapper");
+		logit(LOG_DEBUG, "Connection refused by TCP wrapper");
 		refuse(&req);			/* refuse the connection */
 		/* should not be reached */
-		syslog(LOG_ERR, "libwrap refuse() returns!");
+		logit(LOG_ERR, "libwrap refuse() returns!");
 		close(sock);
 		exit(STATE_CRITICAL);
 	}
@@ -1542,7 +1551,7 @@ void handle_connection(int sock)
 #ifdef HAVE_SSL
 	if (use_ssl == TRUE) {
     	if ((ssl = SSL_new(ctx)) == NULL) {
-        	syslog(LOG_ERR, "Error: Could not create SSL connection structure.");
+        	logit(LOG_ERR, "Error: Could not create SSL connection structure.");
 # ifdef DEBUG
             errfp = fopen("/tmp/err.log", "a");
     		ERR_print_errors_fp(errfp);
@@ -1567,15 +1576,15 @@ void handle_connection(int sock)
 
 	/* recv() error or client disconnect */
 	if (rc <= 0) {
-		/* log error to syslog facility */
-		syslog(LOG_ERR, "Could not read request from client %s, bailing out...", remote_host);
+		/* log error */
+		logit(LOG_ERR, "Could not read request from client %s, bailing out...", remote_host);
 		if (v3_receive_packet)
 			free(v3_receive_packet);
 #ifdef HAVE_SSL
 		if (ssl) {
 			complete_SSL_shutdown(ssl);
 			SSL_free(ssl);
-			syslog(LOG_INFO, "INFO: SSL Socket Shutdown.\n");
+			logit(LOG_INFO, "INFO: SSL Socket Shutdown.\n");
 		}
 #endif
 		return;
@@ -1584,7 +1593,7 @@ void handle_connection(int sock)
 	/* make sure the request is valid */
 	if (validate_request(&receive_packet, v3_receive_packet) == ERROR) {
 		/* log an error */
-		syslog(LOG_ERR, "Client request from %s was invalid, bailing out...", remote_host);
+		logit(LOG_ERR, "Client request from %s was invalid, bailing out...", remote_host);
 
 		/* free memory */
 		free(command_name);
@@ -1606,17 +1615,17 @@ void handle_connection(int sock)
 		return;
 	}
 
-	/* log info to syslog facility */
+	/* log info */
 	if (debug == TRUE)
-		syslog(LOG_DEBUG, "Host %s is asking for command '%s' to be run...",
+		logit(LOG_DEBUG, "Host %s is asking for command '%s' to be run...",
 			   remote_host, command_name);
 
 	/* if this is the version check command, just spew it out */
 	if (!strcmp(command_name, NRPE_HELLO_COMMAND)) {
 		snprintf(buffer, sizeof(buffer), "NRPE v%s", PROGRAM_VERSION);
 		buffer[sizeof(buffer) - 1] = '\x0';
-		if (debug == TRUE)		/* log info to syslog facility */
-			syslog(LOG_DEBUG, "Response to %s: %s", remote_host, buffer);
+		if (debug == TRUE)		/* log info */
+			logit(LOG_DEBUG, "Response to %s: %s", remote_host, buffer);
 		if (v3_receive_packet)
 			send_buff = strdup(buffer);
 		else {
@@ -1632,8 +1641,8 @@ void handle_connection(int sock)
 		if (temp_command == NULL) {
 			snprintf(buffer, sizeof(buffer), "NRPE: Command '%s' not defined", command_name);
 			buffer[sizeof(buffer) - 1] = '\x0';
-			if (debug == TRUE)	/* log error to syslog facility */
-				syslog(LOG_DEBUG, "%s", buffer);
+			if (debug == TRUE)	/* log error */
+				logit(LOG_DEBUG, "%s", buffer);
 			if (v3_receive_packet)
 				send_buff = strdup(buffer);
 			else {
@@ -1653,15 +1662,15 @@ void handle_connection(int sock)
 			raw_command[sizeof(raw_command) - 1] = '\x0';
 			process_macros(raw_command, processed_command, sizeof(processed_command));
 
-			if (debug == TRUE)	/* log info to syslog facility */
-				syslog(LOG_DEBUG, "Running command: %s", processed_command);
+			if (debug == TRUE)	/* log info */
+				logit(LOG_DEBUG, "Running command: %s", processed_command);
 
 			/* run the command */
 			strcpy(buffer, "");
 			result = my_system(processed_command, command_timeout, &early_timeout, &send_buff);
 
 			if (debug == TRUE)	/* log debug info */
-				syslog(LOG_DEBUG, "Command completed with return code %d and output: %s",
+				logit(LOG_DEBUG, "Command completed with return code %d and output: %s",
 					   result, send_buff);
 
 			/* see if the command timed out */
@@ -1676,8 +1685,8 @@ void handle_connection(int sock)
 
 			/* check return code bounds */
 			if ((result < 0) || (result > 3)) {
-				/* log error to syslog facility */
-				syslog(LOG_ERR, "Bad return code for [%s]: %d", send_buff, result);
+				/* log error */
+				logit(LOG_ERR, "Bad return code for [%s]: %d", send_buff, result);
 				result = STATE_UNKNOWN;
 			}
 		}
@@ -1756,9 +1765,9 @@ void handle_connection(int sock)
 	if (v3_send_packet)
 		free(v3_send_packet);
 
-	/* log info to syslog facility */
+	/* log info */
 	if (debug == TRUE)
-		syslog(LOG_DEBUG, "Return Code: %d, Output: %s", result, send_buff);
+		logit(LOG_DEBUG, "Return Code: %d, Output: %s", result, send_buff);
 
 	free(send_buff);
 
@@ -1771,9 +1780,9 @@ void init_handle_conn(void)
 	struct sigaction sig_action;
 #endif
 
-	/* log info to syslog facility */
+	/* log info */
 	if (debug == TRUE)
-		syslog(LOG_DEBUG, "Handling the connection...");
+		logit(LOG_DEBUG, "Handling the connection...");
 
 	/* set connection handler */
 #ifdef HAVE_SIGACTION
@@ -1813,16 +1822,16 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 			int       nerrs = 0;
 			rc = 0;
 			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-				syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
+				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
 					   remote_host, ERR_reason_error_string(x));
 				++nerrs;
 			}
 			if (nerrs == 0)
-				syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
+				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
 					   remote_host, SSL_get_error(ssl, rc));
 
 		} else
-			syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
+			logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
 				   remote_host, SSL_get_error(ssl, rc));
 # ifdef DEBUG
 		errfp = fopen("/tmp/err.log", "a");
@@ -1834,11 +1843,11 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 
 	/* successful handshake */
 	if (sslprm.log_opts & SSL_LogVersion)
-		syslog(LOG_NOTICE, "Remote %s - SSL Version: %s",
+		logit(LOG_NOTICE, "Remote %s - SSL Version: %s",
 			   remote_host, SSL_get_version(ssl));
 	if (sslprm.log_opts & SSL_LogCipher) {
 		c = SSL_get_current_cipher(ssl);
-		syslog(LOG_NOTICE, "Remote %s - %s, Cipher is %s", remote_host,
+		logit(LOG_NOTICE, "Remote %s - %s, Cipher is %s", remote_host,
 			   SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
 	}
 
@@ -1849,21 +1858,21 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 
 		if (peer) {
 			if (sslprm.log_opts & SSL_LogIfClientCert)
-				syslog(LOG_NOTICE, "SSL Client %s has %svalid certificate",
+				logit(LOG_NOTICE, "SSL Client %s has %svalid certificate",
 					   remote_host, peer->valid ? "a " : "an in");
 			if (sslprm.log_opts & SSL_LogCertDetails) {
-				syslog(LOG_NOTICE, "SSL Client %s Cert Name: %s",
+				logit(LOG_NOTICE, "SSL Client %s Cert Name: %s",
 					   remote_host, peer->name);
 				X509_NAME_oneline(X509_get_issuer_name(peer), buffer, sizeof(buffer));
-				syslog(LOG_NOTICE, "SSL Client %s Cert Issuer: %s",
+				logit(LOG_NOTICE, "SSL Client %s Cert Issuer: %s",
 					   remote_host, buffer);
 			}
 
 		} else if (sslprm.client_certs == 0)
-			syslog(LOG_NOTICE, "SSL Not asking for client certification");
+			logit(LOG_NOTICE, "SSL Not asking for client certification");
 
 		else
-			syslog(LOG_NOTICE, "SSL Client %s did not present a certificate",
+			logit(LOG_NOTICE, "SSL Client %s did not present a certificate",
 				   remote_host);
 	}
 #endif
@@ -1888,7 +1897,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 
 		packet_ver = ntohs(v2_pkt->packet_version);
 		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
-			syslog(LOG_ERR, "Error: Request packet version was invalid!");
+			logit(LOG_ERR, "Error: Request packet version was invalid!");
 			return -1;
 		}
 
@@ -1916,7 +1925,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			buffer_size = ntohl(buffer_size);
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
-				syslog(LOG_ERR, "Error: Could not allocate memory for packet");
+				logit(LOG_ERR, "Error: Could not allocate memory for packet");
 				return -1;
 			}
 
@@ -1950,7 +1959,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 
 		packet_ver = ntohs(v2_pkt->packet_version);
 		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
-			syslog(LOG_ERR, "Error: Request packet version was invalid!");
+			logit(LOG_ERR, "Error: Request packet version was invalid!");
 			return -1;
 		}
 
@@ -1983,7 +1992,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			buffer_size = ntohl(buffer_size);
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
-				syslog(LOG_ERR, "Error: Could not allocate memory for packet");
+				logit(LOG_ERR, "Error: Could not allocate memory for packet");
 				return -1;
 			}
 
@@ -2209,7 +2218,7 @@ void my_system_sighandler(int sig)
 /* handle errors where connection takes too long */
 void my_connection_sighandler(int sig)
 {
-	syslog(LOG_ERR, "Connection has taken too long to establish. Exiting...");
+	logit(LOG_ERR, "Connection has taken too long to establish. Exiting...");
 	exit(STATE_CRITICAL);
 }
 
@@ -2230,7 +2239,7 @@ int drop_privileges(char *user, char *group, int full_drop)
 			if (grp != NULL)
 				gid = (gid_t) (grp->gr_gid);
 			else
-				syslog(LOG_ERR, "Warning: Could not get group entry for '%s'", group);
+				logit(LOG_ERR, "Warning: Could not get group entry for '%s'", group);
 			endgrent();
 
 		} else
@@ -2240,7 +2249,7 @@ int drop_privileges(char *user, char *group, int full_drop)
 		/* set effective group ID if other than current EGID */
 		if (gid != getegid()) {
 			if (setgid(gid) == -1)
-				syslog(LOG_ERR, "Warning: Could not set effective GID=%d", (int)gid);
+				logit(LOG_ERR, "Warning: Could not set effective GID=%d", (int)gid);
 		}
 	}
 
@@ -2254,7 +2263,7 @@ int drop_privileges(char *user, char *group, int full_drop)
 			if (pw != NULL)
 				uid = (uid_t) (pw->pw_uid);
 			else
-				syslog(LOG_ERR, "Warning: Could not get passwd entry for '%s'", user);
+				logit(LOG_ERR, "Warning: Could not get passwd entry for '%s'", user);
 			endpwent();
 
 		} else
@@ -2267,10 +2276,10 @@ int drop_privileges(char *user, char *group, int full_drop)
 			/* initialize supplementary groups */
 			if (initgroups(user, gid) == -1) {
 				if (errno == EPERM)
-					syslog(LOG_ERR,
+					logit(LOG_ERR,
 						   "Warning: Unable to change supplementary groups using initgroups()");
 				else {
-					syslog(LOG_ERR,
+					logit(LOG_ERR,
 						   "Warning: Possibly root user failed dropping privileges with initgroups()");
 					return ERROR;
 				}
@@ -2279,9 +2288,9 @@ int drop_privileges(char *user, char *group, int full_drop)
 
 			if (full_drop) {
 				if (setuid(uid) == -1)
-					syslog(LOG_ERR, "Warning: Could not set UID=%d", (int)uid);
+					logit(LOG_ERR, "Warning: Could not set UID=%d", (int)uid);
 			} else if (SETEUID(uid) == -1)
-				syslog(LOG_ERR, "Warning: Could not set effective UID=%d", (int)uid);
+				logit(LOG_ERR, "Warning: Could not set effective UID=%d", (int)uid);
 		}
 	}
 
@@ -2316,7 +2325,7 @@ int write_pid_file(void)
 
 			else {
 				/* previous process is still running */
-				syslog(LOG_ERR,
+				logit(LOG_ERR,
 					   "There's already an NRPE server running (PID %lu).  Bailing out...",
 					   (unsigned long)pid);
 				return ERROR;
@@ -2331,7 +2340,7 @@ int write_pid_file(void)
 		close(fd);
 		wrote_pid_file = TRUE;
 	} else {
-		syslog(LOG_ERR, "Cannot write to pidfile '%s' - check your privileges.", pid_file);
+		logit(LOG_ERR, "Cannot write to pidfile '%s' - check your privileges.", pid_file);
 		return ERROR;
 	}
 
@@ -2348,7 +2357,7 @@ int remove_pid_file(void)
 
 	SETEUID(0);					/* get root back so we can delete the pid file */
 	if (unlink(pid_file) == -1) {
-		syslog(LOG_ERR, "Cannot remove pidfile '%s' - check your privileges.", pid_file);
+		logit(LOG_ERR, "Cannot remove pidfile '%s' - check your privileges.", pid_file);
 		return ERROR;
 	}
 
@@ -2359,7 +2368,7 @@ int remove_pid_file(void)
 
 void my_disconnect_sighandler(int sig)
 {
-	syslog(LOG_ERR, "SSL_shutdown() has taken too long to complete. Exiting now..");
+	logit(LOG_ERR, "SSL_shutdown() has taken too long to complete. Exiting now..");
 	exit(STATE_CRITICAL);
 }
 
@@ -2398,7 +2407,7 @@ int check_privileges(void)
 	gid_t     gid = getegid();
 
 	if (uid == 0 || gid == 0) {
-		syslog(LOG_ERR, "Error: NRPE daemon cannot be run as user/group root!");
+		logit(LOG_ERR, "Error: NRPE daemon cannot be run as user/group root!");
 		exit(STATE_CRITICAL);
 	}
 
@@ -2426,7 +2435,7 @@ void sighandler(int sig)
 	/* we received a SIGHUP, so restart... */
 	if (sig == SIGHUP) {
 		sigrestart = TRUE;
-		syslog(LOG_NOTICE, "Caught SIGHUP - restarting...\n");
+		logit(LOG_NOTICE, "Caught SIGHUP - restarting...\n");
 	}
 
 	/* else begin shutting down... */
@@ -2435,7 +2444,7 @@ void sighandler(int sig)
 		if (sigshutdown == TRUE)
 			exit(STATE_CRITICAL);
 		sigshutdown = TRUE;
-		syslog(LOG_NOTICE, "Caught SIG%s - shutting down...\n", sigs[sig]);
+		logit(LOG_NOTICE, "Caught SIG%s - shutting down...\n", sigs[sig]);
 	}
 
 	return;
@@ -2472,13 +2481,13 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	}
 
 	if (packet_crc32 != calculated_crc32) {
-		syslog(LOG_ERR, "Error: Request packet had invalid CRC32.");
+		logit(LOG_ERR, "Error: Request packet had invalid CRC32.");
 		return ERROR;
 	}
 
 	/* make sure this is the right type of packet */
 	if (ntohs(v2pkt->packet_type) != QUERY_PACKET) {
-		syslog(LOG_ERR, "Error: Request packet type was invalid!");
+		logit(LOG_ERR, "Error: Request packet type was invalid!");
 		return ERROR;
 	}
 
@@ -2494,7 +2503,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 
 	/* client must send some kind of request */
 	if (buff[0] == '\0') {
-		syslog(LOG_ERR, "Error: Request contained no query!");
+		logit(LOG_ERR, "Error: Request contained no query!");
 		return ERROR;
 	}
 
@@ -2504,7 +2513,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	else
 		rc = contains_nasty_metachars(v2pkt->buffer);
 	if (rc == TRUE) {
-		syslog(LOG_ERR, "Error: Request contained illegal metachars!");
+		logit(LOG_ERR, "Error: Request contained illegal metachars!");
 		return ERROR;
 	}
 
@@ -2512,12 +2521,12 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	if (strchr(v2pkt->buffer, '!')) {
 #ifdef ENABLE_COMMAND_ARGUMENTS
 		if (allow_arguments == FALSE) {
-			syslog(LOG_ERR,
+			logit(LOG_ERR,
 				   "Error: Request contained command arguments, but argument option is not enabled!");
 			return ERROR;
 		}
 #else
-		syslog(LOG_ERR, "Error: Request contained command arguments!");
+		logit(LOG_ERR, "Error: Request contained command arguments!");
 		return ERROR;
 #endif
 	}
@@ -2530,7 +2539,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 #endif
 	command_name = strdup(ptr);
 	if (command_name == NULL) {
-		syslog(LOG_ERR, "Error: Memory allocation failed");
+		logit(LOG_ERR, "Error: Memory allocation failed");
 		return ERROR;
 	}
 #ifdef ENABLE_COMMAND_ARGUMENTS
@@ -2543,20 +2552,20 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 				break;
 			macro_argv[x] = strdup(ptr);
 			if (macro_argv[x] == NULL) {
-				syslog(LOG_ERR, "Error: Memory allocation failed");
+				logit(LOG_ERR, "Error: Memory allocation failed");
 				return ERROR;
 			}
 			if (!strcmp(macro_argv[x], "")) {
-				syslog(LOG_ERR, "Error: Request contained an empty command argument");
+				logit(LOG_ERR, "Error: Request contained an empty command argument");
 				return ERROR;
 			}
 			if (strstr(macro_argv[x], "$(")) {
 # ifndef ENABLE_BASH_COMMAND_SUBSTITUTION
-				syslog(LOG_ERR, "Error: Request contained a bash command substitution!");
+				logit(LOG_ERR, "Error: Request contained a bash command substitution!");
 				return ERROR;
 # else
 				if (FALSE == allow_bash_cmd_subst) {
-					syslog(LOG_ERR,
+					logit(LOG_ERR,
 						   "Error: Request contained a bash command substitution, but they are disallowed!");
 					return ERROR;
 				}

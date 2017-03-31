@@ -38,6 +38,9 @@
 #ifndef HAVE_ASPRINTF
 extern int asprintf(char **ptr, const char *format, ...);
 #endif
+#ifndef HAVE_VASPRINTF
+extern int vasprintf(char **ptr, const char *format, va_list ap);
+#endif
 
 #ifndef NI_MAXSERV
 # define NI_MAXSERV 32
@@ -50,6 +53,9 @@ extern int asprintf(char **ptr, const char *format, ...);
 extern char **environ;
 
 static unsigned long crc32_table[256];
+
+char *log_file = NULL;
+FILE *log_fp = NULL;
 
 static int my_create_socket(struct addrinfo *ai, const char *bind_address);
 
@@ -234,7 +240,7 @@ void add_listen_addr(struct addrinfo **listen_addrs, int address_family, char *a
 	hints.ai_flags = (addr == NULL) ? AI_PASSIVE : 0;
 	snprintf(strport, sizeof strport, "%d", port);
 	if ((gaierr = getaddrinfo(addr, strport, &hints, &aitop)) != 0) {
-		syslog(LOG_ERR, "bad addr or host: %s (%s)\n", addr ? addr : "<NULL>",
+		logit(LOG_ERR, "bad addr or host: %s (%s)\n", addr ? addr : "<NULL>",
 			   gai_strerror(gaierr));
 		exit(1);
 	}
@@ -260,7 +266,7 @@ int clean_environ(const char *keep_env_vars, const char *nrpe_user)
 	else
 		asprintf(&keep, "NRPE_MULTILINESUPPORT,NRPE_PROGRAMVERSION");
 	if (keep == NULL) {
-		syslog(LOG_ERR, "Could not sanitize the environment. Aborting!");
+		logit(LOG_ERR, "Could not sanitize the environment. Aborting!");
 		return ERROR;
 	}
 
@@ -272,7 +278,7 @@ int clean_environ(const char *keep_env_vars, const char *nrpe_user)
 	}
 
 	if ((kept = calloc(keepcnt + 1, sizeof(char *))) == NULL) {
-		syslog(LOG_ERR, "Could not sanitize the environment. Aborting!");
+		logit(LOG_ERR, "Could not sanitize the environment. Aborting!");
 		return ERROR;
 	}
 	for (i = 0, var = my_strsep(&keep, ","); var != NULL; var = my_strsep(&keep, ","))
@@ -286,7 +292,7 @@ int clean_environ(const char *keep_env_vars, const char *nrpe_user)
 			free(keep);
 			free(kept);
 			free(var);
-			syslog(LOG_ERR, "Could not sanitize the environment. Aborting!");
+			logit(LOG_ERR, "Could not sanitize the environment. Aborting!");
 			return ERROR;
 		}
 		if (len >= var_sz) {
@@ -451,6 +457,85 @@ char *my_strsep(char **stringp, const char *delim)
 		*stringp = NULL;
 
 	return begin;
+}
+
+void open_log_file()
+{
+	int fh;
+	struct stat st;
+
+	close_log_file();
+
+	if (!log_file)
+		return;
+
+	if ((fh = open(log_file, O_RDWR|O_APPEND|O_CREAT|O_NOFOLLOW, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) == -1) {
+		printf("Warning: Cannot open log file '%s' for writing\n", log_file);
+		logit(LOG_WARNING, "Warning: Cannot open log file '%s' for writing", log_file);
+		return;
+	}
+	log_fp = fdopen(fh, "a+");
+	if(log_fp == NULL) {
+		printf("Warning: Cannot open log file '%s' for writing\n", log_file);
+		logit(LOG_WARNING, "Warning: Cannot open log file '%s' for writing", log_file);
+		return;
+		}
+
+	if ((fstat(fh, &st)) == -1) {
+		log_fp = NULL;
+		close(fh);
+		printf("Warning: Cannot fstat log file '%s'\n", log_file);
+		logit(LOG_WARNING, "Warning: Cannot fstat log file '%s'", log_file);
+		return;
+	}
+	if (st.st_nlink != 1 || (st.st_mode & S_IFMT) != S_IFREG) {
+		log_fp = NULL;
+		close(fh);
+		printf("Warning: log file '%s' has an invalid mode\n", log_file);
+		logit(LOG_WARNING, "Warning: log file '%s' has an invalid mode", log_file);
+		return;
+	}
+
+	(void)fcntl(fileno(log_fp), F_SETFD, FD_CLOEXEC);
+}
+
+void logit(int priority, const char *format, ...)
+{
+	time_t	log_time = 0L;
+	va_list	ap;
+	char	*buffer = NULL;
+
+	if (!format || !*format)
+		return;
+
+	va_start(ap, format);
+	if(vasprintf(&buffer, format, ap) > 0) {
+		if (log_fp) {
+			time(&log_time);
+			/* strip any newlines from the end of the buffer */
+			strip(buffer);
+
+			/* write the buffer to the log file */
+			fprintf(log_fp, "[%llu] %s\n", (unsigned long long)log_time, buffer);
+			fflush(log_fp);
+
+		} else
+			syslog(priority, buffer);
+
+		free(buffer);
+	}
+	va_end(ap);
+}
+
+void close_log_file()
+{
+	if(!log_fp)
+		return;
+
+	fflush(log_fp);
+	fclose(log_fp);
+	log_fp = NULL;
+	return;
 }
 
 /* show license */

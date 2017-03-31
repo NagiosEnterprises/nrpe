@@ -49,6 +49,9 @@ char* strip(char*);
 int sendall(int, char*, int*);
 int recvall(int, char*, int*, int);
 char *my_strsep(char**, const char*);
+void open_log_file();
+void logit(int priority, const char *format, ...);
+void close_log_file();
 void display_license(void);
 
 #endif
