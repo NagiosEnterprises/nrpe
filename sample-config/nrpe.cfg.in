@@ -246,6 +246,14 @@ connection_timeout=300
 
 
 
+# ILLEGAL INPUT COMMAND AND ARGUMENT CHARACTERS
+# This option allows you to specify illegal characters that cannot
+# be passed to the NRPE daemon.
+
+illegal_metachars="|`&><'\"[]{};\r\n"
+
+
+
 # INCLUDE CONFIG FILE
 # This directive allows you to include definitions from an external config file.
 

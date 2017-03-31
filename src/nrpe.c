@@ -106,6 +106,7 @@ int       debug = FALSE;
 int       use_src = FALSE;		/* Define parameter for SRC option */
 int       no_forking = FALSE;
 int       listen_queue_size = DEFAULT_LISTEN_QUEUE_SIZE;
+char     *illegal_metachars = NASTY_METACHARS;
 
 /* SSL/TLS parameters */
 typedef enum _SSL_VER {
@@ -886,6 +887,12 @@ int read_config_file(char *filename)
 				syslog(LOG_WARNING,
 					   "Invalid log_facility specified in config file '%s' - Line %d\n",
 					   filename, line);
+
+		} else if (!strcmp(varname, "illegal_metachars")) {
+			illegal_metachars = strdup(varvalue);
+			syslog(LOG_INFO,
+					   "Using illegal meta characters '%s'\n",
+					   illegal_metachars);
 
 		} else if (!strcmp(varname, "keep_env_vars"))
 			keep_env_vars = strdup(varvalue);
@@ -2543,7 +2550,7 @@ int contains_nasty_metachars(char *str)
 	if (str == NULL)
 		return FALSE;
 
-	result = strcspn(str, NASTY_METACHARS);
+	result = strcspn(str, illegal_metachars);
 	if (result != strlen(str))
 		return TRUE;
 
