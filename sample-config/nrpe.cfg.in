@@ -205,6 +205,7 @@ connection_timeout=300
 #        TLSv1.2+ (use TLSv1.2 or above)
 # If an "or above" version is used, the best will be negotiated. So if both
 # ends are able to do TLSv1.2 and use specify SSLv2, you will get TLSv1.2.
+# If you are using openssl 1.1.0 or above, the SSLv2 options are not available.
 
 #ssl_version=SSLv2+
 

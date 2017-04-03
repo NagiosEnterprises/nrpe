@@ -130,7 +130,7 @@ struct _SSL_PARMS {
 	char     *cacert_file;
 	char     *privatekey_file;
 	char      cipher_list[MAX_FILENAME_LENGTH];
-	SslVer    ssl_min_ver;
+	SslVer    ssl_proto_ver;
 	int       allowDH;
 	ClntCerts client_certs;
 	SslLogging log_opts;
@@ -285,24 +285,33 @@ void init_ssl(void)
 			}
 		}
 	}
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+
+	meth = TLS_method();
+
+#else		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
+
 # ifndef OPENSSL_NO_SSL2
-	if (sslprm.ssl_min_ver == SSLv2)
+	if (sslprm.ssl_proto_ver == SSLv2)
 		meth = SSLv2_server_method();
 # endif
 # ifndef OPENSSL_NO_SSL3
-	if (sslprm.ssl_min_ver == SSLv3)
+	if (sslprm.ssl_proto_ver == SSLv3)
 		meth = SSLv3_server_method();
 # endif
-	if (sslprm.ssl_min_ver == TLSv1)
+	if (sslprm.ssl_proto_ver == TLSv1)
 		meth = TLSv1_server_method();
 # ifdef SSL_TXT_TLSV1_1
-	if (sslprm.ssl_min_ver == TLSv1_1)
+	if (sslprm.ssl_proto_ver == TLSv1_1)
 		meth = TLSv1_1_server_method();
 #  ifdef SSL_TXT_TLSV1_2
-	if (sslprm.ssl_min_ver == TLSv1_2)
+	if (sslprm.ssl_proto_ver == TLSv1_2)
 		meth = TLSv1_2_server_method();
-#  endif
-# endif
+#  endif	/* ifdef SSL_TXT_TLSV1_2 */
+# endif		/* SSL_TXT_TLSV1_1 */
+
+#endif		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
 
 	ctx = SSL_CTX_new(meth);
 	if (ctx == NULL) {
@@ -311,7 +320,40 @@ void init_ssl(void)
 		exit(STATE_CRITICAL);
 	}
 
-	switch(sslprm.ssl_min_ver) {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+
+	SSL_CTX_set_max_proto_version(ctx, 0);
+
+	switch(sslprm.ssl_proto_ver) {
+
+		case TLSv1_2:
+			SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
+		case TLSv1_2_plus:
+			SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION);
+			break;
+
+		case TLSv1_1:
+			SSL_CTX_set_max_proto_version(ctx, TLS1_1_VERSION);
+		case TLSv1_1_plus:
+			SSL_CTX_set_min_proto_version(ctx, TLS1_1_VERSION);
+			break;
+
+		case TLSv1:
+			SSL_CTX_set_max_proto_version(ctx, TLS1_VERSION);
+		case TLSv1_plus:
+			SSL_CTX_set_min_proto_version(ctx, TLS1_VERSION);
+			break;
+
+		case SSLv3:
+			SSL_CTX_set_max_proto_version(ctx, SSL3_VERSION);
+		case SSLv3_plus:
+			SSL_CTX_set_min_proto_version(ctx, SSL3_VERSION);
+			break;
+	}
+
+#else		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
+
+	switch(sslprm.ssl_proto_ver) {
 		case SSLv2:
 		case SSLv2_plus:
 			break;
@@ -329,6 +371,9 @@ void init_ssl(void)
 			ssl_opts |= SSL_OP_NO_SSLv2;
 			break;
 	}
+
+#endif		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
+
 	SSL_CTX_set_options(ctx, ssl_opts);
 
 	if (sslprm.cert_file != NULL) {
@@ -407,7 +452,7 @@ void log_ssl_startup(void)
 		   sslprm.client_certs == 0 ? "Don't Ask" : (sslprm.client_certs ==
 													 1 ? "Accept" : "Require"));
 	logit(LOG_INFO, "SSL Log Options: 0x%02x", sslprm.log_opts);
-	switch (sslprm.ssl_min_ver) {
+	switch (sslprm.ssl_proto_ver) {
 	case SSLv2:
 		vers = "SSLv2";
 		break;
@@ -640,7 +685,7 @@ int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 	ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
 
 	X509_NAME_oneline(X509_get_subject_name(err_cert), name, 256);
-	X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert), issuer, 256);
+	X509_NAME_oneline(X509_get_issuer_name(err_cert), issuer, 256);
 
 	if (!preverify_ok && (sslprm.log_opts & SSL_LogCertDetails)) {
 		logit(LOG_ERR, "SSL Client has an invalid certificate: %s (issuer=%s) err=%d:%s",
@@ -824,26 +869,28 @@ int read_config_file(char *filename)
 			}
 
 		} else if (!strcmp(varname, "ssl_version")) {
-			if (!strcmp(varvalue, "SSLv2"))
-				sslprm.ssl_min_ver = SSLv2;
-			else if (!strcmp(varvalue, "SSLv2+"))
-				sslprm.ssl_min_ver = SSLv2_plus;
-			else if (!strcmp(varvalue, "SSLv3"))
-				sslprm.ssl_min_ver = SSLv3;
-			else if (!strcmp(varvalue, "SSLv3+"))
-				sslprm.ssl_min_ver = SSLv3_plus;
-			else if (!strcmp(varvalue, "TLSv1"))
-				sslprm.ssl_min_ver = TLSv1;
-			else if (!strcmp(varvalue, "TLSv1+"))
-				sslprm.ssl_min_ver = TLSv1_plus;
-			else if (!strcmp(varvalue, "TLSv1.1"))
-				sslprm.ssl_min_ver = TLSv1_1;
-			else if (!strcmp(varvalue, "TLSv1.1+"))
-				sslprm.ssl_min_ver = TLSv1_1_plus;
-			else if (!strcmp(varvalue, "TLSv1.2"))
-				sslprm.ssl_min_ver = TLSv1_2;
+			if (!strcmp(varvalue, "TLSv1.2"))
+				sslprm.ssl_proto_ver = TLSv1_2;
 			else if (!strcmp(varvalue, "TLSv1.2+"))
-				sslprm.ssl_min_ver = TLSv1_2_plus;
+				sslprm.ssl_proto_ver = TLSv1_2_plus;
+			else if (!strcmp(varvalue, "TLSv1.1"))
+				sslprm.ssl_proto_ver = TLSv1_1;
+			else if (!strcmp(varvalue, "TLSv1.1+"))
+				sslprm.ssl_proto_ver = TLSv1_1_plus;
+			else if (!strcmp(varvalue, "TLSv1"))
+				sslprm.ssl_proto_ver = TLSv1;
+			else if (!strcmp(varvalue, "TLSv1+"))
+				sslprm.ssl_proto_ver = TLSv1_plus;
+			else if (!strcmp(varvalue, "SSLv3"))
+				sslprm.ssl_proto_ver = SSLv3;
+			else if (!strcmp(varvalue, "SSLv3+"))
+				sslprm.ssl_proto_ver = SSLv3_plus;
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+			else if (!strcmp(varvalue, "SSLv2"))
+				sslprm.ssl_proto_ver = SSLv2;
+			else if (!strcmp(varvalue, "SSLv2+"))
+				sslprm.ssl_proto_ver = SSLv2_plus;
+#endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 			else {
 				logit(LOG_ERR, "Invalid ssl version specified in config file '%s' - Line %d",
 					   filename, line);
@@ -1859,10 +1906,11 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 		if (peer) {
 			if (sslprm.log_opts & SSL_LogIfClientCert)
 				logit(LOG_NOTICE, "SSL Client %s has %svalid certificate",
-					   remote_host, peer->valid ? "a " : "an in");
+					   remote_host, SSL_get_verify_result(ssl) ? "a " : "an in");
 			if (sslprm.log_opts & SSL_LogCertDetails) {
+				X509_NAME_oneline(X509_get_subject_name(peer), buffer, sizeof(buffer));
 				logit(LOG_NOTICE, "SSL Client %s Cert Name: %s",
-					   remote_host, peer->name);
+					   remote_host, buffer);
 				X509_NAME_oneline(X509_get_issuer_name(peer), buffer, sizeof(buffer));
 				logit(LOG_NOTICE, "SSL Client %s Cert Issuer: %s",
 					   remote_host, buffer);
