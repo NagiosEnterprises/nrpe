@@ -9,6 +9,7 @@
 %endif
 %if %{islinux}
 	%define _init_dir @initdir@
+	%define _init_tyhpe @init_type@
 	%define _exec_prefix %{_prefix}/sbin
 	%define _bindir %{_prefix}/sbin
 	%define _sbindir %{_prefix}/lib/nagios/cgi
@@ -127,7 +128,7 @@ fi
 export PATH=$PATH:/usr/sbin
 CFLAGS="$RPM_OPT_FLAGS" CXXFLAGS="$RPM_OPT_FLAGS" \
 MAKE=%{_make} ./configure \
-	--with-init-dir=/etc/init.d \
+	--with-init-type=%{_init_type} \
 	--with-nrpe-port=%{nsport} \
 	--with-nrpe-user=%{nsusr} \
 	--with-nrpe-group=%{nsgrp} \

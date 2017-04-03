@@ -126,7 +126,9 @@ install-init:
 			launchctl load $(INIT_DIR)/$(INIT_FILE); \
 		else\
 			if test -f /sbin/chkconfig ; then \
-			    /sbin/chkconfig nrpe on;\
+			    case "$(DESTDIR)" in */rpmbuild/*) break;; \
+			    *)/sbin/chkconfig nrpe on;; \
+			    esac; \
 			else\
 				echo "Make sure to enable the nrpe daemon";\
 			fi;\
