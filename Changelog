@@ -36,6 +36,7 @@ FIXES
 - Return UNKNOWN when check_nrpe cannot communicate with nrpe and -u set (John Frickson)
 - xinetd.d parameter causes many messages in log file (John Frickson)
 - Fixes for openssl 1.1.x (Stephen Smoogen / John Frickson)
+- PATH and other environment variables not set with numeric nrpe_user (John Frickson)
 
 
 3.0.1 - 2016-09-08
