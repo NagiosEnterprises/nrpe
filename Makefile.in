@@ -70,7 +70,7 @@ all:
 	echo "";\
 	echo "You can now continue with the installation or upgrade process.";\
 	echo "";\
-	echo "Read the PDF documentation (NRPE.pdf) for information on the next";\
+	echo "Read the PDF documentation (docs/NRPE.pdf) for information on the next";\
 	echo "steps you should take to complete the installation or upgrade.";\
 	echo ""
 
