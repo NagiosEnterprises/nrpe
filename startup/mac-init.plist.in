@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple/DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>org.nagios.nrpe</string>
+	<key>UserName</key>
+	<string>@nrpe_user@</string>
+	<key>GroupName</key>
+	<string>@nrpe_group@</string>
+	<key>Program</key>
+	<string>@sbindir@/nrpe</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>nrpe</string>
+		<string>-c</string>
+		<string>@pkgsysconfdir@/nrpe.cfg</string>
+		<string>-f</string>
+	</array>
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+		<key>NetworkState</key>
+		<true/>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>ProcessType</key>
+	<string>Background</string>
+</dict>
+</plist>

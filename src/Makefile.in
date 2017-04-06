@@ -1,0 +1,87 @@
+###############################
+# Makefile for NRPE
+#
+# Last Modified: 08-13-2007
+###############################
+
+srcdir=@srcdir@
+
+# Source code directories
+SRC_INCLUDE=@srcdir@/../include
+CFG_INCLUDE=../include
+
+# Mainly used for rpmbuild
+# DESTDIR=
+
+CC=@CC@
+CFLAGS=@CFLAGS@ @DEFS@ -I $(CFG_INCLUDE) -I $(SRC_INCLUDE)
+LDFLAGS=@LDFLAGS@ @LIBS@
+SOCKETLIBS=@SOCKETLIBS@
+LIBWRAPLIBS=@LIBWRAPLIBS@
+OTHERLIBS=@OTHERLIBS@
+
+CP=@CP@
+
+prefix=$(DESTDIR)@prefix@
+exec_prefix=$(DESTDIR)@exec_prefix@
+CFGDIR=$(DESTDIR)@pkgsysconfdir@
+BINDIR=$(DESTDIR)@bindir@
+SBINDIR=$(DESTDIR)@sbindir@
+LIBEXECDIR=$(DESTDIR)@libexecdir@
+INSTALL=@INSTALL@
+NAGIOS_INSTALL_OPTS=@NAGIOS_INSTALL_OPTS@
+NRPE_INSTALL_OPTS=@NRPE_INSTALL_OPTS@
+
+PLUGINSDIR=$(DESTDIR)@pluginsdir@
+PIDDIR=$(DESTDIR)@piddir@
+TMPFILESDIR=$(DESTDIR)@tmpfilesd@
+SRC_TMPFILE=@src_tmpfile@
+
+
+# Generated automatically from configure script
+SNPRINTF_O=@SNPRINTF_O@
+
+
+all: nrpe check_nrpe
+
+nrpe: $(srcdir)/nrpe.c $(srcdir)/utils.c $(srcdir)/acl.c $(SRC_INCLUDE)/nrpe.h $(SRC_INCLUDE)/utils.h $(SRC_INCLUDE)/common.h $(CFG_INCLUDE)/config.h $(SRC_INCLUDE)/acl.h $(SNPRINTF_O)
+	$(CC) $(CFLAGS) -o $@ $(srcdir)/nrpe.c $(srcdir)/utils.c $(srcdir)/acl.c $(LDFLAGS) $(SOCKETLIBS) $(LIBWRAPLIBS) $(SNPRINTF_O) $(OTHERLIBS)
+
+check_nrpe: $(srcdir)/check_nrpe.c $(srcdir)/utils.c $(SRC_INCLUDE)/utils.h $(SRC_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
+	$(CC) $(CFLAGS) -o $@ $(srcdir)/check_nrpe.c $(srcdir)/utils.c $(LDFLAGS) $(SOCKETLIBS) $(SNPRINTF_O) $(OTHERLIBS)
+
+install:
+	$(MAKE) install-plugin
+	$(MAKE) install-daemon
+
+install-plugin: install-uninstall
+	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(LIBEXECDIR)
+	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(PLUGINSDIR)
+	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) check_nrpe $(PLUGINSDIR)
+
+install-daemon: install-uninstall
+	$(INSTALL) -m 755 nrpe $(SBINDIR)
+	@if test ! -d "$(PIDDIR)" ; then \
+		echo $(INSTALL) -m 755 $(NRPE_INSTALL_OPTS) -d $(PIDDIR); \
+		$(INSTALL) -m 755 $(NRPE_INSTALL_OPTS) -d $(PIDDIR); \
+	fi
+	@if test "$(TMPFILESDIR)" != "N/A" -a x$(SRC_TMPFILE) != x ; then \
+		echo $(INSTALL) -m 755 -d `dirname $(TMPFILESDIR)`; \
+		$(INSTALL) -m 755 -d `dirname $(TMPFILESDIR)`; \
+		echo $(INSTALL) -m 644 ../startup/$(SRC_TMPFILE) $(TMPFILESDIR); \
+		$(INSTALL) -m 644 ../startup/$(SRC_TMPFILE) $(TMPFILESDIR); \
+	fi
+
+install-uninstall:
+	$(INSTALL) -m 755 -d $(SBINDIR)
+	$(INSTALL) -m 755 ../uninstall $(SBINDIR)/nrpe-uninstall
+
+clean:
+	rm -f core nrpe check_nrpe $(SNPRINTF_O)
+	rm -f *~ */*~
+	rm -rf nrpe.dSYM check_nrpe.dSYM
+
+distclean: clean
+	rm -f Makefile
+
+devclean: distclean

@@ -1,0 +1,90 @@
+#!/bin/sh
+
+# Start/stop/restart/reload nrpe
+# Copyright (c) 2016 Nagios(R) Core(TM) Development Team
+
+NRPE_BIN=@sbindir@/nrpe
+NRPE_CFG=@pkgsysconfdir@/nrpe.cfg
+PID_DIR=@piddir@
+PID_FILE=@piddir@/nrpe.pid
+
+# Start nrpe
+nrpe_start() {
+	echo -n "Starting nrpe daemon: $NRPE_BIN - "
+	if [ ! -d "$PID_DIR" ]; then
+		mkdir -p "$PID_DIR"
+	fi
+	$NRPE_BIN -c $NRPE_CFG -d
+	if [ $? = 0 ]; then
+		echo "started"
+	else
+		echo "failed"
+	fi
+}
+
+# Stop nrpe
+nrpe_stop() {
+	echo -n "Stopping nrpe daemon - "
+	if [ -r "$PID_FILE" ]; then 
+		kill $(cat "$PID_FILE")
+	else
+		killall nrpe
+	fi
+	if [ $? = 0 ]; then
+		echo "stopped"
+	else
+		echo "failed"
+	fi
+}
+
+# Restart nrpe
+nrpe_restart() {
+	nrpe_stop
+	sleep 1
+	nrpe_start
+}
+
+# Reload nrpe
+nrpe_reload() {
+	echo -n "Reloading nrpe daemon - "
+	if [ -r "$PID_FILE" ]; then 
+		kill -HUP $(cat "$PID_FILE")
+	else
+		killall -HUP nrpe
+	fi
+	if [ $? = 0 ]; then
+		echo "reloaded"
+	else
+		echo "failed"
+	fi
+}
+
+# nrpe status
+nrpe_status() {
+	if ps -C nrpe >/dev/null; then
+		echo "nrpe is running."
+	else
+		echo "nrpe is stopped."
+	fi
+}
+
+case "$1" in
+'start')
+	nrpe_start
+	;;
+'stop')
+	nrpe_stop
+	;;
+'restart')
+	nrpe_restart
+	;;
+'reload')
+	nrpe_reload
+	;;
+'status')
+	nrpe_status
+	;;
+*)
+	echo "Usage $0 start|stop|restart|reload|status"
+	;;
+esac

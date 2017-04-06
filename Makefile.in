@@ -1,0 +1,198 @@
+###############################
+# Makefile for NRPE
+#
+# Last Modified: 03-14-2007
+###############################
+
+
+# Source code directories
+SRC_BASE=./src/
+SRC_INCLUDE=./include/
+
+# Mainly used for rpmbuild
+# DESTDIR=
+
+CC=@CC@
+CFLAGS=@CFLAGS@ @DEFS@
+LDFLAGS=@LDFLAGS@ @LIBS@
+
+INSTALL=@INSTALL@
+GREP=@GREP@
+EGREP=@EGREP@
+
+prefix=$(DESTDIR)@prefix@
+exec_prefix=$(DESTDIR)@exec_prefix@
+CFGDIR=$(DESTDIR)@pkgsysconfdir@
+BINDIR=$(DESTDIR)@bindir@
+SBINDIR=$(DESTDIR)@sbindir@
+LIBEXECDIR=$(DESTDIR)@libexecdir@
+NAGIOS_INSTALL_OPTS=@NAGIOS_INSTALL_OPTS@
+NRPE_INSTALL_OPTS=@NRPE_INSTALL_OPTS@
+OPSYS=@opsys@
+DIST=@dist_type@
+NRPE_USER=@nrpe_user@
+NRPE_GROUP=@nrpe_group@
+NAGIOS_USER=@nagios_user@
+NAGIOS_GROUP=@nagios_group@
+
+INIT_TYPE=@init_type@
+INIT_DIR=$(DESTDIR)@initdir@
+INIT_OPTS=-o root -g root
+INIT_FILE=@initname@
+INETD_TYPE=@inetd_type@
+INETD_DIR=$(DESTDIR)@inetddir@
+INETD_FILE=@inetdname@
+SRC_INETD=@src_inetd@
+SRC_INIT=@src_init@
+
+
+default:
+	@echo;\
+	echo Please enter 'make [option]' where [option] is one of:;\
+	echo;\
+	echo "     all                  builds nrpe and check_nrpe";\
+	echo "     nrpe                 builds nrpe only";\
+	echo "     check_nrpe           builds check_nrpe only";\
+	echo "     install-groups-users add the users and groups if they do not exist";\
+	echo "     install              install nrpe and check_nrpe";\
+	echo "     install-plugin       install the check_nrpe plugin";\
+	echo "     install-daemon       install the nrpe daemon";\
+	echo "     install-config       install the nrpe configuration file";\
+	echo "     install-inetd        install the startup files for inetd, launchd, etc.";\
+	echo "     install-init         install the startup files for init, systemd, etc.";\
+	echo
+
+all:
+	cd $(SRC_BASE); $(MAKE)
+
+	@echo "";\
+	echo "*** Compile finished ***";\
+	echo "";\
+	echo "You can now continue with the installation or upgrade process.";\
+	echo "";\
+	echo "Read the PDF documentation (docs/NRPE.pdf) for information on the next";\
+	echo "steps you should take to complete the installation or upgrade.";\
+	echo ""
+
+nrpe:
+	cd $(SRC_BASE); $(MAKE)
+
+check_nrpe:
+	cd $(SRC_BASE); $(MAKE)
+
+install-plugin:
+	cd $(SRC_BASE); $(MAKE) $@
+
+install-daemon:
+	cd $(SRC_BASE); $(MAKE) $@
+
+install:
+	cd $(SRC_BASE); $(MAKE) $@
+
+install-init:
+	@if test $(SRC_INIT) = unknown; then \
+		echo No init file to install; \
+		exit 1; \
+	fi
+	@if test $(INIT_TYPE) = upstart; then\
+		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
+		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
+		echo initctl reload-configuration; \
+		initctl reload-configuration; \
+	elif test $(INIT_TYPE) = systemd; then\
+		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
+		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
+	elif test $(INIT_TYPE) = smf10 -o $(INIT_TYPE) = smf11; then \
+		echo $(INSTALL) -m 775 -g sys -d $(INIT_DIR);\
+		$(INSTALL) -m 775 -g sys -d $(INIT_DIR);\
+		echo $(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
+		$(INSTALL) -m 644 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
+		echo svccfg import $(INIT_DIR)/$(INIT_FILE); \
+		svccfg import $(INIT_DIR)/$(INIT_FILE); \
+		echo "*** Run 'svcadm enable nrpe' to start it"; \
+	else\
+		echo $(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
+		$(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
+		if test $(INIT_TYPE) = newbsd; then\
+			if test $(DIST) = openbsd; then\
+				echo "# nrpe@bsd_enable@=NO" >> /etc/rc.conf;\
+				echo "nrpe@bsd_enable@=\"-d -c $(CFGDIR)/nrpe.cfg\"" >> /etc/rc.conf;\
+				echo "Make sure to enable the nrpe daemon";\
+			else\
+				echo "nrpe@bsd_enable@=YES" >> /etc/rc.conf;\
+				echo "nrpe_configfile=$(CFGDIR)/nrpe.cfg" >> /etc/rc.conf;\
+			fi;\
+		elif test $(INIT_TYPE) = launchd; then\
+			launchctl load $(INIT_DIR)/$(INIT_FILE); \
+		else\
+			if test -f /sbin/chkconfig ; then \
+			    case "$(DESTDIR)" in */rpmbuild/*) break;; \
+			    *)/sbin/chkconfig nrpe on;; \
+			    esac; \
+			else\
+				echo "Make sure to enable the nrpe daemon";\
+			fi;\
+		fi;\
+	fi
+
+install-inetd:
+	@if test $(SRC_INETD) = unknown; then \
+		echo No inetd file to install; \
+		exit 1; \
+	fi
+	@if test $(INETD_TYPE) = inetd; then \
+		$(EGREP) -q "^\W*nrpe\s+" $(INETD_DIR)/$(INETD_FILE) 2>/dev/null || \
+		   cat startup/$(SRC_INETD) >> $(INETD_DIR)/$(INETD_FILE); \
+	elif test $(INETD_TYPE) = systemd; then \
+		SRC_INETD_FILE=`echo "$(SRC_INETD)" | sed -e 's/socket/socket-svc/'`; \
+		echo $(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
+		$(INSTALL) -m 644 startup/$$SRC_INETD_FILE $(INETD_DIR)/$(INIT_FILE); \
+	elif test $(INETD_TYPE) = smf10 -o $(INETD_TYPE) = smf11; then \
+		echo $(INSTALL) -m 775 -g sys -d $(INETD_DIR);\
+		$(INSTALL) -m 775 -g sys -d $(INETD_DIR);\
+		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+		$(INSTALL) -m 775 -d $(INETD_DIR);\
+		echo svccfg import $(INETD_DIR)/$(INETD_FILE); \
+		svccfg import $(INETD_DIR)/$(INETD_FILE); \
+		echo "*** Run 'svcadm enable nrpe' to start it"; \
+	elif test $(INIT_TYPE) = launchd; then\
+		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+		launchctl load $(INETD_DIR)/$(INETD_FILE); \
+	else\
+		echo $(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+		$(INSTALL) -m 644 startup/$(SRC_INETD) $(INETD_DIR)/$(INETD_FILE); \
+	fi
+	@$(EGREP) -q "^nrpe[\t ]+@nrpe_port@/tcp" /etc/services || \
+		echo "***** MAKE SURE 'nrpe @nrpe_port@/tcp' IS IN YOUR /etc/services FILE"
+
+install-config:
+	$(INSTALL) -m 775 $(NAGIOS_INSTALL_OPTS) -d $(CFGDIR)
+	$(INSTALL) -m 644 $(NRPE_INSTALL_OPTS) sample-config/nrpe.cfg $(CFGDIR)
+
+install-groups-users:
+	@macros/add_group_user $(DIST) $(NAGIOS_USER) $(NAGIOS_GROUP)
+	@if test "$(NAGIOS_USER)" != "$(NRPE_USER)" -o "$(NAGIOS_GROUP)" != "$(NRPE_GROUP)"; then\
+		macros/add_group_user $(DIST) $(NRPE_USER) $(NRPE_GROUP);\
+	fi
+
+clean:
+	cd $(SRC_BASE); $(MAKE) $@; cd ..
+	rm -f core
+	rm -f *~ */*~
+
+distclean: clean
+	cd $(SRC_BASE); $(MAKE) $@; cd ..
+	rm -rf autom4te.cache
+	rm -f config.log config.status config.cache sample-config/nrpe.cfg $(SRC_INCLUDE)/config.h
+	rm -f startup/bsd-init startup/debian-init startup/default-init startup/default-inetd
+	rm -f startup/default-service startup/default-socket startup/default-socket-svc
+	rm -f startup/default-xinetd startup/mac-init.plist startup/mac-inetd.plist
+	rm -f startup/newbsd-init startup/openbsd-init startup/openrc-conf
+	rm -f startup/openrc-init startup/rh-upstart-init startup/solaris-init.xml
+	rm -f startup/solaris-inetd.xml startup/tmpfile.conf startup/upstart-init
+	rm -f nrpe.spec uninstall include/common.h
+	rm -f Makefile
+
+devclean: distclean
+

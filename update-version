@@ -1,0 +1,81 @@
+#!/bin/sh
+
+# Make sure autoconf is installed and is the correct version
+min_autoconf_major=2
+min_autoconf_minor=59
+autoconf_error="Autoconf version $min_autoconf_major.$min_autoconf_minor or later must be installed to run this script."
+autoconf_version=`(autoconf -V 2> /dev/null) |\
+		grep "^autoconf (GNU Autoconf)" | gawk '{print $NF}'`
+if [ "$autoconf_version" != "" ] ; then
+	autoconf_major=`echo $autoconf_version | gawk -F '.' '{print $1}'`
+	autoconf_minor=`echo $autoconf_version | gawk -F '.' '{print $2}'`
+	if [ $autoconf_major -lt $min_autoconf_major -o $autoconf_minor -lt $min_autoconf_minor ] ; then
+		echo $autoconf_error
+		exit 1
+	fi
+else
+	echo $autoconf_error
+	exit 1
+fi
+
+# Get date (two formats)
+if [ -n "$2" ]; then
+    LONGDATE=$(LC_ALL=C date -u -d "$2" "+%B %d, %Y")
+    SHORTDATE=$(date -u -d "$2" "+%Y-%m-%d")
+else
+    LONGDATE=$(LC_ALL=C date -u -d "@${SOURCE_DATE_EPOCH:-$(date +%s)}" "+%B %d, %Y")
+    SHORTDATE=$(date -u -d "@${SOURCE_DATE_EPOCH:-$(date +%s)}" "+%Y-%m-%d")
+fi
+
+# Current version number
+CURRENTVERSION=3.1.0-rc1
+
+# Last date
+LASTDATE=2017-04-06
+
+if [ "x$1" = "x" ]
+then
+        echo "Usage: $0 <version number | \"newdate\"> [revision date]"
+        echo ""
+        echo "Run this script with the name of the new version (i.e \"2.6\") to"
+        echo "update version number and modification date in files."
+        echo "Use the \"newdate\" argument if you want to keep the current version"
+        echo "number and just update the modification date."
+        echo ""
+        echo "Current version=$CURRENTVERSION"
+        echo "Current Modification date=$LASTDATE"
+        echo ""
+        exit 1
+fi
+
+newversion=$1
+if [ "x$newversion" = "xnewdate" ]
+then
+    newversion=$CURRENTVERSION
+fi
+
+# Update version number and release date in common code
+perl -i -p -e "s/VERSION \".*\"/VERSION \"$1\"/;" include/common.h.in
+perl -i -p -e "s/MODIFICATION_DATE \".*\"/MODIFICATION_DATE \"$SHORTDATE\"/;" include/common.h.in
+perl -i -p -e "s/Last Modified: [0-9].*/Last Modified: $SHORTDATE/;" include/common.h.in
+
+# Update version number and release date in main code
+perl -i -p -e "s/Last Modified: [0-9].*/Last Modified: $SHORTDATE/;" src/nrpe.c
+perl -i -p -e "s/Last Modified: [0-9].*/Last Modified: $SHORTDATE/;" src/check_nrpe.c
+
+# Update version number and release date in configure.in
+perl -i -p -e "if( /^AC_INIT/) { s/$CURRENTVERSION/$1/; }" configure.ac
+perl -i -p -e "s/PKG_VERSION=.*/PKG_VERSION=\"$1\"/;" configure.ac
+perl -i -p -e "s/PKG_REL_DATE=.*\"/PKG_REL_DATE=\"$SHORTDATE\"/;" configure.ac
+
+# Run autoconf to update configure (this is easier than updating every instance
+# of the version number in configure)
+autoconf
+
+# Update RPM spec file with version number
+perl -i -p -e "s/%define version .*/%define version $1/;" nrpe.spec.in
+perl -i -p -e "if( /\%define _docdir/) { s/$CURRENTVERSION/$1/; }" nrpe.spec.in
+
+# Update this file with version number and last date
+perl -i -p -e "s/^CURRENTVERSION=.*/CURRENTVERSION=$newversion/;" update-version
+perl -i -p -e "s/^LASTDATE=.*/LASTDATE=$SHORTDATE/;" update-version

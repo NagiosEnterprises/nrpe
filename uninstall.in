@@ -1,0 +1,417 @@
+#!/bin/sh
+
+# Initialize variables
+myname="$0"
+quiet=0
+prompt=0
+verb=0
+progs=0
+config=0
+start=0
+delusr=0
+delgrp=0
+delscpt=0
+force="-f"
+redir=1
+
+# Set file and path names
+NAME=@PKG_NAME@
+OPSYS=@opsys@
+DIST=@dist_type@
+SBINDIR=@sbindir@
+LIBEXECDIR=@libexecdir@
+PLUGINSDIR=@pluginsdir@
+PIDDIR=@piddir@
+CFGDIR=@pkgsysconfdir@
+INIT_TYPE=@init_type@
+INIT_DIR=@initdir@
+INIT_FILE=@initname@
+INETD_TYPE=@inetd_type@
+INETD_DIR=@inetddir@
+INETD_FILE=@inetdname@
+SRC_INETD=@src_inetd@
+SRC_INIT=@src_init@
+NRPE_USER=@nrpe_user@
+NRPE_GROUP=@nrpe_group@
+NAGIOS_USER=@nagios_user@
+NAGIOS_GROUP=@nagios_group@
+
+
+# Display usage message
+usage() {
+	echo "Usage: $0 [-q] [-p] [-v] progs|config|startup|user|group|script|all"
+	echo "   Optional args:"
+	echo "      -q       Do not print what is happening"
+	echo "      -p       Prompt for each action"
+	echo "      -v       Be a little more verbose about what is happening"
+	echo "   One or more of the following are required:"
+	echo "      progs    Delete the program files"
+	echo "      config   Delete configuration file(s)"
+	echo "      startup  Delete startup files (inetd, init, etc.)"
+	echo "      user     Delete the users"
+	echo "      group    Delete the groups"
+	echo "      script   Delete this uninstall script"
+	echo "      all      Do all of the above"
+	exit 1
+}
+
+get_opts() {
+	while test $# -gt 0 ; do
+		arg=$1
+		shift
+		case "$arg" in
+			-q)			quiet=1		;;
+			-p)			prompt=1	;;
+			progs)		progs=1		;;
+			config)		config=1	;;
+			startup)	start=1		;;
+			user)		delusr=1;	;;
+			group)		delgrp=1;	;;
+			script)		delscpt=1;	;;
+			-v)			verb=1; force=""; redir=0 	;;
+			all)		progs=1; config=1; start=1; delusr=1; delgrp=1; delscpt=1 ;;
+			*)			echo "Invalid argument: $arg";	usage	;;
+		esac
+	done
+
+	if test $prompt -eq 1 -a $quiet -eq 1 ; then
+		echo "The -p and -q flags are mutually exclusive"
+		echo Please specify one or the other
+		exit 1
+	fi
+	if test $verb -eq 1 -a $quiet -eq 1 ; then
+		echo "The -v and -q flags are mutually exclusive"
+		echo Please specify one or the other
+		exit 1
+	fi
+	if test $progs -eq 0 -a $config -eq 0 -a $start -eq 0 ; then
+		usage
+	fi
+}
+
+prt_msg() {
+	if test $quiet -eq 1 ; then
+		return 0
+	fi
+
+	case $1 in
+		0)  indent="" ;;
+		1)	indent="   " ;;
+		2)	indent="        " ;;
+		*)	indent="" ;;
+	esac
+	shift
+
+	if test $1 -eq 1 -a $verb -eq 0 -a $prompt -eq 0 ; then
+		return 0
+	fi
+	shift
+
+	if test $1 -eq 1 -a $prompt -eq 1 ; then
+		shift
+		echo -n "${indent}$*"
+		echo -n "? [Y|n] "
+		read yn
+		if test "x$yn" = x -o x$yn = xy -o x$yn = xY ; then
+			return 0
+		else
+			return 1
+		fi
+	fi
+
+	shift
+	echo "${indent}$*"
+	return 0
+}
+
+rm_progs() {
+	num=0
+	prt_msg 1 0 0 "*** Uninstalling Progs"
+
+	if test -f "$PLUGINSDIR/check_nrpe" ; then
+		num=1
+		prt_msg 2 0 1 "Delete $PLUGINSDIR/check_nrpe" && {
+			rm $force "$PLUGINSDIR/check_nrpe"
+			prt_msg 2 1 0 "Remove directory $PLUGINSDIR"
+			if test $redir -eq 1; then
+				rmdir "$PLUGINSDIR" 2>/dev/null
+			else
+				rmdir "$PLUGINSDIR"
+			fi
+			prt_msg 2 1 0 "Remove directory $LIBEXECDIR"
+			if test $redir -eq 1; then
+				rmdir "$LIBEXECDIR" 2>/dev/null
+			else
+				rmdir "$LIBEXECDIR"
+			fi
+		}
+	fi
+
+	if test -f "$SBINDIR/$NAME" ; then
+		num=1
+		prt_msg 2 0 1 "Delete $SBINDIR/$NAME" && {
+			rm $force "$SBINDIR/$NAME"
+		}
+	fi
+
+    if test -d "$PIDDIR" ; then
+		num=1
+		prt_msg 2 0 1 "Remove directory $PIDDIR" && {
+			if test $redir -eq 1; then
+				rmdir "$PIDDIR" 2>/dev/null
+			else
+				rmdir "$PIDDIR"
+			fi
+		}
+    fi
+
+	if test $num -eq 0; then
+		prt_msg 2 0 0 "There was nothing to uninstall"
+	fi
+}
+
+rm_startup() {
+	num=0
+	prt_msg 1 0 0 "*** Uninstalling Startup"
+
+	if test "$SRC_INETD" != unknown; then
+		if test "$INETD_TYPE" = inetd; then
+			rc=`grep -E -q "^\W*$NAME\s+" "$INETD_DIR/$INETD_FILE"`
+			if test $rc -eq 0; then
+				num=1
+				prt_msg 2 0 1 "($INETD_TYPE) Remove entries from $INETD_DIR/$INETD_FILE" && {
+					prt_msg 2 1 0 "($INETD_TYPE) Creating temp file: $INETD_DIR/$INETD_FILE.$NAME.unin"
+					grep -v -q "\W*$NAME\s+" "$INETD_DIR/$INETD_FILE" > "$INETD_DIR/$INETD_FILE.$NAME.unin"
+					prt_msg 2 1 0 "($INETD_TYPE) Renaming original to: $INETD_DIR/$INETD_FILE.$NAME_save"
+					mv "$INETD_DIR/$INETD_FILE" "$INETD_DIR/$INETD_FILE.$NAME_save"
+					prt_msg 2 1 0 "($INETD_TYPE) Renaming $INETD_DIR/$INETD_FILE.unin to $INETD_DIR/$INETD_FILE"
+					mv "$INETD_DIR/$INETD_FILE.unin" "$INETD_DIR/$INETD_FILE"
+					prt_msg 2 0 0 "($INETD_TYPE) Old $INETD_DIR/$INETD_FILE saved as $INETD_DIR/$INETD_FILE.$NAME_save"
+				}
+			fi
+		elif test -f "$INETD_DIR/$INETD_FILE"; then
+			num=1
+			if test "$INETD_TYPE" != xinetd; then
+				prt_msg 2 0 1 "($INETD_TYPE) Stop and disable $NAME)" && {
+					case "$INETD_TYPE" in
+					systemd)
+						systemctl stop $NAME; systemctl disable $NAME
+						;;
+					upstart)
+						if test $verb -eq 1; then
+							stop $NAME
+						else
+							stop $NAME >/dev/null 2>&1
+						fi
+						;;
+					launchd)
+						launchctl unload $INETD_FILE; launchctl remove $INETD_FILE;
+						;;
+					smf*)
+						svcadm disable -s $NAME
+						;;
+					esac
+				}
+			fi
+			prt_msg 2 0 1 "($INETD_TYPE) Delete $INETD_DIR/$INETD_FILE" && {
+				rm $force "$INETD_DIR/$INETD_FILE"
+				if test "$INETD_TYPE" = systemd; then
+					INETD_FILE=`echo "$INETD_FILE" | sed -e 's/socket$/service/'`
+					prt_msg 2 0 1 "($INETD_TYPE) Delete $INETD_DIR/$INETD_FILE" && {
+						rm $force "$INETD_DIR/$INETD_FILE"
+					}
+				elif test "$INETD_TYPE" = smf10 -o "$INETD_TYPE" = smf11; then
+					prt_msg 2 0 1 "($INIT_TYPE) svcadm restart svc:/system/manifest-import" && {
+						svcadm restart svc:/system/manifest-import
+					}
+				fi
+			}
+		fi
+	fi
+
+	if test "$SRC_INIT" != unknown; then
+		if test -f "$INIT_DIR/$INIT_FILE"; then
+			num=1
+			prt_msg 2 0 1 "($INIT_TYPE) Stop and disable $NAME" && {
+				case "$INIT_TYPE" in
+				systemd)
+					systemctl stop $NAME; systemctl disable $NAME
+					;;
+				upstart)
+					if test $verb -eq 1; then
+						stop $NAME
+					else
+						stop $NAME >/dev/null 2>&1
+					fi
+					;;
+				launchd)
+					launchctl unload $INIT_FILE; launchctl remove $INIT_FILE;
+					;;
+				*bsd)
+					if test -x $INIT_DIR/$INIT_FILE ; then
+						$INIT_DIR/$INIT_FILE stop
+					fi
+					chmod 0644 $INIT_DIR/$INIT_FILE
+					;;
+				openrc|gentoo)
+					/sbin/start-stop-daemon --stop $NAME
+					/sbin/rc-update del $NAME
+					;;
+				smf*)
+					svcadm disable -s $NAME
+					;;
+				sysv)
+					service stop $NAME; chkconfig --del $NAME
+					;;
+				esac
+			}
+			prt_msg 2 0 1 "($INIT_TYPE) Delete $INIT_DIR/$INIT_FILE" && {
+				rm $force "$INIT_DIR/$INIT_FILE"
+				if test ${OPSYS} = bsd; then
+					prt_msg 2 0 1 "($INITD_TYPE) Remove entries from $INETD_DIR/rc.conf" && {
+						prt_msg 2 1 0 "($INIT_TYPE) Creating temp file: $INETD_DIR/rc.conf.$NAME.unin"
+						grep -v -q "^$NAME" "$INETD_DIR/rc.conf" > "$INETD_DIR/rc.conf.$NAME.unin"
+						prt_msg 2 1 0 "($INIT_TYPE) Renaming original to: $INETD_DIR/rc.conf.$NAME_save"
+						mv "$INETD_DIR/rc.conf" "$INETD_DIR/rc.conf.$NAME_save"
+						prt_msg 2 1 0 "($INIT_TYPE) Renaming $INETD_DIR/rc.conf.unin to $INETD_DIR/rc.conf"
+						mv "$INETD_DIR/rc.conf.unin" "$INETD_DIR/rc.conf"
+						prt_msg 2 0 0 "($INIT_TYPE) Old $INETD_DIR/rc.conf saved as $INETD_DIR/rc.conf.$NAME_save"
+					}
+				fi
+				if test $INIT_TYPE = upstart; then
+					prt_msg 2 0 1 "($INIT_TYPE) initctl reload-configuration" && {
+						initctl reload-configuration
+					}
+				elif test "$INIT_TYPE" = smf10 -o "$INIT_TYPE" = smf11; then
+					prt_msg 2 0 1 "($INIT_TYPE) svcadm restart svc:/system/manifest-import" && {
+						svcadm restart svc:/system/manifest-import
+					}
+				fi
+			}
+		fi
+	fi
+
+	if test $num -eq 0; then
+		prt_msg 2 0 0 "There was nothing to uninstall"
+	fi
+}
+
+rm_config() {
+    num=0
+	prt_msg 1 0 0 "*** Uninstalling Config"
+
+    if test -f "$CFGDIR/$NAME.cfg"; then
+		num=1
+		prt_msg 2 0 1 "Delete $CFGDIR/$NAME.cfg" || return
+		rm $force "$CFGDIR/$NAME.cfg"
+		prt_msg 2 1 0 "Removing directory $CFGDIR"
+		if test $redir -eq 1; then
+			rmdir "$CFGDIR" 2>/dev/null
+		else
+			rmdir "$CFGDIR"
+		fi
+	fi
+
+	if test $num -eq 0; then
+		prt_msg 2 0 0 "There was nothing to uninstall"
+	fi
+}
+
+rm_user() {
+	prt_msg 1 0 0 "*** Removing users"
+	prt_msg 2 0 1 "Delete nrpe user:${NRPE_USER} and nagios user:${NAGIOS_USER}" || return
+
+	if test ${OPSYS} = aix; then
+		if test $redir -eq 1; then
+			rmuser -p ${NRPE_USER} 2>/dev/null
+			rmuser -p ${NAGIOS_USER} 2>/dev/null
+		else
+			rmuser -p ${NRPE_USER}
+			rmuser -p ${NAGIOS_USER}
+		fi
+	elif test ${OPSYS} = osx; then
+		dscl . -delete /Groups/${NRPE_GROUP} GroupMembership ${NRPE_USER}
+		dscl . -delete /Users name ${NRPE_USER}
+		dscl . -delete /Groups/${NAGIOS_GROUP} GroupMembership ${NAGIOS_USER}
+		dscl . -delete /Users name ${NAGIOS_USER}
+	elif test ${DIST} = "freebsd"; then
+		if test $redir -eq 1; then
+			pw del user ${NRPE_USER} 2>/dev/null
+			pw del user ${NAGIOS_USER} 2>/dev/null
+		else
+			pw del user ${NRPE_USER}
+			pw del user ${NAGIOS_USER}
+		fi
+	else
+		if test $redir -eq 1; then
+			userdel -r ${NRPE_USER} 2>/dev/null
+			userdel -r ${NAGIOS_USER} 2>/dev/null
+		else
+			userdel -r ${NRPE_USER}
+			userdel -r ${NAGIOS_USER}
+		fi
+	fi
+}
+
+rm_group() {
+	prt_msg 1 0 0 "*** Removing groups"
+	prt_msg 2 0 1 "Delete nrpe group:${NRPE_GROUP} and nagios group:${NAGIOS_GROUP}" || return
+
+	if test ${OPSYS} = aix; then
+		if test $redir -eq 1; then
+			rmgroup -p ${NRPE_GROUP} 2>/dev/null
+			rmgroup -p ${NAGIOS_GROUP} 2>/dev/null
+		else
+			rmgroup -p ${NRPE_GROUP}
+			rmgroup -p ${NAGIOS_GROUP}
+		fi
+	elif test ${OPSYS} = osx; then
+		if test $redir -eq 1; then
+			dscl . -delete /Groups/${NRPE_GROUP} 2>/dev/null
+			dscl . -delete /Groups/${NAGIOS_GROUP} 2>/dev/null
+		else
+			dscl . -delete /Groups/${NRPE_GROUP}
+			dscl . -delete /Groups/${NAGIOS_GROUP}
+		fi
+	elif test ${DIST} = "freebsd"; then
+		if test $redir -eq 1; then
+			pw del group ${NRPE_GROUP} 2>/dev/null
+			pw del group ${NAGIOS_GROUP} 2>/dev/null
+		else
+			pw del group ${NRPE_GROUP}
+			pw del group ${NAGIOS_GROUP}
+		fi
+	else
+		if test $redir -eq 1; then
+			groupdel ${NRPE_GROUP} 2>/dev/null
+			groupdel ${NAGIOS_GROUP} 2>/dev/null
+		else
+			groupdel ${NRPE_GROUP}
+			groupdel ${NAGIOS_GROUP}
+		fi
+	fi
+}
+
+rm_script() {
+	prt_msg 1 0 0 "*** Removing ${myname}"
+	prt_msg 2 0 1 "Delete ${myname}" || return
+
+	if test $redir -eq 1; then
+		rm "${myname}" 2>/dev/null
+	else
+		rm "${myname}"
+	fi
+}
+
+get_opts $@
+
+prt_msg 0 0 0 "* * * Uninstall Starting * * *"
+
+if test $progs -eq 1 ;	then rm_progs;		fi
+if test $start -eq 1 ;	then rm_startup;	fi
+if test $config -eq 1 ;	then rm_config;		fi
+if test $delusr -eq 1;	then rm_user;		fi
+if test $delgrp -eq 1;	then rm_group;		fi
+if test $delscpt -eq 1;	then rm_script;		fi
+
+prt_msg 0 0 0 "* * * Uninstall Complete * * *"

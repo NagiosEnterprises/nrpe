@@ -1,167 +1,206 @@
-autoconf-macros README
-======================
+NRPE README
+===========
 
-Sections below are: Purpose, Contents, Usage, References
+For installation instructions and information on the design overview
+of the NRPE addon, please read the PDF documentation that is found in
+this directory: `docs/NRPE.pdf`
 
-
-
-##Purpose
-
-The purpose of Nagios autoconf-macros is to have a central place for
-autoconf macros that can be maintained in one place, but be used by any
-of the Nagios software. It is intended to be used as a git subtree.
-See the Usage and References section below.
-
-Since this project will be included in several parent projects, any
-changes must be as project-neutral as possible.
+If you are upgrading from a previous version, run 'update-cfg.pl' to
+add the new SSL parameters to your config file.
 
 
-
-## Contents
-
-The collection consists of the following macros:
-
-### AX_NAGIOS_GET_OS alias AC_NAGIOS_GET_OS
-
-> Output Variable : opsys
-
-This macro detects the operating system, and transforms it into a generic
-label. The most common OS's that use Nagios software are recognized and
-used in subsequent macros.
-
-### AX_NAGIOS_GET_DISTRIB_TYPE alias AC_NAGIOS_GET_DISTRIB_TYPE
-
-> Output Variables : dist_type, dist_ver
-
-This macro detects the distribution type. For Linux, this would be rh
-(for Red Hat and derivitives), suse (OpenSUSE, SLES, derivitives), gentoo
-(Gentoo and derivitives), debian (Debian and derivitives), and so on.
-For BSD, this would be openbsd, netbsd, freebsd, dragonfly, etc. It can
-also be aix, solaris, osx, and so on for Unix operating systems.
-
-### AX_NAGIOS_GET_INIT alias AC_NAGIOS_GET_INIT
-
-> Output Variable : init_type
-
-This macro detects what software is used to start daemons on bootup
-or on request, generally knows as the "init system". The init_type
-will generally be one of sysv (many), bsd (Slackware), newbsd (*BSD),
-launchd (OS X), smf10 or smf11 (Solaris), systemd (newer Linux),
-gentoo (older Gentoo), upstart (several), or unknown.
-
-### AX_NAGIOS_GET_INETD alias AC_NAGIOS_GET_INETD
-
-> Output Variable : inetd_type
-
-This macro detects what software is used to start daemons or services
-on demand, which historically has been "inetd". The inetd_type
-will generally be one of inetd, xinetd, launchd (OS X), smf10 or smf11
-(Solaris), systemd (newer Linux), upstart (several), or unknown.
-
-### AX_NAGIOS_GET_PATHS alias AC_NAGIOS_GET_PATHS
-
-> Output Variables : many!
-
-This macro determines the installation paths for binaries, config files,
-PID files, and so on. For a "standard" install of Nagios, NRPE, NDO Utils,
-etc., most will be in the /usr/local/nagios hierarchy with startup files
-located in /etc. For distributions or software repositories, the
-"--enable-install-method=os" option can be used. This will determine the
-O/S dependant directories, such as /usr/bin, /usr/sbin, /var/lib/nagios,
-/usr/lib/nagios, etc. or for OS X, /Library/LaunchDaemons.
-
-### AX_NAGIOS_GET_FILES alias AC_NAGIOS_GET_FILES
-
-> Output Variables : src_init, src_inetd, src_tmpfile
-
-Each Nagios project will have a top-level directory named "/startup/".
-In that directory will be "*.in" files for the various "init_type" and
-"inetd_type" systems. This macro will determine which file(s) from
-that directory will be needed.
-
-### AX_NAGIOS_GET_SSL alias AC_NAGIOS_GET_SSL
-
-> Output Variables : HAVE_KRB5_H, HAVE_SSL, SSL_INC_DIR, SSL_LIB_DIR, CFLAGS, LDFLAGS, LIBS
-
-This macro checks various directories for SSL libraries and header files.
-The searches are based on known install locations on various operating
-systems and distributions, for openssl, gnutls-openssl, and nss_compat_ossl.
-If it finds the headers and libraries, it will then do an `AC_LINK_IFELSE`
-on a simple program to make sure a compile and link will work correctly.
+Purpose
+-------
+The purpose of this addon is to allow you to execute Nagios
+plugins on a remote host in as transparent a manner as possible.
 
 
+Contents
+--------
 
-## Usage
+There are two pieces to this addon:
 
-This repo is intended to be used as a git subtree, so changes will
-automatically propogate, and still be reasonably easy to use.
+  1) **NRPE**       - This program runs as a background process on the
+                      remote host and processes command execution requests
+                      from the check_nrpe plugin on the Nagios host.
+                      Upon receiving a plugin request from an authorized
+                      host, it will execute the command line associated
+                      with the command name it received and send the
+                      program output and return code back to the
+                      check_nrpe plugin
 
-* First, Create, checkout, clone, or branch your project. If you do an
-`ls -AF` it might look something like this:
-
-           .git/      .gitignore    ChangeLog   LICENSE   Makefile.in
-           README     configure.ac  include/    src/
-
-* Then make a reference to _this_ project inside your project.
-
-           git remote add autoconf-macros git@github.com:NagiosEnterprises/autoconf-macros
-           git subtree add --prefix=macros/ autoconf-macros master
-
-* After executing the above two commands, if you do an `ls -AF` now,
-it should look like this:
-
-           .git/      .gitignore    ChangeLog   LICENSE   Makefile.in
-           README     configure.ac  include/    macros/   src/
-The `macros/` directory has been added.
-
-* Now do a `git push` to save everything.
-
-* If you make any changes to autoconf-macros, commit them separately
-from any parent-project changes to keep from polluting the commit
-history with unrelated comments.
-
-* To submit your changes to autoconf-macros:
-
-           git subtree push --prefix=macros autoconf-macros peters-updates
-This will create a new branch called `peters-updates`. You then need to
-create a _pull request_ to get your changes merged into autoconf-macros
-master.
-
-* To get the latest version of `autoconf-macros` into your parent project:
-
-           git subtgree pull --squash --prefix=macros autoconf-macros master
+  2) **check_nrpe** - This is a plugin that is run on the Nagios host
+                      and is used to contact the NRPE process on remote
+                      hosts.  The plugin requests that a plugin be
+                      executed on the remote host and wait for the NRPE
+                      process to execute the plugin and return the result.
+                      The plugin then uses the output and return code
+                      from the plugin execution on the remote host for
+                      its own output and return code.
 
 
+Compiling
+---------
 
-## References
+The code is very basic and may not work on your particular
+system without some tweaking. If you are having any problems
+compiling on your system, please let us know, hopefully with
+fixes. Most users should be able to compile NRPE and the
+check_nrpe plugin with the following commands...
 
-Now that autoconf-macros is available to your project, you will need to
-reference it.
+    ./configure
+    make all
 
-* Create (or add these lines to) file `YourProject/aclocal.m4`
+The binaries will be located in the `src/` directory after you
+run `make all` and will have to be installed manually somewhere
+on your system.
 
-           m4_include([macros/ax_nagios_get_os])
-           m4_include([macros/ax_nagios_get_distrib])
-           m4_include([macros/ax_nagios_get_init])
-           m4_include([macros/ax_nagios_get_inetd])
-           m4_include([macros/ax_nagios_get_paths])
-           m4_include([macros/ax_nagios_get_files])
-           m4_include([macros/ax_nagios_get_ssl])
+_NOTE: Since the check_nrpe plugin and nrpe daemon run on different
+      machines (the plugin runs on the Nagios host and the daemon
+      runs on the remote host), you will have to compile the nrpe
+      daemon on the target machine._
 
-* In your `YourProject/configure.ac` add the following lines. A good place
-to put them would be right after any `AC_PROG_*` entries:
 
-           AC_NAGIOS_GET_OS
-           AC_NAGIOS_GET_DISTRIB_TYPE
-           AC_NAGIOS_GET_INIT
-           AC_NAGIOS_GET_INETD
-           AC_NAGIOS_GET_PATHS
-           AC_NAGIOS_GET_FILES
+Installing
+----------
 
-* If you need SSL functionality, add the following to `YourProject/configure.ac`
-where you want to check for SSL:
+The check_nrpe plugin should be placed on the Nagios host along
+with your other plugins.  In most cases, this will be in the
+`/usr/local/nagios/libexec` directory.
 
-           AC_NAGIOS_GET_SSL
+The nrpe program and the configuration file `nrpe.cfg` should
+be placed somewhere on the remote host.  Note that you will also
+have to install some plugins on the remote host if you want to
+make much use of this addon.
 
-* You will now be able to reference any of the variables in `config.h.in`
-and any files listed in the `AC_CONFIG_FILES` macro in `configure.ac`.
+
+Configuring
+-----------
+
+Sample config files for the NRPE daemon are located in the
+`sample-config/` subdirectory.
+
+
+Running Under INETD or XINETD
+-----------------------------
+
+If you plan on running nrpe under inetd or xinetd and making use
+of TCP wrappers, you need to add a line to your `/etc/services`
+file as follows (modify the port number as you see fit)
+
+     nrpe            5666/tcp    # NRPE
+
+The run `make install-inetd` to copy the appropriate file, or
+add the appropriate line to your `/etc/inetd.conf`.
+
+   _NOTE: If you run nrpe under inetd or xinetd, the server_port
+   and allowed_hosts variables in the nrpe configuration file are
+   ignored._
+
+
+#### INETD
+
+After running `make install-inetd`, your `/etc/inetd.conf` file will
+contain lines similar to the following:
+
+```
+	#
+	# Enable the following entry to enable the nrpe daemon
+	#nrpe stream tcp nowait nagios /usr/local/nagios/bin/nrpe nrpe -c /usr/local/nagios/etc/nr
+	# Enable the following entry if the nrpe daemon didn't link with libwrap
+	#nrpe stream tcp nowait nagios /usr/sbin/tcpd /usr/local/nagios/bin/nrpe -c /usr/local/nag
+```
+
+Un-comment the appropriate line, then Restart inetd:
+
+    /etc/rc.d/init.d/inet restart
+
+OpenBSD users can use the following command to restart inetd:
+
+    kill -HUP `cat /var/run/inet.pid`
+
+Then add entries to your `/etc/hosts.allow` and `/etc/hosts.deny`
+file to enable TCP wrapper protection for the nrpe service.
+This is optional, although highly recommended.
+
+
+#### XINETD
+
+If your system uses xinetd instead of inetd, `make install-inetd`
+will create a file called `nrpe` in your `/etc/xinetd.d`
+directory that contains a file similar to this:
+
+```
+    # default: off
+    # description: NRPE (Nagios Remote Plugin Executor)
+    service nrpe
+    {
+        disable         = yes
+        socket_type     = stream
+        port            = @NRPE_PORT@
+        wait            = no
+        user            = nagios
+        group           = nagios
+        server          = /usr/local/nagios/bin/nrpe
+        server_args     = -c /usr/local/nagios/etc/nrpe.cfg --inetd
+        only_from       = 127.0.0.1
+        log_on_failure  += USERID
+    }
+```
+
+- Replace `disable = yes` with `disable = no`
+- Replace the `127.0.0.1` field with the IP addresses of hosts which
+  are allowed to connect to the NRPE daemon.  This only works if xinetd was
+  compiled with support for tcpwrappers.
+- Add entries to your `/etc/hosts.allow` and `/etc/hosts.deny`
+  file to enable TCP wrapper protection for the nrpe service.
+  This is optional, although highly recommended.
+
+Restart xinetd:
+
+    /etc/rc.d/init.d/xinetd restart
+
+
+Configuring Things On The Nagios Host
+---------------------------------------
+
+Examples for configuring the nrpe daemon are found in the sample
+`nrpe.cfg` file included in this distribution.  That config file
+resides on the remote host(s) along with the nrpe daemon.  The
+check_nrpe plugin gets installed on the Nagios host.  In order
+to use the check_nrpe plugin from within Nagios, you will have
+to define a few things in the host config file.  An example
+command definition for the check_nrpe plugin would look like this:
+
+    define command{
+        command_name    check_nrpe
+        command_line    /usr/local/nagios/libexec/check_nrpe -H $HOSTADDRESS$ -c $ARG1$
+        }
+
+In any service definitions that use the nrpe plugin/daemon to
+get their results, you would set the service check command portion
+of the definition to something like this (sample service definition
+is simplified for this example):
+
+    define service{
+        host_name           someremotehost
+        service_description someremoteservice
+        check_command       check_nrpe!yourcommand
+        ... etc ...
+        }
+
+where `yourcommand` is a name of a command that you define in
+your nrpe.cfg file on the remote host (see the docs in the
+sample nrpe.cfg file for more information).
+
+
+Questions?
+----------
+
+If you have questions about this addon, or problems getting things
+working, first try searching the nagios-users mailing list archives.
+Details on searching the list archives can be found at
+http://www.nagios.org
+
+If you don't find an answer there, post a message in the Nagios
+Plugin Development forum at https://support.nagios.com/forum/viewforum.php?f=35

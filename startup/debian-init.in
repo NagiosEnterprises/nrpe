@@ -1,0 +1,47 @@
+#!/bin/sh
+#
+# Copyright (c) 2016 Nagios(R) Core(TM) Development Team
+#
+# Start/stop the nrpe daemon.
+
+NRPE_BIN=@sbindir@/nrpe
+NRPE_CFG=@pkgsysconfdir@/nrpe.cfg
+PID_FILE=@piddir@/nrpe.pid
+
+test -x $NRPE_BIN || exit 0
+
+case "$1" in
+
+start)
+	echo -n "Starting nagios remote plugin daemon: nrpe"
+	start-stop-daemon --start --quiet --pidfile $PID_FILE --exec $NRPE_BIN -- -c $NRPE_CFG -d
+	echo "." 
+	;;
+
+stop)
+	echo -n "Stopping nagios remote plugin daemon: nrpe"
+	start-stop-daemon --stop --quiet --pidfile $PID_FILE --exec $NRPE_BIN
+	echo "."
+	;;
+
+restart|force-reload)
+	echo -n "Restarting nagios remote plugin daemon: nrpe"
+	start-stop-daemon --stop --quiet --pidfile $PID_FILE --exec $NRPE_BIN
+	start-stop-daemon --start --quiet --pidfile $PID_FILE --exec $NRPE_BIN -- -c $NRPE_CFG -d
+	echo "."
+	;;
+
+reload)
+	echo -n "Reloading configuration files for nagios remote plugin daemon: nrpe"
+	test -f $PID_FILE || exit 0
+	test -x /bin/kill && /bin/kill -HUP `cat $PID_FILE`
+	echo "."
+	;;
+
+*)
+	echo "Usage: $0 start|stop|restart|reload|force-reload"
+	exit 1 
+	;;
+esac
+
+exit 0

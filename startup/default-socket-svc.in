@@ -1,0 +1,16 @@
+[Unit]
+Description=Nagios Remote Plugin Executor
+Documentation=http://www.nagios.org/documentation
+After=var-run.mount nss-lookup.target network.target local-fs.target time-sync.target
+
+[Service]
+Restart=on-failure
+ExecStart=@sbindir@/nrpe -c @pkgsysconfdir@/nrpe.cfg --inetd
+KillMode=process
+User=@nrpe_user@
+Group=@nrpe_group@
+PrivateTmp=true
+OOMScoreAdjust=-500
+
+[Install]
+WantedBy=multi-user.target

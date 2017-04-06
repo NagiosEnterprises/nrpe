@@ -1,0 +1,2 @@
+#Type	Path			Mode	UID				GID				Age	Argument
+d		@piddir@	0755	@nrpe_user@	@nrpe_group@	-	-
