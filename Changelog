@@ -2,6 +2,44 @@
 NRPE Changelog
 **************
 
+3.x.x - 201x-xx-xx
+------------------
+ENHANCEMENTS
+- Added option to nrpe.cfg.in that can override hard-coded NASTY_METACHARS (John Frickson)
+- While processing 'include_dir' statement, sort the files (Philippe Kueck / John Frickson)
+- nrpe can now write to a log file using 'log_file=' in nrpe.cfg (John Frickson)
+- check_nrpe can now write to a log file using '--log-file=' or '-g' options (John Frickson)
+
+FIXES
+- Added missing debugging syslog entries, and changed printf()'s to syslog()'s. (Jobst Schmalenbach)
+- Fix help output for ssl option (configure) (Ruben Kerkhof)
+- Fixes to README.SSL.md and SECURITY.md (Elan Ruusamäe)
+- Changed the 'check_load' command in nrpe.cfg.in (minusdavid)
+- Cleanup of config.h.in suggested by Ruben Kerkhof
+- Minor change to logging in check_nrpe (John Frickson)
+- Solaris 11 detection is broken in configure (John Frickson)
+- Removed function `b64_decode` which wasn't being used (John Frickson)
+- check_nrpe ignores -a option when -f option is specified (John Frickson)
+- Added missing LICENSE file (John Frickson)
+- Off-by-one BO in my_system() (John Frickson)
+- Got rid of some compiler warnings (Stefan Krüger / John Frickson)
+- Add SOURCE_DATE_EPOCH specification support for reproducible builds. (Bas Couwenberg)
+- nrpe 3.0.1 allows TLSv1 and TLSv1.1 when I configure for TLSv1.2+ (John Frickson)
+- "Remote %s accepted a Version %s Packet", please add to debug (John Frickson)
+- nrpe 3.0.1 segfaults when key and/or cert are broken symlinks (John Frickson)
+- Fixed a couple of typos in docs/NRPE.* files (Ludmil Meltchev)
+- Changed release date to ISO format (yyyy-mm-dd) (John Frickson)
+- Fix systemd unit description (Bas Couwenberg)
+- Add reload command to systemd service file (Bas Couwenberg)
+- fix file not found error when updating version (Sven Nierlein)
+- Spelling fixes (Josh Soref)
+- Return UNKNOWN when check_nrpe cannot communicate with nrpe and -u set (John Frickson)
+- xinetd.d parameter causes many messages in log file (John Frickson)
+- Fixes for openssl 1.1.x (Stephen Smoogen / John Frickson)
+- PATH and other environment variables not set with numeric nrpe_user (John Frickson)
+- rpmbuild -ta nrpe-3.0.1.tar.gz failed File not found: /etc/init.d/nrpe (bvandi / John Frickson)
+
+
 3.0.1 - 2016-09-08
 ------------------
 FIXES

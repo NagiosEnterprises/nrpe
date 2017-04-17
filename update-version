@@ -20,18 +20,18 @@ fi
 
 # Get date (two formats)
 if [ -n "$2" ]; then
-    LONGDATE=`date -d "$2" "+%B %d, %Y"`
-    SHORTDATE=`date -d "$2" "+%m-%d-%Y"`
+    LONGDATE=$(LC_ALL=C date -u -d "$2" "+%B %d, %Y")
+    SHORTDATE=$(date -u -d "$2" "+%Y-%m-%d")
 else
-    LONGDATE=`date "+%B %d, %Y"`
-    SHORTDATE=`date "+%m-%d-%Y"`
+    LONGDATE=$(LC_ALL=C date -u -d "@${SOURCE_DATE_EPOCH:-$(date +%s)}" "+%B %d, %Y")
+    SHORTDATE=$(date -u -d "@${SOURCE_DATE_EPOCH:-$(date +%s)}" "+%Y-%m-%d")
 fi
 
 # Current version number
-CURRENTVERSION=3.0.1
+CURRENTVERSION=3.1.0-rc1
 
 # Last date
-LASTDATE=09-08-2016
+LASTDATE=2017-04-06
 
 if [ "x$1" = "x" ]
 then
@@ -73,8 +73,8 @@ perl -i -p -e "s/PKG_REL_DATE=.*\"/PKG_REL_DATE=\"$SHORTDATE\"/;" configure.ac
 autoconf
 
 # Update RPM spec file with version number
-perl -i -p -e "s/%define version .*/%define version $1/;" nrpe.spec
-perl -i -p -e "if( /\%define _docdir/) { s/$CURRENTVERSION/$1/; }" nrpe.spec
+perl -i -p -e "s/%define version .*/%define version $1/;" nrpe.spec.in
+perl -i -p -e "if( /\%define _docdir/) { s/$CURRENTVERSION/$1/; }" nrpe.spec.in
 
 # Update this file with version number and last date
 perl -i -p -e "s/^CURRENTVERSION=.*/CURRENTVERSION=$newversion/;" update-version

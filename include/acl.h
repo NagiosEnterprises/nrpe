@@ -53,7 +53,7 @@ struct dns_acl {
         struct dns_acl *next;
 };
 
-/* Poiters to head ACL structs */
+/* Pointers to head ACL structs */
 static struct ip_acl *ip_acl_head, *ip_acl_prev;
 static struct dns_acl *dns_acl_head, *dns_acl_prev;
 

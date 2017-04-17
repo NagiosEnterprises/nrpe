@@ -171,14 +171,14 @@ run the nrpe daemon: `db_server` and `bobs_workstation`.
 As root, do the following:
 
         mkdir -p -m 750 /usr/local/nagios/etc/ssl
-        chown root.nagios /usr/local/nagios/etc/ssl
+        chown root:nagios /usr/local/nagios/etc/ssl
         cd /usr/local/nagios/etc/ssl
         mkdir -m 750 ca
-        chown root.root ca
+        chown root:root ca
         mkdir -m 750 server_certs
-        chown root.nagios server_certs
+        chown root:nagios server_certs
         mkdir -m 750 client_certs
-        chown root.nagios client_certs
+        chown root:nagios client_certs
 
 
 ####Create Certificate Authority
@@ -229,7 +229,7 @@ If you have the default `/etc/openssl.cnf`, either change it, or as root, do:
         mkdir demoCA/newcerts
         touch demoCA/index.txt
 		echo "01" > demoCA/serial
-        chown -R root.root demoCA
+        chown -R root:root demoCA
         chmod 700 demoCA
         chmod 700 demoCA/newcerts
         chmod 600 demoCA/serial
@@ -242,13 +242,13 @@ Now, sign the CSRs. As root, do the following:
            -keyfile ca/ca_key.pem -cert ca/ca_cert.pem \
            -in server_certs/db_server.csr \
            -out server_certs/db_server.pem
-        chown root.nagios server_certs/db_server.pem
+        chown root:nagios server_certs/db_server.pem
         chmod 440 server_certs/db_server.pem
         openssl ca -days 365 -notext -md sha256 \
            -keyfile ca/ca_key.pem -cert ca/ca_cert.pem \
            -in server_certs/bobs_workstation.csr \
            -out server_certs/bobs_workstation.pem
-        chown root.nagios server_certs/bobs_workstation.pem
+        chown root:nagios server_certs/bobs_workstation.pem
         chmod 440 server_certs/bobs_workstation.pem
 
 Now, copy the `db_server.pem` and `db_server.key` files to the
@@ -271,7 +271,7 @@ running the check_nrpe program.
            -keyfile ca/ca_key.pem -cert ca/ca_cert.pem \
            -in client_certs/nag_serv.csr \
            -out client_certs/nag_serv.pem
-        chown root.nagios client_certs/nag_serv.pem
+        chown root:nagios client_certs/nag_serv.pem
         chmod 440 client_certs/nag_serv.pem
 
 Now, copy the `nag_serv.pem`, `nag_serv.key` and `ca/ca_cert.pem`

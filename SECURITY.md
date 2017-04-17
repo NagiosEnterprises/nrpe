@@ -46,7 +46,7 @@ do two things:
 
 #### ENABLING BASH COMMAND SUBSTITUTION ####
 
-To enable support for arguments containing bash command substitions, 
+To enable support for arguments containing bash command substitutions, 
 you must do two things:
 
    1.  Enable arguments as described above
@@ -64,7 +64,7 @@ To help prevent some nasty things from being done by evil
 clients, the following metacharacters are not allowed
 in client command arguments:
 
-	| ` & > < ' " \ [ ] { } ; !
+	| ` & > < ' \ [ ] { } ; ! \r \n
 
 Any client request which contains the above mentioned metachars
 is discarded.

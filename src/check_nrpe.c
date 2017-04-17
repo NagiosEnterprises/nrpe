@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2008 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 09-08-2016
+ * Last Modified: 2017-04-06
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -46,7 +46,9 @@ int show_help = FALSE;
 int show_license = FALSE;
 int show_version = FALSE;
 int packet_ver = NRPE_PACKET_VERSION_3;
+int force_v2_packet = 0;
 int payload_size = 0;
+extern char *log_file;
 
 #ifdef HAVE_SSL
 # if (defined(__sun) && defined(SOLARIS_10)) || defined(_AIX) || defined(__hpux)
@@ -57,7 +59,7 @@ const SSL_METHOD *meth;
 SSL_CTX *ctx;
 SSL *ssl;
 int use_ssl = TRUE;
-int ssl_opts = SSL_OP_ALL;
+unsigned long ssl_opts = SSL_OP_ALL;
 #else
 int use_ssl = FALSE;
 #endif
@@ -81,7 +83,7 @@ struct _SSL_PARMS {
 	char *cacert_file;
 	char *privatekey_file;
 	char cipher_list[MAX_FILENAME_LENGTH];
-	SslVer ssl_min_ver;
+	SslVer ssl_proto_ver;
 	int allowDH;
 	ClntCerts client_certs;
 	SslLogging log_opts;
@@ -97,7 +99,7 @@ void set_timeout_state (char *state);
 int parse_timeout_string (char *timeout_str);
 void usage(int result);
 void setup_ssl();
-void set_sig_hadlers();
+void set_sig_handlers();
 int connect_to_remote();
 int send_request();
 int read_response();
@@ -114,6 +116,8 @@ int main(int argc, char **argv)
 
 	result = process_arguments(argc, argv, 0);
 
+	open_log_file();
+
 	if (result != OK || show_help == TRUE || show_license == TRUE || show_version == TRUE)
 		usage(result);			/* usage() will call exit() */
 
@@ -127,14 +131,14 @@ int main(int argc, char **argv)
 		timeout_return_code = STATE_CRITICAL;
 	if (sslprm.cipher_list[0] == '\0')
 		strncpy(sslprm.cipher_list, "ALL:!MD5:@STRENGTH", MAX_FILENAME_LENGTH - 1);
-	if (sslprm.ssl_min_ver == SSL_Ver_Invalid)
-		sslprm.ssl_min_ver = TLSv1_plus;
+	if (sslprm.ssl_proto_ver == SSL_Ver_Invalid)
+		sslprm.ssl_proto_ver = TLSv1_plus;
 	if (sslprm.allowDH == -1)
 		sslprm.allowDH = TRUE;
 
 	generate_crc32_table();		/* generate the CRC 32 table */
 	setup_ssl();				/* Do all the SSL/TLS set up */
-	set_sig_hadlers();			/* initialize alarm signal handling */
+	set_sig_handlers();			/* initialize alarm signal handling */
 	result = connect_to_remote();	/* Make the connection */
 	if (result != STATE_OK) {
 		alarm(0);
@@ -149,28 +153,32 @@ int main(int argc, char **argv)
 
 	if (result == -1) {
 		/* Failure reading from remote, so try version 2 packet */
-		syslog(LOG_NOTICE, "Remote %s does not support Version 3 Packets", rem_host);
+		logit(LOG_INFO, "Remote %s does not support Version 3 Packets", rem_host);
 		packet_ver = NRPE_PACKET_VERSION_2;
 
 		/* Rerun the setup */
 		setup_ssl();
-		set_sig_hadlers();
+		set_sig_handlers();
 		result = connect_to_remote();	/* Connect */
 		if (result != STATE_OK) {
 			alarm(0);
+			close_log_file();			/* close the log file */
 			return result;
 		}
 
 		result = send_request();	/* Send the request */
-		if (result != STATE_OK)
+		if (result != STATE_OK) {
+			close_log_file();			/* close the log file */
 			return result;
+		}
 
 		result = read_response();	/* Get the response */
 	}
 
-	if (result != -1)
-		syslog(LOG_NOTICE, "Remote %s accepted a Version %d Packet", rem_host, packet_ver);
+	if (result != -1 && force_v2_packet == 0 && packet_ver == NRPE_PACKET_VERSION_2)
+		logit(LOG_DEBUG, "Remote %s accepted a Version %d Packet", rem_host, packet_ver);
 
+	close_log_file();			/* close the log file */
 	return result;
 }
 
@@ -206,6 +214,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		{"timeout", required_argument, 0, 't'},
 		{"port", required_argument, 0, 'p'},
 		{"payload-size", required_argument, 0, 'P'},
+		{"log-file", required_argument, 0, 'g'},
 		{"help", no_argument, 0, 'h'},
 		{"license", no_argument, 0, 'l'},
 		{0, 0, 0, 0}
@@ -217,15 +226,17 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		return ERROR;
 
 	optind = 0;
-	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:246hlnuV");
+	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:g:246hlnuV");
 
 	while (1) {
+		if (argindex > 0)
+			break;
 #ifdef HAVE_GETOPT_LONG
 		c = getopt_long(argc, argv, optchars, long_options, &option_index);
 #else
 		c = getopt(argc, argv, optchars);
 #endif
-		if (c == -1 || c == EOF || argindex > 0)
+		if (c == -1 || c == EOF)
 			break;
 
 		/* process all arguments */
@@ -258,7 +269,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 't':
 			if (from_config_file && socket_timeout != -1) {
-				syslog(LOG_WARNING, "WARNING: Command-line socket timeout overrides "
+				logit(LOG_WARNING, "WARNING: Command-line socket timeout overrides "
 								"the config file option.");
 				break;
 			}
@@ -269,7 +280,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'p':
 			if (from_config_file && server_port != 0) {
-				syslog(LOG_WARNING, "WARNING: Command-line server port overrides "
+				logit(LOG_WARNING, "WARNING: Command-line server port overrides "
 								"the config file option.");
 				break;
 			}
@@ -280,7 +291,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'P':
 			if (from_config_file && payload_size > 0) {
-				syslog(LOG_WARNING, "WARNING: Command-line payload-size (-P) overrides "
+				logit(LOG_WARNING, "WARNING: Command-line payload-size (-P) overrides "
 								"the config file option.");
 				break;
 			}
@@ -291,7 +302,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'H':
 			if (from_config_file && server_name != NULL) {
-				syslog(LOG_WARNING, "WARNING: Command-line server name overrides "
+				logit(LOG_WARNING, "WARNING: Command-line server name overrides "
 								"the config file option.");
 				break;
 			}
@@ -302,7 +313,6 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			if (from_config_file) {
 				printf("Error: The config file should not have a command (-c) option.\n");
 				return ERROR;
-				break;
 			}
 			command_name = strdup(optarg);
 			break;
@@ -311,7 +321,6 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			if (from_config_file) {
 				printf("Error: The config file should not have args (-a) arguments.\n");
 				return ERROR;
-				break;
 			}
 			argindex = optind;
 			break;
@@ -322,7 +331,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'u':
 			if (from_config_file && timeout_return_code != -1) {
-				syslog(LOG_WARNING, "WARNING: Command-line unknown-timeout (-u) "
+				logit(LOG_WARNING, "WARNING: Command-line unknown-timeout (-u) "
 								"overrides the config file option.");
 				break;
 			}
@@ -331,16 +340,17 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case '2':
 			if (from_config_file && packet_ver != NRPE_PACKET_VERSION_3) {
-				syslog(LOG_WARNING, "WARNING: Command-line v2-packets-only (-2) "
+				logit(LOG_WARNING, "WARNING: Command-line v2-packets-only (-2) "
 								"overrides the config file option.");
 				break;
 			}
 			packet_ver = NRPE_PACKET_VERSION_2;
+			force_v2_packet = 1;
 			break;
 
 		case '4':
 			if (from_config_file && address_family != AF_UNSPEC) {
-				syslog(LOG_WARNING, "WARNING: Command-line ipv4 (-4) "
+				logit(LOG_WARNING, "WARNING: Command-line ipv4 (-4) "
 								"or ipv6 (-6) overrides the config file option.");
 				break;
 			}
@@ -349,7 +359,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case '6':
 			if (from_config_file && address_family != AF_UNSPEC) {
-				syslog(LOG_WARNING, "WARNING: Command-line ipv4 (-4) "
+				logit(LOG_WARNING, "WARNING: Command-line ipv4 (-4) "
 								"or ipv6 (-6) overrides the config file option.");
 				break;
 			}
@@ -358,7 +368,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'd':
 			if (from_config_file && sslprm.allowDH != -1) {
-				syslog(LOG_WARNING, "WARNING: Command-line use-adh (-d) "
+				logit(LOG_WARNING, "WARNING: Command-line use-adh (-d) "
 								"overrides the config file option.");
 				break;
 			}
@@ -369,7 +379,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'A':
 			if (from_config_file && sslprm.cacert_file != NULL) {
-				syslog(LOG_WARNING, "WARNING: Command-line ca-cert-file (-A) "
+				logit(LOG_WARNING, "WARNING: Command-line ca-cert-file (-A) "
 								"overrides the config file option.");
 				break;
 			}
@@ -378,7 +388,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'C':
 			if (from_config_file && sslprm.cert_file != NULL) {
-				syslog(LOG_WARNING, "WARNING: Command-line client-cert (-C) "
+				logit(LOG_WARNING, "WARNING: Command-line client-cert (-C) "
 								"overrides the config file option.");
 				break;
 			}
@@ -388,7 +398,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'K':
 			if (from_config_file && sslprm.privatekey_file != NULL) {
-				syslog(LOG_WARNING, "WARNING: Command-line key-file (-K) "
+				logit(LOG_WARNING, "WARNING: Command-line key-file (-K) "
 								"overrides the config file option.");
 				break;
 			}
@@ -397,38 +407,41 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			break;
 
 		case 'S':
-			if (from_config_file && sslprm.ssl_min_ver != SSL_Ver_Invalid) {
-				syslog(LOG_WARNING, "WARNING: Command-line ssl-version (-S) "
+			if (from_config_file && sslprm.ssl_proto_ver != SSL_Ver_Invalid) {
+				logit(LOG_WARNING, "WARNING: Command-line ssl-version (-S) "
 								"overrides the config file option.");
 				break;
 			}
-			if (!strcmp(optarg, "SSLv2"))
-				sslprm.ssl_min_ver = SSLv2;
-			else if (!strcmp(optarg, "SSLv2+"))
-				sslprm.ssl_min_ver = SSLv2_plus;
-			else if (!strcmp(optarg, "SSLv3"))
-				sslprm.ssl_min_ver = SSLv3;
-			else if (!strcmp(optarg, "SSLv3+"))
-				sslprm.ssl_min_ver = SSLv3_plus;
-			else if (!strcmp(optarg, "TLSv1"))
-				sslprm.ssl_min_ver = TLSv1;
-			else if (!strcmp(optarg, "TLSv1+"))
-				sslprm.ssl_min_ver = TLSv1_plus;
-			else if (!strcmp(optarg, "TLSv1.1"))
-				sslprm.ssl_min_ver = TLSv1_1;
-			else if (!strcmp(optarg, "TLSv1.1+"))
-				sslprm.ssl_min_ver = TLSv1_1_plus;
-			else if (!strcmp(optarg, "TLSv1.2"))
-				sslprm.ssl_min_ver = TLSv1_2;
+
+			if (!strcmp(optarg, "TLSv1.2"))
+				sslprm.ssl_proto_ver = TLSv1_2;
 			else if (!strcmp(optarg, "TLSv1.2+"))
-				sslprm.ssl_min_ver = TLSv1_2_plus;
+				sslprm.ssl_proto_ver = TLSv1_2_plus;
+			else if (!strcmp(optarg, "TLSv1.1"))
+				sslprm.ssl_proto_ver = TLSv1_1;
+			else if (!strcmp(optarg, "TLSv1.1+"))
+				sslprm.ssl_proto_ver = TLSv1_1_plus;
+			else if (!strcmp(optarg, "TLSv1"))
+				sslprm.ssl_proto_ver = TLSv1;
+			else if (!strcmp(optarg, "TLSv1+"))
+				sslprm.ssl_proto_ver = TLSv1_plus;
+			else if (!strcmp(optarg, "SSLv3"))
+				sslprm.ssl_proto_ver = SSLv3;
+			else if (!strcmp(optarg, "SSLv3+"))
+				sslprm.ssl_proto_ver = SSLv3_plus;
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+			else if (!strcmp(optarg, "SSLv2"))
+				sslprm.ssl_proto_ver = SSLv2;
+			else if (!strcmp(optarg, "SSLv2+"))
+				sslprm.ssl_proto_ver = SSLv2_plus;
+#endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 			else
 				return ERROR;
 			break;
 
 		case 'L':
 			if (from_config_file && sslprm.cipher_list[0] != '\0') {
-				syslog(LOG_WARNING, "WARNING: Command-line cipher-list (-L) "
+				logit(LOG_WARNING, "WARNING: Command-line cipher-list (-L) "
 								"overrides the config file option.");
 				break;
 			}
@@ -438,7 +451,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 's':
 			if (from_config_file && have_log_opts == TRUE) {
-				syslog(LOG_WARNING, "WARNING: Command-line ssl-logging (-s) "
+				logit(LOG_WARNING, "WARNING: Command-line ssl-logging (-s) "
 								"overrides the config file option.");
 				break;
 			}
@@ -446,19 +459,29 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			have_log_opts = TRUE;
 			break;
 
+		case 'g':
+			if (from_config_file && log_file != NULL) {
+				logit(LOG_WARNING, "WARNING: Command-line log-file (-g) "
+								"overrides the config file option.");
+				break;
+			}
+			log_file = strdup(optarg);
+			break;
+
 		default:
 			return ERROR;
-			break;
 		}
 	}
 
 	/* determine (base) command query */
-	snprintf(query, sizeof(query), "%s",
-			 (command_name == NULL) ? DEFAULT_NRPE_COMMAND : command_name);
-	query[sizeof(query) - 1] = '\x0';
+	if (!from_config_file) {
+		snprintf(query, sizeof(query), "%s",
+				 (command_name == NULL) ? DEFAULT_NRPE_COMMAND : command_name);
+		query[sizeof(query) - 1] = '\x0';
+	}
 
 	/* get the command args */
-	if (argindex > 0) {
+	if (!from_config_file && argindex > 0) {
 
 		for (c = argindex - 1; c < argc; c++) {
 
@@ -471,7 +494,6 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			query[sizeof(query) - 1] = '\x0';
 		}
 	}
-
 	if (!from_config_file && config_file != NULL) {
 		if ((rc = read_config_file(config_file)) != OK)
 			return rc;
@@ -507,28 +529,28 @@ int read_config_file(char *fname)
 	size_t		sz;
 
 	if (stat(fname, &st)) {
-		syslog(LOG_ERR, "Error: Could not stat config file %s", fname);
+		logit(LOG_ERR, "Error: Could not stat config file %s", fname);
 		return ERROR;
 	}
 	if ((f = fopen(fname, "r")) == NULL) {
-		syslog(LOG_ERR, "Error: Could not open config file %s", fname);
+		logit(LOG_ERR, "Error: Could not open config file %s", fname);
 		return ERROR;
 	}
 	if ((buf = (char*)calloc(1, st.st_size + 2)) == NULL) {
 		fclose(f);
-		syslog(LOG_ERR, "Error: read_config_file fail to allocate memory");
+		logit(LOG_ERR, "Error: read_config_file fail to allocate memory");
 		return ERROR;
 	}
 	if ((sz = fread(buf, 1, st.st_size, f)) != st.st_size) {
 		fclose(f);
 		free(buf);
-		syslog(LOG_ERR, "Error: Failed to completely read config file %s", fname);
+		logit(LOG_ERR, "Error: Failed to completely read config file %s", fname);
 		return ERROR;
 	}
 	if ((argv = calloc(50, sizeof(char*))) == NULL) {
 		fclose(f);
 		free(buf);
-		syslog(LOG_ERR, "Error: read_config_file fail to allocate memory");
+		logit(LOG_ERR, "Error: read_config_file fail to allocate memory");
 		return ERROR;
 	}
 
@@ -550,7 +572,7 @@ int read_config_file(char *fname)
 	if (argc == 50) {
 		free(buf);
 		free(argv);
-		syslog(LOG_ERR, "Error: too many parameters in config file %s", fname);
+		logit(LOG_ERR, "Error: too many parameters in config file %s", fname);
 		return ERROR;
 	}
 
@@ -594,22 +616,22 @@ void set_timeout_state (char *state) {
 
 int parse_timeout_string (char *timeout_str)
 {
-	char *seperated_str;
+	char *separated_str;
 	char *timeout_val = NULL;
 	char *timeout_sta = NULL;
 
 	if (strstr(timeout_str, ":") == NULL)
 		timeout_val = timeout_str;
 	else if (strncmp(timeout_str, ":", 1) == 0) {
-		seperated_str = strtok(timeout_str, ":");
-		if (seperated_str != NULL)
-			timeout_sta = seperated_str;
+		separated_str = strtok(timeout_str, ":");
+		if (separated_str != NULL)
+			timeout_sta = separated_str;
 	} else {
-		seperated_str = strtok(timeout_str, ":");
-		timeout_val = seperated_str;
-		seperated_str = strtok(NULL, ":");
-		if (seperated_str != NULL) {
-			timeout_sta = seperated_str;
+		separated_str = strtok(timeout_str, ":");
+		timeout_val = separated_str;
+		separated_str = strtok(NULL, ":");
+		if (separated_str != NULL) {
+			timeout_sta = separated_str;
 		}
 	}
 
@@ -655,7 +677,7 @@ void usage(int result)
 		printf(" -6           = bind to ipv6 only\n");
 		printf(" -n           = Do no use SSL\n");
 		printf
-			(" -u           = (DEPRECATED) Make timeouts return UNKNOWN instead of CRITICAL\n");
+			(" -u           = Make connection problems return UNKNOWN instead of CRITICAL\n");
 		printf(" -V           = Show version\n");
 		printf(" -l           = Show license\n");
 		printf(" <dhopt>      = Anonymous Diffie Hellman use:\n");
@@ -665,10 +687,14 @@ void usage(int result)
 		printf("                2 = Force Anonymous Diffie Hellman\n");
 		printf(" <size>       = Specify non-default payload size for NSClient++\n");
 		printf
-			(" <ssl ver>    = The SSL/TLS version to use. Can be any one of: SSLv2 (only),\n");
-		printf("                SSLv2+ (or above), SSLv3 (only), SSLv3+ (or above),\n");
-		printf("                TLSv1 (only), TLSv1+ (or above DEFAULT), TLSv1.1 (only),\n");
-		printf("                TLSv1.1+ (or above), TLSv1.2 (only), TLSv1.2+ (or above)\n");
+			(" <ssl ver>    = The SSL/TLS version to use. Can be any one of:\n");
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+		printf("                SSLv2 (only), SSLv2+ (or above),\n");
+#endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
+		printf("                SSLv3 (only), SSLv3+ (or above),\n");
+		printf("                TLSv1 (only), TLSv1+ (or above DEFAULT),\n");
+		printf("                TLSv1.1 (only), TLSv1.1+ (or above),\n");
+		printf("                TLSv1.2 (only), TLSv1.2+ (or above)\n");
 		printf(" <cipherlist> = The list of SSL ciphers to use (currently defaults\n");
 		printf
 			("                to \"ALL:!MD5:@STRENGTH\". WILL change in a future release.)\n");
@@ -722,20 +748,21 @@ void setup_ssl()
 	if (sslprm.log_opts & SSL_LogStartup) {
 		char *val;
 
-		syslog(LOG_INFO, "SSL Certificate File: %s",
+		logit(LOG_INFO, "SSL Certificate File: %s",
 			   sslprm.cert_file ? sslprm.cert_file : "None");
-		syslog(LOG_INFO, "SSL Private Key File: %s",
+		logit(LOG_INFO, "SSL Private Key File: %s",
 			   sslprm.privatekey_file ? sslprm.privatekey_file : "None");
-		syslog(LOG_INFO, "SSL CA Certificate File: %s",
+		logit(LOG_INFO, "SSL CA Certificate File: %s",
 			   sslprm.cacert_file ? sslprm.cacert_file : "None");
 		if (sslprm.allowDH < 2)
-			syslog(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
+			logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
 		else
-			syslog(LOG_INFO, "SSL Cipher List: ADH");
-		syslog(LOG_INFO, "SSL Allow ADH: %s",
+			logit(LOG_INFO, "SSL Cipher List: ADH");
+		logit(LOG_INFO, "SSL Allow ADH: %s",
 			   sslprm.allowDH == 0 ? "No" : (sslprm.allowDH == 1 ? "Allow" : "Require"));
-		syslog(LOG_INFO, "SSL Log Options: 0x%02x", sslprm.log_opts);
-		switch (sslprm.ssl_min_ver) {
+		logit(LOG_INFO, "SSL Log Options: 0x%02x", sslprm.log_opts);
+
+		switch (sslprm.ssl_proto_ver) {
 		case SSLv2:
 			val = "SSLv2";
 			break;
@@ -770,44 +797,102 @@ void setup_ssl()
 			val = "INVALID VALUE!";
 			break;
 		}
-		syslog(LOG_INFO, "SSL Version: %s", val);
+		logit(LOG_INFO, "SSL Version: %s", val);
 	}
 
 	/* initialize SSL */
 	if (use_ssl == TRUE) {
 		SSL_load_error_strings();
 		SSL_library_init();
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+
+		meth = TLS_method();
+
+#else		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
+
 		meth = SSLv23_client_method();
 
 # ifndef OPENSSL_NO_SSL2
-		if (sslprm.ssl_min_ver == SSLv2)
+		if (sslprm.ssl_proto_ver == SSLv2)
 			meth = SSLv2_client_method();
 # endif
 # ifndef OPENSSL_NO_SSL3
-		if (sslprm.ssl_min_ver == SSLv3)
+		if (sslprm.ssl_proto_ver == SSLv3)
 			meth = SSLv3_client_method();
 # endif
-		if (sslprm.ssl_min_ver == TLSv1)
+		if (sslprm.ssl_proto_ver == TLSv1)
 			meth = TLSv1_client_method();
 # ifdef SSL_TXT_TLSV1_1
-		if (sslprm.ssl_min_ver == TLSv1_1)
+		if (sslprm.ssl_proto_ver == TLSv1_1)
 			meth = TLSv1_1_client_method();
 #  ifdef SSL_TXT_TLSV1_2
-		if (sslprm.ssl_min_ver == TLSv1_2)
+		if (sslprm.ssl_proto_ver == TLSv1_2)
 			meth = TLSv1_2_client_method();
-#  endif
-# endif
+#  endif	/* ifdef SSL_TXT_TLSV1_2 */
+# endif	/* ifdef SSL_TXT_TLSV1_1 */
+
+#endif		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
 
 		if ((ctx = SSL_CTX_new(meth)) == NULL) {
 			printf("CHECK_NRPE: Error - could not create SSL context.\n");
 			exit(STATE_CRITICAL);
 		}
 
-		if (sslprm.ssl_min_ver >= SSLv3) {
-			ssl_opts |= SSL_OP_NO_SSLv2;
-			if (sslprm.ssl_min_ver >= TLSv1)
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+
+	SSL_CTX_set_max_proto_version(ctx, 0);
+
+	switch(sslprm.ssl_proto_ver) {
+
+		case TLSv1_2:
+			SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
+		case TLSv1_2_plus:
+			SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION);
+			break;
+
+		case TLSv1_1:
+			SSL_CTX_set_max_proto_version(ctx, TLS1_1_VERSION);
+		case TLSv1_1_plus:
+			SSL_CTX_set_min_proto_version(ctx, TLS1_1_VERSION);
+			break;
+
+		case TLSv1:
+			SSL_CTX_set_max_proto_version(ctx, TLS1_VERSION);
+		case TLSv1_plus:
+			SSL_CTX_set_min_proto_version(ctx, TLS1_VERSION);
+			break;
+
+		case SSLv3:
+			SSL_CTX_set_max_proto_version(ctx, SSL3_VERSION);
+		case SSLv3_plus:
+			SSL_CTX_set_min_proto_version(ctx, SSL3_VERSION);
+			break;
+	}
+
+#else		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
+
+		switch(sslprm.ssl_proto_ver) {
+			case SSLv2:
+			case SSLv2_plus:
+				break;
+			case TLSv1_2:
+			case TLSv1_2_plus:
+				ssl_opts |= SSL_OP_NO_TLSv1_1;
+			case TLSv1_1:
+			case TLSv1_1_plus:
+				ssl_opts |= SSL_OP_NO_TLSv1;
+			case TLSv1:
+			case TLSv1_plus:
 				ssl_opts |= SSL_OP_NO_SSLv3;
+			case SSLv3:
+			case SSLv3_plus:
+				ssl_opts |= SSL_OP_NO_SSLv2;
+				break;
 		}
+
+#endif		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
+
 		SSL_CTX_set_options(ctx, ssl_opts);
 
 		if (sslprm.cert_file != NULL && sslprm.privatekey_file != NULL) {
@@ -838,7 +923,7 @@ void setup_ssl()
 			if (strlen(sslprm.cipher_list) < sizeof(sslprm.cipher_list) - 6) {
 				strcat(sslprm.cipher_list, ":!ADH");
 				if (sslprm.log_opts & SSL_LogStartup)
-					syslog(LOG_INFO, "New SSL Cipher List: %s", sslprm.cipher_list);
+					logit(LOG_INFO, "New SSL Cipher List: %s", sslprm.cipher_list);
 			}
 		} else {
 			/* use anonymous DH ciphers */
@@ -855,7 +940,7 @@ void setup_ssl()
 #endif
 }
 
-void set_sig_hadlers()
+void set_sig_handlers()
 {
 #ifdef HAVE_SIGACTION
 	struct sigaction sig_action;
@@ -885,7 +970,7 @@ int connect_to_remote()
 	/* try to connect to the host at the given port number */
 	if ((sd =
 		 my_connect(server_name, &hostaddr, server_port, address_family, bind_address)) < 0)
-		exit(STATE_CRITICAL);
+		exit(timeout_return_code);
 
 	result = STATE_OK;
 	addrlen = sizeof(addr);
@@ -901,7 +986,7 @@ int connect_to_remote()
 		strncpy(rem_host, "Unknown", sizeof(rem_host));
 	rem_host[MAX_HOST_ADDRESS_LENGTH - 1] = '\0';
 	if ((sslprm.log_opts & SSL_LogIpAddr) != 0)
-		syslog(LOG_DEBUG, "Connected to %s", rem_host);
+		logit(LOG_DEBUG, "Connected to %s", rem_host);
 
 #ifdef HAVE_SSL
 	if (use_ssl == FALSE)
@@ -922,16 +1007,16 @@ int connect_to_remote()
 			int x, nerrs = 0;
 			rc = 0;
 			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-				syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
+				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
 					   rem_host, ERR_reason_error_string(x));
 				++nerrs;
 			}
 			if (nerrs == 0)
-				syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: rc=%d SSL-error=%d",
+				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: rc=%d SSL-error=%d",
 					   rem_host, rc, ssl_err);
 
 		} else
-			syslog(LOG_ERR, "Error: Could not complete SSL handshake with %s: rc=%d SSL-error=%d",
+			logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: rc=%d SSL-error=%d",
 				   rem_host, rc, ssl_err);
 
 		if (ssl_err == 5) {
@@ -961,7 +1046,7 @@ int connect_to_remote()
 	} else {
 
 		if (sslprm.log_opts & SSL_LogVersion)
-			syslog(LOG_NOTICE, "Remote %s - SSL Version: %s", rem_host, SSL_get_version(ssl));
+			logit(LOG_NOTICE, "Remote %s - SSL Version: %s", rem_host, SSL_get_version(ssl));
 
 		if (sslprm.log_opts & SSL_LogCipher) {
 # if (defined(__sun) && defined(SOLARIS_10)) || defined(_AIX) || defined(__hpux)
@@ -969,7 +1054,7 @@ int connect_to_remote()
 # else
 			const SSL_CIPHER *c = SSL_get_current_cipher(ssl);
 # endif
-			syslog(LOG_NOTICE, "Remote %s - %s, Cipher is %s", rem_host,
+			logit(LOG_NOTICE, "Remote %s - %s, Cipher is %s", rem_host,
 				   SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
 		}
 
@@ -979,16 +1064,17 @@ int connect_to_remote()
 
 			if (peer) {
 				if (sslprm.log_opts & SSL_LogIfClientCert)
-					syslog(LOG_NOTICE, "SSL %s has %s certificate",
-						   rem_host, peer->valid ? "a valid" : "an invalid");
+					logit(LOG_NOTICE, "SSL %s has %s certificate",
+						   rem_host, SSL_get_verify_result(ssl) ? "a valid" : "an invalid");
 				if (sslprm.log_opts & SSL_LogCertDetails) {
-					syslog(LOG_NOTICE, "SSL %s Cert Name: %s", rem_host, peer->name);
+					X509_NAME_oneline(X509_get_subject_name(peer), buffer, sizeof(buffer));
+					logit(LOG_NOTICE, "SSL %s Cert Name: %s", rem_host, buffer);
 					X509_NAME_oneline(X509_get_issuer_name(peer), buffer, sizeof(buffer));
-					syslog(LOG_NOTICE, "SSL %s Cert Issuer: %s", rem_host, buffer);
+					logit(LOG_NOTICE, "SSL %s Cert Issuer: %s", rem_host, buffer);
 				}
 
 			} else
-				syslog(LOG_NOTICE, "SSL Did not get certificate from %s", rem_host);
+				logit(LOG_NOTICE, "SSL Did not get certificate from %s", rem_host);
 		}
 	}
 
@@ -1095,7 +1181,7 @@ int read_response()
 	int rc, result;
 
 	alarm(0);
-	set_sig_hadlers();
+	set_sig_handlers();
 
 #ifdef HAVE_SSL
 	rc = read_packet(sd, ssl, &v2_receive_packet, &v3_receive_packet);
@@ -1240,7 +1326,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			} else
 				buffer_size = pkt_size - common_size;
 			if ((*v2_pkt = calloc(1, pkt_size)) == NULL) {
-				syslog(LOG_ERR, "Error: Could not allocate memory for packet");
+				logit(LOG_ERR, "Error: Could not allocate memory for packet");
 				return -1;
 			}
 			memcpy(*v2_pkt, &packet, common_size);
@@ -1266,7 +1352,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			buffer_size = ntohl(buffer_size);
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
-				syslog(LOG_ERR, "Error: Could not allocate memory for packet");
+				logit(LOG_ERR, "Error: Could not allocate memory for packet");
 				return -1;
 			}
 
@@ -1329,7 +1415,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			} else
 				buffer_size = pkt_size - common_size;
 			if ((*v2_pkt = calloc(1, pkt_size)) == NULL) {
-				syslog(LOG_ERR, "Error: Could not allocate memory for packet");
+				logit(LOG_ERR, "Error: Could not allocate memory for packet");
 				return -1;
 			}
 			memcpy(*v2_pkt, &packet, common_size);
@@ -1361,7 +1447,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			buffer_size = ntohl(buffer_size);
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
-				syslog(LOG_ERR, "Error: Could not allocate memory for packet");
+				logit(LOG_ERR, "Error: Could not allocate memory for packet");
 				return -1;
 			}
 
@@ -1427,11 +1513,11 @@ int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 	ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
 
 	X509_NAME_oneline(X509_get_subject_name(err_cert), name, 256);
-	X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert), issuer, 256);
+	X509_NAME_oneline(X509_get_issuer_name(err_cert), issuer, 256);
 
 	if (!preverify_ok && sslprm.client_certs >= Ask_For_Cert
 		&& (sslprm.log_opts & SSL_LogCertDetails)) {
-		syslog(LOG_ERR, "SSL Client has an invalid certificate: %s (issuer=%s) err=%d:%s",
+		logit(LOG_ERR, "SSL Client has an invalid certificate: %s (issuer=%s) err=%d:%s",
 			   name, issuer, err, X509_verify_cert_error_string(err));
 	}
 
