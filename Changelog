@@ -2,7 +2,7 @@
 NRPE Changelog
 **************
 
-3.x.x - 201x-xx-xx
+3.1.0 - 2017-04-17
 ------------------
 ENHANCEMENTS
 - Added option to nrpe.cfg.in that can override hard-coded NASTY_METACHARS (John Frickson)
