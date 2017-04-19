@@ -6,6 +6,7 @@ x.x.x - xxxx-xx-xx
 ------------------
 FIXES
 - The '--log-file=' or '-g' option is missing from the help (John Frickson)
+- check_nrpe = segfault when specifying a config file (John Frickson)
 
 
 3.1.0 - 2017-04-17

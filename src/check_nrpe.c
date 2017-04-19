@@ -558,10 +558,10 @@ int read_config_file(char *fname)
 
 	bufp = buf;
 	while (argc < 50) {
+		while (*bufp && strchr(delims, *bufp))
+			++bufp;
 		if (*bufp == '\0')
 			break;
-		while (strchr(delims, *bufp))
-			++bufp;
 		argv[argc] = my_strsep(&bufp, delims);
 		if (!argv[argc++])
 			break;
