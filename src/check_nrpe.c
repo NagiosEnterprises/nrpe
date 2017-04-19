@@ -667,7 +667,7 @@ void usage(int result)
 		printf("Usage: check_nrpe -H <host> [-2] [-4] [-6] [-n] [-u] [-V] [-l] [-d <dhopt>]\n"
 			   "       [-P <size>] [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n"
 			   "       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n"
-			   "       [-f <cfg-file>] [-p <port>] [-t <interval>:<state>]\n"
+			   "       [-f <cfg-file>] [-p <port>] [-t <interval>:<state>] [-g <log-file>]\n"
 			   "       [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
@@ -704,6 +704,7 @@ void usage(int result)
 		printf(" <logopts>    = SSL Logging Options\n");
 		printf(" <bindaddr>   = bind to local address\n");
 		printf(" <cfg-file>   = configuration file to use\n");
+		printf(" <log-file>   = full path to the log file to write to\n");
 		printf(" [port]       = The port on which the daemon is running (default=%d)\n",
 			   DEFAULT_SERVER_PORT);
 		printf(" [command]    = The name of the command that the remote daemon should run\n");
