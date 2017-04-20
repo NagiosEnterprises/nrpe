@@ -116,8 +116,6 @@ int main(int argc, char **argv)
 
 	result = process_arguments(argc, argv, 0);
 
-	open_log_file();
-
 	if (result != OK || show_help == TRUE || show_license == TRUE || show_version == TRUE)
 		usage(result);			/* usage() will call exit() */
 
@@ -466,6 +464,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 				break;
 			}
 			log_file = strdup(optarg);
+			open_log_file();
 			break;
 
 		default:

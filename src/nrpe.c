@@ -186,8 +186,6 @@ int main(int argc, char **argv)
 		return STATE_CRITICAL;
 	}
 
-	open_log_file();
-
 	if (!nasty_metachars)
 		nasty_metachars = strdup(NASTY_METACHARS);
 
@@ -651,13 +649,13 @@ void cleanup(void)
 	free_memory();				/* free all memory we allocated */
 
 	if (sigrestart == TRUE && sigshutdown == FALSE) {
+		close_log_file();
 		result = read_config_file(config_file);	/* read the config file */
 
 		if (result == ERROR) {	/* exit if there are errors... */
 			logit(LOG_ERR, "Config file '%s' contained errors, bailing out...", config_file);
 			exit(STATE_CRITICAL);
 		}
-		open_log_file();
 		return;
 	}
 
@@ -950,10 +948,11 @@ int read_config_file(char *filename)
 		else if (!strcmp(varname, "nasty_metachars"))
 			nasty_metachars = strdup(varvalue);
 
-		else if (!strcmp(varname, "log_file"))
+		else if (!strcmp(varname, "log_file")) {
 			log_file = strdup(varvalue);
+			open_log_file();
 
-		else {
+		} else {
 			logit(LOG_WARNING, "Unknown option specified in config file '%s' - Line %d\n",
 				   filename, line);
 			continue;
