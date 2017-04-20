@@ -757,6 +757,7 @@ with_logdir
 with_piddir
 with_pipedir
 enable_ssl
+with_need_dh
 with_ssl
 with_ssl_inc
 with_ssl_lib
@@ -1422,6 +1423,7 @@ Optional Packages:
   --with-logdir=DIR       where log files should be placed
   --with-piddir=DIR       where the PID file should be placed
   --with-pipedir=DIR      where socket and pipe files should be placed
+  --with-need-dh          set to 'no' to not include Diffie-Hellman SSL logic
   --with-ssl=DIR          sets location of the SSL installation
   --with-ssl-inc=DIR      sets location of the SSL include files
   --with-ssl-lib=DIR      sets location of the SSL libraries
@@ -7278,9 +7280,21 @@ else
 fi
 
 
+need_dh=yes
+
+# Check whether --with-need_dh was given.
+if test "${with_need_dh+set}" = set; then :
+  withval=$with_need_dh; need_dh=$withval
+else
+  nrpe_group=need_dh
+fi
+
+
 if test x$check_for_ssl = xyes; then
 	# need_dh should only be set for NRPE
-	need_dh=yes
+#	need_dh=yes
+echo "need_dh = |$need_dh|"
+sleep 10;
 
 
 # -------------------------------

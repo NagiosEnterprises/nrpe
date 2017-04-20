@@ -304,10 +304,18 @@ AC_ARG_ENABLE([ssl],
 	fi
 	],check_for_ssl=yes)
 
+need_dh=yes
+AC_ARG_WITH([need_dh],
+	AS_HELP_STRING([--with-need-dh],[set to 'no' to not include Diffie-Hellman SSL logic]),
+	[need_dh=$withval],
+	[nrpe_group=need_dh])
+
 dnl Optional SSL library and include paths
 if test x$check_for_ssl = xyes; then
 	# need_dh should only be set for NRPE
-	need_dh=yes
+#	need_dh=yes
+echo "need_dh = |$need_dh|"
+sleep 10;
 	AC_NAGIOS_GET_SSL
 fi
 
