@@ -357,7 +357,9 @@ void init_ssl(void)
 			break;
 		case TLSv1_2:
 		case TLSv1_2_plus:
+#ifdef SSL_OP_NO_TLSv1_1
 			ssl_opts |= SSL_OP_NO_TLSv1_1;
+#endif
 		case TLSv1_1:
 		case TLSv1_1_plus:
 			ssl_opts |= SSL_OP_NO_TLSv1;
