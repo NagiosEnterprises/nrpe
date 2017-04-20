@@ -31,6 +31,7 @@
 
 #include "../include/common.h"
 #include "../include/utils.h"
+#include <stdarg.h>
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif

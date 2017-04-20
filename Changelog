@@ -9,6 +9,7 @@ FIXES
 - check_nrpe = segfault when specifying a config file (John Frickson)
 - Alternate log file not being used soon enough (John Frickson)
 - Unable to compile v3.1.0rc1 with new SSL checks on rh5 (John Frickson)
+- Unable to compile nrpe-3.1.0 - undefined references to va_start, va_end (John Frickson)
 
 
 3.1.0 - 2017-04-17
