@@ -532,7 +532,7 @@ void logit(int priority, const char *format, ...)
 			fflush(log_fp);
 
 		} else
-			syslog(priority, buffer);
+			syslog(priority, "%s", buffer);
 
 		free(buffer);
 	}
