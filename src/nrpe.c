@@ -242,6 +242,7 @@ void init_ssl(void)
 #ifdef HAVE_SSL
 	DH            *dh;
 	char          seedfile[FILENAME_MAX];
+	char          errstr[120] = { "" };
 	int           i, c, x, vrfy;
 	unsigned long ssl_opts = SSL_OP_ALL | SSL_OP_SINGLE_DH_USE;
 
@@ -313,7 +314,10 @@ void init_ssl(void)
 
 	ctx = SSL_CTX_new(meth);
 	if (ctx == NULL) {
-		logit(LOG_ERR, "Error: could not create SSL context");
+		while ((x = ERR_get_error()) != 0) {
+			ERR_error_string(x, errstr);
+			logit(LOG_ERR, "Error: could not create SSL context : %s", errstr);
+		}
 		SSL_CTX_free(ctx);
 		exit(STATE_CRITICAL);
 	}
@@ -377,7 +381,6 @@ void init_ssl(void)
 	SSL_CTX_set_options(ctx, ssl_opts);
 
 	if (sslprm.cert_file != NULL) {
-		char	errstr[120] = { "" };
 		if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
 			SSL_CTX_free(ctx);
 			while ((x = ERR_get_error()) != 0) {
@@ -388,9 +391,12 @@ void init_ssl(void)
 			exit(STATE_CRITICAL);
 		}
 		if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
+			while ((x = ERR_get_error()) != 0) {
+				ERR_error_string(x, errstr);
+				logit(LOG_ERR, "Error: could not use private key file '%s' : %s",
+					 sslprm.privatekey_file, errstr);
+			}
 			SSL_CTX_free(ctx);
-			logit(LOG_ERR, "Error: could not use private key file '%s'",
-				   sslprm.privatekey_file);
 			exit(STATE_CRITICAL);
 		}
 	}
@@ -401,6 +407,10 @@ void init_ssl(void)
 			vrfy |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 		SSL_CTX_set_verify(ctx, vrfy, verify_callback);
 		if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
+			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+				logit(LOG_ERR, "Error: could not use certificate file '%s': %s\n",
+					   sslprm.cacert_file, ERR_reason_error_string(x));
+			}
 			SSL_CTX_free(ctx);
 			logit(LOG_ERR, "Error: could not use CA certificate '%s'", sslprm.cacert_file);
 			exit(STATE_CRITICAL);

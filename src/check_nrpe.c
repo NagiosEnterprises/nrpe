@@ -743,7 +743,7 @@ void usage(int result)
 void setup_ssl()
 {
 #ifdef HAVE_SSL
-	int vrfy;
+	int vrfy, x;
 
 	if (sslprm.log_opts & SSL_LogStartup) {
 		char *val;
@@ -899,14 +899,23 @@ void setup_ssl()
 
 		if (sslprm.cert_file != NULL && sslprm.privatekey_file != NULL) {
 			if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
-				SSL_CTX_free(ctx);
 				printf("Error: could not use certificate file '%s'.\n", sslprm.cert_file);
+				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+					printf("Error: could not use certificate file '%s': %s\n",
+						   sslprm.cert_file, ERR_reason_error_string(x));
+				}
+				SSL_CTX_free(ctx);
 				exit(STATE_CRITICAL);
 			}
 			if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
 				SSL_CTX_free(ctx);
 				printf("Error: could not use private key file '%s'.\n",
 					   sslprm.privatekey_file);
+				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+					printf("Error: could not use private key file '%s': %s\n",
+						   sslprm.privatekey_file, ERR_reason_error_string(x));
+				}
+				SSL_CTX_free(ctx);
 				exit(STATE_CRITICAL);
 			}
 		}
@@ -915,8 +924,12 @@ void setup_ssl()
 			vrfy = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 			SSL_CTX_set_verify(ctx, vrfy, verify_callback);
 			if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
-				SSL_CTX_free(ctx);
 				printf("Error: could not use CA certificate '%s'.\n", sslprm.cacert_file);
+				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+					printf("Error: could not use CA certificate '%s': %s\n",
+						   sslprm.privatekey_file, ERR_reason_error_string(x));
+				}
+				SSL_CTX_free(ctx);
 				exit(STATE_CRITICAL);
 			}
 		}
@@ -934,8 +947,12 @@ void setup_ssl()
 		}
 
 		if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
-			SSL_CTX_free(ctx);
 			printf("Error: Could not set SSL/TLS cipher list: %s\n", sslprm.cipher_list);
+			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+				printf("Could not set SSL/TLS cipher list '%s': %s\n",
+					   sslprm.cipher_list, ERR_reason_error_string(x));
+			}
+			SSL_CTX_free(ctx);
 			exit(STATE_CRITICAL);
 		}
 	}
