@@ -566,8 +566,8 @@ int is_an_allowed_host(int family, void *host)
 				}
 			}
 
-			dns_acl_curr = dns_acl_curr->next;
 		}
+		dns_acl_curr = dns_acl_curr->next;
 	}
 	return 0;
 }
