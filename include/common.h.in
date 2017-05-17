@@ -2,7 +2,7 @@
  *
  * COMMON.H - NRPE Common Include File
  * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 2017-04-19
+ * Last Modified: 2017-05-17
  *
  * License:
  *
@@ -33,8 +33,8 @@
 # endif
 #endif
 
-#define PROGRAM_VERSION "3.1.0"
-#define MODIFICATION_DATE "2017-04-19"
+#define PROGRAM_VERSION "3.1.1rc1"
+#define MODIFICATION_DATE "2017-05-17"
 
 #define OK							0
 #define ERROR						-1

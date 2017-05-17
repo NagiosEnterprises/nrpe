@@ -5,15 +5,15 @@ define([AC_CACHE_LOAD],)
 define([AC_CACHE_SAVE],)
 
 m4_include([build-aux/custom_help.m4])
-AC_INIT([nrpe],[3.1.0],[nagios-users@lists.sourceforge.net],[nrpe],[https://www.nagios.org/downloads/nagios-core-addons/])
+AC_INIT([nrpe],[3.1.1rc1],[nagios-users@lists.sourceforge.net],[nrpe],[https://www.nagios.org/downloads/nagios-core-addons/])
 AC_CONFIG_SRCDIR([src/nrpe.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
 PKG_NAME=nrpe
-PKG_VERSION="3.1.0"
+PKG_VERSION="3.1.1rc1"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="2017-04-19"
+PKG_REL_DATE="2017-05-17"
 RPM_RELEASE=1
 
 LANG=C

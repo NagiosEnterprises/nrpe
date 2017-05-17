@@ -2,7 +2,7 @@
 NRPE Changelog
 **************
 
-x.x.x - xxxx-xx-xx
+3.1.1 - 2017-05-24
 ------------------
 FIXES
 - The '--log-file=' or '-g' option is missing from the help (John Frickson)
