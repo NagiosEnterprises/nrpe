@@ -984,7 +984,7 @@ int connect_to_remote()
 	struct sockaddr addr;
 	struct in_addr *inaddr;
 	socklen_t addrlen;
-	int result, rc, ssl_err, ern;
+	int result, rc, ssl_err, ern, x, nerrs = 0;
 
 	/* try to connect to the host at the given port number */
 	if ((sd =
@@ -1023,7 +1023,6 @@ int connect_to_remote()
 		ssl_err = SSL_get_error(ssl, rc);
 
 		if (sslprm.log_opts & (SSL_LogCertDetails | SSL_LogIfClientCert)) {
-			int x, nerrs = 0;
 			rc = 0;
 			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
 				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
@@ -1034,9 +1033,16 @@ int connect_to_remote()
 				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: rc=%d SSL-error=%d",
 					   rem_host, rc, ssl_err);
 
-		} else
-			logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: rc=%d SSL-error=%d",
-				   rem_host, rc, ssl_err);
+		} else {
+			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
+					   rem_host, ERR_reason_error_string(x));
+				++nerrs;
+			}
+			if (nerrs == 0)
+				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: "
+						"rc=%d SSL-error=%d", rem_host, rc, ssl_err);
+		}
 
 		if (ssl_err == 5) {
 			/* Often, errno will be zero, so print a generic message here */

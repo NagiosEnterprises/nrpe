@@ -1863,6 +1863,7 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 #else
 	const SSL_CIPHER *c;
 #endif
+	const char *errmsg = NULL;
 	char      buffer[MAX_INPUT_BUFFER];
 	SSL      *ssl = (SSL*)ssl_ptr;
 	X509     *peer;
@@ -1880,8 +1881,14 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 			int       nerrs = 0;
 			rc = 0;
 			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+				errmsg = ERR_reason_error_string(x);
 				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
-					   remote_host, ERR_reason_error_string(x));
+					   remote_host, errmsg);
+				if (errmsg && !strcmp(errmsg, "no shared cipher")) {
+					if (sslprm.cert_file == NULL || sslprm.cacert_file == NULL)
+						logit(LOG_ERR, "Error: This could be because you have not "
+								"specified certificate or ca-certificate files");
+				}
 				++nerrs;
 			}
 			if (nerrs == 0)
