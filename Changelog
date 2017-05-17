@@ -14,6 +14,7 @@ FIXES
 - Fix build failure with -Werror=format-security (Bas Couwenberg)
 - Fixed a typo in `nrpe.spec.in` (John Frickson)
 - More detailed error logging for SSL (John Frickson)
+- Fix infinite loop when unresolvable host is in allowed_hosts (Nick / John Frickson)
 
 
 3.1.0 - 2017-04-17
