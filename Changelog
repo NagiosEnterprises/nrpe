@@ -2,6 +2,21 @@
 NRPE Changelog
 **************
 
+3.1.1 - 2017-05-24
+------------------
+FIXES
+- The '--log-file=' or '-g' option is missing from the help (John Frickson)
+- check_nrpe = segfault when specifying a config file (John Frickson)
+- Alternate log file not being used soon enough (John Frickson)
+- Unable to compile v3.1.0rc1 with new SSL checks on rh5 (John Frickson)
+- Unable to compile nrpe-3.1.0 - undefined references to va_start, va_end (John Frickson)
+- Can't build on Debian Stretch, openssl 1.1.0c (John Frickson)
+- Fix build failure with -Werror=format-security (Bas Couwenberg)
+- Fixed a typo in `nrpe.spec.in` (John Frickson)
+- More detailed error logging for SSL (John Frickson)
+- Fix infinite loop when unresolvable host is in allowed_hosts (Nick / John Frickson)
+
+
 3.1.0 - 2017-04-17
 ------------------
 ENHANCEMENTS

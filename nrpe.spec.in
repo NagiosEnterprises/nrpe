@@ -9,7 +9,7 @@
 %endif
 %if %{islinux}
 	%define _init_dir @initdir@
-	%define _init_tyhpe @init_type@
+	%define _init_type @init_type@
 	%define _exec_prefix %{_prefix}/sbin
 	%define _bindir %{_prefix}/sbin
 	%define _sbindir %{_prefix}/lib/nagios/cgi
@@ -22,7 +22,7 @@
 %define _sysconfdir /etc/nagios
 
 %define name @PACKAGE_NAME@
-%define version 3.1.0-rc1
+%define version 3.1.1
 %define release @RPM_RELEASE@
 %define nsusr @nrpe_user@
 %define nsgrp @nrpe_group@

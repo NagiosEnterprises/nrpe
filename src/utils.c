@@ -31,6 +31,7 @@
 
 #include "../include/common.h"
 #include "../include/utils.h"
+#include <stdarg.h>
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif
@@ -469,6 +470,7 @@ char *my_strsep(char **stringp, const char *delim)
 void open_log_file()
 {
 	int fh;
+	int flags = O_RDWR|O_APPEND|O_CREAT;
 	struct stat st;
 
 	close_log_file();
@@ -476,7 +478,10 @@ void open_log_file()
 	if (!log_file)
 		return;
 
-	if ((fh = open(log_file, O_RDWR|O_APPEND|O_CREAT|O_NOFOLLOW, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) == -1) {
+#ifdef O_NOFOLLOW
+	flags |= O_NOFOLLOW;
+#endif
+	if ((fh = open(log_file, flags, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) == -1) {
 		printf("Warning: Cannot open log file '%s' for writing\n", log_file);
 		logit(LOG_WARNING, "Warning: Cannot open log file '%s' for writing", log_file);
 		return;
@@ -527,7 +532,7 @@ void logit(int priority, const char *format, ...)
 			fflush(log_fp);
 
 		} else
-			syslog(priority, buffer);
+			syslog(priority, "%s", buffer);
 
 		free(buffer);
 	}

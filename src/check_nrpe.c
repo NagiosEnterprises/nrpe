@@ -4,7 +4,7 @@
  * Copyright (c) 1999-2008 Ethan Galstad (nagios@nagios.org)
  * License: GPL
  *
- * Last Modified: 2017-04-06
+ * Last Modified: 2017-05-24
  *
  * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
  *
@@ -115,8 +115,6 @@ int main(int argc, char **argv)
 	int16_t result;
 
 	result = process_arguments(argc, argv, 0);
-
-	open_log_file();
 
 	if (result != OK || show_help == TRUE || show_license == TRUE || show_version == TRUE)
 		usage(result);			/* usage() will call exit() */
@@ -466,6 +464,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 				break;
 			}
 			log_file = strdup(optarg);
+			open_log_file();
 			break;
 
 		default:
@@ -558,10 +557,10 @@ int read_config_file(char *fname)
 
 	bufp = buf;
 	while (argc < 50) {
+		while (*bufp && strchr(delims, *bufp))
+			++bufp;
 		if (*bufp == '\0')
 			break;
-		while (strchr(delims, *bufp))
-			++bufp;
 		argv[argc] = my_strsep(&bufp, delims);
 		if (!argv[argc++])
 			break;
@@ -667,7 +666,7 @@ void usage(int result)
 		printf("Usage: check_nrpe -H <host> [-2] [-4] [-6] [-n] [-u] [-V] [-l] [-d <dhopt>]\n"
 			   "       [-P <size>] [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n"
 			   "       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n"
-			   "       [-f <cfg-file>] [-p <port>] [-t <interval>:<state>]\n"
+			   "       [-f <cfg-file>] [-p <port>] [-t <interval>:<state>] [-g <log-file>]\n"
 			   "       [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
@@ -704,6 +703,7 @@ void usage(int result)
 		printf(" <logopts>    = SSL Logging Options\n");
 		printf(" <bindaddr>   = bind to local address\n");
 		printf(" <cfg-file>   = configuration file to use\n");
+		printf(" <log-file>   = full path to the log file to write to\n");
 		printf(" [port]       = The port on which the daemon is running (default=%d)\n",
 			   DEFAULT_SERVER_PORT);
 		printf(" [command]    = The name of the command that the remote daemon should run\n");
@@ -743,7 +743,7 @@ void usage(int result)
 void setup_ssl()
 {
 #ifdef HAVE_SSL
-	int vrfy;
+	int vrfy, x;
 
 	if (sslprm.log_opts & SSL_LogStartup) {
 		char *val;
@@ -878,7 +878,9 @@ void setup_ssl()
 				break;
 			case TLSv1_2:
 			case TLSv1_2_plus:
+#ifdef SSL_OP_NO_TLSv1_1
 				ssl_opts |= SSL_OP_NO_TLSv1_1;
+#endif
 			case TLSv1_1:
 			case TLSv1_1_plus:
 				ssl_opts |= SSL_OP_NO_TLSv1;
@@ -897,14 +899,23 @@ void setup_ssl()
 
 		if (sslprm.cert_file != NULL && sslprm.privatekey_file != NULL) {
 			if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
-				SSL_CTX_free(ctx);
 				printf("Error: could not use certificate file '%s'.\n", sslprm.cert_file);
+				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+					printf("Error: could not use certificate file '%s': %s\n",
+						   sslprm.cert_file, ERR_reason_error_string(x));
+				}
+				SSL_CTX_free(ctx);
 				exit(STATE_CRITICAL);
 			}
 			if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
 				SSL_CTX_free(ctx);
 				printf("Error: could not use private key file '%s'.\n",
 					   sslprm.privatekey_file);
+				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+					printf("Error: could not use private key file '%s': %s\n",
+						   sslprm.privatekey_file, ERR_reason_error_string(x));
+				}
+				SSL_CTX_free(ctx);
 				exit(STATE_CRITICAL);
 			}
 		}
@@ -913,8 +924,12 @@ void setup_ssl()
 			vrfy = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 			SSL_CTX_set_verify(ctx, vrfy, verify_callback);
 			if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
-				SSL_CTX_free(ctx);
 				printf("Error: could not use CA certificate '%s'.\n", sslprm.cacert_file);
+				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+					printf("Error: could not use CA certificate '%s': %s\n",
+						   sslprm.privatekey_file, ERR_reason_error_string(x));
+				}
+				SSL_CTX_free(ctx);
 				exit(STATE_CRITICAL);
 			}
 		}
@@ -932,8 +947,12 @@ void setup_ssl()
 		}
 
 		if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
-			SSL_CTX_free(ctx);
 			printf("Error: Could not set SSL/TLS cipher list: %s\n", sslprm.cipher_list);
+			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+				printf("Could not set SSL/TLS cipher list '%s': %s\n",
+					   sslprm.cipher_list, ERR_reason_error_string(x));
+			}
+			SSL_CTX_free(ctx);
 			exit(STATE_CRITICAL);
 		}
 	}
@@ -965,7 +984,7 @@ int connect_to_remote()
 	struct sockaddr addr;
 	struct in_addr *inaddr;
 	socklen_t addrlen;
-	int result, rc, ssl_err, ern;
+	int result, rc, ssl_err, ern, x, nerrs = 0;
 
 	/* try to connect to the host at the given port number */
 	if ((sd =
@@ -1004,7 +1023,6 @@ int connect_to_remote()
 		ssl_err = SSL_get_error(ssl, rc);
 
 		if (sslprm.log_opts & (SSL_LogCertDetails | SSL_LogIfClientCert)) {
-			int x, nerrs = 0;
 			rc = 0;
 			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
 				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
@@ -1015,9 +1033,16 @@ int connect_to_remote()
 				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: rc=%d SSL-error=%d",
 					   rem_host, rc, ssl_err);
 
-		} else
-			logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: rc=%d SSL-error=%d",
-				   rem_host, rc, ssl_err);
+		} else {
+			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
+					   rem_host, ERR_reason_error_string(x));
+				++nerrs;
+			}
+			if (nerrs == 0)
+				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: "
+						"rc=%d SSL-error=%d", rem_host, rc, ssl_err);
+		}
 
 		if (ssl_err == 5) {
 			/* Often, errno will be zero, so print a generic message here */

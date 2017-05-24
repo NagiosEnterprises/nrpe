@@ -5,15 +5,15 @@ define([AC_CACHE_LOAD],)
 define([AC_CACHE_SAVE],)
 
 m4_include([build-aux/custom_help.m4])
-AC_INIT([nrpe],[3.1.0-rc1],[nagios-users@lists.sourceforge.net],[nrpe],[https://www.nagios.org/downloads/nagios-core-addons/])
+AC_INIT([nrpe],[3.1.1],[nagios-users@lists.sourceforge.net],[nrpe],[https://www.nagios.org/downloads/nagios-core-addons/])
 AC_CONFIG_SRCDIR([src/nrpe.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
 PKG_NAME=nrpe
-PKG_VERSION="3.1.0-rc1"
+PKG_VERSION="3.1.1"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="2017-04-06"
+PKG_REL_DATE="2017-05-24"
 RPM_RELEASE=1
 
 LANG=C
@@ -304,10 +304,16 @@ AC_ARG_ENABLE([ssl],
 	fi
 	],check_for_ssl=yes)
 
+need_dh=yes
+AC_ARG_WITH([need_dh],
+	AS_HELP_STRING([--with-need-dh],[set to 'no' to not include Diffie-Hellman SSL logic]),
+	[need_dh=$withval],
+	[nrpe_group=need_dh])
+
 dnl Optional SSL library and include paths
 if test x$check_for_ssl = xyes; then
 	# need_dh should only be set for NRPE
-	need_dh=yes
+#	need_dh=yes
 	AC_NAGIOS_GET_SSL
 fi
 

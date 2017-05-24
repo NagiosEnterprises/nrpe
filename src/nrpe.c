@@ -186,8 +186,6 @@ int main(int argc, char **argv)
 		return STATE_CRITICAL;
 	}
 
-	open_log_file();
-
 	if (!nasty_metachars)
 		nasty_metachars = strdup(NASTY_METACHARS);
 
@@ -244,6 +242,7 @@ void init_ssl(void)
 #ifdef HAVE_SSL
 	DH            *dh;
 	char          seedfile[FILENAME_MAX];
+	char          errstr[120] = { "" };
 	int           i, c, x, vrfy;
 	unsigned long ssl_opts = SSL_OP_ALL | SSL_OP_SINGLE_DH_USE;
 
@@ -315,7 +314,10 @@ void init_ssl(void)
 
 	ctx = SSL_CTX_new(meth);
 	if (ctx == NULL) {
-		logit(LOG_ERR, "Error: could not create SSL context");
+		while ((x = ERR_get_error()) != 0) {
+			ERR_error_string(x, errstr);
+			logit(LOG_ERR, "Error: could not create SSL context : %s", errstr);
+		}
 		SSL_CTX_free(ctx);
 		exit(STATE_CRITICAL);
 	}
@@ -359,7 +361,9 @@ void init_ssl(void)
 			break;
 		case TLSv1_2:
 		case TLSv1_2_plus:
+#ifdef SSL_OP_NO_TLSv1_1
 			ssl_opts |= SSL_OP_NO_TLSv1_1;
+#endif
 		case TLSv1_1:
 		case TLSv1_1_plus:
 			ssl_opts |= SSL_OP_NO_TLSv1;
@@ -377,7 +381,6 @@ void init_ssl(void)
 	SSL_CTX_set_options(ctx, ssl_opts);
 
 	if (sslprm.cert_file != NULL) {
-		char	errstr[120] = { "" };
 		if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
 			SSL_CTX_free(ctx);
 			while ((x = ERR_get_error()) != 0) {
@@ -388,9 +391,12 @@ void init_ssl(void)
 			exit(STATE_CRITICAL);
 		}
 		if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
+			while ((x = ERR_get_error()) != 0) {
+				ERR_error_string(x, errstr);
+				logit(LOG_ERR, "Error: could not use private key file '%s' : %s",
+					 sslprm.privatekey_file, errstr);
+			}
 			SSL_CTX_free(ctx);
-			logit(LOG_ERR, "Error: could not use private key file '%s'",
-				   sslprm.privatekey_file);
 			exit(STATE_CRITICAL);
 		}
 	}
@@ -401,6 +407,10 @@ void init_ssl(void)
 			vrfy |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 		SSL_CTX_set_verify(ctx, vrfy, verify_callback);
 		if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
+			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+				logit(LOG_ERR, "Error: could not use certificate file '%s': %s\n",
+					   sslprm.cacert_file, ERR_reason_error_string(x));
+			}
 			SSL_CTX_free(ctx);
 			logit(LOG_ERR, "Error: could not use CA certificate '%s'", sslprm.cacert_file);
 			exit(STATE_CRITICAL);
@@ -651,13 +661,13 @@ void cleanup(void)
 	free_memory();				/* free all memory we allocated */
 
 	if (sigrestart == TRUE && sigshutdown == FALSE) {
+		close_log_file();
 		result = read_config_file(config_file);	/* read the config file */
 
 		if (result == ERROR) {	/* exit if there are errors... */
 			logit(LOG_ERR, "Config file '%s' contained errors, bailing out...", config_file);
 			exit(STATE_CRITICAL);
 		}
-		open_log_file();
 		return;
 	}
 
@@ -950,10 +960,11 @@ int read_config_file(char *filename)
 		else if (!strcmp(varname, "nasty_metachars"))
 			nasty_metachars = strdup(varvalue);
 
-		else if (!strcmp(varname, "log_file"))
+		else if (!strcmp(varname, "log_file")) {
 			log_file = strdup(varvalue);
+			open_log_file();
 
-		else {
+		} else {
 			logit(LOG_WARNING, "Unknown option specified in config file '%s' - Line %d\n",
 				   filename, line);
 			continue;
@@ -1852,6 +1863,7 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 #else
 	const SSL_CIPHER *c;
 #endif
+	const char *errmsg = NULL;
 	char      buffer[MAX_INPUT_BUFFER];
 	SSL      *ssl = (SSL*)ssl_ptr;
 	X509     *peer;
@@ -1869,8 +1881,14 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 			int       nerrs = 0;
 			rc = 0;
 			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+				errmsg = ERR_reason_error_string(x);
 				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
-					   remote_host, ERR_reason_error_string(x));
+					   remote_host, errmsg);
+				if (errmsg && !strcmp(errmsg, "no shared cipher")) {
+					if (sslprm.cert_file == NULL || sslprm.cacert_file == NULL)
+						logit(LOG_ERR, "Error: This could be because you have not "
+								"specified certificate or ca-certificate files");
+				}
 				++nerrs;
 			}
 			if (nerrs == 0)
