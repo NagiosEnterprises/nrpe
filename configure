@@ -2941,10 +2941,10 @@ fi
 				elif test -f "/sbin/rc"; then
 					if test -f /sbin/runscript; then
 						init_type_wanted=no
-						if `/sbin/start-stop-daemon -V | grep "OpenRC" > /dev/null`; then
-							init_type="openrc"
-						else
+						if `/sbin/start-stop-daemon -V | grep "OpenRC.*Gentoo" > /dev/null`; then
 							init_type="gentoo"
+						else
+							init_type="openrc"
 						fi
 					fi
 				fi
@@ -3831,10 +3831,10 @@ case $init_type in #(
 			bsd_enable=""
 			src_init=newbsd-init
 		fi ;; #(
-  #	[gentoo],
-
 	openrc) :
     src_init=openrc-init ;; #(
+  gentoo) :
+    src_init=gentoo-init ;; #(
   smf*) :
     src_init="solaris-init.xml"
 		src_inetd="solaris-inetd.xml" ;; #(
@@ -4975,7 +4975,7 @@ fi
 
 ac_config_headers="$ac_config_headers include/config.h"
 
-ac_config_files="$ac_config_files Makefile src/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-init.plist startup/mac-inetd.plist startup/newbsd-init startup/openbsd-init startup/openrc-conf startup/openrc-init startup/solaris-init.xml startup/solaris-inetd.xml startup/tmpfile.conf startup/upstart-init startup/rh-upstart-init include/common.h"
+ac_config_files="$ac_config_files Makefile src/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-init.plist startup/mac-inetd.plist startup/newbsd-init startup/openbsd-init startup/openrc-conf startup/openrc-init startup/gentoo-init startup/solaris-init.xml startup/solaris-inetd.xml startup/tmpfile.conf startup/upstart-init startup/rh-upstart-init include/common.h"
 
 
 ac_ext=c
