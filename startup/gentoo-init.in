@@ -1,4 +1,4 @@
-#!/sbin/runscript
+#!/sbin/openrc-run
 #
 # Copyright (c) 2016 Nagios(R) Core(TM) Development Team
 #
@@ -6,11 +6,11 @@
 #
 # Goes in /etc/init.d - Config is in /etc/conf.d/nrpe
 
-opts="reload"
-# extra_started_commands="reload"		use this if OpenRC >= 0.9.4
+extra_started_commands="reload"
 
 NRPE_BIN="@sbindir@/nrpe"
 NRPE_PID="@piddir@/nrpe.pid"
+NRPE_CFG=@pkgsysconfdir@/nrpe.cfg
 
 depend() {
 	use logger dns net localmount netmount nfsmount
@@ -30,20 +30,20 @@ start() {
 	ebegin "Starting nrpe"
 	# Make sure we have a sane current directory
 	cd /
-	start-stop-daemon --start --exec $NRPE_BIN --pidfile $PID_FILE \
+	start-stop-daemon --start --exec $NRPE_BIN --pidfile $NRPE_PID \
 		--background -- -c $NRPE_CFG -f $NRPE_OPTS
 	eend $?
 }
 
 stop() {
 	ebegin "Stopping nrpe"
-	start-stop-daemon --stop --exec $NRPE_BIN --pidfile $PID_FILE
+	start-stop-daemon --stop --exec $NRPE_BIN --pidfile $NRPE_PID
 	eend $?
 }
 
 reload() {
 	ebegin "Reloading nrpe"
 	start-stop-daemon --stop --oknodo --exec $NRPE_BIN \
-		--pidfile $PID_FILE --signal HUP
+		--pidfile $NRPE_PID --signal HUP
 	eend $?
 }

@@ -110,6 +110,10 @@ install-init:
 		echo svccfg import $(INIT_DIR)/$(INIT_FILE); \
 		svccfg import $(INIT_DIR)/$(INIT_FILE); \
 		echo "*** Run 'svcadm enable nrpe' to start it"; \
+	elif test $(INIT_TYPE) = gentoo; then\
+		$(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
+		echo rc-update add nrpe default; \
+		rc-update add nrpe default; \
 	else\
 		echo $(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
 		$(INSTALL) -m 755 startup/$(SRC_INIT) $(INIT_DIR)/$(INIT_FILE); \
