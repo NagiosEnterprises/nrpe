@@ -1,0 +1,9 @@
+
+
+language: c
+sudo: enabled
+dist: 
+compiler:
+ - clang
+ - gcc
+script: ./configure && make all
