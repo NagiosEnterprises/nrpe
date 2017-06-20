@@ -2,8 +2,11 @@
 
 language: c
 sudo: enabled
-dist: 
+dist:
+ - precise
+ - trusty
+ - xenial
 compiler:
  - clang
  - gcc
-script: ./configure && make all
+script: ./configure && make all && ./python-tests.py
