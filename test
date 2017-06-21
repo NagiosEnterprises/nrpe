@@ -24,11 +24,8 @@ echo 'echo OK' >> /tmp/check_yes.sh
 
 # Give nagios control of plugins
 chown nagios /tmp/check_yes.sh
-echo root
-ls / -l
-echo tmps
-ls /tmp/ -l
-echo cd starts here
+chmod +x /tmp/check_yes.sh
+
 # Start running the NRPE daemon to accept commands
 cd ../src
 ./nrpe -c ../sample-config/nrpe.cfg -d
