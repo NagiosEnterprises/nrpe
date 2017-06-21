@@ -4,6 +4,7 @@ language: c
 sudo: enabled
 dist:
  - trusty
+ - xenial
 compiler:
  - clang
  - gcc
