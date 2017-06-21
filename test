@@ -31,7 +31,7 @@ chown nagios /tmp/check_yes.sh
 # Start running the NRPE daemon to accept commands
 ls -l
 pwd
-cd src
+cd ../src
 ./nrpe -c ../sample-config/nrpe.cfg -d
 
 # Try to check_nrpe with our check_test command/check_yes.sh plugin
