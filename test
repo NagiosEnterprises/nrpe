@@ -3,8 +3,6 @@
 # Integration test for nrpe/check_nrpe
 # Should be run only on machines which do NOT have Nagios installed 
 # and which do not have an enabled firewall.
-pwd
-ls -l
 cd sample-config
 echo >> nrpe.cfg # Hopefully this is a newline! I think nrpe.cfg ends in a newling anyways.
 echo 'command[check_test]=/tmp/check_yes.sh' >> nrpe.cfg
@@ -27,10 +25,9 @@ echo 'echo OK' >> /tmp/check_yes.sh
 
 # Give nagios control of plugins
 chown nagios /tmp/check_yes.sh
-
+ls -l /
+ls -l /tmp/
 # Start running the NRPE daemon to accept commands
-ls -l
-pwd
 cd ../src
 ./nrpe -c ../sample-config/nrpe.cfg -d
 
