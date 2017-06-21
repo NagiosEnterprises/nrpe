@@ -1,3 +1,3 @@
 #!/bin/bash
 # Replace this once test is working properly.
-./test || true
+./test-travis-1
