@@ -7,4 +7,4 @@ dist:
 compiler:
  - clang
  - gcc
-script: ./configure && make all && ./test
+script: ./configure && make all && ./test-wrapper
