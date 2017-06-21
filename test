@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "Ran the testing script"
+exit 0
