@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo If you can see this message at the bottom of your travis-ci build,
+echo github has some security issues.
