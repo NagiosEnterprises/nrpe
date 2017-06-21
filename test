@@ -6,7 +6,7 @@
 
 cd sample-config
 echo >> nrpe.cfg # Hopefully this is a newline! I think nrpe.cfg ends in a newling anyways.
-echo 'check_command[check_test]=../check_yes.sh' >> nrpe.cfg
+echo 'command[check_test]=/tmp/check_yes.sh' >> nrpe.cfg
 
 cat nrpe.cfg
 
@@ -21,12 +21,11 @@ useradd nagios
 echo "nagios" | passwd nagios --stdin
 
 # Make a plugin
-cd ..
-touch check_yes.sh
-echo 'echo OK' >> check_yes.sh
+touch /tmp/check_yes.sh
+echo 'echo OK' >> /tmp/check_yes.sh
 
 # Give nagios control of plugins
-chown nagios check_yes.sh
+chown nagios /tmp/check_yes.sh
 
 # Start running the NRPE daemon to accept commands
 cd src
