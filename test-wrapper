@@ -1,0 +1,3 @@
+#!/bin/bash
+# Replace this once test is working properly.
+./travis-test-1

@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Integration test for nrpe/check_nrpe
+# Should be run only on machines which do NOT have Nagios installed 
+# and which do not have an enabled firewall.
+cd sample-config
+echo >> nrpe.cfg # Hopefully this is a newline! I think nrpe.cfg ends in a newling anyways.
+echo 'command[check_test]=/tmp/check_yes.sh' >> nrpe.cfg
+
+# Make sure the directory exists such that nrpe can create the nrpe.pid file in the default location
+mkdir /usr/ || true
+mkdir /usr/local || true
+mkdir /usr/local/nagios || true
+mkdir /usr/local/nagios/var || true
+
+# Make sure nagios user exists
+useradd nagios
+
+# Make a plugin
+touch /tmp/check_yes.sh
+echo 'echo OK' >> /tmp/check_yes.sh
+
+# Give nagios control of plugins
+chown nagios /tmp/check_yes.sh
+chmod +x /tmp/check_yes.sh
+
+# Start running the NRPE daemon to accept commands
+cd ../src
+./nrpe -c ../sample-config/nrpe.cfg -d
+
+# Try to check_nrpe with our check_test command/check_yes.sh plugin
+./check_nrpe -H 127.0.0.1 -c check_test
+
+exit 0
