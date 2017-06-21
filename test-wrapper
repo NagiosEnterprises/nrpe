@@ -1,5 +1,3 @@
 #!/bin/bash
 # Replace this once test is working properly.
-pwd
-ls -l
-./test-travis-1
+./travis-test-1
