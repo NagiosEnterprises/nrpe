@@ -8,6 +8,8 @@ cd sample-config
 echo >> nrpe.cfg # Hopefully this is a newline! I think nrpe.cfg ends in a newling anyways.
 echo 'check_command[check_test]=../check_yes.sh' >> nrpe.cfg
 
+cat nrpe.cfg
+
 # Make sure the directory exists such that nrpe can create the nrpe.pid file in the default location
 mkdir /usr/ || true
 mkdir /usr/local || true
