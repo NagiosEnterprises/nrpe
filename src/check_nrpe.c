@@ -942,8 +942,13 @@ void setup_ssl()
 			}
 		} else {
 			/* use anonymous DH ciphers */
-			if (sslprm.allowDH == 2)
-				strcpy(sslprm.cipher_list, "ADH");
+			if (sslprm.allowDH == 2) {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+				strncpy(sslprm.cipher_list, "ADH@SECLEVEL=0", MAX_FILENAME_LENGTH - 1);
+#else
+				strncpy(sslprm.cipher_list, "ADH", MAX_FILENAME_LENGTH - 1);
+#endif
+			}
 		}
 
 		if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {

@@ -422,8 +422,14 @@ void init_ssl(void)
 			strcat(sslprm.cipher_list, ":!ADH");
 	} else {
 		/* use anonymous DH ciphers */
-		if (sslprm.allowDH == 2)
-			strcpy(sslprm.cipher_list, "ADH");
+		if (sslprm.allowDH == 2) {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+			strncpy(sslprm.cipher_list, "ADH@SECLEVEL=0", MAX_FILENAME_LENGTH - 1);
+#else
+			strncpy(sslprm.cipher_list, "ADH", MAX_FILENAME_LENGTH - 1);
+#endif
+		}
+
 #ifdef USE_SSL_DH
 		dh = get_dh2048();
 		SSL_CTX_set_tmp_dh(ctx, dh);
