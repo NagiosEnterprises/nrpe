@@ -1,9 +1,8 @@
 ###############################
-# Makefile for NRPE
 #
-# Last Modified: 03-14-2007
+#  NRPE Makefile
+#
 ###############################
-
 
 # Source code directories
 SRC_BASE=./src/

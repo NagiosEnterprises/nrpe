@@ -1,9 +1,11 @@
-/*-
- * acl.c - header file for acl.c
- * Copyright (c) 2011 Kaspersky Lab ZAO
- * Last Modified: 08-10-2011 by Konstantin Malov with Oleg Koreshkov's help 
+/****************************************************************************
  *
- * License: GPL
+ * acl.h - header file for acl.c
+ *
+ * License: GPLv2
+ * Copyright (c) 2011 Kaspersky Lab ZAO
+ *
+ * License Notice:
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +20,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
+ *
+ ****************************************************************************/
 
 #ifndef ACL_H_INCLUDED
 #define ACL_H_INCLUDED 1

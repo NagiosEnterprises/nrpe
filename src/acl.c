@@ -1,17 +1,21 @@
-/*-
+/****************************************************************************
+ *
  * acl.c - a small library for nrpe.c. It adds IPv4 subnets support to ACL in nrpe.
+ *
+ * License: GPLv2
  * Copyright (c) 2011 Kaspersky Lab ZAO
- * Last Modified: 08-10-2011 by Konstantin Malov with Oleg Koreshkov's help 
  *
  * Description:
- * acl.c creates two linked lists. One is for IPv4 hosts and networks, another is for domain names.
- * All connecting hosts (if allowed_hosts is defined) are checked in these two lists.
+ *
+ * acl.c creates two linked lists. One is for IPv4 hosts and networks, another 
+ * is for domain names. All connecting hosts (if allowed_hosts is defined) 
+ * are checked in these two lists.
  *
  * Some notes:
- * 1) IPv6 isn't supported in ACL.
+ * 1) IPv6 isn't supported in ACL. <-- I don't think this is true anymore (06/24/2017 Bryan Heden)
  * 2) Only ANCII names are supported in ACL.
  *
- * License: GPL
+ * License Notice:
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +30,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
+ *
+ ****************************************************************************/
 
 #include "../include/config.h"
 #include "../include/common.h"

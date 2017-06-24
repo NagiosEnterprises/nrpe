@@ -1,21 +1,40 @@
-/********************************************************************************************
+/****************************************************************************
  *
- * CHECK_NRPE.C - NRPE Plugin For Nagios
- * Copyright (c) 1999-2008 Ethan Galstad (nagios@nagios.org)
- * License: GPL
+ * check_nrpe.c - NRPE Plugin For Nagios
  *
- * Last Modified: 2017-05-24
+ * License: GPLv2
+ * Copyright (c) 2009-2017 Nagios Enterprises
+ *               1999-2008 Ethan Galstad (nagios@nagios.org)
  *
- * Command line: CHECK_NRPE -H <host_address> [-p port] [-c command] [-to to_sec]
+ * Command line: 
+ *
+ * check_nrpe -H <host_address> [-p port] [-c command] [-to to_sec]
  *
  * Description:
  *
- * This plugin will attempt to connect to the NRPE daemon on the specified server and port.
- * The daemon will attempt to run the command defined as [command].  Program output and
- * return code are sent back from the daemon and displayed as this plugin's own output and
- * return code.
+ * This plugin will attempt to connect to the NRPE daemon on the specified 
+ * server and port. The daemon will attempt to run the command 
+ * defined as [command]. Program output and return code are sent back 
+ * from the daemon and displayed as this plugin's own 
+ * output and return code.
  *
- ********************************************************************************************/
+ * License Notice:
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ ****************************************************************************/
 
 #include "config.h"
 #include "common.h"
@@ -649,25 +668,32 @@ int parse_timeout_string (char *timeout_str)
 
 void usage(int result)
 {
-	if (result != OK)
+	if (result != OK) {
+		printf("\n");
 		printf("Incorrect command line arguments supplied\n");
+	}
 	printf("\n");
 	printf("NRPE Plugin for Nagios\n");
-	printf("Copyright (c) 1999-2008 Ethan Galstad (nagios@nagios.org)\n");
+	printf("\n");
 	printf("Version: %s\n", PROGRAM_VERSION);
+	printf("\n");
+	printf("Copyright (c) 2009-2017 Nagios Enterprises\n");
+	printf("              1999-2008 Ethan Galstad (nagios@nagios.org)\n");
+	printf("\n");
 	printf("Last Modified: %s\n", MODIFICATION_DATE);
+	printf("\n");
 	printf("License: GPL v2 with exemptions (-l for more info)\n");
+	printf("\n");
 #ifdef HAVE_SSL
 	printf("SSL/TLS Available: OpenSSL 0.9.6 or higher required\n");
-#endif
 	printf("\n");
-
+#endif
 	if (result != OK || show_help == TRUE) {
-		printf("Usage: check_nrpe -H <host> [-2] [-4] [-6] [-n] [-u] [-V] [-l] [-d <dhopt>]\n"
-			   "       [-P <size>] [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n"
-			   "       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n"
-			   "       [-f <cfg-file>] [-p <port>] [-t <interval>:<state>] [-g <log-file>]\n"
-			   "       [-c <command>] [-a <arglist...>]\n");
+		printf("Usage: check_nrpe -H <host> [-2] [-4] [-6] [-n] [-u] [-V] [-l] [-d <dhopt>]\n");
+		printf("       [-P <size>] [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n");
+		printf("       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n");
+		printf("       [-f <cfg-file>] [-p <port>] [-t <interval>:<state>] [-g <log-file>]\n");
+		printf("       [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" <host>       = The address of the host running the NRPE daemon\n");
@@ -675,8 +701,7 @@ void usage(int result)
 		printf(" -4           = bind to ipv4 only\n");
 		printf(" -6           = bind to ipv6 only\n");
 		printf(" -n           = Do no use SSL\n");
-		printf
-			(" -u           = Make connection problems return UNKNOWN instead of CRITICAL\n");
+		printf(" -u           = Make connection problems return UNKNOWN instead of CRITICAL\n");
 		printf(" -V           = Show version\n");
 		printf(" -l           = Show license\n");
 		printf(" <dhopt>      = Anonymous Diffie Hellman use:\n");
@@ -685,8 +710,7 @@ void usage(int result)
 		printf("                1 = Allow Anonymous Diffie Hellman (default)\n");
 		printf("                2 = Force Anonymous Diffie Hellman\n");
 		printf(" <size>       = Specify non-default payload size for NSClient++\n");
-		printf
-			(" <ssl ver>    = The SSL/TLS version to use. Can be any one of:\n");
+		printf(" <ssl ver>    = The SSL/TLS version to use. Can be any one of:\n");
 #if OPENSSL_VERSION_NUMBER < 0x10100000
 		printf("                SSLv2 (only), SSLv2+ (or above),\n");
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
@@ -695,8 +719,7 @@ void usage(int result)
 		printf("                TLSv1.1 (only), TLSv1.1+ (or above),\n");
 		printf("                TLSv1.2 (only), TLSv1.2+ (or above)\n");
 		printf(" <cipherlist> = The list of SSL ciphers to use (currently defaults\n");
-		printf
-			("                to \"ALL:!MD5:@STRENGTH\". WILL change in a future release.)\n");
+		printf("                to \"ALL:!MD5:@STRENGTH\". WILL change in a future release.)\n");
 		printf(" <clientcert> = The client certificate to use for PKI\n");
 		printf(" <key>        = The private key to use with the client certificate\n");
 		printf(" <ca-cert>    = The CA certificate to use for PKI\n");
@@ -704,8 +727,7 @@ void usage(int result)
 		printf(" <bindaddr>   = bind to local address\n");
 		printf(" <cfg-file>   = configuration file to use\n");
 		printf(" <log-file>   = full path to the log file to write to\n");
-		printf(" [port]       = The port on which the daemon is running (default=%d)\n",
-			   DEFAULT_SERVER_PORT);
+		printf(" [port]       = The port on which the daemon is running (default=%d)\n", DEFAULT_SERVER_PORT);
 		printf(" [command]    = The name of the command that the remote daemon should run\n");
 		printf(" [arglist]    = Optional arguments that should be passed to the command,\n");
 		printf("                separated by a space.  If provided, this must be the last\n");
@@ -713,23 +735,18 @@ void usage(int result)
 		printf("\n");
 		printf(" NEW TIMEOUT SYNTAX\n");
 		printf(" -t <interval>:<state>\n");
-		printf("    <interval> = Number of seconds before connection times out (default=%d)\n",DEFAULT_SOCKET_TIMEOUT);
+		printf("    <interval> = Number of seconds before connection times out (default=%d)\n", DEFAULT_SOCKET_TIMEOUT);
 		printf("    <state> = Check state to exit with in the event of a timeout (default=CRITICAL)\n");
 		printf("    Timeout state must be a valid state name (case-insensitive) or integer:\n");
 		printf("    (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3)\n");
 		printf("\n");
 		printf("Note:\n");
-		printf
-			("This plugin requires that you have the NRPE daemon running on the remote host.\n");
-		printf
-			("You must also have configured the daemon to associate a specific plugin command\n");
+		printf("This plugin requires that you have the NRPE daemon running on the remote host.\n");
+		printf("You must also have configured the daemon to associate a specific plugin command\n");
 		printf("with the [command] option you are specifying here.  Upon receipt of the\n");
-		printf
-			("[command] argument, the NRPE daemon will run the appropriate plugin command and\n");
-		printf
-			("send the plugin output and return code back to *this* plugin.  This allows you\n");
-		printf
-			("to execute plugins on remote hosts and 'fake' the results to make Nagios think\n");
+		printf("[command] argument, the NRPE daemon will run the appropriate plugin command and\n");
+		printf("send the plugin output and return code back to *this* plugin.  This allows you\n");
+		printf("to execute plugins on remote hosts and 'fake' the results to make Nagios think\n");
 		printf("the plugin is being run locally.\n");
 		printf("\n");
 	}

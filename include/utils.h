@@ -1,17 +1,12 @@
-/************************************************************************************************
+/****************************************************************************
  *
- * UTILS.H - NRPE Utilities Include File
+ * utils.h - NRPE Utility Functions header file
  *
- * License: GPL
- * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
+ * License: GPLv2
+ * Copyright (c) 2009-2017 Nagios Enterprises
+ *               1999-2008 Ethan Galstad (nagios@nagios.org)
  *
- * Last Modified: 12-11-2006
- *
- * Description:
- *
- * This file contains common include files and function definitions used in many of the plugins.
- *
- * License Information:
+ * License Notice:
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +22,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- ************************************************************************************************/
+ ****************************************************************************/
+
 
 #ifndef NRPE_UTILS_H_INCLUDED
 #define NRPE_UTILS_H_INCLUDED

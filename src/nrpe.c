@@ -1,10 +1,10 @@
-/*******************************************************************************
+/****************************************************************************
  *
- * NRPE.C - Nagios Remote Plugin Executor
+ * nrpe.c - Nagios Remote Plugin Executor
  *
- * Copyright (c) 2009 Nagios Core Development Team and Community Contributors
- * Copyright (c) 1999-2008 Ethan Galstad (nagios@nagios.org)
- * License: GPL
+ * License: GPLv2
+ * Copyright (c) 2009-2017 Nagios Enterprises
+ *               1999-2008 Ethan Galstad (nagios@nagios.org)
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -16,13 +16,23 @@
  * such as check_users, check_load, check_disk, etc. without
  * having to use rsh or ssh.
  *
- ******************************************************************************/
-
-/*
- * 08-10-2011 IPv4 subnetworks support added.
- * Main change in nrpe.c is that is_an_allowed_host() moved to acl.c.
- * now allowed_hosts is parsed by parse_allowed_hosts() from acl.c.
- */
+ * License Notice:
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ ****************************************************************************/
 
 #include "config.h"
 #include "common.h"
@@ -511,17 +521,24 @@ void usage(int result)
 {
 	printf("\n");
 	printf("NRPE - Nagios Remote Plugin Executor\n");
-	printf("Copyright (c) 1999-2008 Ethan Galstad (nagios@nagios.org)\n");
+	printf("\n");
 	printf("Version: %s\n", PROGRAM_VERSION);
+	printf("\n");
+	printf("Copyright (c) 2009-2017 Nagios Enterprises\n");
+	printf("              1999-2008 Ethan Galstad (nagios@nagios.org)\n");
+	printf("\n");
 	printf("Last Modified: %s\n", MODIFICATION_DATE);
+	printf("\n");
 	printf("License: GPL v2 with exemptions (-l for more info)\n");
+	printf("\n");
 #ifdef HAVE_SSL
 	printf("SSL/TLS Available, OpenSSL 0.9.6 or higher required\n");
+	printf("\n");
 #endif
 #ifdef HAVE_LIBWRAP
 	printf("TCP Wrappers Available\n");
-#endif
 	printf("\n");
+#endif
 #ifdef ENABLE_COMMAND_ARGUMENTS
 	printf("***************************************************************\n");
 	printf("** POSSIBLE SECURITY RISK - COMMAND ARGUMENTS ARE SUPPORTED! **\n");

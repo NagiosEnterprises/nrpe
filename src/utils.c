@@ -1,17 +1,16 @@
 /****************************************************************************
  *
- * UTILS.C - NRPE Utility Functions
+ * utils.c - NRPE Utility Functions
  *
- * License: GPL
- * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
- *
- * Last Modified: 12-11-2006
+ * License: GPLv2
+ * Copyright (c) 2009-2017 Nagios Enterprises
+ *               1999-2008 Ethan Galstad (nagios@nagios.org)
  *
  * Description:
  *
  * This file contains common network functions used in nrpe and check_nrpe.
  *
- * License Information:
+ * License Notice:
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
