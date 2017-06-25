@@ -1733,7 +1733,7 @@ void handle_connection(int sock)
 				send_buff = calloc(1, sizeof(buffer));
 				strcpy(send_buff, buffer);
 			}
-			result = STATE_CRITICAL;
+			result = STATE_UNKNOWN;
 
 		} else {
 
