@@ -33,6 +33,7 @@
 # ifdef SSL_TYPE_openssl
 #  include <@SSL_INC_PREFIX@err.h>
 #  include <@SSL_INC_PREFIX@rand.h>
+#  include <@SSL_INC_PREFIX@engine.h>
 # endif
 #endif
 
