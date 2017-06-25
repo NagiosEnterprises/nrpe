@@ -112,6 +112,8 @@ int       show_help = FALSE;
 int       show_license = FALSE;
 int       show_version = FALSE;
 int       use_inetd = TRUE;
+int 	  commands_running = 0;
+int       max_commands = 0;
 int       debug = FALSE;
 int       use_src = FALSE;		/* Define parameter for SRC option */
 int       no_forking = FALSE;
@@ -814,6 +816,14 @@ int read_config_file(char *filename)
 			/* process the config file... */
 			if (read_config_file(varvalue) == ERROR)
 				logit(LOG_ERR, "Continuing with errors...");
+
+		} else if (!strcmp(varname, "max_commands")) {
+
+			max_commands = atoi(varvalue);
+			if (max_commands < 0) {
+				logit(LOG_WARNING, "max_commands set too low, setting to 0\n");
+				max_commands = 0;
+			}
 
 		} else if (!strcmp(varname, "server_port")) {
 			server_port = atoi(varvalue);
@@ -2159,6 +2169,14 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 	if (command == NULL)		/* if no command was passed, return with no error */
 		return STATE_OK;
 
+	/* make sure that we are within max_commands boundaries before attempting */
+	if (max_commands != 0) {
+		while (commands_running >= max_commands) {
+			logit(LOG_WARNING, "Commands choked. Sleeping 1s - commands_running: %d, max_commands: %d", commands_running, max_commands);
+			sleep(1);
+		}
+	}
+
 	pipe(fd);					/* create a pipe */
 
 	/* make the pipe non-blocking */
@@ -2246,6 +2264,8 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 	} else {
 		/* parent waits for child to finish executing command */
 
+		commands_running++;
+
 		close(fd[1]);			/* close pipe for writing */
 		waitpid(pid, &status, 0);	/* wait for child to exit */
 		time(&end_time);		/* get the end time for running the command */
@@ -2296,6 +2316,8 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 		}
 
 		close(fd[0]);			/* close the pipe for reading */
+
+		commands_running--;
 	}
 
 #ifdef DEBUG

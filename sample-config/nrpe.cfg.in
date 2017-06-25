@@ -161,6 +161,13 @@ allow_bash_command_substitution=0
 # command_prefix=/usr/bin/sudo
 
 
+# MAX COMMANDS
+# This specifies how many children processes may be spawned at any one
+# time, essentially limiting the fork()s that occur.
+# Default (0) is set to unlimited
+# max_commands=0
+
+
 
 # COMMAND TIMEOUT
 # This specifies the maximum number of seconds that the NRPE daemon will
