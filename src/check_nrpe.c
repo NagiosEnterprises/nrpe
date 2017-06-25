@@ -234,6 +234,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		{"log-file", required_argument, 0, 'g'},
 		{"help", no_argument, 0, 'h'},
 		{"license", no_argument, 0, 'l'},
+		{"version", no_argument, 0, 'V'},
 		{0, 0, 0, 0}
 	};
 #endif
@@ -671,24 +672,24 @@ void usage(int result)
 	if (result != OK) {
 		printf("\n");
 		printf("Incorrect command line arguments supplied\n");
+		printf("\n");
 	}
-	printf("\n");
 	printf("NRPE Plugin for Nagios\n");
-	printf("\n");
 	printf("Version: %s\n", PROGRAM_VERSION);
 	printf("\n");
-	printf("Copyright (c) 2009-2017 Nagios Enterprises\n");
-	printf("              1999-2008 Ethan Galstad (nagios@nagios.org)\n");
-	printf("\n");
-	printf("Last Modified: %s\n", MODIFICATION_DATE);
-	printf("\n");
-	printf("License: GPL v2 with exemptions (-l for more info)\n");
-	printf("\n");
-#ifdef HAVE_SSL
-	printf("SSL/TLS Available: OpenSSL 0.9.6 or higher required\n");
-	printf("\n");
-#endif
+
 	if (result != OK || show_help == TRUE) {
+		printf("Copyright (c) 2009-2017 Nagios Enterprises\n");
+		printf("              1999-2008 Ethan Galstad (nagios@nagios.org)\n");
+		printf("\n");
+		printf("Last Modified: %s\n", MODIFICATION_DATE);
+		printf("\n");
+		printf("License: GPL v2 with exemptions (-l for more info)\n");
+		printf("\n");
+#ifdef HAVE_SSL
+		printf("SSL/TLS Available: OpenSSL 0.9.6 or higher required\n");
+		printf("\n");
+#endif
 		printf("Usage: check_nrpe -H <host> [-2] [-4] [-6] [-n] [-u] [-V] [-l] [-d <dhopt>]\n");
 		printf("       [-P <size>] [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n");
 		printf("       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n");
@@ -696,56 +697,61 @@ void usage(int result)
 		printf("       [-c <command>] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
-		printf(" <host>       = The address of the host running the NRPE daemon\n");
-		printf(" -2           = Only use Version 2 packets, not Version 3\n");
-		printf(" -4           = bind to ipv4 only\n");
-		printf(" -6           = bind to ipv6 only\n");
-		printf(" -n           = Do no use SSL\n");
-		printf(" -u           = Make connection problems return UNKNOWN instead of CRITICAL\n");
-		printf(" -V           = Show version\n");
-		printf(" -l           = Show license\n");
-		printf(" <dhopt>      = Anonymous Diffie Hellman use:\n");
-		printf("                0 = Don't use Anonymous Diffie Hellman\n");
-		printf("                    (This will be the default in a future release.)\n");
-		printf("                1 = Allow Anonymous Diffie Hellman (default)\n");
-		printf("                2 = Force Anonymous Diffie Hellman\n");
-		printf(" <size>       = Specify non-default payload size for NSClient++\n");
-		printf(" <ssl ver>    = The SSL/TLS version to use. Can be any one of:\n");
+		printf(" -H, --host=HOST              The address of the host running the NRPE daemon\n");
+		printf(" -2, --v2-packets-only        Only use version 2 packets, not version 3\n");
+		printf(" -4, --ipv4                   Bind to ipv4 only\n");
+		printf(" -6, --ipv6                   Bind to ipv6 only\n");
+		printf(" -n, --no-ssl                 Do no use SSL\n");
+		printf(" -u, --unknown-timeout        Make connection problems return UNKNOWN instead of CRITICAL\n");
+		printf(" -V, --version                Print version info and quit\n");
+		printf(" -l, --license                Show license\n");
+		printf(" -d, --use-dh=DHOPT           Anonymous Diffie Hellman use:\n");
+		printf("                              0         Don't use Anonymous Diffie Hellman\n");
+		printf("                                        (This will be the default in a future release.)\n");
+		printf("                              1         Allow Anonymous Diffie Hellman (default)\n");
+		printf("                              2         Force Anonymous Diffie Hellman\n");
+		printf(" -P, --payload-size=SIZE      Specify non-default payload size for NSClient++\n");
+		printf(" -S, --ssl-version=VERSION    The SSL/TLS version to use. Can be any one of:\n");
 #if OPENSSL_VERSION_NUMBER < 0x10100000
-		printf("                SSLv2 (only), SSLv2+ (or above),\n");
-#endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
-		printf("                SSLv3 (only), SSLv3+ (or above),\n");
-		printf("                TLSv1 (only), TLSv1+ (or above DEFAULT),\n");
-		printf("                TLSv1.1 (only), TLSv1.1+ (or above),\n");
-		printf("                TLSv1.2 (only), TLSv1.2+ (or above)\n");
-		printf(" <cipherlist> = The list of SSL ciphers to use (currently defaults\n");
-		printf("                to \"ALL:!MD5:@STRENGTH\". WILL change in a future release.)\n");
-		printf(" <clientcert> = The client certificate to use for PKI\n");
-		printf(" <key>        = The private key to use with the client certificate\n");
-		printf(" <ca-cert>    = The CA certificate to use for PKI\n");
-		printf(" <logopts>    = SSL Logging Options\n");
-		printf(" <bindaddr>   = bind to local address\n");
-		printf(" <cfg-file>   = configuration file to use\n");
-		printf(" <log-file>   = full path to the log file to write to\n");
-		printf(" [port]       = The port on which the daemon is running (default=%d)\n", DEFAULT_SERVER_PORT);
-		printf(" [command]    = The name of the command that the remote daemon should run\n");
-		printf(" [arglist]    = Optional arguments that should be passed to the command,\n");
-		printf("                separated by a space.  If provided, this must be the last\n");
-		printf("                option supplied on the command line.\n");
+		printf("                              SSLv2     SSL v2 only\n");
+		printf("                              SSLv2+    SSL v2 or above\n");
+#endif
+		printf("                              SSLv3     SSL v3 only\n");
+		printf("                              SSLv3+    SSL v3 or above \n");
+		printf("                              TLSv1     TLS v1 only\n");
+		printf("                              TLSv1+    TLS v1 or above (DEFAULT)\n");
+		printf("                              TLSv1.1   TLS v1.1 only\n");
+		printf("                              TLSv1.1+  TLS v1.1 or above\n");
+		printf("                              TLSv1.2   TLS v1.2 only\n");
+		printf("                              TLSv1.2+  TLS v1.2 or above\n");
+		printf(" -L, --cipher-list=LIST       The list of SSL ciphers to use (currently defaults\n");
+		printf("                              to \"ALL:!MD5:@STRENGTH\". THIS WILL change in a future release.)\n");
+		printf(" -C, --client-cert=FILE       The client certificate to use for PKI\n");
+		printf(" -K, --key-file=FILE          The private key to use with the client certificate\n");
+		printf(" -A, --ca-cert-file=FILE      The CA certificate to use for PKI\n");
+		printf(" -s, --ssl-logging=OPTIONS    SSL Logging Options\n");
+		printf(" -b, --bind=IPADDR            Local address to bind to\n");
+		printf(" -f, --config-file=FILE       Configuration file to use\n");
+		printf(" -g, --log-file=FILE          Log file to write to\n");
+		printf(" -p, --port=PORT              The port on which the daemon is running (default=%d)\n", DEFAULT_SERVER_PORT);
+		printf(" -c, --command=COMMAND        The name of the command that the remote daemon should run\n");
+		printf(" -a, --args=LIST              Optional arguments that should be passed to the command,\n");
+		printf("                              separated by a space. If provided, this must be the last\n");
+		printf("                              option supplied on the command line.\n");
 		printf("\n");
 		printf(" NEW TIMEOUT SYNTAX\n");
-		printf(" -t <interval>:<state>\n");
-		printf("    <interval> = Number of seconds before connection times out (default=%d)\n", DEFAULT_SOCKET_TIMEOUT);
-		printf("    <state> = Check state to exit with in the event of a timeout (default=CRITICAL)\n");
-		printf("    Timeout state must be a valid state name (case-insensitive) or integer:\n");
-		printf("    (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3)\n");
+		printf(" -t, --timeout=INTERVAL:STATE\n");
+		printf("                              INTERVAL  Number of seconds before connection times out (default=%d)\n", DEFAULT_SOCKET_TIMEOUT);
+		printf("                              STATE     Check state to exit with in the event of a timeout (default=CRITICAL)\n");
+		printf("                              Timeout STATE must be a valid state name (case-insensitive) or integer:\n");
+		printf("                              (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3)\n");
 		printf("\n");
 		printf("Note:\n");
 		printf("This plugin requires that you have the NRPE daemon running on the remote host.\n");
 		printf("You must also have configured the daemon to associate a specific plugin command\n");
-		printf("with the [command] option you are specifying here.  Upon receipt of the\n");
+		printf("with the [command] option you are specifying here. Upon receipt of the\n");
 		printf("[command] argument, the NRPE daemon will run the appropriate plugin command and\n");
-		printf("send the plugin output and return code back to *this* plugin.  This allows you\n");
+		printf("send the plugin output and return code back to *this* plugin. This allows you\n");
 		printf("to execute plugins on remote hosts and 'fake' the results to make Nagios think\n");
 		printf("the plugin is being run locally.\n");
 		printf("\n");

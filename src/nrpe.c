@@ -519,57 +519,57 @@ void log_ssl_startup(void)
 
 void usage(int result)
 {
-	printf("\n");
+	if (result != OK) {
+		printf("\n");
+		printf("Incorrect command line arguments supplied\n");
+		printf("\n");
+	}
 	printf("NRPE - Nagios Remote Plugin Executor\n");
-	printf("\n");
 	printf("Version: %s\n", PROGRAM_VERSION);
 	printf("\n");
-	printf("Copyright (c) 2009-2017 Nagios Enterprises\n");
-	printf("              1999-2008 Ethan Galstad (nagios@nagios.org)\n");
-	printf("\n");
-	printf("Last Modified: %s\n", MODIFICATION_DATE);
-	printf("\n");
-	printf("License: GPL v2 with exemptions (-l for more info)\n");
-	printf("\n");
+	if (result != OK || show_help == TRUE) {
+		printf("Copyright (c) 2009-2017 Nagios Enterprises\n");
+		printf("              1999-2008 Ethan Galstad (nagios@nagios.org)\n");
+		printf("\n");
+		printf("Last Modified: %s\n", MODIFICATION_DATE);
+		printf("\n");
+		printf("License: GPL v2 with exemptions (-l for more info)\n");
+		printf("\n");
 #ifdef HAVE_SSL
-	printf("SSL/TLS Available, OpenSSL 0.9.6 or higher required\n");
-	printf("\n");
+		printf("SSL/TLS Available, OpenSSL 0.9.6 or higher required\n");
+		printf("\n");
 #endif
 #ifdef HAVE_LIBWRAP
-	printf("TCP Wrappers Available\n");
-	printf("\n");
+		printf("TCP Wrappers Available\n");
+		printf("\n");
 #endif
 #ifdef ENABLE_COMMAND_ARGUMENTS
-	printf("***************************************************************\n");
-	printf("** POSSIBLE SECURITY RISK - COMMAND ARGUMENTS ARE SUPPORTED! **\n");
-	printf("**      Read the NRPE SECURITY file for more information     **\n");
-	printf("***************************************************************\n");
-	printf("\n");
+		printf("***************************************************************\n");
+		printf("** POSSIBLE SECURITY RISK - COMMAND ARGUMENTS ARE SUPPORTED! **\n");
+		printf("**      Read the NRPE SECURITY file for more information     **\n");
+		printf("***************************************************************\n");
+		printf("\n");
 #endif
 #ifndef HAVE_LIBWRAP
-	printf("***************************************************************\n");
-	printf("** POSSIBLE SECURITY RISK - TCP WRAPPERS ARE NOT AVAILABLE!  **\n");
-	printf("**      Read the NRPE SECURITY file for more information     **\n");
-	printf("***************************************************************\n");
-	printf("\n");
+		printf("***************************************************************\n");
+		printf("** POSSIBLE SECURITY RISK - TCP WRAPPERS ARE NOT AVAILABLE!  **\n");
+		printf("**      Read the NRPE SECURITY file for more information     **\n");
+		printf("***************************************************************\n");
+		printf("\n");
 #endif
-
-	if (show_license == TRUE)
-		display_license();
-
-	if (result != OK || show_help == TRUE) {
-		printf("Usage: nrpe [-n] -c <config_file> [-4|-6] <mode>\n");
+		printf("Usage: nrpe [-V] [-n] -c <config_file> [-4|-6] <mode>\n");
 		printf("\n");
 		printf("Options:\n");
-		printf(" -n               = Do not use SSL\n");
-		printf(" -c <config_file> = Name of config file to use\n");
-		printf(" -4               = use ipv4 only\n");
-		printf(" -6               = use ipv6 only\n");
-		printf(" <mode>           = One of the following operating modes:\n");
-		printf("   -i             =    Run as a service under inetd or xinetd\n");
-		printf("   -d             =    Run as a standalone daemon\n");
-		printf("   -d -s          =    Run as a subsystem under AIX\n");
-		printf("   -f             =    Don't fork() for systemd, launchd, etc.\n");
+		printf(" -V, --version         Print version info and quit\n");
+		printf(" -n, --no-ssl          Do not use SSL\n");
+		printf(" -c, --config=FILE     Name of config file to use\n");
+		printf(" -4, --ipv4            Use ipv4 only\n");
+		printf(" -6, --ipv6            Use ipv6 only\n");
+		printf(" <mode> (One of the following operating modes)\n");
+		printf("   -i, --inetd         Run as a service under inetd or xinetd\n");
+		printf("   -d, --daemon        Run as a standalone daemon\n");
+		printf("   -s, --src           Run as a subsystem under AIX\n");
+		printf("   -f, --no-forking    Don't fork() (for systemd, launchd, etc.)\n");
 		printf("\n");
 		printf("Notes:\n");
 		printf("This program is designed to process requests from the check_nrpe\n");
@@ -581,6 +581,9 @@ void usage(int result)
 		printf("check_nrpe plugin.\n");
 		printf("\n");
 	}
+
+	if (show_license == TRUE)
+		display_license();
 
 	exit(STATE_UNKNOWN);
 }
@@ -2760,11 +2763,12 @@ int process_arguments(int argc, char **argv)
 		{"src", no_argument, 0, 's'},
 		{"no-forking", no_argument, 0, 'f'},
 		{"4", no_argument, 0, '4'},
-		{"6", no_argument, 0, '4'},
+		{"ipv6", no_argument, 0, '6'},
 		{"daemon", no_argument, 0, 'd'},
 		{"no-ssl", no_argument, 0, 'n'},
 		{"help", no_argument, 0, 'h'},
 		{"license", no_argument, 0, 'l'},
+		{"version", no_argument, 0, 'V'},
 		{0, 0, 0, 0}
 	};
 #endif
@@ -2794,6 +2798,7 @@ int process_arguments(int argc, char **argv)
 
 		case 'V':
 			show_version = TRUE;
+			have_mode = TRUE;
 			break;
 
 		case 'l':
