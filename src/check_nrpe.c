@@ -1080,7 +1080,7 @@ int connect_to_remote()
 
 			if (peer) {
 				if (sslprm.log_opts & SSL_LogIfClientCert)
-					logit(LOG_NOTICE, "SSL %s has %s certificate", rem_host, SSL_get_verify_result(ssl) ? "a valid" : "an invalid");
+					logit(LOG_NOTICE, "SSL %s has %s certificate", rem_host, SSL_get_verify_result(ssl) == X509_V_OK ? "a valid" : "an invalid");
 
 				if (sslprm.log_opts & SSL_LogCertDetails) {
 					X509_NAME_oneline(X509_get_subject_name(peer), buffer, sizeof(buffer));

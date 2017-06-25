@@ -1947,8 +1947,8 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 
 		if (peer) {
 			if (sslprm.log_opts & SSL_LogIfClientCert)
-				logit(LOG_NOTICE, "SSL Client %s has %svalid certificate",
-					   remote_host, SSL_get_verify_result(ssl) ? "a " : "an in");
+				logit(LOG_NOTICE, "SSL Client %s has %s certificate",
+					   remote_host, SSL_get_verify_result(ssl) == X509_V_OK ? "a valid" : "an invalid");
 
 			if (sslprm.log_opts & SSL_LogCertDetails) {
 
