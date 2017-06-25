@@ -12,7 +12,7 @@
  * are checked in these two lists.
  *
  * Some notes:
- * 1) IPv6 isn't supported in ACL. <-- I don't think this is true anymore (06/24/2017 Bryan Heden)
+ * 1) IPv6 isn't supported in ACL.
  * 2) Only ANCII names are supported in ACL.
  *
  * License Notice:
@@ -136,6 +136,11 @@ char * acl_substring(char *string, int s, int e) {
  */
 
 int add_ipv4_to_acl(char *ipv4) {
+
+        /* check if it is an ipv6 address before we do the checks */
+        if (strchr(ipv4, ':') != NULL)
+            return 1;
+
         int state = 0;
         int octet = 0;
         int index = 0;  /* position in data array */
@@ -622,11 +627,11 @@ void parse_allowed_hosts(char *allowed_hosts) {
 	tok = strtok(hosts, delim);
 #endif
 	while( tok) {
-		trimmed_tok = malloc( sizeof( char) * ( strlen( tok) + 1));
-		trim( tok, trimmed_tok);
-		if(debug == TRUE)
+		trimmed_tok = malloc(sizeof(char) * (strlen(tok) + 1));
+		trim(tok, trimmed_tok);
+		if (debug == TRUE)
 			logit(LOG_DEBUG, "parse_allowed_hosts: ADDING this record (%s) to ACL list!\n", trimmed_tok);
-		if( strlen( trimmed_tok) > 0) {
+		if (strlen(trimmed_tok) > 0) {
 			if (!add_ipv4_to_acl(trimmed_tok) && !add_ipv6_to_acl(trimmed_tok) 
 					&& !add_domain_to_acl(trimmed_tok)) {
 				logit(LOG_ERR,"Can't add to ACL this record (%s). Check allowed_hosts option!\n",trimmed_tok);
