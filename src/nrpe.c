@@ -418,7 +418,7 @@ void init_ssl(void)
 		SSL_CTX_set_verify(ctx, vrfy, verify_callback);
 		if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
 			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-				logit(LOG_ERR, "Error: could not use certificate file '%s': %s\n",
+				logit(LOG_ERR, "Error: could not use CA certificate file '%s': %s\n",
 					   sslprm.cacert_file, ERR_reason_error_string(x));
 			}
 			SSL_CTX_free(ctx);
@@ -1433,7 +1433,7 @@ int wait_conn_fork(int sock)
 	pid = fork();
 
 	if (pid < 0) {
-		logit(LOG_ERR, "fork() failed with error %d, bailing out...", errno);
+		logit(LOG_ERR, "Second fork() failed with error %d, bailing out...", errno);
 		exit(STATE_CRITICAL);
 	}
 
@@ -1526,10 +1526,10 @@ void conn_check_peer(int sock)
 	}
 
 	if (debug == TRUE)
-		logit(LOG_INFO, "CONN_CHECK_PEER: is this a blessed machine: %s port %d\n",
+		logit(LOG_INFO, "CONN_CHECK_PEER: checking if host is allowed: %s port %d\n",
 			 remote_host, nptr->sin_port);
 
-	/* is this is a blessed machine? */
+	/* is this host allowed? */
 	if (allowed_hosts) {
 #ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 		switch (addr.ss_family) {
@@ -1898,32 +1898,30 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 	SSL_set_fd(ssl, sock);
 
 	/* keep attempting the request if needed */
-	while (((rc = SSL_accept(ssl)) != 1)
-		   && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ)) ;
+	while ((rc = SSL_accept(ssl) != 1) 
+		   && SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ);
 
 	if (rc != 1) {
 		/* oops, got an unrecoverable error -- get out */
 		if (sslprm.log_opts & (SSL_LogCertDetails | SSL_LogIfClientCert)) {
-			int       nerrs = 0;
+			int nerrs = 0;
 			rc = 0;
 			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
 				errmsg = ERR_reason_error_string(x);
-				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
-					   remote_host, errmsg);
-				if (errmsg && !strcmp(errmsg, "no shared cipher")) {
-					if (sslprm.cert_file == NULL || sslprm.cacert_file == NULL)
-						logit(LOG_ERR, "Error: This could be because you have not "
-								"specified certificate or ca-certificate files");
-				}
+				logit(LOG_ERR, "Error: (ERR_get_error_line_data = %d), Could not complete SSL handshake with %s: %s", x, remote_host, errmsg);
+				
+				if (errmsg && !strcmp(errmsg, "no shared cipher") && (sslprm.cert_file == NULL || sslprm.cacert_file == NULL))
+					logit(LOG_ERR, "Error: This could be because you have not specified certificate or ca-certificate files");
+
 				++nerrs;
 			}
-			if (nerrs == 0)
-				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
-					   remote_host, SSL_get_error(ssl, rc));
 
-		} else
-			logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
-				   remote_host, SSL_get_error(ssl, rc));
+			if (nerrs == 0) {
+				logit(LOG_ERR, "Error: (nerrs = 0) Could not complete SSL handshake with %s: %d", remote_host, SSL_get_error(ssl, rc));
+			}
+		} else {
+			logit(LOG_ERR, "Error: (!log_opts) Could not complete SSL handshake with %s: %d", remote_host, SSL_get_error(ssl, rc));
+		}
 # ifdef DEBUG
 		errfp = fopen("/tmp/err.log", "a");
 		ERR_print_errors_fp(errfp);
@@ -1934,27 +1932,30 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 
 	/* successful handshake */
 	if (sslprm.log_opts & SSL_LogVersion)
-		logit(LOG_NOTICE, "Remote %s - SSL Version: %s",
-			   remote_host, SSL_get_version(ssl));
+		logit(LOG_NOTICE, "Remote %s - SSL Version: %s", remote_host, SSL_get_version(ssl));
+
 	if (sslprm.log_opts & SSL_LogCipher) {
 		c = SSL_get_current_cipher(ssl);
-		logit(LOG_NOTICE, "Remote %s - %s, Cipher is %s", remote_host,
-			   SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
+		logit(LOG_NOTICE, "Remote %s - %s, Cipher is %s", remote_host, SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
 	}
 
 	if ((sslprm.log_opts & SSL_LogIfClientCert)
-		|| (sslprm.log_opts & SSL_LogCertDetails))
-	{
+		|| (sslprm.log_opts & SSL_LogCertDetails)) {
+
+
 		peer = SSL_get_peer_certificate(ssl);
 
 		if (peer) {
 			if (sslprm.log_opts & SSL_LogIfClientCert)
 				logit(LOG_NOTICE, "SSL Client %s has %svalid certificate",
 					   remote_host, SSL_get_verify_result(ssl) ? "a " : "an in");
+
 			if (sslprm.log_opts & SSL_LogCertDetails) {
+
 				X509_NAME_oneline(X509_get_subject_name(peer), buffer, sizeof(buffer));
 				logit(LOG_NOTICE, "SSL Client %s Cert Name: %s",
 					   remote_host, buffer);
+
 				X509_NAME_oneline(X509_get_issuer_name(peer), buffer, sizeof(buffer));
 				logit(LOG_NOTICE, "SSL Client %s Cert Issuer: %s",
 					   remote_host, buffer);
@@ -2368,11 +2369,9 @@ int drop_privileges(char *user, char *group, int full_drop)
 			/* initialize supplementary groups */
 			if (initgroups(user, gid) == -1) {
 				if (errno == EPERM)
-					logit(LOG_ERR,
-						   "Warning: Unable to change supplementary groups using initgroups()");
+					logit(LOG_ERR, "Warning: Unable to change supplementary groups using initgroups()");
 				else {
-					logit(LOG_ERR,
-						   "Warning: Possibly root user failed dropping privileges with initgroups()");
+					logit(LOG_ERR, "Warning: Possibly root user failed dropping privileges with initgroups()");
 					return ERROR;
 				}
 			}
@@ -2417,9 +2416,7 @@ int write_pid_file(void)
 
 			else {
 				/* previous process is still running */
-				logit(LOG_ERR,
-					   "There's already an NRPE server running (PID %lu).  Bailing out...",
-					   (unsigned long)pid);
+				logit(LOG_ERR, "There's already an NRPE server running (PID %lu).  Bailing out...", (unsigned long)pid);
 				return ERROR;
 			}
 		}
@@ -2613,8 +2610,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	if (strchr(v2pkt->buffer, '!')) {
 #ifdef ENABLE_COMMAND_ARGUMENTS
 		if (allow_arguments == FALSE) {
-			logit(LOG_ERR,
-				   "Error: Request contained command arguments, but argument option is not enabled!");
+			logit(LOG_ERR, "Error: Request contained command arguments, but argument option is not enabled!");
 			return ERROR;
 		}
 #else
@@ -2657,8 +2653,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 				return ERROR;
 # else
 				if (FALSE == allow_bash_cmd_subst) {
-					logit(LOG_ERR,
-						   "Error: Request contained a bash command substitution, but they are disallowed!");
+					logit(LOG_ERR, "Error: Request contained a bash command substitution, but they are disallowed!");
 					return ERROR;
 				}
 # endif

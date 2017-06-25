@@ -287,8 +287,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 't':
 			if (from_config_file && socket_timeout != -1) {
-				logit(LOG_WARNING, "WARNING: Command-line socket timeout overrides "
-								"the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line socket timeout overrides the config file option.");
 				break;
 			}
 			socket_timeout=parse_timeout_string(optarg);
@@ -298,8 +297,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'p':
 			if (from_config_file && server_port != 0) {
-				logit(LOG_WARNING, "WARNING: Command-line server port overrides "
-								"the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line server port overrides the config file option.");
 				break;
 			}
 			server_port = atoi(optarg);
@@ -309,8 +307,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'P':
 			if (from_config_file && payload_size > 0) {
-				logit(LOG_WARNING, "WARNING: Command-line payload-size (-P) overrides "
-								"the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line payload-size (-P) overrides the config file option.");
 				break;
 			}
 			payload_size = atoi(optarg);
@@ -320,8 +317,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'H':
 			if (from_config_file && server_name != NULL) {
-				logit(LOG_WARNING, "WARNING: Command-line server name overrides "
-								"the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line server name overrides the config file option.");
 				break;
 			}
 			server_name = strdup(optarg);
@@ -349,8 +345,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'u':
 			if (from_config_file && timeout_return_code != -1) {
-				logit(LOG_WARNING, "WARNING: Command-line unknown-timeout (-u) "
-								"overrides the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line unknown-timeout (-u) overrides the config file option.");
 				break;
 			}
 			timeout_return_code = STATE_UNKNOWN;
@@ -358,8 +353,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case '2':
 			if (from_config_file && packet_ver != NRPE_PACKET_VERSION_3) {
-				logit(LOG_WARNING, "WARNING: Command-line v2-packets-only (-2) "
-								"overrides the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line v2-packets-only (-2) overrides the config file option.");
 				break;
 			}
 			packet_ver = NRPE_PACKET_VERSION_2;
@@ -368,8 +362,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case '4':
 			if (from_config_file && address_family != AF_UNSPEC) {
-				logit(LOG_WARNING, "WARNING: Command-line ipv4 (-4) "
-								"or ipv6 (-6) overrides the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line ipv4 (-4) or ipv6 (-6) overrides the config file option.");
 				break;
 			}
 			address_family = AF_INET;
@@ -377,8 +370,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case '6':
 			if (from_config_file && address_family != AF_UNSPEC) {
-				logit(LOG_WARNING, "WARNING: Command-line ipv4 (-4) "
-								"or ipv6 (-6) overrides the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line ipv4 (-4) or ipv6 (-6) overrides the config file option.");
 				break;
 			}
 			address_family = AF_INET6;
@@ -386,8 +378,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'd':
 			if (from_config_file && sslprm.allowDH != -1) {
-				logit(LOG_WARNING, "WARNING: Command-line use-adh (-d) "
-								"overrides the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line use-adh (-d) overrides the config file option.");
 				break;
 			}
 			if (!optarg || optarg[0] < '0' || optarg[0] > '2')
@@ -397,8 +388,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'A':
 			if (from_config_file && sslprm.cacert_file != NULL) {
-				logit(LOG_WARNING, "WARNING: Command-line ca-cert-file (-A) "
-								"overrides the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line ca-cert-file (-A) overrides the config file option.");
 				break;
 			}
 			sslprm.cacert_file = strdup(optarg);
@@ -406,8 +396,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'C':
 			if (from_config_file && sslprm.cert_file != NULL) {
-				logit(LOG_WARNING, "WARNING: Command-line client-cert (-C) "
-								"overrides the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line client-cert (-C) overrides the config file option.");
 				break;
 			}
 			sslprm.cert_file = strdup(optarg);
@@ -416,8 +405,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'K':
 			if (from_config_file && sslprm.privatekey_file != NULL) {
-				logit(LOG_WARNING, "WARNING: Command-line key-file (-K) "
-								"overrides the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line key-file (-K) overrides the config file option.");
 				break;
 			}
 			sslprm.privatekey_file = strdup(optarg);
@@ -426,8 +414,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'S':
 			if (from_config_file && sslprm.ssl_proto_ver != SSL_Ver_Invalid) {
-				logit(LOG_WARNING, "WARNING: Command-line ssl-version (-S) "
-								"overrides the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line ssl-version (-S) overrides the config file option.");
 				break;
 			}
 
@@ -459,8 +446,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'L':
 			if (from_config_file && sslprm.cipher_list[0] != '\0') {
-				logit(LOG_WARNING, "WARNING: Command-line cipher-list (-L) "
-								"overrides the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line cipher-list (-L) overrides the config file option.");
 				break;
 			}
 			strncpy(sslprm.cipher_list, optarg, sizeof(sslprm.cipher_list) - 1);
@@ -469,8 +455,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 's':
 			if (from_config_file && have_log_opts == TRUE) {
-				logit(LOG_WARNING, "WARNING: Command-line ssl-logging (-s) "
-								"overrides the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line ssl-logging (-s) overrides the config file option.");
 				break;
 			}
 			sslprm.log_opts = strtoul(optarg, NULL, 0);
@@ -479,8 +464,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 		case 'g':
 			if (from_config_file && log_file != NULL) {
-				logit(LOG_WARNING, "WARNING: Command-line log-file (-g) "
-								"overrides the config file option.");
+				logit(LOG_WARNING, "WARNING: Command-line log-file (-g) overrides the config file option.");
 				break;
 			}
 			log_file = strdup(optarg);
@@ -519,14 +503,12 @@ int process_arguments(int argc, char **argv, int from_config_file)
 	}
 
 	if ((has_cert && !has_priv_key) || (!has_cert && has_priv_key)) {
-		printf("Error: the client certificate and the private key "
-				"must both be given or neither\n");
+		printf("Error: the client certificate and the private key must both be given or neither\n");
 		return ERROR;
 	}
 
 	if (payload_size > 0 && packet_ver != NRPE_PACKET_VERSION_2) {
-		printf("Error: if a fixed payload size is specified, "
-				"'-2' must also be specified\n");
+		printf("Error: if a fixed payload size is specified, '-2' must also be specified\n");
 		return ERROR;
 	}
 
@@ -628,9 +610,8 @@ int translate_state (char *state_text) {
 }
 
 void set_timeout_state (char *state) {
-        if ((timeout_return_code = translate_state(state)) == ERROR)
-                printf("Timeout state must be a valid state name (OK, "
-						"WARNING, CRITICAL, UNKNOWN) or integer (0-3).\n");
+    if ((timeout_return_code = translate_state(state)) == ERROR)
+        printf("Timeout state must be a valid state name (OK, WARNING, CRITICAL, UNKNOWN) or integer (0-3).\n");
 }
 
 int parse_timeout_string (char *timeout_str)
@@ -771,18 +752,11 @@ void setup_ssl()
 	if (sslprm.log_opts & SSL_LogStartup) {
 		char *val;
 
-		logit(LOG_INFO, "SSL Certificate File: %s",
-			   sslprm.cert_file ? sslprm.cert_file : "None");
-		logit(LOG_INFO, "SSL Private Key File: %s",
-			   sslprm.privatekey_file ? sslprm.privatekey_file : "None");
-		logit(LOG_INFO, "SSL CA Certificate File: %s",
-			   sslprm.cacert_file ? sslprm.cacert_file : "None");
-		if (sslprm.allowDH < 2)
-			logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
-		else
-			logit(LOG_INFO, "SSL Cipher List: ADH");
-		logit(LOG_INFO, "SSL Allow ADH: %s",
-			   sslprm.allowDH == 0 ? "No" : (sslprm.allowDH == 1 ? "Allow" : "Require"));
+		logit(LOG_INFO, "SSL Certificate File: %s", sslprm.cert_file ? sslprm.cert_file : "None");
+		logit(LOG_INFO, "SSL Private Key File: %s", sslprm.privatekey_file ? sslprm.privatekey_file : "None");
+		logit(LOG_INFO, "SSL CA Certificate File: %s", sslprm.cacert_file ? sslprm.cacert_file : "None");
+		logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
+		logit(LOG_INFO, "SSL Allow ADH: %d", sslprm.allowDH);
 		logit(LOG_INFO, "SSL Log Options: 0x%02x", sslprm.log_opts);
 
 		switch (sslprm.ssl_proto_ver) {
@@ -924,19 +898,16 @@ void setup_ssl()
 			if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
 				printf("Error: could not use certificate file '%s'.\n", sslprm.cert_file);
 				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-					printf("Error: could not use certificate file '%s': %s\n",
-						   sslprm.cert_file, ERR_reason_error_string(x));
+					printf("Error: could not use certificate file '%s': %s\n", sslprm.cert_file, ERR_reason_error_string(x));
 				}
 				SSL_CTX_free(ctx);
 				exit(STATE_CRITICAL);
 			}
 			if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
 				SSL_CTX_free(ctx);
-				printf("Error: could not use private key file '%s'.\n",
-					   sslprm.privatekey_file);
+				printf("Error: could not use private key file '%s'.\n", sslprm.privatekey_file);
 				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-					printf("Error: could not use private key file '%s': %s\n",
-						   sslprm.privatekey_file, ERR_reason_error_string(x));
+					printf("Error: could not use private key file '%s': %s\n", sslprm.privatekey_file, ERR_reason_error_string(x));
 				}
 				SSL_CTX_free(ctx);
 				exit(STATE_CRITICAL);
@@ -949,8 +920,7 @@ void setup_ssl()
 			if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
 				printf("Error: could not use CA certificate '%s'.\n", sslprm.cacert_file);
 				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-					printf("Error: could not use CA certificate '%s': %s\n",
-						   sslprm.privatekey_file, ERR_reason_error_string(x));
+					printf("Error: could not use CA certificate '%s': %s\n", sslprm.privatekey_file, ERR_reason_error_string(x));
 				}
 				SSL_CTX_free(ctx);
 				exit(STATE_CRITICAL);
@@ -977,8 +947,7 @@ void setup_ssl()
 		if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
 			printf("Error: Could not set SSL/TLS cipher list: %s\n", sslprm.cipher_list);
 			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-				printf("Could not set SSL/TLS cipher list '%s': %s\n",
-					   sslprm.cipher_list, ERR_reason_error_string(x));
+				printf("Could not set SSL/TLS cipher list '%s': %s\n", sslprm.cipher_list, ERR_reason_error_string(x));
 			}
 			SSL_CTX_free(ctx);
 			exit(STATE_CRITICAL);
@@ -1015,8 +984,7 @@ int connect_to_remote()
 	int result, rc, ssl_err, ern, x, nerrs = 0;
 
 	/* try to connect to the host at the given port number */
-	if ((sd =
-		 my_connect(server_name, &hostaddr, server_port, address_family, bind_address)) < 0)
+	if ((sd = my_connect(server_name, &hostaddr, server_port, address_family, bind_address)) < 0)
 		exit(timeout_return_code);
 
 	result = STATE_OK;
@@ -1053,36 +1021,31 @@ int connect_to_remote()
 		if (sslprm.log_opts & (SSL_LogCertDetails | SSL_LogIfClientCert)) {
 			rc = 0;
 			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
-					   rem_host, ERR_reason_error_string(x));
+				logit(LOG_ERR, "Error: (ERR_get_error_line_data = %d), Could not complete SSL handshake with %s: %s", x, rem_host, ERR_reason_error_string(x));
 				++nerrs;
 			}
-			if (nerrs == 0)
-				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: rc=%d SSL-error=%d",
-					   rem_host, rc, ssl_err);
-
+			if (nerrs == 0) {
+				logit(LOG_ERR, "Error: (nerrs = 0) Could not complete SSL handshake with %s: rc=%d SSL-error=%d", rem_host, rc, ssl_err);
+			}
 		} else {
 			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
-					   rem_host, ERR_reason_error_string(x));
+				logit(LOG_ERR, "Error: (!log_opts) Could not complete SSL handshake with %s: %s", rem_host, ERR_reason_error_string(x));
 				++nerrs;
 			}
-			if (nerrs == 0)
-				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: "
-						"rc=%d SSL-error=%d", rem_host, rc, ssl_err);
+			if (nerrs == 0) {
+				logit(LOG_ERR, "Error: (nerrs = 0)(!log_opts) Could not complete SSL handshake with %s: rc=%d SSL-error=%d", rem_host, rc, ssl_err);
+			}
 		}
 
 		if (ssl_err == 5) {
 			/* Often, errno will be zero, so print a generic message here */
 			if (ern == 0)
-				printf("CHECK_NRPE: Error - Could not connect to %s. Check system logs on %s\n",
-					   rem_host, rem_host);
+				printf("CHECK_NRPE: Error - Could not connect to %s. Check system logs on %s\n", rem_host, rem_host);
 			else
-				printf("CHECK_NRPE: Error - Could not connect to %s: %s\n",
-					   rem_host, strerror(ern));
-		} else
-			printf("CHECK_NRPE: Error - Could not complete SSL handshake with %s: %d\n",
-				   rem_host, ssl_err);
+				printf("CHECK_NRPE: Error - Could not connect to %s: %s\n", rem_host, strerror(ern));
+		} else {
+			printf("CHECK_NRPE: (ssl_err != 5) Error - Could not complete SSL handshake with %s: %d\n", rem_host, ssl_err);
+		}
 
 # ifdef DEBUG
 		printf("SSL_connect=%d\n", rc);
@@ -1117,8 +1080,8 @@ int connect_to_remote()
 
 			if (peer) {
 				if (sslprm.log_opts & SSL_LogIfClientCert)
-					logit(LOG_NOTICE, "SSL %s has %s certificate",
-						   rem_host, SSL_get_verify_result(ssl) ? "a valid" : "an invalid");
+					logit(LOG_NOTICE, "SSL %s has %s certificate", rem_host, SSL_get_verify_result(ssl) ? "a valid" : "an invalid");
+
 				if (sslprm.log_opts & SSL_LogCertDetails) {
 					X509_NAME_oneline(X509_get_subject_name(peer), buffer, sizeof(buffer));
 					logit(LOG_NOTICE, "SSL %s Cert Name: %s", rem_host, buffer);
@@ -1268,13 +1231,14 @@ int read_response()
 	} else if (rc == 0) {
 
 		/* server disconnected */
-		printf("CHECK_NRPE: Received 0 bytes from daemon.  Check "
-				"the remote server logs for error messages.\n");
+		printf("CHECK_NRPE: Received 0 bytes from daemon.  Check the remote server logs for error messages.\n");
 		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			if (v3_receive_packet)
+			if (v3_receive_packet) {
 				free(v3_receive_packet);
-		} else if (v2_receive_packet)
+			}
+		} else if (v2_receive_packet) {
 			free(v2_receive_packet);
+		}
 		return STATE_UNKNOWN;
 	}
 
@@ -1287,8 +1251,9 @@ int read_response()
 		calculated_crc32 = calculate_crc32((char *)v3_receive_packet, pkt_size);
 	} else {
 		pkt_size = sizeof(v2_packet);
-		if (payload_size > 0)
+		if (payload_size > 0) {
 			pkt_size = sizeof(v2_packet) - MAX_PACKETBUFFER_LENGTH + payload_size;
+		}
 		packet_crc32 = ntohl(v2_receive_packet->crc32_value);
 		v2_receive_packet->crc32_value = 0L;
 		calculated_crc32 = calculate_crc32((char *)v2_receive_packet, pkt_size);
@@ -1298,10 +1263,12 @@ int read_response()
 		printf("CHECK_NRPE: Response packet had invalid CRC32.\n");
 		close(sd);
 		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			if (v3_receive_packet)
+			if (v3_receive_packet) {
 				free(v3_receive_packet);
-		} else if (v2_receive_packet)
+			}
+		} else if (v2_receive_packet) {
 			free(v2_receive_packet);
+		}
 		return STATE_UNKNOWN;
 	}
 
@@ -1309,30 +1276,35 @@ int read_response()
 	/* and print the output returned by the daemon */
 	if (packet_ver == NRPE_PACKET_VERSION_3) {
 		result = ntohs(v3_receive_packet->result_code);
-		if (v3_receive_packet->buffer_length == 0)
+		if (v3_receive_packet->buffer_length == 0) {
 			printf("CHECK_NRPE: No output returned from daemon.\n");
-		else
+		} else {
 			printf("%s\n", v3_receive_packet->buffer);
+		}
 	} else {
 		result = ntohs(v2_receive_packet->result_code);
-		if (payload_size > 0)
+		if (payload_size > 0) {
 			v2_receive_packet->buffer[payload_size - 1] = '\x0';
-		else
+		} else {
 			v2_receive_packet->buffer[MAX_PACKETBUFFER_LENGTH - 1] = '\x0';
-		if (!strcmp(v2_receive_packet->buffer, ""))
+		}
+		if (!strcmp(v2_receive_packet->buffer, "")) {
 			printf("CHECK_NRPE: No output returned from daemon.\n");
-		else if (strstr(v2_receive_packet->buffer, "Invalid packet version.3") != NULL)
+		} else if (strstr(v2_receive_packet->buffer, "Invalid packet version.3") != NULL) {
 			/* NSClient++ doesn't recognize it */
 			return -1;
-		else
+		} else {
 			printf("%s\n", v2_receive_packet->buffer);
+		}
 	}
 
 	if (packet_ver == NRPE_PACKET_VERSION_3) {
-		if (v3_receive_packet)
+		if (v3_receive_packet) {
 			free(v3_receive_packet);
-	} else if (v2_receive_packet)
+		}
+	} else if (v2_receive_packet) {
 		free(v2_receive_packet);
+	}
 
 	return result;
 }
@@ -1353,9 +1325,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		if (rc <= 0 || rc != bytes_to_recv) {
 			if (rc < bytes_to_recv) {
 				if (packet_ver != NRPE_PACKET_VERSION_3)
-					printf("CHECK_NRPE: Receive header underflow - "
-							"only %d bytes received (%ld expected).\n",
-						 rc, sizeof(bytes_to_recv));
+					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%ld expected).\n", rc, sizeof(bytes_to_recv));
 			}
 			return -1;
 		}
@@ -1376,8 +1346,9 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			if (payload_size > 0) {
 				pkt_size = common_size + payload_size;
 				buffer_size = payload_size;
-			} else
+			} else {
 				buffer_size = pkt_size - common_size;
+			}
 			if ((*v2_pkt = calloc(1, pkt_size)) == NULL) {
 				logit(LOG_ERR, "Error: Could not allocate memory for packet");
 				return -1;
@@ -1426,8 +1397,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 				*v2_pkt = NULL;
 			}
 			if (rc < buffer_size)
-				printf("CHECK_NRPE: Receive underflow - only %d bytes received "
-						"(%ld expected).\n", rc, sizeof(buffer_size));
+				printf("CHECK_NRPE: Receive underflow - only %d bytes received (%ld expected).\n", rc, sizeof(buffer_size));
 			return -1;
 		} else
 			tot_bytes += rc;
@@ -1443,8 +1413,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		if (rc <= 0 || rc != bytes_to_recv) {
 			if (rc < bytes_to_recv) {
 				if (packet_ver != NRPE_PACKET_VERSION_3)
-					printf("CHECK_NRPE: Receive header underflow - only %d bytes "
-							"received (%ld expected).\n", rc, sizeof(bytes_to_recv));
+					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%ld expected).\n", rc, sizeof(bytes_to_recv));
 			}
 			return -1;
 		}
@@ -1532,12 +1501,11 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 				*v2_pkt = NULL;
 			}
 			if (bytes_read != buffer_size) {
-				if (packet_ver == NRPE_PACKET_VERSION_3)
-					printf("CHECK_NRPE: Receive buffer size - %ld bytes received "
-						   "(%ld expected).\n", (long)bytes_read, sizeof(buffer_size));
-				else
-					printf("CHECK_NRPE: Receive underflow - only %ld bytes received "
-						   "(%ld expected).\n", (long)bytes_read, sizeof(buffer_size));
+				if (packet_ver == NRPE_PACKET_VERSION_3) {
+					printf("CHECK_NRPE: Receive buffer size - %ld bytes received (%ld expected).\n", (long)bytes_read, sizeof(buffer_size));
+				} else {
+					printf("CHECK_NRPE: Receive underflow - only %ld bytes received (%ld expected).\n", (long)bytes_read, sizeof(buffer_size));
+				}
 			}
 			return -1;
 		} else
@@ -1570,8 +1538,8 @@ int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 
 	if (!preverify_ok && sslprm.client_certs >= Ask_For_Cert
 		&& (sslprm.log_opts & SSL_LogCertDetails)) {
-		logit(LOG_ERR, "SSL Client has an invalid certificate: %s (issuer=%s) err=%d:%s",
-			   name, issuer, err, X509_verify_cert_error_string(err));
+		
+		logit(LOG_ERR, "SSL Client has an invalid certificate: %s (issuer=%s) err=%d:%s", name, issuer, err, X509_verify_cert_error_string(err));
 	}
 
 	return preverify_ok;
