@@ -56,6 +56,7 @@ char *command_name = NULL;
 int socket_timeout = DEFAULT_SOCKET_TIMEOUT;
 char timeout_txt[10];
 int timeout_return_code = -1;
+int stderr_to_stdout = 0;
 int sd;
 
 char rem_host[MAX_HOST_ADDRESS_LENGTH];
@@ -235,6 +236,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		{"help", no_argument, 0, 'h'},
 		{"license", no_argument, 0, 'l'},
 		{"version", no_argument, 0, 'V'},
+		{"stderr-to-stdout", no_argument, 0, 'E'},
 		{0, 0, 0, 0}
 	};
 #endif
@@ -244,7 +246,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		return ERROR;
 
 	optind = 0;
-	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:g:246hlnuV");
+	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:g:246hlnuVE");
 
 	while (1) {
 		if (argindex > 0)
@@ -321,6 +323,14 @@ int process_arguments(int argc, char **argv, int from_config_file)
 				break;
 			}
 			server_name = strdup(optarg);
+			break;
+
+		case 'E':
+			if (from_config_file && stderr_to_stdout != 0) {
+				logit(LOG_WARNING, "WARNING: Command-line stderr redirection overrides the config file option.");
+				break;
+			}
+			stderr_to_stdout = 1;
 			break;
 
 		case 'c':
@@ -675,7 +685,7 @@ void usage(int result)
 		printf("       [-P <size>] [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n");
 		printf("       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n");
 		printf("       [-f <cfg-file>] [-p <port>] [-t <interval>:<state>] [-g <log-file>]\n");
-		printf("       [-c <command>] [-a <arglist...>]\n");
+		printf("       [-c <command>] [-E] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" -H, --host=HOST              The address of the host running the NRPE daemon\n");
@@ -686,6 +696,7 @@ void usage(int result)
 		printf(" -u, --unknown-timeout        Make connection problems return UNKNOWN instead of CRITICAL\n");
 		printf(" -V, --version                Print version info and quit\n");
 		printf(" -l, --license                Show license\n");
+		printf(" -E, --stderr-to-stdout       Redirect stderr to stdout\n");
 		printf(" -d, --use-dh=DHOPT           Anonymous Diffie Hellman use:\n");
 		printf("                              0         Don't use Anonymous Diffie Hellman\n");
 		printf("                                        (This will be the default in a future release.)\n");
@@ -987,7 +998,7 @@ int connect_to_remote()
 	int result, rc, ssl_err, ern, x, nerrs = 0;
 
 	/* try to connect to the host at the given port number */
-	if ((sd = my_connect(server_name, &hostaddr, server_port, address_family, bind_address)) < 0)
+	if ((sd = my_connect(server_name, &hostaddr, server_port, address_family, bind_address, stderr_to_stdout)) < 0)
 		exit(timeout_return_code);
 
 	result = STATE_OK;
