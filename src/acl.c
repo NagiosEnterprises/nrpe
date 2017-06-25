@@ -137,10 +137,6 @@ char * acl_substring(char *string, int s, int e) {
 
 int add_ipv4_to_acl(char *ipv4) {
 
-        /* check if it is an ipv6 address before we do the checks */
-        if (strchr(ipv4, ':') != NULL)
-            return 1;
-
         int state = 0;
         int octet = 0;
         int index = 0;  /* position in data array */
@@ -612,6 +608,7 @@ void parse_allowed_hosts(char *allowed_hosts) {
 	char *tok;
 	const char *delim = ",";
 	char *trimmed_tok;
+    int add_to_acl = 0;
 
 	if (debug == TRUE)
 		logit(LOG_INFO,
@@ -632,10 +629,27 @@ void parse_allowed_hosts(char *allowed_hosts) {
 		if (debug == TRUE)
 			logit(LOG_DEBUG, "parse_allowed_hosts: ADDING this record (%s) to ACL list!\n", trimmed_tok);
 		if (strlen(trimmed_tok) > 0) {
-			if (!add_ipv4_to_acl(trimmed_tok) && !add_ipv6_to_acl(trimmed_tok) 
-					&& !add_domain_to_acl(trimmed_tok)) {
+
+            /* lets check the type of the address before we try and add it to the acl */
+
+            if (strchr(trimmed_tok, ':') != NULL) {
+
+                /* its an ipv6 address */
+                add_to_acl = add_ipv6_to_acl(trimmed_tok);
+                
+            } else {
+
+                /* its either a fqdn or an ipv4 address
+                   unfortunately, i don't want to re-invent the wheel here
+                   the logic exists inside of add_ipv4_to_acl() to detect
+                   whether or not it is a ip or not */
+                add_to_acl = add_ipv4_to_acl(trimmed_tok);
+            }
+
+            /* but we only try to add it to a domain if the other tests have failed */
+            if (!add_to_acl && !add_domain_to_acl(trimmed_tok)) {
 				logit(LOG_ERR,"Can't add to ACL this record (%s). Check allowed_hosts option!\n",trimmed_tok);
-			} else if (debug == TRUE)
+			} else if (debug == TRUE)    
 				logit(LOG_DEBUG,"parse_allowed_hosts: Record added to ACL list!\n");
 		}
 		free( trimmed_tok);
