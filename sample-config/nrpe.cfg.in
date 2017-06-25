@@ -299,6 +299,7 @@ connection_timeout=300
 
 
 # The following examples use hardcoded command arguments...
+# This is by far the most secure method of using NRPE
 
 command[check_users]=@pluginsdir@/check_users -w 5 -c 10
 command[check_load]=@pluginsdir@/check_load -r -w .15,.10,.05 -c .30,.25,.20
@@ -313,7 +314,38 @@ command[check_total_procs]=@pluginsdir@/check_procs -w 150 -c 200
 # config file is set to '1'.  This poses a potential security risk, so
 # make sure you read the SECURITY file before doing this.
 
-#command[check_users]=@pluginsdir@/check_users -w $ARG1$ -c $ARG2$
-#command[check_load]=@pluginsdir@/check_load -w $ARG1$ -c $ARG2$
-#command[check_disk]=@pluginsdir@/check_disk -w $ARG1$ -c $ARG2$ -p $ARG3$
-#command[check_procs]=@pluginsdir@/check_procs -w $ARG1$ -c $ARG2$ -s $ARG3$
+### MISC SYSTEM METRICS ###
+#command[check_users]=@pluginsdir@/check_users $ARG1$
+#command[check_load]=@pluginsdir@/check_load $ARG1$
+#command[check_disk]=@pluginsdir@/check_disk $ARG1$
+#command[check_swap]=@pluginsdir@/check_swap $ARG1$
+#command[check_cpu_stats]=@pluginsdir@/check_cpu_stats.sh $ARG1$
+#command[check_mem]=@pluginsdir@/custom_check_mem -n $ARG1$
+
+### GENERIC SERVICES ###
+#command[check_init_service]=sudo @pluginsdir@/check_init_service $ARG1$
+#command[check_services]=@pluginsdir@/check_services -p $ARG1$
+
+### SYSTEM UPDATES ###
+#command[check_yum]=@pluginsdir@/check_yum
+#command[check_apt]=@pluginsdir@/check_apt
+
+### PROCESSES ###
+#command[check_all_procs]=@pluginsdir@/custom_check_procs
+#command[check_procs]=@pluginsdir@/check_procs $ARG1$
+
+### OPEN FILES ###
+#command[check_open_files]=@pluginsdir@/check_open_files.pl $ARG1$
+
+### NETWORK CONNECTIONS ###
+#command[check_netstat]=@pluginsdir@/check_netstat.pl -p $ARG1$ $ARG2$
+
+### ASTERISK ###
+#command[check_asterisk]=@pluginsdir@/check_asterisk.pl $ARG1$
+#command[check_sip]=@pluginsdir@/check_sip $ARG1$
+#command[check_asterisk_sip_peers]=sudo @pluginsdir@/check_asterisk_sip_peers.sh $ARG1$
+#command[check_asterisk_version]=@pluginsdir@/nagisk.pl -c version
+#command[check_asterisk_peers]=@pluginsdir@/nagisk.pl -c peers
+#command[check_asterisk_channels]=@pluginsdir@/nagisk.pl -c channels 
+#command[check_asterisk_zaptel]=@pluginsdir@/nagisk.pl -c zaptel 
+#command[check_asterisk_span]=@pluginsdir@/nagisk.pl -c span -s 1
