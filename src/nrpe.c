@@ -273,6 +273,9 @@ void init_ssl(void)
 	/* initialize SSL */
 	SSL_load_error_strings();
 	SSL_library_init();
+	ENGINE_load_builtin_engines();
+	RAND_set_rand_engine(NULL);
+ 	ENGINE_register_all_complete();
 
 	meth = SSLv23_server_method();
 

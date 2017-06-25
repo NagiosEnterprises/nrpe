@@ -801,6 +801,9 @@ void setup_ssl()
 	if (use_ssl == TRUE) {
 		SSL_load_error_strings();
 		SSL_library_init();
+		ENGINE_load_builtin_engines();
+		RAND_set_rand_engine(NULL);
+ 		ENGINE_register_all_complete();
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
 
