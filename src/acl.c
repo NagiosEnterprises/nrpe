@@ -11,9 +11,8 @@
  * is for domain names. All connecting hosts (if allowed_hosts is defined) 
  * are checked in these two lists.
  *
- * Some notes:
- * 1) IPv6 isn't supported in ACL.
- * 2) Only ANCII names are supported in ACL.
+ * Note:
+ *  Only ANCII names are supported in ACL.
  *
  * License Notice:
  *
@@ -35,6 +34,7 @@
 
 #include "../include/config.h"
 #include "../include/common.h"
+#include "../include/utils.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
