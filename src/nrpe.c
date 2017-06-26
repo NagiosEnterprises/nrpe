@@ -147,7 +147,11 @@ struct _SSL_PARMS {
 	ClntCerts client_certs;
 	SslLogging log_opts;
 } sslprm = {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+NULL, NULL, NULL, "ALL:!MD5:@STRENGTH:@SECLEVEL=0", TLSv1_plus, TRUE, 0, SSL_NoLogging};
+#else
 NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", TLSv1_plus, TRUE, 0, SSL_NoLogging};
+#endif
 
 
 #ifdef HAVE_SSL
@@ -476,12 +480,8 @@ void log_ssl_startup(void)
 		   sslprm.privatekey_file ? sslprm.privatekey_file : "None");
 	logit(LOG_INFO, "SSL CA Certificate File: %s",
 		   sslprm.cacert_file ? sslprm.cacert_file : "None");
-	if (sslprm.allowDH < 2)
-		logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
-	else
-		logit(LOG_INFO, "SSL Cipher List: ADH");
-	logit(LOG_INFO, "SSL Allow ADH: %s",
-		   sslprm.allowDH == 0 ? "No" : (sslprm.allowDH == 1 ? "Allow" : "Require"));
+	logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
+	logit(LOG_INFO, "SSL Allow ADH: %d", sslprm.allowDH == 0)
 	logit(LOG_INFO, "SSL Client Certs: %s",
 		   sslprm.client_certs == 0 ? "Don't Ask" : (sslprm.client_certs ==
 													 1 ? "Accept" : "Require"));

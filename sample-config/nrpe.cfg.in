@@ -225,10 +225,12 @@ connection_timeout=300
 
 # SSL CIPHER LIST
 # This lists which ciphers can be used. For backward compatibility, this
-# defaults to 'ssl_cipher_list=ALL:!MD5:@STRENGTH' in this version but
-# will be changed to something like the example below in a later version of NRPE.
+# defaults to 'ssl_cipher_list=ALL:!MD5:@STRENGTH' for < OpenSSL 1.1.0,
+# and 'ssl_cipher_list=ALL:!MD5:@STRENGTH:@SECLEVEL=0' for OpenSSL 1.1.0 and
+# greater. 
 
 #ssl_cipher_list=ALL:!MD5:@STRENGTH
+#ssl_cipher_list=ALL:!MD5:@STRENGTH:@SECLEVEL=0
 #ssl_cipher_list=ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!RC4:!MD5:@STRENGTH
 
 # SSL Certificate and Private Key Files

@@ -148,7 +148,11 @@ int main(int argc, char **argv)
 	if (timeout_return_code == -1)
 		timeout_return_code = STATE_CRITICAL;
 	if (sslprm.cipher_list[0] == '\0')
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+		strncpy(sslprm.cipher_list, "ALL:!MD5:@STRENGTH:@SECLEVEL=0", MAX_FILENAME_LENGTH - 1);
+#else
 		strncpy(sslprm.cipher_list, "ALL:!MD5:@STRENGTH", MAX_FILENAME_LENGTH - 1);
+#endif
 	if (sslprm.ssl_proto_ver == SSL_Ver_Invalid)
 		sslprm.ssl_proto_ver = TLSv1_plus;
 	if (sslprm.allowDH == -1)
@@ -717,7 +721,11 @@ void usage(int result)
 		printf("                              TLSv1.2   TLS v1.2 only\n");
 		printf("                              TLSv1.2+  TLS v1.2 or above\n");
 		printf(" -L, --cipher-list=LIST       The list of SSL ciphers to use (currently defaults\n");
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+		printf("                              to \"ALL:!MD5:@STRENGTH:@SECLEVEL=0\". THIS WILL change in a future release.)\n");
+#else
 		printf("                              to \"ALL:!MD5:@STRENGTH\". THIS WILL change in a future release.)\n");
+#endif
 		printf(" -C, --client-cert=FILE       The client certificate to use for PKI\n");
 		printf(" -K, --key-file=FILE          The private key to use with the client certificate\n");
 		printf(" -A, --ca-cert-file=FILE      The CA certificate to use for PKI\n");
