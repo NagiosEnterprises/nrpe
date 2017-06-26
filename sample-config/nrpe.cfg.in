@@ -1,13 +1,13 @@
 #############################################################################
-# Sample NRPE Config File
-# Written by: Ethan Galstad (nagios@nagios.org)
 #
-# Last Modified: 2016-05-10
+#  Sample NRPE Config File
 #
-# NOTES:
-# This is a sample configuration file for the NRPE daemon.  It needs to be
-# located on the remote host that is running the NRPE daemon, not the host
-# from which the check_nrpe client is being executed.
+#  Notes:
+#
+#  This is a sample configuration file for the NRPE daemon.  It needs to be
+#  located on the remote host that is running the NRPE daemon, not the host
+#  from which the check_nrpe client is being executed.
+#
 #############################################################################
 
 
@@ -161,6 +161,13 @@ allow_bash_command_substitution=0
 # command_prefix=/usr/bin/sudo
 
 
+# MAX COMMANDS
+# This specifies how many children processes may be spawned at any one
+# time, essentially limiting the fork()s that occur.
+# Default (0) is set to unlimited
+# max_commands=0
+
+
 
 # COMMAND TIMEOUT
 # This specifies the maximum number of seconds that the NRPE daemon will
@@ -218,10 +225,12 @@ connection_timeout=300
 
 # SSL CIPHER LIST
 # This lists which ciphers can be used. For backward compatibility, this
-# defaults to 'ssl_cipher_list=ALL:!MD5:@STRENGTH' in this version but
-# will be changed to something like the example below in a later version of NRPE.
+# defaults to 'ssl_cipher_list=ALL:!MD5:@STRENGTH' for < OpenSSL 1.1.0,
+# and 'ssl_cipher_list=ALL:!MD5:@STRENGTH:@SECLEVEL=0' for OpenSSL 1.1.0 and
+# greater. 
 
 #ssl_cipher_list=ALL:!MD5:@STRENGTH
+#ssl_cipher_list=ALL:!MD5:@STRENGTH:@SECLEVEL=0
 #ssl_cipher_list=ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!RC4:!MD5:@STRENGTH
 
 # SSL Certificate and Private Key Files
@@ -299,6 +308,7 @@ connection_timeout=300
 
 
 # The following examples use hardcoded command arguments...
+# This is by far the most secure method of using NRPE
 
 command[check_users]=@pluginsdir@/check_users -w 5 -c 10
 command[check_load]=@pluginsdir@/check_load -r -w .15,.10,.05 -c .30,.25,.20
@@ -313,7 +323,38 @@ command[check_total_procs]=@pluginsdir@/check_procs -w 150 -c 200
 # config file is set to '1'.  This poses a potential security risk, so
 # make sure you read the SECURITY file before doing this.
 
-#command[check_users]=@pluginsdir@/check_users -w $ARG1$ -c $ARG2$
-#command[check_load]=@pluginsdir@/check_load -w $ARG1$ -c $ARG2$
-#command[check_disk]=@pluginsdir@/check_disk -w $ARG1$ -c $ARG2$ -p $ARG3$
-#command[check_procs]=@pluginsdir@/check_procs -w $ARG1$ -c $ARG2$ -s $ARG3$
+### MISC SYSTEM METRICS ###
+#command[check_users]=@pluginsdir@/check_users $ARG1$
+#command[check_load]=@pluginsdir@/check_load $ARG1$
+#command[check_disk]=@pluginsdir@/check_disk $ARG1$
+#command[check_swap]=@pluginsdir@/check_swap $ARG1$
+#command[check_cpu_stats]=@pluginsdir@/check_cpu_stats.sh $ARG1$
+#command[check_mem]=@pluginsdir@/custom_check_mem -n $ARG1$
+
+### GENERIC SERVICES ###
+#command[check_init_service]=sudo @pluginsdir@/check_init_service $ARG1$
+#command[check_services]=@pluginsdir@/check_services -p $ARG1$
+
+### SYSTEM UPDATES ###
+#command[check_yum]=@pluginsdir@/check_yum
+#command[check_apt]=@pluginsdir@/check_apt
+
+### PROCESSES ###
+#command[check_all_procs]=@pluginsdir@/custom_check_procs
+#command[check_procs]=@pluginsdir@/check_procs $ARG1$
+
+### OPEN FILES ###
+#command[check_open_files]=@pluginsdir@/check_open_files.pl $ARG1$
+
+### NETWORK CONNECTIONS ###
+#command[check_netstat]=@pluginsdir@/check_netstat.pl -p $ARG1$ $ARG2$
+
+### ASTERISK ###
+#command[check_asterisk]=@pluginsdir@/check_asterisk.pl $ARG1$
+#command[check_sip]=@pluginsdir@/check_sip $ARG1$
+#command[check_asterisk_sip_peers]=sudo @pluginsdir@/check_asterisk_sip_peers.sh $ARG1$
+#command[check_asterisk_version]=@pluginsdir@/nagisk.pl -c version
+#command[check_asterisk_peers]=@pluginsdir@/nagisk.pl -c peers
+#command[check_asterisk_channels]=@pluginsdir@/nagisk.pl -c channels 
+#command[check_asterisk_zaptel]=@pluginsdir@/nagisk.pl -c zaptel 
+#command[check_asterisk_span]=@pluginsdir@/nagisk.pl -c span -s 1

@@ -1,10 +1,12 @@
-/************************************************************************
+/****************************************************************************
  *
- * COMMON.H - NRPE Common Include File
- * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 2017-05-24
+ * common.h - NRPE Common header file
  *
- * License:
+ * License: GPLv2
+ * Copyright (c) 2006-2017 Nagios Enterprises
+ *               1999-2006 Ethan Galstad (nagios@nagios.org)
+ *
+ * License Notice:
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +21,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- ************************************************************************/
+ *
+ ****************************************************************************/
 
 #include "config.h"
 
@@ -30,11 +33,12 @@
 # ifdef SSL_TYPE_openssl
 #  include <@SSL_INC_PREFIX@err.h>
 #  include <@SSL_INC_PREFIX@rand.h>
+#  include <@SSL_INC_PREFIX@engine.h>
 # endif
 #endif
 
-#define PROGRAM_VERSION "3.1.1"
-#define MODIFICATION_DATE "2017-05-24"
+#define PROGRAM_VERSION "3.2.0"
+#define MODIFICATION_DATE "2017-06-26"
 
 #define OK							0
 #define ERROR						-1

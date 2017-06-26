@@ -1,17 +1,20 @@
-/*-
+/****************************************************************************
+ *
  * acl.c - a small library for nrpe.c. It adds IPv4 subnets support to ACL in nrpe.
+ *
+ * License: GPLv2
  * Copyright (c) 2011 Kaspersky Lab ZAO
- * Last Modified: 08-10-2011 by Konstantin Malov with Oleg Koreshkov's help 
  *
  * Description:
- * acl.c creates two linked lists. One is for IPv4 hosts and networks, another is for domain names.
- * All connecting hosts (if allowed_hosts is defined) are checked in these two lists.
  *
- * Some notes:
- * 1) IPv6 isn't supported in ACL.
- * 2) Only ANCII names are supported in ACL.
+ * acl.c creates two linked lists. One is for IPv4 hosts and networks, another 
+ * is for domain names. All connecting hosts (if allowed_hosts is defined) 
+ * are checked in these two lists.
  *
- * License: GPL
+ * Note:
+ *  Only ANCII names are supported in ACL.
+ *
+ * License Notice:
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,10 +29,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
+ *
+ ****************************************************************************/
 
 #include "../include/config.h"
 #include "../include/common.h"
+#include "../include/utils.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -131,6 +136,7 @@ char * acl_substring(char *string, int s, int e) {
  */
 
 int add_ipv4_to_acl(char *ipv4) {
+
         int state = 0;
         int octet = 0;
         int index = 0;  /* position in data array */
@@ -602,6 +608,7 @@ void parse_allowed_hosts(char *allowed_hosts) {
 	char *tok;
 	const char *delim = ",";
 	char *trimmed_tok;
+    int add_to_acl = 0;
 
 	if (debug == TRUE)
 		logit(LOG_INFO,
@@ -617,15 +624,32 @@ void parse_allowed_hosts(char *allowed_hosts) {
 	tok = strtok(hosts, delim);
 #endif
 	while( tok) {
-		trimmed_tok = malloc( sizeof( char) * ( strlen( tok) + 1));
-		trim( tok, trimmed_tok);
-		if(debug == TRUE)
+		trimmed_tok = malloc(sizeof(char) * (strlen(tok) + 1));
+		trim(tok, trimmed_tok);
+		if (debug == TRUE)
 			logit(LOG_DEBUG, "parse_allowed_hosts: ADDING this record (%s) to ACL list!\n", trimmed_tok);
-		if( strlen( trimmed_tok) > 0) {
-			if (!add_ipv4_to_acl(trimmed_tok) && !add_ipv6_to_acl(trimmed_tok) 
-					&& !add_domain_to_acl(trimmed_tok)) {
+		if (strlen(trimmed_tok) > 0) {
+
+            /* lets check the type of the address before we try and add it to the acl */
+
+            if (strchr(trimmed_tok, ':') != NULL) {
+
+                /* its an ipv6 address */
+                add_to_acl = add_ipv6_to_acl(trimmed_tok);
+                
+            } else {
+
+                /* its either a fqdn or an ipv4 address
+                   unfortunately, i don't want to re-invent the wheel here
+                   the logic exists inside of add_ipv4_to_acl() to detect
+                   whether or not it is a ip or not */
+                add_to_acl = add_ipv4_to_acl(trimmed_tok);
+            }
+
+            /* but we only try to add it to a domain if the other tests have failed */
+            if (!add_to_acl && !add_domain_to_acl(trimmed_tok)) {
 				logit(LOG_ERR,"Can't add to ACL this record (%s). Check allowed_hosts option!\n",trimmed_tok);
-			} else if (debug == TRUE)
+			} else if (debug == TRUE)    
 				logit(LOG_DEBUG,"parse_allowed_hosts: Record added to ACL list!\n");
 		}
 		free( trimmed_tok);

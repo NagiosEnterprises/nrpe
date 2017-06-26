@@ -1,7 +1,7 @@
 ###############################
-# Makefile for NRPE
 #
-# Last Modified: 08-13-2007
+#  NRPE Makefile
+#
 ###############################
 
 srcdir=@srcdir@

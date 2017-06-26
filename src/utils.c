@@ -1,17 +1,16 @@
 /****************************************************************************
  *
- * UTILS.C - NRPE Utility Functions
+ * utils.c - NRPE Utility Functions
  *
- * License: GPL
- * Copyright (c) 1999-2006 Ethan Galstad (nagios@nagios.org)
- *
- * Last Modified: 12-11-2006
+ * License: GPLv2
+ * Copyright (c) 2009-2017 Nagios Enterprises
+ *               1999-2008 Ethan Galstad (nagios@nagios.org)
  *
  * Description:
  *
  * This file contains common network functions used in nrpe and check_nrpe.
  *
- * License Information:
+ * License Notice:
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,7 +57,7 @@ static unsigned long crc32_table[256];
 char *log_file = NULL;
 FILE *log_fp = NULL;
 
-static int my_create_socket(struct addrinfo *ai, const char *bind_address);
+static int my_create_socket(struct addrinfo *ai, const char *bind_address, int redirect_stderr);
 
 
 /* build the crc table - must be called before calculating the crc value */
@@ -134,10 +133,10 @@ void randomize_buffer(char *buffer, int buffer_size)
 /* opens a connection to a remote host */
 #ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 int my_connect(const char *host, struct sockaddr_storage *hostaddr, u_short port,
-			   int address_family, const char *bind_address)
+			   int address_family, const char *bind_address, int redirect_stderr)
 #else
 int my_connect(const char *host, struct sockaddr *hostaddr, u_short port,
-			   int address_family, const char *bind_address)
+			   int address_family, const char *bind_address, int redirect_stderr)
 #endif
 {
 	struct addrinfo hints, *ai, *aitop;
@@ -145,12 +144,16 @@ int my_connect(const char *host, struct sockaddr *hostaddr, u_short port,
 	int gaierr;
 	int sock = -1;
 
+	FILE *output = stderr;
+	if (redirect_stderr)
+		output = stdout;
+
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = address_family;
 	hints.ai_socktype = SOCK_STREAM;
 	snprintf(strport, sizeof strport, "%u", port);
 	if ((gaierr = getaddrinfo(host, strport, &hints, &aitop)) != 0) {
-		fprintf(stderr, "Could not resolve hostname %.100s: %s\n", host, gai_strerror(gaierr));
+		fprintf(output, "Could not resolve hostname %.100s: %s\n", host, gai_strerror(gaierr));
 		exit(1);
 	}
 
@@ -163,12 +166,12 @@ int my_connect(const char *host, struct sockaddr *hostaddr, u_short port,
 			continue;
 		if (getnameinfo(ai->ai_addr, ai->ai_addrlen, ntop, sizeof(ntop),
 						strport, sizeof(strport), NI_NUMERICHOST | NI_NUMERICSERV) != 0) {
-			fprintf(stderr, "my_connect: getnameinfo failed\n");
+			fprintf(output, "my_connect: getnameinfo failed\n");
 			continue;
 		}
 
 		/* Create a socket for connecting. */
-		sock = my_create_socket(ai, bind_address);
+		sock = my_create_socket(ai, bind_address, redirect_stderr);
 		if (sock < 0)
 			continue;			/* Any error is already output */
 
@@ -177,7 +180,7 @@ int my_connect(const char *host, struct sockaddr *hostaddr, u_short port,
 			memcpy(hostaddr, ai->ai_addr, ai->ai_addrlen);
 			break;
 		} else {
-			fprintf(stderr, "connect to address %s port %s: %s\n", ntop, strport,
+			fprintf(output, "connect to address %s port %s: %s\n", ntop, strport,
 					strerror(errno));
 			close(sock);
 			sock = -1;
@@ -188,21 +191,25 @@ int my_connect(const char *host, struct sockaddr *hostaddr, u_short port,
 
 	/* Return failure if we didn't get a successful connection. */
 	if (sock == -1) {
-		fprintf(stderr, "connect to host %s port %s: %s\n", host, strport, strerror(errno));
+		fprintf(output, "connect to host %s port %s: %s\n", host, strport, strerror(errno));
 		return -1;
 	}
 	return sock;
 }
 
 /* Creates a socket for the connection. */
-int my_create_socket(struct addrinfo *ai, const char *bind_address)
+int my_create_socket(struct addrinfo *ai, const char *bind_address, int redirect_stderr)
 {
 	int sock, gaierr;
 	struct addrinfo hints, *res;
 
+	FILE *output = stderr;
+	if (redirect_stderr)
+		output = stdout;
+
 	sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 	if (sock < 0)
-		fprintf(stderr, "socket: %.100s\n", strerror(errno));
+		fprintf(output, "socket: %.100s\n", strerror(errno));
 
 	/* Bind the socket to an alternative local IP address */
 	if (bind_address == NULL)
@@ -215,12 +222,12 @@ int my_create_socket(struct addrinfo *ai, const char *bind_address)
 	hints.ai_flags = AI_PASSIVE;
 	gaierr = getaddrinfo(bind_address, NULL, &hints, &res);
 	if (gaierr) {
-		fprintf(stderr, "getaddrinfo: %s: %s\n", bind_address, gai_strerror(gaierr));
+		fprintf(output, "getaddrinfo: %s: %s\n", bind_address, gai_strerror(gaierr));
 		close(sock);
 		return -1;
 	}
 	if (bind(sock, res->ai_addr, res->ai_addrlen) < 0) {
-		fprintf(stderr, "bind: %s: %s\n", bind_address, strerror(errno));
+		fprintf(output, "bind: %s: %s\n", bind_address, strerror(errno));
 		close(sock);
 		freeaddrinfo(res);
 		return -1;

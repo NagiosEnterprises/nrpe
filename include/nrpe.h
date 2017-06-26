@@ -1,10 +1,12 @@
-/************************************************************************
+/****************************************************************************
  *
- * NRPE.H - NRPE Include File
- * Copyright (c) 1999-2007 Ethan Galstad (nagios@nagios.org)
- * Last Modified: 08-10-2011 by Konstantin Malov
+ * nrpe.h - Nagios Remote Plugin Executor header file
  *
- * License:
+ * License: GPLv2
+ * Copyright (c) 2006-2017 Nagios Enterprises
+ *               1999-2006 Ethan Galstad (nagios@nagios.org)
+ *
+ * License Notice:
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +22,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- ************************************************************************/
-
-/**************** COMMAND STRUCTURE DEFINITION **********/
+ ****************************************************************************/
 
 typedef struct command_struct {
 	char					*command_name;

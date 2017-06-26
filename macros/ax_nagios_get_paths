@@ -616,6 +616,7 @@ eval webdir=$webdir
 eval localedir=$localedir
 eval sysconfdir=$sysconfdir
 eval pkgsysconfdir=$pkgsysconfdir
+eval logdir=$logdir
 eval piddir=$piddir
 
 #

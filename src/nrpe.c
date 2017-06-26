@@ -1,10 +1,10 @@
-/*******************************************************************************
+/****************************************************************************
  *
- * NRPE.C - Nagios Remote Plugin Executor
+ * nrpe.c - Nagios Remote Plugin Executor
  *
- * Copyright (c) 2009 Nagios Core Development Team and Community Contributors
- * Copyright (c) 1999-2008 Ethan Galstad (nagios@nagios.org)
- * License: GPL
+ * License: GPLv2
+ * Copyright (c) 2009-2017 Nagios Enterprises
+ *               1999-2008 Ethan Galstad (nagios@nagios.org)
  *
  * Command line: nrpe -c <config_file> [--inetd | --daemon]
  *
@@ -16,13 +16,23 @@
  * such as check_users, check_load, check_disk, etc. without
  * having to use rsh or ssh.
  *
- ******************************************************************************/
-
-/*
- * 08-10-2011 IPv4 subnetworks support added.
- * Main change in nrpe.c is that is_an_allowed_host() moved to acl.c.
- * now allowed_hosts is parsed by parse_allowed_hosts() from acl.c.
- */
+ * License Notice:
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ ****************************************************************************/
 
 #include "config.h"
 #include "common.h"
@@ -102,6 +112,8 @@ int       show_help = FALSE;
 int       show_license = FALSE;
 int       show_version = FALSE;
 int       use_inetd = TRUE;
+int 	  commands_running = 0;
+int       max_commands = 0;
 int       debug = FALSE;
 int       use_src = FALSE;		/* Define parameter for SRC option */
 int       no_forking = FALSE;
@@ -135,7 +147,11 @@ struct _SSL_PARMS {
 	ClntCerts client_certs;
 	SslLogging log_opts;
 } sslprm = {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+NULL, NULL, NULL, "ALL:!MD5:@STRENGTH:@SECLEVEL=0", TLSv1_plus, TRUE, 0, SSL_NoLogging};
+#else
 NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", TLSv1_plus, TRUE, 0, SSL_NoLogging};
+#endif
 
 
 #ifdef HAVE_SSL
@@ -167,7 +183,10 @@ int main(int argc, char **argv)
 
 		/* get absolute path of current working directory */
 		strcpy(config_file, "");
-		getcwd(config_file, sizeof(config_file));
+		if (getcwd(config_file, sizeof(config_file)) == NULL) {
+			printf("ERROR: getcwd(): %s, bailing out...\n", strerror(errno));
+			exit(STATE_CRITICAL);
+		}
 
 		/* append a forward slash */
 		strncat(config_file, "/", sizeof(config_file) - 2);
@@ -263,6 +282,9 @@ void init_ssl(void)
 	/* initialize SSL */
 	SSL_load_error_strings();
 	SSL_library_init();
+	ENGINE_load_builtin_engines();
+	RAND_set_rand_engine(NULL);
+ 	ENGINE_register_all_complete();
 
 	meth = SSLv23_server_method();
 
@@ -408,7 +430,7 @@ void init_ssl(void)
 		SSL_CTX_set_verify(ctx, vrfy, verify_callback);
 		if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
 			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-				logit(LOG_ERR, "Error: could not use certificate file '%s': %s\n",
+				logit(LOG_ERR, "Error: could not use CA certificate file '%s': %s\n",
 					   sslprm.cacert_file, ERR_reason_error_string(x));
 			}
 			SSL_CTX_free(ctx);
@@ -422,8 +444,14 @@ void init_ssl(void)
 			strcat(sslprm.cipher_list, ":!ADH");
 	} else {
 		/* use anonymous DH ciphers */
-		if (sslprm.allowDH == 2)
-			strcpy(sslprm.cipher_list, "ADH");
+		if (sslprm.allowDH == 2) {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+			strncpy(sslprm.cipher_list, "ADH@SECLEVEL=0", MAX_FILENAME_LENGTH - 1);
+#else
+			strncpy(sslprm.cipher_list, "ADH", MAX_FILENAME_LENGTH - 1);
+#endif
+		}
+
 #ifdef USE_SSL_DH
 		dh = get_dh2048();
 		SSL_CTX_set_tmp_dh(ctx, dh);
@@ -452,12 +480,8 @@ void log_ssl_startup(void)
 		   sslprm.privatekey_file ? sslprm.privatekey_file : "None");
 	logit(LOG_INFO, "SSL CA Certificate File: %s",
 		   sslprm.cacert_file ? sslprm.cacert_file : "None");
-	if (sslprm.allowDH < 2)
-		logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
-	else
-		logit(LOG_INFO, "SSL Cipher List: ADH");
-	logit(LOG_INFO, "SSL Allow ADH: %s",
-		   sslprm.allowDH == 0 ? "No" : (sslprm.allowDH == 1 ? "Allow" : "Require"));
+	logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
+	logit(LOG_INFO, "SSL Allow ADH: %d", sslprm.allowDH == 0);
 	logit(LOG_INFO, "SSL Client Certs: %s",
 		   sslprm.client_certs == 0 ? "Don't Ask" : (sslprm.client_certs ==
 													 1 ? "Accept" : "Require"));
@@ -503,50 +527,57 @@ void log_ssl_startup(void)
 
 void usage(int result)
 {
-	printf("\n");
+	if (result != OK) {
+		printf("\n");
+		printf("Incorrect command line arguments supplied\n");
+		printf("\n");
+	}
 	printf("NRPE - Nagios Remote Plugin Executor\n");
-	printf("Copyright (c) 1999-2008 Ethan Galstad (nagios@nagios.org)\n");
 	printf("Version: %s\n", PROGRAM_VERSION);
-	printf("Last Modified: %s\n", MODIFICATION_DATE);
-	printf("License: GPL v2 with exemptions (-l for more info)\n");
+	printf("\n");
+	if (result != OK || show_help == TRUE) {
+		printf("Copyright (c) 2009-2017 Nagios Enterprises\n");
+		printf("              1999-2008 Ethan Galstad (nagios@nagios.org)\n");
+		printf("\n");
+		printf("Last Modified: %s\n", MODIFICATION_DATE);
+		printf("\n");
+		printf("License: GPL v2 with exemptions (-l for more info)\n");
+		printf("\n");
 #ifdef HAVE_SSL
-	printf("SSL/TLS Available, OpenSSL 0.9.6 or higher required\n");
+		printf("SSL/TLS Available, OpenSSL 0.9.6 or higher required\n");
+		printf("\n");
 #endif
 #ifdef HAVE_LIBWRAP
-	printf("TCP Wrappers Available\n");
+		printf("TCP Wrappers Available\n");
+		printf("\n");
 #endif
-	printf("\n");
 #ifdef ENABLE_COMMAND_ARGUMENTS
-	printf("***************************************************************\n");
-	printf("** POSSIBLE SECURITY RISK - COMMAND ARGUMENTS ARE SUPPORTED! **\n");
-	printf("**      Read the NRPE SECURITY file for more information     **\n");
-	printf("***************************************************************\n");
-	printf("\n");
+		printf("***************************************************************\n");
+		printf("** POSSIBLE SECURITY RISK - COMMAND ARGUMENTS ARE SUPPORTED! **\n");
+		printf("**      Read the NRPE SECURITY file for more information     **\n");
+		printf("***************************************************************\n");
+		printf("\n");
 #endif
 #ifndef HAVE_LIBWRAP
-	printf("***************************************************************\n");
-	printf("** POSSIBLE SECURITY RISK - TCP WRAPPERS ARE NOT AVAILABLE!  **\n");
-	printf("**      Read the NRPE SECURITY file for more information     **\n");
-	printf("***************************************************************\n");
-	printf("\n");
+		printf("***************************************************************\n");
+		printf("** POSSIBLE SECURITY RISK - TCP WRAPPERS ARE NOT AVAILABLE!  **\n");
+		printf("**      Read the NRPE SECURITY file for more information     **\n");
+		printf("***************************************************************\n");
+		printf("\n");
 #endif
-
-	if (show_license == TRUE)
-		display_license();
-
-	if (result != OK || show_help == TRUE) {
-		printf("Usage: nrpe [-n] -c <config_file> [-4|-6] <mode>\n");
+		printf("Usage: nrpe [-V] [-n] -c <config_file> [-4|-6] <mode>\n");
 		printf("\n");
 		printf("Options:\n");
-		printf(" -n               = Do not use SSL\n");
-		printf(" -c <config_file> = Name of config file to use\n");
-		printf(" -4               = use ipv4 only\n");
-		printf(" -6               = use ipv6 only\n");
-		printf(" <mode>           = One of the following operating modes:\n");
-		printf("   -i             =    Run as a service under inetd or xinetd\n");
-		printf("   -d             =    Run as a standalone daemon\n");
-		printf("   -d -s          =    Run as a subsystem under AIX\n");
-		printf("   -f             =    Don't fork() for systemd, launchd, etc.\n");
+		printf(" -V, --version         Print version info and quit\n");
+		printf(" -n, --no-ssl          Do not use SSL\n");
+		printf(" -c, --config=FILE     Name of config file to use\n");
+		printf(" -4, --ipv4            Use ipv4 only\n");
+		printf(" -6, --ipv6            Use ipv6 only\n");
+		printf(" <mode> (One of the following operating modes)\n");
+		printf("   -i, --inetd         Run as a service under inetd or xinetd\n");
+		printf("   -d, --daemon        Run as a standalone daemon\n");
+		printf("   -s, --src           Run as a subsystem under AIX\n");
+		printf("   -f, --no-forking    Don't fork() (for systemd, launchd, etc.)\n");
 		printf("\n");
 		printf("Notes:\n");
 		printf("This program is designed to process requests from the check_nrpe\n");
@@ -558,6 +589,9 @@ void usage(int result)
 		printf("check_nrpe plugin.\n");
 		printf("\n");
 	}
+
+	if (show_license == TRUE)
+		display_license();
 
 	exit(STATE_UNKNOWN);
 }
@@ -621,14 +655,17 @@ void set_stdio_sigs(void)
 	struct sigaction sig_action;
 #endif
 
+	if (chdir("/") == -1) {
+		printf("ERROR: chdir(): %s, bailing out...\n", strerror(errno));
+		exit(STATE_CRITICAL);
+	}
+
 	close(0);					/* close standard file descriptors */
 	close(1);
 	close(2);
 	open("/dev/null", O_RDONLY);	/* redirect standard descriptors to /dev/null */
 	open("/dev/null", O_WRONLY);
 	open("/dev/null", O_WRONLY);
-
-	chdir("/");
 
 	/* handle signals */
 #ifdef HAVE_SIGACTION
@@ -785,6 +822,14 @@ int read_config_file(char *filename)
 			/* process the config file... */
 			if (read_config_file(varvalue) == ERROR)
 				logit(LOG_ERR, "Continuing with errors...");
+
+		} else if (!strcmp(varname, "max_commands")) {
+
+			max_commands = atoi(varvalue);
+			if (max_commands < 0) {
+				logit(LOG_WARNING, "max_commands set too low, setting to 0\n");
+				max_commands = 0;
+			}
 
 		} else if (!strcmp(varname, "server_port")) {
 			server_port = atoi(varvalue);
@@ -1407,7 +1452,7 @@ int wait_conn_fork(int sock)
 	pid = fork();
 
 	if (pid < 0) {
-		logit(LOG_ERR, "fork() failed with error %d, bailing out...", errno);
+		logit(LOG_ERR, "Second fork() failed with error %d, bailing out...", errno);
 		exit(STATE_CRITICAL);
 	}
 
@@ -1500,10 +1545,10 @@ void conn_check_peer(int sock)
 	}
 
 	if (debug == TRUE)
-		logit(LOG_INFO, "CONN_CHECK_PEER: is this a blessed machine: %s port %d\n",
+		logit(LOG_INFO, "CONN_CHECK_PEER: checking if host is allowed: %s port %d\n",
 			 remote_host, nptr->sin_port);
 
-	/* is this is a blessed machine? */
+	/* is this host allowed? */
 	if (allowed_hosts) {
 #ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 		switch (addr.ss_family) {
@@ -1707,7 +1752,7 @@ void handle_connection(int sock)
 				send_buff = calloc(1, sizeof(buffer));
 				strcpy(send_buff, buffer);
 			}
-			result = STATE_CRITICAL;
+			result = STATE_UNKNOWN;
 
 		} else {
 
@@ -1873,31 +1918,29 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 
 	/* keep attempting the request if needed */
 	while (((rc = SSL_accept(ssl)) != 1)
-		   && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ)) ;
+			&& (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ));
 
 	if (rc != 1) {
 		/* oops, got an unrecoverable error -- get out */
 		if (sslprm.log_opts & (SSL_LogCertDetails | SSL_LogIfClientCert)) {
-			int       nerrs = 0;
+			int nerrs = 0;
 			rc = 0;
 			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
 				errmsg = ERR_reason_error_string(x);
-				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %s",
-					   remote_host, errmsg);
-				if (errmsg && !strcmp(errmsg, "no shared cipher")) {
-					if (sslprm.cert_file == NULL || sslprm.cacert_file == NULL)
-						logit(LOG_ERR, "Error: This could be because you have not "
-								"specified certificate or ca-certificate files");
-				}
+				logit(LOG_ERR, "Error: (ERR_get_error_line_data = %d), Could not complete SSL handshake with %s: %s", x, remote_host, errmsg);
+				
+				if (errmsg && !strcmp(errmsg, "no shared cipher") && (sslprm.cert_file == NULL || sslprm.cacert_file == NULL))
+					logit(LOG_ERR, "Error: This could be because you have not specified certificate or ca-certificate files");
+
 				++nerrs;
 			}
-			if (nerrs == 0)
-				logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
-					   remote_host, SSL_get_error(ssl, rc));
 
-		} else
-			logit(LOG_ERR, "Error: Could not complete SSL handshake with %s: %d",
-				   remote_host, SSL_get_error(ssl, rc));
+			if (nerrs == 0) {
+				logit(LOG_ERR, "Error: (nerrs = 0) Could not complete SSL handshake with %s: %d", remote_host, SSL_get_error(ssl, rc));
+			}
+		} else {
+			logit(LOG_ERR, "Error: (!log_opts) Could not complete SSL handshake with %s: %d", remote_host, SSL_get_error(ssl, rc));
+		}
 # ifdef DEBUG
 		errfp = fopen("/tmp/err.log", "a");
 		ERR_print_errors_fp(errfp);
@@ -1908,27 +1951,30 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 
 	/* successful handshake */
 	if (sslprm.log_opts & SSL_LogVersion)
-		logit(LOG_NOTICE, "Remote %s - SSL Version: %s",
-			   remote_host, SSL_get_version(ssl));
+		logit(LOG_NOTICE, "Remote %s - SSL Version: %s", remote_host, SSL_get_version(ssl));
+
 	if (sslprm.log_opts & SSL_LogCipher) {
 		c = SSL_get_current_cipher(ssl);
-		logit(LOG_NOTICE, "Remote %s - %s, Cipher is %s", remote_host,
-			   SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
+		logit(LOG_NOTICE, "Remote %s - %s, Cipher is %s", remote_host, SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
 	}
 
 	if ((sslprm.log_opts & SSL_LogIfClientCert)
-		|| (sslprm.log_opts & SSL_LogCertDetails))
-	{
+		|| (sslprm.log_opts & SSL_LogCertDetails)) {
+
+
 		peer = SSL_get_peer_certificate(ssl);
 
 		if (peer) {
 			if (sslprm.log_opts & SSL_LogIfClientCert)
-				logit(LOG_NOTICE, "SSL Client %s has %svalid certificate",
-					   remote_host, SSL_get_verify_result(ssl) ? "a " : "an in");
+				logit(LOG_NOTICE, "SSL Client %s has %s certificate",
+					   remote_host, SSL_get_verify_result(ssl) == X509_V_OK ? "a valid" : "an invalid");
+
 			if (sslprm.log_opts & SSL_LogCertDetails) {
+
 				X509_NAME_oneline(X509_get_subject_name(peer), buffer, sizeof(buffer));
 				logit(LOG_NOTICE, "SSL Client %s Cert Name: %s",
 					   remote_host, buffer);
+
 				X509_NAME_oneline(X509_get_issuer_name(peer), buffer, sizeof(buffer));
 				logit(LOG_NOTICE, "SSL Client %s Cert Issuer: %s",
 					   remote_host, buffer);
@@ -2129,7 +2175,19 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 	if (command == NULL)		/* if no command was passed, return with no error */
 		return STATE_OK;
 
-	pipe(fd);					/* create a pipe */
+	/* make sure that we are within max_commands boundaries before attempting */
+	if (max_commands != 0) {
+		while (commands_running >= max_commands) {
+			logit(LOG_WARNING, "Commands choked. Sleeping 1s - commands_running: %d, max_commands: %d", commands_running, max_commands);
+			sleep(1);
+		}
+	}
+
+	/* create a pipe */
+	if (pipe(fd) == -1) {
+		logit(LOG_ERR, "ERROR: pipe(): %s, bailing out...", strerror(errno));
+		exit(STATE_CRITICAL);
+	}
 
 	/* make the pipe non-blocking */
 	fcntl(fd[0], F_SETFL, O_NONBLOCK);
@@ -2161,7 +2219,12 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 
 	/* execute the command in the child process */
 	if (pid == 0) {
-		SETEUID(0);				/* get root back so the next call works correctly */
+
+		/* get root back so the next call works correctly */
+		if (SETEUID(0) == -1) {
+			logit(LOG_ERR, "ERROR: my_system() seteuid(0): %s, bailing out...", strerror(errno));
+			exit(STATE_CRITICAL);
+		}
 		drop_privileges(nrpe_user, nrpe_group, 1);	/* drop privileges */
 		close(fd[0]);			/* close pipe for reading */
 		setpgid(0, 0);			/* become process group leader */
@@ -2184,8 +2247,11 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 		if (fp == NULL) {
 			strncpy(buffer, "NRPE: Call to popen() failed\n", sizeof(buffer) - 1);
 			buffer[sizeof(buffer) - 1] = '\x0';
+
 			/* write the error back to the parent process */
-			write(fd[1], buffer, strlen(buffer) + 1);
+			if (write(fd[1], buffer, strlen(buffer) + 1) == -1)
+				logit(LOG_ERR, "ERROR: my_system() write(fd, buffer)-1 failed...");
+
 			result = STATE_CRITICAL;
 
 		} else {
@@ -2193,10 +2259,13 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 			/* read all lines of output - supports Nagios 3.x multiline output */
 			while ((bytes_read = fread(buffer, 1, sizeof(buffer) - 1, fp)) > 0) {
 				/* write the output back to the parent process */
-				write(fd[1], buffer, bytes_read);
+				if (write(fd[1], buffer, bytes_read) == -1)
+					logit(LOG_ERR, "ERROR: my_system() write(fd, buffer)-2 failed...");
 			}
 
-			write(fd[1], "\0", 1);
+			if (write(fd[1], "\0", 1) == -1)
+				logit(LOG_ERR, "ERROR: my_system() write(fd, NULL) failed...");
+
 			status = pclose(fp);	/* close the command and get termination status */
 
 			/* report an error if we couldn't close the command */
@@ -2215,6 +2284,8 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 
 	} else {
 		/* parent waits for child to finish executing command */
+
+		commands_running++;
 
 		close(fd[1]);			/* close pipe for writing */
 		waitpid(pid, &status, 0);	/* wait for child to exit */
@@ -2266,6 +2337,8 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 		}
 
 		close(fd[0]);			/* close the pipe for reading */
+
+		commands_running--;
 	}
 
 #ifdef DEBUG
@@ -2342,11 +2415,9 @@ int drop_privileges(char *user, char *group, int full_drop)
 			/* initialize supplementary groups */
 			if (initgroups(user, gid) == -1) {
 				if (errno == EPERM)
-					logit(LOG_ERR,
-						   "Warning: Unable to change supplementary groups using initgroups()");
+					logit(LOG_ERR, "Warning: Unable to change supplementary groups using initgroups()");
 				else {
-					logit(LOG_ERR,
-						   "Warning: Possibly root user failed dropping privileges with initgroups()");
+					logit(LOG_ERR, "Warning: Possibly root user failed dropping privileges with initgroups()");
 					return ERROR;
 				}
 			}
@@ -2391,9 +2462,7 @@ int write_pid_file(void)
 
 			else {
 				/* previous process is still running */
-				logit(LOG_ERR,
-					   "There's already an NRPE server running (PID %lu).  Bailing out...",
-					   (unsigned long)pid);
+				logit(LOG_ERR, "There's already an NRPE server running (PID %lu).  Bailing out...", (unsigned long)pid);
 				return ERROR;
 			}
 		}
@@ -2402,7 +2471,10 @@ int write_pid_file(void)
 	/* write new pid file */
 	if ((fd = open(pid_file, O_WRONLY | O_CREAT, 0644)) >= 0) {
 		sprintf(pbuf, "%d\n", (int)getpid());
-		write(fd, pbuf, strlen(pbuf));
+
+		if (write(fd, pbuf, strlen(pbuf)) == -1)
+			logit(LOG_ERR, "ERROR: write_pid_file() write(fd, pbuf) failed...");
+
 		close(fd);
 		wrote_pid_file = TRUE;
 	} else {
@@ -2421,7 +2493,12 @@ int remove_pid_file(void)
 	if (wrote_pid_file == FALSE)
 		return OK;				/* pid file was not written */
 
-	SETEUID(0);					/* get root back so we can delete the pid file */
+	/* get root back so we can delete the pid file */
+	if (SETEUID(0) == -1) {
+		logit(LOG_ERR, "ERROR: remove_pid_file() seteuid(0): %s, bailing out...", strerror(errno));
+		return ERROR;
+	}
+
 	if (unlink(pid_file) == -1) {
 		logit(LOG_ERR, "Cannot remove pidfile '%s' - check your privileges.", pid_file);
 		return ERROR;
@@ -2587,8 +2664,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	if (strchr(v2pkt->buffer, '!')) {
 #ifdef ENABLE_COMMAND_ARGUMENTS
 		if (allow_arguments == FALSE) {
-			logit(LOG_ERR,
-				   "Error: Request contained command arguments, but argument option is not enabled!");
+			logit(LOG_ERR, "Error: Request contained command arguments, but argument option is not enabled!");
 			return ERROR;
 		}
 #else
@@ -2631,8 +2707,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 				return ERROR;
 # else
 				if (FALSE == allow_bash_cmd_subst) {
-					logit(LOG_ERR,
-						   "Error: Request contained a bash command substitution, but they are disallowed!");
+					logit(LOG_ERR, "Error: Request contained a bash command substitution, but they are disallowed!");
 					return ERROR;
 				}
 # endif
@@ -2737,11 +2812,12 @@ int process_arguments(int argc, char **argv)
 		{"src", no_argument, 0, 's'},
 		{"no-forking", no_argument, 0, 'f'},
 		{"4", no_argument, 0, '4'},
-		{"6", no_argument, 0, '4'},
+		{"ipv6", no_argument, 0, '6'},
 		{"daemon", no_argument, 0, 'd'},
 		{"no-ssl", no_argument, 0, 'n'},
 		{"help", no_argument, 0, 'h'},
 		{"license", no_argument, 0, 'l'},
+		{"version", no_argument, 0, 'V'},
 		{0, 0, 0, 0}
 	};
 #endif
@@ -2771,6 +2847,7 @@ int process_arguments(int argc, char **argv)
 
 		case 'V':
 			show_version = TRUE;
+			have_mode = TRUE;
 			break;
 
 		case 'l':
