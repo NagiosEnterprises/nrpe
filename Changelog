@@ -2,6 +2,27 @@
 NRPE Changelog
 **************
 
+3.2.0 - 2017-06-26
+------------------
+ENHANCEMENTS
+- Added max_commands definition to nrpe.cfg to rate limit simultaneous fork()ed children (Bryan Heden)
+- Added -E, --stderr-to-stdout options for check_nrpe to redirect output (Bryan Heden)
+- Added support for Gentoo init (Troy Lea @box293)
+- Cleaned up code a bit, updated readmes and comments across the board (Bryan Heden)
+- Added -V, --version to nrpe and fixed the output (Bryan Heden)
+- Added different SSL error messages to be able to pinpoint where some SSL errors occured (Bryan Heden)
+- Updated logic in al parse_allowed_hosts (Bryan Heden)
+- Added builtin OpenSSL Engine support where available (Bryan Heden + @skrueger8)
+- Clean up compilation warnings (Bryan Heden)
+- Added more commented commands in nrpe.cfg (Bryan Heden)
+
+FIXES
+- Undefined check returns UNKNOWN (Bryan Heden)
+- Fix incompatibility with OpenSSL 1.1.0 via SECLEVEL distinction (Bryan Heden)
+- Fix ipv4 error in logfile even if address is ipv6 (Bryan Heden)
+- Fix improper valid/invalid certificate warnings (Bryan Heden)
+
+
 3.1.1 - 2017-05-24
 ------------------
 FIXES
