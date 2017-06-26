@@ -481,7 +481,7 @@ void log_ssl_startup(void)
 	logit(LOG_INFO, "SSL CA Certificate File: %s",
 		   sslprm.cacert_file ? sslprm.cacert_file : "None");
 	logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
-	logit(LOG_INFO, "SSL Allow ADH: %d", sslprm.allowDH == 0)
+	logit(LOG_INFO, "SSL Allow ADH: %d", sslprm.allowDH == 0);
 	logit(LOG_INFO, "SSL Client Certs: %s",
 		   sslprm.client_certs == 0 ? "Don't Ask" : (sslprm.client_certs ==
 													 1 ? "Accept" : "Require"));
