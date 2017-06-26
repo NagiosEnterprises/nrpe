@@ -1911,8 +1911,8 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 	SSL_set_fd(ssl, sock);
 
 	/* keep attempting the request if needed */
-	while ((rc = SSL_accept(ssl) != 1) 
-		   && SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ);
+	while (((rc = SSL_accept(ssl)) != 1)
+			&& (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ));
 
 	if (rc != 1) {
 		/* oops, got an unrecoverable error -- get out */
