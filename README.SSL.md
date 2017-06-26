@@ -16,7 +16,7 @@ Contents
 --------
 
 1. [Introduction](#introduction)
-2. [NRPE Changes](#current-nrpe-version-changes)
+2. [NRPE Changes](#nrpe-changes)
 3. [check_nrpe Changes](#check_nrpe-changes)
 4. [Certificate Generation Example](#certificate-generation-example)
 
@@ -38,8 +38,8 @@ machines, causing lost reporting.
 
 
 
-Current NRPE Version Changes
-----------------------------
+NRPE Changes
+------------
 
 Running `./configure` will now create a 2048-bit DH key instead
 of the old 512-bit key. The most current versions of openSSL will
