@@ -1,16 +1,27 @@
 NRPE With SSL/TLS
 =================
 
-##Contents
-1. [Introduction](#intro)
-2. [NRPE Changes](#nrpe)
-3. [check_nrpe Changes](#chk)
-4. [Certificate Generation Example](#xmp)
+This document covers the different methods of SSL transport
+that NRPE allows for. 
 
-<a id=intro></a>
+If there was a TL;DR here, it is these:
 
-------------
-###Introduction
+### Don't use NRPE without encryption
+
+and
+
+### Use Public Key Encryption
+
+Contents
+--------
+
+1. [Introduction](#introduction)
+2. [NRPE Changes](#current-nrpe-version-changes)
+3. [check_nrpe Changes](#check_nrpe-changes)
+4. [Certificate Generation Example](#certificate-generation-example)
+
+
+Introduction
 ------------
 
 NRPE has had basic support for SSL/TLS for some time now, but it was
@@ -19,17 +30,16 @@ exchange, it used a fixed 512-bit key (generated at `./configure`
 time and extremely insecure) and originally allowed SSLv2. In 2004,
 SSLv2 and SSLv3 support was disabled.
 
-nrpe and check_nrpe have been updated to offer much more secure
+`nrpe` and `check_nrpe` have been updated to offer much more secure
 encryption and more options. And the updates are done in a backward-
 compatible way, allowing you to migrate to the newer versions
 without having to do it all at once, and possibly miss updating some
 machines, causing lost reporting.
 
-<a id=nrpe></a>
 
-------------------------------------------
-###CHANGES IN THE CURRENT VERSION OF NRPE
-------------------------------------------
+
+Current NRPE Version Changes
+----------------------------
 
 Running `./configure` will now create a 2048-bit DH key instead
 of the old 512-bit key. The most current versions of openSSL will
@@ -52,8 +62,8 @@ If you are upgrading NRPE from a prior version, you can run the
 The `ssl_version` directive lets you set which versions of SSL/TLS
 you want to allow. SSLv2, SSLv3, TLSv1, TLSv1.1 and TLSv1.2 are
 allowed, or those litereals with a `+` after them (as in TLSv1.1+).
-Without the `+`, that version _only_ will be used. With the `+`,
-that version _or above_ will be used. openSSL will always negotiate
+Without the `+`, *that version only* will be used. With the `+`,
+that *version or above* will be used. openSSL will always negotiate
 the highest available allowed version available on both ends. This
 directive currently defaults to `TLSv1+`.
 
@@ -61,7 +71,7 @@ The `ssl_use_adh` directive is **DEPRECATED**, even though it is new.
 Possible values are `0` to not allow ADH at all, `1` to allow ADH,
 and `2` to require ADH. The `2` should never be required, but it's
 there just in case it's needed, for whatever reason. `1` is currently
-the default, which allows older check_nrpe plugins to connect using
+the default, which allows older `check_nrpe` plugins to connect using
 ADH. When all the plugins are migrated to the newer version, it
 should be set to `0`. In an upcoming version of NRPE, ADH will no
 longer be allowed at all. Note that if you use a `2` here, NRPE will
@@ -103,13 +113,11 @@ This can be especially helpful during plugin migration, so you can
 tell which plugins have certificates, what SSL/TLS version is being
 used, and which ciphers are being used.
 
-<a id=chk></a>
 
-------------------------------------------------
-###CHANGES IN THE CURRENT VERSION OF CHECK_NRPE
-------------------------------------------------
+check_nrpe Changes
+------------------
 
-The check_nrpe plugin has also been updated to provide more secure
+The `check_nrpe` plugin has also been updated to provide more secure
 encryption and allow the use of client certificates. The command line
 has several new options, which are outlined below. Both the long and
 short arguments are presented.
@@ -145,11 +153,10 @@ data to syslog. OR (or add) values together to have more than one
 option enabled. See the description of the `ssl_logging` directive
 from NRPE above.
 
-<a id=xmp></a>
 
-----------------------------------
-###Certificate Generation Example
-----------------------------------
+
+Certificate Generation Example
+------------------------------
 
 **Note** _The following example does not follow best practice for
 creating and running a CA or creating certificates. It is for testing
@@ -166,7 +173,7 @@ is called `nag_serv`; and there are two Linux machines that will
 run the nrpe daemon: `db_server` and `bobs_workstation`.
 
 
-####Set up the directories
+#### Set up the directories
 
 As root, do the following:
 
@@ -181,7 +188,7 @@ As root, do the following:
         chown root:nagios client_certs
 
 
-####Create Certificate Authority
+#### Create Certificate Authority
 
 If you want to validate client or server certificates, you will need
 to create a Certificate Authority (CA) that will sign all client and
@@ -203,7 +210,7 @@ probably want to include `CA` or `Certificate Authority` in for
         Common Name (e.g. server FQDN or YOUR name) []:Foo Nagios CA
 
 
-####Create NRPE Server Certificate Requests
+#### Create NRPE Server Certificate Requests
 
 For each of the hosts that will be running the nrpe daemon, you will
 need a server certificate. You can create a key, and the CSR
@@ -228,7 +235,7 @@ If you have the default `/etc/openssl.cnf`, either change it, or as root, do:
         mkdir demoCA
         mkdir demoCA/newcerts
         touch demoCA/index.txt
-		echo "01" > demoCA/serial
+        echo "01" > demoCA/serial
         chown -R root:root demoCA
         chmod 700 demoCA
         chmod 700 demoCA/newcerts
@@ -257,7 +264,7 @@ db_server machine, and the `bobs_workstation.pem` and
 `ca/ca_cert.pem` file to both machines.
 
 
-####Create NRPE Client Certificate Requests
+#### Create NRPE Client Certificate Requests
 
 Now you need to do the same thing for the machine that will be
 running the check_nrpe program.
