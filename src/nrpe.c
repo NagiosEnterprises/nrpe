@@ -179,7 +179,10 @@ int main(int argc, char **argv)
 
 		/* get absolute path of current working directory */
 		strcpy(config_file, "");
-		getcwd(config_file, sizeof(config_file));
+		if (getcwd(config_file, sizeof(config_file)) == NULL) {
+			printf("ERROR: getcwd(): %s, bailing out...\n", strerror(errno));
+			exit(STATE_CRITICAL);
+		}
 
 		/* append a forward slash */
 		strncat(config_file, "/", sizeof(config_file) - 2);
@@ -652,14 +655,17 @@ void set_stdio_sigs(void)
 	struct sigaction sig_action;
 #endif
 
+	if (chdir("/") == -1) {
+		printf("ERROR: chdir(): %s, bailing out...\n", strerror(errno));
+		exit(STATE_CRITICAL);
+	}
+
 	close(0);					/* close standard file descriptors */
 	close(1);
 	close(2);
 	open("/dev/null", O_RDONLY);	/* redirect standard descriptors to /dev/null */
 	open("/dev/null", O_WRONLY);
 	open("/dev/null", O_WRONLY);
-
-	chdir("/");
 
 	/* handle signals */
 #ifdef HAVE_SIGACTION
@@ -2177,7 +2183,11 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 		}
 	}
 
-	pipe(fd);					/* create a pipe */
+	/* create a pipe */
+	if (pipe(fd) == -1) {
+		logit(LOG_ERR, "ERROR: pipe(): %s, bailing out...", strerror(errno));
+		exit(STATE_CRITICAL);
+	}
 
 	/* make the pipe non-blocking */
 	fcntl(fd[0], F_SETFL, O_NONBLOCK);
@@ -2209,7 +2219,12 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 
 	/* execute the command in the child process */
 	if (pid == 0) {
-		SETEUID(0);				/* get root back so the next call works correctly */
+
+		/* get root back so the next call works correctly */
+		if (SETEUID(0) == -1) {
+			logit(LOG_ERR, "ERROR: my_system() seteuid(0): %s, bailing out...", strerror(errno));
+			exit(STATE_CRITICAL);
+		}
 		drop_privileges(nrpe_user, nrpe_group, 1);	/* drop privileges */
 		close(fd[0]);			/* close pipe for reading */
 		setpgid(0, 0);			/* become process group leader */
@@ -2232,8 +2247,11 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 		if (fp == NULL) {
 			strncpy(buffer, "NRPE: Call to popen() failed\n", sizeof(buffer) - 1);
 			buffer[sizeof(buffer) - 1] = '\x0';
+
 			/* write the error back to the parent process */
-			write(fd[1], buffer, strlen(buffer) + 1);
+			if (write(fd[1], buffer, strlen(buffer) + 1) == -1)
+				logit(LOG_ERR, "ERROR: my_system() write(fd, buffer)-1 failed...");
+
 			result = STATE_CRITICAL;
 
 		} else {
@@ -2241,10 +2259,13 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 			/* read all lines of output - supports Nagios 3.x multiline output */
 			while ((bytes_read = fread(buffer, 1, sizeof(buffer) - 1, fp)) > 0) {
 				/* write the output back to the parent process */
-				write(fd[1], buffer, bytes_read);
+				if (write(fd[1], buffer, bytes_read) == -1)
+					logit(LOG_ERR, "ERROR: my_system() write(fd, buffer)-2 failed...");
 			}
 
-			write(fd[1], "\0", 1);
+			if (write(fd[1], "\0", 1) == -1)
+				logit(LOG_ERR, "ERROR: my_system() write(fd, NULL) failed...");
+
 			status = pclose(fp);	/* close the command and get termination status */
 
 			/* report an error if we couldn't close the command */
@@ -2450,7 +2471,10 @@ int write_pid_file(void)
 	/* write new pid file */
 	if ((fd = open(pid_file, O_WRONLY | O_CREAT, 0644)) >= 0) {
 		sprintf(pbuf, "%d\n", (int)getpid());
-		write(fd, pbuf, strlen(pbuf));
+
+		if (write(fd, pbuf, strlen(pbuf)) == -1)
+			logit(LOG_ERR, "ERROR: write_pid_file() write(fd, pbuf) failed...");
+
 		close(fd);
 		wrote_pid_file = TRUE;
 	} else {
@@ -2469,7 +2493,12 @@ int remove_pid_file(void)
 	if (wrote_pid_file == FALSE)
 		return OK;				/* pid file was not written */
 
-	SETEUID(0);					/* get root back so we can delete the pid file */
+	/* get root back so we can delete the pid file */
+	if (SETEUID(0) == -1) {
+		logit(LOG_ERR, "ERROR: remove_pid_file() seteuid(0): %s, bailing out...", strerror(errno));
+		return ERROR;
+	}
+
 	if (unlink(pid_file) == -1) {
 		logit(LOG_ERR, "Cannot remove pidfile '%s' - check your privileges.", pid_file);
 		return ERROR;

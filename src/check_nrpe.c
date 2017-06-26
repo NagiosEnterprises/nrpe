@@ -1575,11 +1575,15 @@ void alarm_handler(int sig)
 		if (timeout_txt[lth2] == 0)
 			break;
 
-	write(STDOUT_FILENO, msg1, sizeof(msg1) - 1);
-	write(STDOUT_FILENO, text, lth1);
-	write(STDOUT_FILENO, msg2, sizeof(msg2) - 1);
-	write(STDOUT_FILENO, timeout_txt, lth2);
-	write(STDOUT_FILENO, msg3, sizeof(msg3) - 1);
+	
+	if ((write(STDOUT_FILENO, msg1, sizeof(msg1) - 1) == -1)
+		|| (write(STDOUT_FILENO, text, lth1) == -1)
+		|| (write(STDOUT_FILENO, msg2, sizeof(msg2) - 1) == -1)
+		|| (write(STDOUT_FILENO, timeout_txt, lth2) == -1)
+		|| (write(STDOUT_FILENO, msg3, sizeof(msg3) - 1) == -1)) {
+
+		logit(LOG_ERR, "ERROR: alarm_handler() write(): %s", strerror(errno));
+	}
 
 	exit(timeout_return_code);
 }
