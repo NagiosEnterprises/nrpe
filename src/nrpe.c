@@ -2221,10 +2221,9 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 	if (pid == 0) {
 
 		/* get root back so the next call works correctly */
-		if (SETEUID(0) == -1) {
-			logit(LOG_ERR, "ERROR: my_system() seteuid(0): %s, bailing out...", strerror(errno));
-			exit(STATE_CRITICAL);
-		}
+		if (SETEUID(0) == -1)
+			logit(LOG_ERR, "ERROR: my_system() seteuid(0): %s", strerror(errno));
+
 		drop_privileges(nrpe_user, nrpe_group, 1);	/* drop privileges */
 		close(fd[0]);			/* close pipe for reading */
 		setpgid(0, 0);			/* become process group leader */
@@ -2494,10 +2493,8 @@ int remove_pid_file(void)
 		return OK;				/* pid file was not written */
 
 	/* get root back so we can delete the pid file */
-	if (SETEUID(0) == -1) {
-		logit(LOG_ERR, "ERROR: remove_pid_file() seteuid(0): %s, bailing out...", strerror(errno));
-		return ERROR;
-	}
+	if (SETEUID(0) == -1)
+		logit(LOG_ERR, "ERROR: remove_pid_file() seteuid(0): %s", strerror(errno));
 
 	if (unlink(pid_file) == -1) {
 		logit(LOG_ERR, "Cannot remove pidfile '%s' - check your privileges.", pid_file);
