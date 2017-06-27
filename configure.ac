@@ -13,7 +13,7 @@ AC_PREFIX_DEFAULT(/usr/local/nagios)
 PKG_NAME=nrpe
 PKG_VERSION="3.2.0"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="2017-06-26"
+PKG_REL_DATE="2017-06-27"
 RPM_RELEASE=1
 
 LANG=C
