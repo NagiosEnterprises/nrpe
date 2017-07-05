@@ -271,21 +271,6 @@ connection_timeout=300
 # nasty_metachars="|`&><'\\[]{};\r\n"
 
 
-# INCLUDE CONFIG FILE
-# This directive allows you to include definitions from an external config file.
-
-#include=<somefile.cfg>
-
-
-
-# INCLUDE CONFIG DIRECTORY
-# This directive allows you to include definitions from config files (with a
-# .cfg extension) in one or more directories (with recursion).
-
-#include_dir=<somedirectory>
-#include_dir=<someotherdirectory>
-
-
 
 # COMMAND DEFINITIONS
 # Command definitions that this daemon will run.  Definitions
@@ -358,3 +343,19 @@ command[check_total_procs]=@pluginsdir@/check_procs -w 150 -c 200
 #command[check_asterisk_channels]=@pluginsdir@/nagisk.pl -c channels 
 #command[check_asterisk_zaptel]=@pluginsdir@/nagisk.pl -c zaptel 
 #command[check_asterisk_span]=@pluginsdir@/nagisk.pl -c span -s 1
+
+
+
+# INCLUDE CONFIG FILE
+# This directive allows you to include definitions from an external config file.
+
+#include=<somefile.cfg>
+
+
+
+# INCLUDE CONFIG DIRECTORY
+# This directive allows you to include definitions from config files (with a
+# .cfg extension) in one or more directories (with recursion).
+
+#include_dir=<somedirectory>
+#include_dir=<someotherdirectory>
