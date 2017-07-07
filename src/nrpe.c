@@ -2009,7 +2009,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 
 		packet_ver = ntohs(v2_pkt->packet_version);
 		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
-			logit(LOG_ERR, "Error: Request packet version was invalid!");
+			logit(LOG_ERR, "Error: (use_ssl == false): Request packet version was invalid!");
 			return -1;
 		}
 
@@ -2037,7 +2037,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			buffer_size = ntohl(buffer_size);
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
-				logit(LOG_ERR, "Error: Could not allocate memory for packet");
+				logit(LOG_ERR, "Error: (use_ssl == false): Could not allocate memory for packet");
 				return -1;
 			}
 
@@ -2071,7 +2071,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 
 		packet_ver = ntohs(v2_pkt->packet_version);
 		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
-			logit(LOG_ERR, "Error: Request packet version was invalid!");
+			logit(LOG_ERR, "Error: (use_ssl == true): Request packet version was invalid!");
 			return -1;
 		}
 
@@ -2104,7 +2104,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			buffer_size = ntohl(buffer_size);
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
-				logit(LOG_ERR, "Error: Could not allocate memory for packet");
+				logit(LOG_ERR, "Error: (use_ssl == true): Could not allocate memory for packet");
 				return -1;
 			}
 
