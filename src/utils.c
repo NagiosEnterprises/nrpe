@@ -328,17 +328,21 @@ int clean_environ(const char *keep_env_vars, const char *nrpe_user)
 
 	setenv("PATH", path, 1);
 	setenv("IFS", " \t\n", 1);
-	setenv("LOGNAME", nrpe_user, 0);
-	setenv("USER", nrpe_user, 0);
 
-	pw = (struct passwd *)getpwnam(nrpe_user);
-	if (pw == NULL) {
-		char	*end = NULL;
-		uid_t	uid = strtol(nrpe_user, &end, 10);
-		if (uid > 0)
-			pw = (struct passwd *)getpwuid(uid);
-		if (pw == NULL || *end != '\0')
-			return OK;
+	if (nrpe_user != NULL) {
+		
+		setenv("LOGNAME", nrpe_user, 0);
+		setenv("USER", nrpe_user, 0);
+
+		pw = (struct passwd *)getpwnam(nrpe_user);
+		if (pw == NULL) {
+			char	*end = NULL;
+			uid_t	uid = strtol(nrpe_user, &end, 10);
+			if (uid > 0)
+				pw = (struct passwd *)getpwuid(uid);
+			if (pw == NULL || *end != '\0')
+				return OK;
+		}
 	}
 
 	setenv("HOME", pw->pw_dir, 0);

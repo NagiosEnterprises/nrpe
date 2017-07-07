@@ -1,6 +1,13 @@
 NRPE Changelog
 ==============
 
+[3.2.1]
+-------------------
+**FIXES**
+* Change seteuid error messages to warning/debug (Bryan Heden)
+* Fix segfault when no nrpe_user is specified (Stephen Smoogen, Bryan Heden)
+
+
 [3.2.0](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-3.2.0) - 2017-06-26
 ---------------------------------------------------------------------------------------
 **ENHANCEMENTS**
