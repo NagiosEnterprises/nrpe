@@ -1,7 +1,7 @@
 # /etc/conf.d/nrpe : config file for /etc/init.d/nrpe
 
-# Configuration file - default is @sysconfdir@/nrpe.cfg
-NRPE_CFG="@pgksysconfdir@/nrpe.cfg"
+# The configuration file to use.
+NRPE_CFG="@sysconfdir@/nrpe.cfg"
 
-# Any additional nrpe options (-n -4 -6)
+# Any additional options (e.g. -n -4 -6) to pass to the nrpe daemon.
 NRPE_OPTS=""
