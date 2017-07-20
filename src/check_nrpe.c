@@ -580,6 +580,8 @@ int read_config_file(char *fname)
 		argv[argc] = my_strsep(&bufp, delims);
 		if (!argv[argc++])
 			break;
+		if (!bufp)
+			break;
 	}
 
 	fclose(f);
