@@ -31,7 +31,7 @@ fi
 CURRENTVERSION=3.2.1
 
 # Last date
-LASTDATE=2017-08-29
+LASTDATE=2017-08-31
 
 if [ "x$1" = "x" ]
 then
@@ -41,6 +41,8 @@ then
         echo "update version number and modification date in files."
         echo "Use the \"newdate\" argument if you want to keep the current version"
         echo "number and just update the modification date."
+        echo "When using \"newdate\" you can specify the release date with"
+        echo "a second argument in the form of YYYY-MM-DD."
         echo ""
         echo "Current version=$CURRENTVERSION"
         echo "Current Modification date=$LASTDATE"
