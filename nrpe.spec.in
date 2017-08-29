@@ -169,13 +169,13 @@ rm -rf $RPM_BUILD_ROOT
 @tmpfilesd@
 %endif
 %{_bindir}/nrpe-uninstall
-%doc Changelog LEGAL README.md README.SSL.md SECURITY.md
+%doc CHANGELOG.md LEGAL README.md README.SSL.md SECURITY.md
 
 %files plugin
 %defattr(755,%{nsusr},%{nsgrp})
 %{_libexecdir}
 %defattr(644,%{nsusr},%{nsgrp})
-%doc Changelog LEGAL README.md
+%doc CHANGELOG.md LEGAL README.md
 
 %changelog
 * Thu Aug 18 2016 John Frickson jfrickson<@>nagios.com
