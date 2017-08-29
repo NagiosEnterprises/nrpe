@@ -37,8 +37,8 @@
 # endif
 #endif
 
-#define PROGRAM_VERSION "3.2.0"
-#define MODIFICATION_DATE "2017-06-27"
+#define PROGRAM_VERSION "3.2.1"
+#define MODIFICATION_DATE "2017-08-29"
 
 #define OK							0
 #define ERROR						-1
