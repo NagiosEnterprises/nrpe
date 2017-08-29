@@ -8,6 +8,7 @@ NRPE Changelog
 * Fix segfault when no nrpe_user is specified (Stephen Smoogen, Bryan Heden)
 * Added additional strings to error messages to remove duplicates (Bryan Heden)
 * Fix nrpe.spec for rpmbuild (Bryan Heden)
+* Fix error for drop_privileges when using inetd (xalasys-luc, Bryan Heden)
 
 
 [3.2.0](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-3.2.0) - 2017-06-26
