@@ -687,8 +687,10 @@ void set_stdio_sigs(void)
 		exit(STATE_CRITICAL);
 
 	clean_environ(keep_env_vars, nrpe_user);
-	drop_privileges(nrpe_user, nrpe_group, 0);	/* drop privileges */
-	check_privileges();			/* make sure we're not root */
+
+	/* drop and then check privileges */
+	drop_privileges(nrpe_user, nrpe_group, 0);
+	check_privileges();
 }
 
 void cleanup(void)
@@ -2367,6 +2369,9 @@ int drop_privileges(char *user, char *group, int full_drop)
 	gid_t     gid = (gid_t)-1;
 	struct group *grp;
 	struct passwd *pw;
+
+	if (use_inetd == FALSE)
+		return OK;
 
 	/* set effective group ID */
 	if (group != NULL) {
