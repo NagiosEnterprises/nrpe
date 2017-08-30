@@ -2370,7 +2370,7 @@ int drop_privileges(char *user, char *group, int full_drop)
 	struct group *grp;
 	struct passwd *pw;
 
-	if (use_inetd == FALSE)
+	if (use_inetd == TRUE)
 		return OK;
 
 	/* set effective group ID */
