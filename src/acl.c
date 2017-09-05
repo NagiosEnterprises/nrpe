@@ -544,31 +544,45 @@ int is_an_allowed_host(int family, void *host)
 		if (!getaddrinfo(dns_acl_curr->domain, NULL, NULL, &res)) {
 
 			for (ai = res; ai; ai = ai->ai_next) {
+				if (ai->ai_family == family) {
+					switch (ai->ai_family) {
 
-				switch(ai->ai_family) {
+						case AF_INET:
+							if (debug == TRUE) {
+								tmp.s_addr = ((struct in_addr *) host)->s_addr;
+								logit(LOG_INFO, "is_an_allowed_host (AF_INET): test match host >%s< "
+											  "for allowed host >%s<\n",
+									  inet_ntoa(tmp), dns_acl_curr->domain);
+							}
 
-				case AF_INET:
-					if(debug == TRUE) {
-						tmp.s_addr=((struct in_addr *)host)->s_addr;
-						logit(LOG_INFO, "is_an_allowed_host (AF_INET): is host >%s< "
-								"an allowed host >%s<\n",
-							 inet_ntoa(tmp), dns_acl_curr->domain);
+							addr = (struct sockaddr_in *) (ai->ai_addr);
+							if (addr->sin_addr.s_addr == ((struct in_addr *) host)->s_addr) {
+								if (debug == TRUE)
+									logit(LOG_INFO, "is_an_allowed_host (AF_INET): "
+											"host is in allowed host list!");
+								return 1;
+							}
+							break;
+
+						case AF_INET6:
+							if (debug == TRUE) {
+								char formattedStr[INET6_ADDRSTRLEN];
+								inet_ntop(ai->ai_family, (void *) &(((struct sockaddr_in6 *) (ai->ai_addr))->sin6_addr),
+										  formattedStr, INET6_ADDRSTRLEN);
+								logit(LOG_INFO, "is_an_allowed_host (AF_INET6): test match host against >%s< "
+											  "for allowed host >%s<\n",
+									  formattedStr, dns_acl_curr->domain);
+							}
+							struct in6_addr *resolved = &(((struct sockaddr_in6 *) (ai->ai_addr))->sin6_addr);
+							memcpy((char *) &addr6, ai->ai_addr, sizeof(addr6));
+							if (!memcmp(&addr6.sin6_addr, host, sizeof(addr6.sin6_addr))) {
+								if (debug == TRUE)
+									logit(LOG_INFO, "is_an_allowed_host (AF_INET6): "
+											"host is in allowed host list!");
+								return 1;
+							}
+							break;
 					}
-
-					addr = (struct sockaddr_in*)(ai->ai_addr);
-					if (addr->sin_addr.s_addr == ((struct in_addr*)host)->s_addr) {
-						if (debug == TRUE)
-							logit(LOG_INFO, "is_an_allowed_host (AF_INET): "
-									"host is in allowed host list!");
-						return 1;
-					}
-					break;
-
-				case AF_INET6:
-					memcpy((char*)&addr6, ai->ai_addr, sizeof(addr6));
-					if (!memcmp(&addr6.sin6_addr, &host, sizeof(addr6.sin6_addr)))
-						return 1;
-					break;
 				}
 			}
 		}
