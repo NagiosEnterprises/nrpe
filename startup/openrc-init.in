@@ -3,6 +3,10 @@
 # Copyright (c) 2017 Nagios(R) Core(TM) Development Team
 #
 
+# Supply a default value for NRPE_CFG in case the corresponding
+# conf.d file is not installed.
+: ${NRPE_CFG:="@sysconfdir@/nrpe.cfg"}
+
 command="@sbindir@/nrpe"
 command_args="--config=${NRPE_CFG} ${NRPE_OPTS}"
 command_args_background="--daemon"
