@@ -1002,8 +1002,14 @@ void set_sig_handlers()
 
 int connect_to_remote()
 {
+#undef HAVE_STRUCT_SOCKADDR_STORAGE
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
+	struct sockaddr_storage addr;
+#else
 	struct sockaddr addr;
-	struct in_addr *inaddr;
+#endif
+	struct sockaddr_in  *nptr;
+	struct sockaddr_in6 *nptr6;
 	socklen_t addrlen;
 	int result, rc, ssl_err, ern, x, nerrs = 0;
 
@@ -1014,16 +1020,26 @@ int connect_to_remote()
 	result = STATE_OK;
 	addrlen = sizeof(addr);
 	rc = getpeername(sd, (struct sockaddr *)&addr, &addrlen);
-	if (addr.sa_family == AF_INET) {
-		struct sockaddr_in *addrin = (struct sockaddr_in *)&addr;
-		inaddr = &addrin->sin_addr;
-	} else {
-		struct sockaddr_in6 *addrin = (struct sockaddr_in6 *)&addr;
-		inaddr = (struct in_addr *)&addrin->sin6_addr;
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
+	switch(addr.ss_family) {
+#else
+	switch(addr.sa_family) {
+#endif
+		case AF_INET:
+			nptr = (struct sockaddr_in *)&addr;
+			if (inet_ntop(AF_INET, &nptr->sin_addr, rem_host, sizeof(rem_host)) == NULL)
+				strncpy(rem_host, "Unknown", sizeof(rem_host));
+			break;
+
+		case AF_INET6:
+			nptr6 = (struct sockaddr_in6 *)&addr;
+			if (inet_ntop(AF_INET6, &nptr6->sin6_addr, rem_host, sizeof(rem_host)) == NULL)
+				strncpy(rem_host, "Unknown", sizeof(rem_host));
+			break;
 	}
-	if (inet_ntop(addr.sa_family, inaddr, rem_host, sizeof(rem_host)) == NULL)
-		strncpy(rem_host, "Unknown", sizeof(rem_host));
+
 	rem_host[MAX_HOST_ADDRESS_LENGTH - 1] = '\0';
+
 	if ((sslprm.log_opts & SSL_LogIpAddr) != 0)
 		logit(LOG_DEBUG, "Connected to %s", rem_host);
 
