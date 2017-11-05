@@ -20,5 +20,5 @@ ExecStopPost=/bin/rm -f @piddir@/nrpe.pid
 TimeoutStopSec=60
 User=@nrpe_user@
 Group=@nrpe_group@
-PrivateTmp=true
+PrivateTmp=false
 OOMScoreAdjust=-500
