@@ -1002,7 +1002,6 @@ void set_sig_handlers()
 
 int connect_to_remote()
 {
-#undef HAVE_STRUCT_SOCKADDR_STORAGE
 #ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 	struct sockaddr_storage addr;
 #else
