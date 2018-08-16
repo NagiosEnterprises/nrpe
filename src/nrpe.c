@@ -33,12 +33,15 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  ****************************************************************************/
-
+#define _GNU_SOURCE
 #include "config.h"
 #include "common.h"
 #include "nrpe.h"
 #include "utils.h"
 #include "acl.h"
+
+#include <unistd.h>
+#include <fcntl.h>
 
 #ifdef HAVE_SSL
 # ifdef USE_SSL_DH
@@ -2167,7 +2170,9 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 	char      buffer[MAX_INPUT_BUFFER];
 	int       fd[2];
 	int       bytes_read = 0, tot_bytes = 0;
-	int       output_size;
+	int       output_size = 65536 * 8;
+	int       max_pipe_size = 0;
+	int       cur_pipe_size = 0;
 #ifdef HAVE_SIGACTION
 	struct sigaction sig_action;
 #endif
@@ -2190,6 +2195,26 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 		logit(LOG_ERR, "ERROR: pipe(): %s, bailing out...", strerror(errno));
 		exit(STATE_CRITICAL);
 	}
+
+#if defined(F_SETPIPE_SZ) && defined(F_GETPIPE_SZ)
+
+	/* see how large we can set the pipe buffer */
+	fp = fopen("/proc/sys/fs/pipe-max-size", "r");
+	if (fp && fgets(buffer, MAX_INPUT_BUFFER - 1, fp)) {
+		max_pipe_size = atoi(buffer);
+	}
+	fclose(fp);
+
+    /* get the current pipe buffer size */
+    cur_pipe_size = (int)fcntl(fd[0], F_GETPIPE_SZ);
+
+    /* only attempt to increase pipe buffer if it makes sense */
+    if (max_pipe_size > cur_pipe_size) {
+		fcntl(fd[0], F_SETPIPE_SZ, max_pipe_size);
+		fcntl(fd[1], F_SETPIPE_SZ, max_pipe_size);
+	}
+
+#endif
 
 	/* make the pipe non-blocking */
 	fcntl(fd[0], F_SETFL, O_NONBLOCK);
@@ -2259,6 +2284,7 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 
 			/* read all lines of output - supports Nagios 3.x multiline output */
 			while ((bytes_read = fread(buffer, 1, sizeof(buffer) - 1, fp)) > 0) {
+
 				/* write the output back to the parent process */
 				if (write(fd[1], buffer, bytes_read) == -1)
 					logit(LOG_ERR, "ERROR: my_system() write(fd, buffer)-2 failed...");
@@ -2305,7 +2331,11 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 			output_size = sizeof(v2_packet);
 			*output = calloc(1, output_size);
 		} else {
-			output_size = 1024 * 64;	/* Maximum buffer is 64K */
+			/* set output size to a reasonable default
+			   if it is set to zero or below */
+			if (output_size == -1) {
+				output_size = 65536;
+			}
 			*output = calloc(1, output_size);
 		}
 
