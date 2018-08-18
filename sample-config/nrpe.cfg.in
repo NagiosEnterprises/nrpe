@@ -270,7 +270,9 @@ connection_timeout=300
 
 # nasty_metachars="|`&><'\\[]{};\r\n"
 
-
+# This option allows you to enable or disable logging error messages to the syslog facilities.
+# If this option is not set, the error messages will not be logged.
+enable_syslog=0
 
 # COMMAND DEFINITIONS
 # Command definitions that this daemon will run.  Definitions
