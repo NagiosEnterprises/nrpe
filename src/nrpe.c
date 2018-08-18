@@ -160,6 +160,8 @@ static void my_disconnect_sighandler(int sig);
 static void complete_SSL_shutdown(SSL *);
 #endif
 
+int enable_syslog = FALSE;
+
 int main(int argc, char **argv)
 {
 	int       result = OK;
@@ -880,6 +882,9 @@ int read_config_file(char *filename)
 
 		else if (!strcmp(varname, "dont_blame_nrpe"))
 			allow_arguments = (atoi(varvalue) == 1) ? TRUE : FALSE;
+
+		else if (!strcmp(varname, "enable_syslog"))
+			enable_syslog = (atoi(varvalue) == 1) ? TRUE : FALSE;
 
 		else if (!strcmp(varname, "allow_bash_command_substitution"))
 			allow_bash_cmd_subst = (atoi(varvalue) == 1) ? TRUE : FALSE;
