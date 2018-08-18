@@ -58,6 +58,7 @@ char *log_file = NULL;
 FILE *log_fp = NULL;
 
 static int my_create_socket(struct addrinfo *ai, const char *bind_address, int redirect_stderr);
+extern int enable_debug;
 
 
 /* build the crc table - must be called before calculating the crc value */
@@ -537,7 +538,6 @@ void logit(int priority, const char *format, ...)
 
 	if (!format || !*format)
 		return;
-
 	va_start(ap, format);
 	if(vasprintf(&buffer, format, ap) > 0) {
 		if (log_fp) {
@@ -549,8 +549,10 @@ void logit(int priority, const char *format, ...)
 			fprintf(log_fp, "[%llu] %s\n", (unsigned long long)log_time, buffer);
 			fflush(log_fp);
 
-		} else
-			syslog(priority, "%s", buffer);
+		} else {
+		       if ( enable_syslog )
+                       		syslog(priority, "%s", buffer);
+		       }
 
 		free(buffer);
 	}
