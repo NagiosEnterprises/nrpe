@@ -129,6 +129,8 @@ static int verify_callback(int ok, X509_STORE_CTX * ctx);
 #endif
 void alarm_handler(int);
 int graceful_close(int, int);
+int enable_syslog = FALSE;
+
 
 int main(int argc, char **argv)
 {
@@ -250,7 +252,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		return ERROR;
 
 	optind = 0;
-	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:g:246hlnuVE");
+	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:g:246hlnuVEe");
 
 	while (1) {
 		if (argindex > 0)
@@ -484,6 +486,11 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			log_file = strdup(optarg);
 			open_log_file();
 			break;
+
+		case 'e':
+			enable_syslog = TRUE;
+			break;
+
 
 		default:
 			return ERROR;
@@ -740,6 +747,7 @@ void usage(int result)
 		printf(" -a, --args=LIST              Optional arguments that should be passed to the command,\n");
 		printf("                              separated by a space. If provided, this must be the last\n");
 		printf("                              option supplied on the command line.\n");
+		printf(" -e 	                      Enable syslog debug messages.\n");
 		printf("\n");
 		printf(" NEW TIMEOUT SYNTAX\n");
 		printf(" -t, --timeout=INTERVAL:STATE\n");
