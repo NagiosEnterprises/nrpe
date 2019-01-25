@@ -1,6 +1,11 @@
 NRPE Changelog
 ==============
 
+3.3.0 - 2019-??-??
+------------------
+**ENHANCEMENTS**
+* Added ability to use TLSv1.3 and TLSv1.3+ on systems with it available
+
 [3.2.1](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-3.2.1) - 2017-08-31
 ---------------------------------------------------------------------------------------
 **FIXES**
