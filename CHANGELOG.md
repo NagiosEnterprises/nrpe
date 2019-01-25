@@ -5,6 +5,7 @@ NRPE Changelog
 ------------------
 **ENHANCEMENTS**
 * Added ability to use TLSv1.3 and TLSv1.3+ on systems with it available
+* Added IPv6 ip address to list of default allow_from hosts (Troy Lea)
 
 [3.2.1](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-3.2.1) - 2017-08-31
 ---------------------------------------------------------------------------------------
