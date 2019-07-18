@@ -896,7 +896,7 @@ void setup_ssl()
 
 		if ((ctx = SSL_CTX_new(meth)) == NULL) {
 			printf("CHECK_NRPE: Error - could not create SSL context.\n");
-			exit(STATE_CRITICAL);
+			exit(timeout_return_code);
 		}
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
@@ -976,7 +976,7 @@ void setup_ssl()
 					printf("Error: could not use certificate file '%s': %s\n", sslprm.cert_file, ERR_reason_error_string(x));
 				}
 				SSL_CTX_free(ctx);
-				exit(STATE_CRITICAL);
+				exit(timeout_return_code);
 			}
 			if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
 				SSL_CTX_free(ctx);
@@ -985,7 +985,7 @@ void setup_ssl()
 					printf("Error: could not use private key file '%s': %s\n", sslprm.privatekey_file, ERR_reason_error_string(x));
 				}
 				SSL_CTX_free(ctx);
-				exit(STATE_CRITICAL);
+				exit(timeout_return_code);
 			}
 		}
 
@@ -998,7 +998,7 @@ void setup_ssl()
 					printf("Error: could not use CA certificate '%s': %s\n", sslprm.privatekey_file, ERR_reason_error_string(x));
 				}
 				SSL_CTX_free(ctx);
-				exit(STATE_CRITICAL);
+				exit(timeout_return_code);
 			}
 		}
 
@@ -1025,7 +1025,7 @@ void setup_ssl()
 				printf("Could not set SSL/TLS cipher list '%s': %s\n", sslprm.cipher_list, ERR_reason_error_string(x));
 			}
 			SSL_CTX_free(ctx);
-			exit(STATE_CRITICAL);
+			exit(timeout_return_code);
 		}
 	}
 #endif
@@ -1085,7 +1085,7 @@ int connect_to_remote()
 	/* do SSL handshake */
 	if ((ssl = SSL_new(ctx)) == NULL) {
 		printf("CHECK_NRPE: Error - Could not create SSL connection structure.\n");
-		return STATE_CRITICAL;
+		return timeout_return_code;
 	}
 
 	SSL_set_fd(ssl, sd);
@@ -1132,7 +1132,7 @@ int connect_to_remote()
 		 */
 		ERR_print_errors_fp(stdout);
 # endif
-		result = STATE_CRITICAL;
+		result = timeout_return_code;
 
 	} else {
 
