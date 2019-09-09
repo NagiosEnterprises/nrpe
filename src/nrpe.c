@@ -2663,7 +2663,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	}
 
 	/* make sure the request doesn't contain arguments */
-	if (strchr(v2pkt->buffer, '!')) {
+	if (strchr(buff, '!')) {
 #ifdef ENABLE_COMMAND_ARGUMENTS
 		if (allow_arguments == FALSE) {
 			logit(LOG_ERR, "Error: Request contained command arguments, but argument option is not enabled!");
