@@ -8,10 +8,10 @@ command_args="--config=${NRPE_CFG} ${NRPE_OPTS}"
 command_args_background="--daemon"
 description="Nagios Remote Plugin Executor (NRPE) daemon"
 extra_started_commands="reload"
-pidfile="@piddir@/nrpe.pid"
+pidfile="@piddir@/${RC_SVCNAME}.pid"
 
 reload() {
-    ebegin "Reloading ${SVCNAME}"
+    ebegin "Reloading ${RC_SVCNAME}"
     start-stop-daemon --signal HUP --pidfile "${pidfile}"
     eend $?
 }
