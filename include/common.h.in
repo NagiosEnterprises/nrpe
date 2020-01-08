@@ -66,11 +66,22 @@
 
 #define QUERY_PACKET				1		/* id code for a packet containing a query */
 #define	RESPONSE_PACKET				2		/* id code for a packet containing a response */
-#define NRPE_PACKET_VERSION_3		3		/* packet version identifier */
+
+/* v4 takes struct padding into account, so the buffer "takes" 4 bytes
+ * v3 removes the 1 byte that "should" be allocated to buffer.
+ */
+#define NRPE_V4_PACKET_SIZE_OFFSET  4
+#define NRPE_V3_PACKET_SIZE_OFFSET  1
+
+/* packet version identifiers */
+#define NRPE_PACKET_VERSION_4		4       /* Same as version 3, but accounts for struct padding in network code */
+#define NRPE_PACKET_VERSION_3		3		/* Allows for variable-length buffer */
 #define NRPE_PACKET_VERSION_2		2
 #define NRPE_PACKET_VERSION_1		1		/* older packet version identifiers (no longer supported) */
 
 #define MAX_PACKETBUFFER_LENGTH		1024	/* amount of data to send in one query/response vor version 2 */
+
+#define NRPE_DEFAULT_PACKET_VERSION NRPE_PACKET_VERSION_4
 
 typedef struct _v2_packet {
 	int16_t		packet_version;
@@ -88,6 +99,8 @@ typedef struct _v3_packet {
 	int32_t		buffer_length;
 	char		buffer[1];
 } v3_packet;
+
+typedef v3_packet v4_packet;
 
 /**************** OPERATING SYSTEM SPECIFIC DEFINITIONS **********/
 #if defined(__sun) || defined(__hpux)

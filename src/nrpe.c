@@ -148,11 +148,11 @@ struct _SSL_PARMS {
 	SslLogging log_opts;
 } sslprm = {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
-NULL, NULL, NULL, "ALL:!MD5:@STRENGTH:@SECLEVEL=0", TLSv1_plus, TRUE, 0, SSL_NoLogging};
+NULL, NULL, NULL, "ALL:!MD5:@STRENGTH:@SECLEVEL=0", TLSv1_plus, TRUE, 0, SSL_NoLogging
 #else
-NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", TLSv1_plus, TRUE, 0, SSL_NoLogging};
+NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", TLSv1_plus, TRUE, 0, SSL_NoLogging
 #endif
-
+};
 
 #ifdef HAVE_SSL
 static int verify_callback(int ok, X509_STORE_CTX * ctx);
@@ -1834,7 +1834,10 @@ void handle_connection(int sock)
 
 	} else {
 
-		pkt_size = (sizeof(v3_packet) - 1) + strlen(send_buff);
+		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + strlen(send_buff) + 1;
+		if (packet_ver == NRPE_PACKET_VERSION_3) {
+			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + strlen(send_buff) + 1;
+		}
 		v3_send_packet = calloc(1, pkt_size);
 		send_pkt = (char *)v3_send_packet;
 		/* initialize response packet data */

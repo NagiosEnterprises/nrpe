@@ -65,8 +65,9 @@ char query[MAX_INPUT_BUFFER] = "";
 int show_help = FALSE;
 int show_license = FALSE;
 int show_version = FALSE;
-int packet_ver = NRPE_PACKET_VERSION_3;
+int packet_ver = NRPE_DEFAULT_PACKET_VERSION;
 int force_v2_packet = 0;
+int force_v3_packet = 0;
 int payload_size = 0;
 extern char *log_file;
 
@@ -175,7 +176,7 @@ int main(int argc, char **argv)
 
 	if (result == -1) {
 		/* Failure reading from remote, so try version 2 packet */
-		logit(LOG_INFO, "Remote %s does not support Version 3 Packets", rem_host);
+		logit(LOG_INFO, "Remote %s does not support version 3/4 packets", rem_host);
 		packet_ver = NRPE_PACKET_VERSION_2;
 
 		/* Rerun the setup */
@@ -198,7 +199,7 @@ int main(int argc, char **argv)
 	}
 
 	if (result != -1 && force_v2_packet == 0 && packet_ver == NRPE_PACKET_VERSION_2)
-		logit(LOG_DEBUG, "Remote %s accepted a Version %d Packet", rem_host, packet_ver);
+		logit(LOG_DEBUG, "Remote %s accepted a version %d packet", rem_host, packet_ver);
 
 	close_log_file();			/* close the log file */
 	return result;
@@ -224,6 +225,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		{"no-ssl", no_argument, 0, 'n'},
 		{"unknown-timeout", no_argument, 0, 'u'},
 		{"v2-packets-only", no_argument, 0, '2'},
+		{"v3-packets-only", no_argument, 0, '3'},
 		{"ipv4", no_argument, 0, '4'},
 		{"ipv6", no_argument, 0, '6'},
 		{"use-adh", required_argument, 0, 'd'},
@@ -366,14 +368,21 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			break;
 
 		case '2':
-			if (from_config_file && packet_ver != NRPE_PACKET_VERSION_3) {
+			if (from_config_file && packet_ver != NRPE_DEFAULT_PACKET_VERSION) {
 				logit(LOG_WARNING, "WARNING: Command-line v2-packets-only (-2) overrides the config file option.");
 				break;
 			}
 			packet_ver = NRPE_PACKET_VERSION_2;
 			force_v2_packet = 1;
 			break;
-
+		case '3':
+			if (from_config_file && packet_ver != NRPE_DEFAULT_PACKET_VERSION) {
+				logit(LOG_WARNING, "Warning: Command-line v3-packets-only (-3) overrides the config file option.");
+				break;
+			}
+			packet_ver = NRPE_PACKET_VERSION_3;
+			force_v3_packet = 1;
+			break;
 		case '4':
 			if (from_config_file && address_family != AF_UNSPEC) {
 				logit(LOG_WARNING, "WARNING: Command-line ipv4 (-4) or ipv6 (-6) overrides the config file option.");
@@ -523,6 +532,11 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 	if (payload_size > 0 && packet_ver != NRPE_PACKET_VERSION_2) {
 		printf("Error: if a fixed payload size is specified, '-2' must also be specified\n");
+		return ERROR;
+	}
+
+	if (force_v2_packet && force_v3_packet) {
+		printf("Error: Only one of force_v2_packet (-2) and force_v3_packet (-3) can be specified.\n");
 		return ERROR;
 	}
 
@@ -1165,9 +1179,13 @@ int send_request()
 
 	} else {
 
-		pkt_size = (sizeof(v3_packet) - 1) + strlen(query) + 1;
-		if (pkt_size < sizeof(v2_packet))
+		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + strlen(query) + 1;
+		if (packet_ver == NRPE_PACKET_VERSION_3) {
+			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + strlen(query) + 1;
+		}
+		if (pkt_size < sizeof(v2_packet)) {
 			pkt_size = sizeof(v2_packet);
+		}
 
 		v3_send_packet = calloc(1, pkt_size);
 		send_pkt = (char *)v3_send_packet;
@@ -1197,10 +1215,12 @@ int send_request()
 	}
 #endif
 
-	if (v3_send_packet)
+	if (v3_send_packet) {
 		free(v3_send_packet);
-	if (v2_send_packet)
+	}
+	if (v2_send_packet) {
 		free(v2_send_packet);
+	}
 
 	if (rc == -1) {
 		printf("CHECK_NRPE: Error sending query to host.\n");
@@ -1214,10 +1234,11 @@ int send_request()
 int read_response()
 {
 	v2_packet *v2_receive_packet = NULL;
+	/* Note: v4 packets will use the v3_packet structure */
 	v3_packet *v3_receive_packet = NULL;
 	u_int32_t packet_crc32;
 	u_int32_t calculated_crc32;
-	int32_t pkt_size;
+	int32_t pkt_size, buffer_size;
 	int rc, result;
 
 	alarm(0);
@@ -1243,32 +1264,50 @@ int read_response()
 
 	/* recv() error */
 	if (rc < 0) {
-		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			if (v3_receive_packet)
-				free(v3_receive_packet);
+		if (v2_receive_packet) {
+			free(v2_receive_packet);
+		}
+		if (v3_receive_packet) {
+			free(v3_receive_packet);
+		}
+		if (packet_ver >= NRPE_PACKET_VERSION_3) {
 			return -1;
 		}
-		if (v2_receive_packet)
-			free(v2_receive_packet);
 		return STATE_UNKNOWN;
 
 	} else if (rc == 0) {
 
 		/* server disconnected */
 		printf("CHECK_NRPE: Received 0 bytes from daemon.  Check the remote server logs for error messages.\n");
-		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			if (v3_receive_packet) {
-				free(v3_receive_packet);
-			}
-		} else if (v2_receive_packet) {
+		if (v3_receive_packet) {
+			free(v3_receive_packet);
+		}
+		if (v2_receive_packet) {
 			free(v2_receive_packet);
 		}
 		return STATE_UNKNOWN;
 	}
 
 	/* check the crc 32 value */
-	if (packet_ver == NRPE_PACKET_VERSION_3) {
-		pkt_size = (sizeof(v3_packet) - 1) + ntohl(v3_receive_packet->buffer_length);
+	if (packet_ver >= NRPE_PACKET_VERSION_3) {
+
+		buffer_size = ntohl(v3_receive_packet->buffer_length);
+		if (buffer_size < 0 || buffer_size > INT_MAX - pkt_size) {
+			printf("CHECK_NRPE: Response packet had invalid buffer size.\n");
+			close(sd);
+			if (v3_receive_packet) {
+				free(v3_receive_packet);
+			}
+			if (v2_receive_packet) {
+				free(v2_receive_packet);
+			}
+			return STATE_UNKNOWN;
+		}
+
+		pkt_size = sizeof(v3_packet);
+		pkt_size -= (packet_ver == NRPE_PACKET_VERSION_3 ? NRPE_V3_PACKET_SIZE_OFFSET : NRPE_V4_PACKET_SIZE_OFFSET);
+		pkt_size += buffer_size;
+
 		packet_crc32 = ntohl(v3_receive_packet->crc32_value);
 		v3_receive_packet->crc32_value = 0L;
 		v3_receive_packet->alignment = 0;
@@ -1286,11 +1325,10 @@ int read_response()
 	if (packet_crc32 != calculated_crc32) {
 		printf("CHECK_NRPE: Response packet had invalid CRC32.\n");
 		close(sd);
-		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			if (v3_receive_packet) {
-				free(v3_receive_packet);
-			}
-		} else if (v2_receive_packet) {
+		if (v3_receive_packet) {
+			free(v3_receive_packet);
+		}
+		if (v2_receive_packet) {
 			free(v2_receive_packet);
 		}
 		return STATE_UNKNOWN;
@@ -1322,11 +1360,10 @@ int read_response()
 		}
 	}
 
-	if (packet_ver == NRPE_PACKET_VERSION_3) {
-		if (v3_receive_packet) {
-			free(v3_receive_packet);
-		}
-	} else if (v2_receive_packet) {
+	if (v3_receive_packet) {
+		free(v3_receive_packet);
+	}
+	if (v2_receive_packet) {
 		free(v2_receive_packet);
 	}
 
@@ -1413,7 +1450,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		rc = recvall(sock, buff_ptr, &bytes_to_recv, socket_timeout);
 
 		if (rc <= 0 || rc != buffer_size) {
-			if (packet_ver == NRPE_PACKET_VERSION_3) {
+			if (packet_ver >= NRPE_PACKET_VERSION_3) {
 				free(*v3_pkt);
 				*v3_pkt = NULL;
 			} else {
@@ -1517,7 +1554,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		buff_ptr[bytes_read] = 0;
 
 		if (rc < 0 || bytes_read != buffer_size) {
-			if (packet_ver == NRPE_PACKET_VERSION_3) {
+			if (packet_ver >= NRPE_PACKET_VERSION_3) {
 				free(*v3_pkt);
 				*v3_pkt = NULL;
 			} else {
@@ -1525,7 +1562,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 				*v2_pkt = NULL;
 			}
 			if (bytes_read != buffer_size) {
-				if (packet_ver == NRPE_PACKET_VERSION_3) {
+				if (packet_ver >= NRPE_PACKET_VERSION_3) {
 					printf("CHECK_NRPE: Receive buffer size - %ld bytes received (%ld expected).\n", (long)bytes_read, sizeof(buffer_size));
 				} else {
 					printf("CHECK_NRPE: Receive underflow - only %ld bytes received (%ld expected).\n", (long)bytes_read, sizeof(buffer_size));
