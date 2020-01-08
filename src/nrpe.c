@@ -2037,6 +2037,10 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			tot_bytes += rc;
 
 			buffer_size = ntohl(buffer_size);
+			if (buffer_size < 0 || buffer_size > INT_MAX - pkt_size) {
+				logit(LOG_ERR, "Error: Received packet with invalid buffer size");
+				return -1;
+			}
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
 				logit(LOG_ERR, "Error: (use_ssl == false): Could not allocate memory for packet");
