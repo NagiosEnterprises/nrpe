@@ -252,7 +252,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		return ERROR;
 
 	optind = 0;
-	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:g:246hlnuVE");
+	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:g:2346hlnuVE");
 
 	while (1) {
 		if (argindex > 0)
@@ -701,7 +701,7 @@ void usage(int result)
 		printf("SSL/TLS Available: OpenSSL 0.9.6 or higher required\n");
 		printf("\n");
 #endif
-		printf("Usage: check_nrpe -H <host> [-2] [-4] [-6] [-n] [-u] [-V] [-l] [-d <dhopt>]\n");
+		printf("Usage: check_nrpe -H <host> [-2] [-3] [-4] [-6] [-n] [-u] [-V] [-l] [-d <dhopt>]\n");
 		printf("       [-P <size>] [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n");
 		printf("       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n");
 		printf("       [-f <cfg-file>] [-p <port>] [-t <interval>:<state>] [-g <log-file>]\n");
@@ -709,7 +709,8 @@ void usage(int result)
 		printf("\n");
 		printf("Options:\n");
 		printf(" -H, --host=HOST              The address of the host running the NRPE daemon\n");
-		printf(" -2, --v2-packets-only        Only use version 2 packets, not version 3\n");
+		printf(" -2, --v2-packets-only        Only use version 2 packets, not version 3/4\n");
+		printf(" -3, --v3-packets-only        Only use version 3 packets, not version 4\n");
 		printf(" -4, --ipv4                   Bind to ipv4 only\n");
 		printf(" -6, --ipv6                   Bind to ipv6 only\n");
 		printf(" -n, --no-ssl                 Do no use SSL\n");
@@ -1385,14 +1386,14 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 
 		if (rc <= 0 || rc != bytes_to_recv) {
 			if (rc < bytes_to_recv) {
-				if (packet_ver != NRPE_PACKET_VERSION_3)
+				if (packet_ver <= NRPE_PACKET_VERSION_3)
 					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%ld expected).\n", rc, sizeof(bytes_to_recv));
 			}
 			return -1;
 		}
 
 		packet_ver = ntohs(packet.packet_version);
-		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
+		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3 && packet_ver != NRPE_PACKET_VERSION_4) {
 			printf("CHECK_NRPE: Invalid packet version received from server.\n");
 			return -1;
 		}
@@ -1473,14 +1474,14 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 
 		if (rc <= 0 || rc != bytes_to_recv) {
 			if (rc < bytes_to_recv) {
-				if (packet_ver != NRPE_PACKET_VERSION_3)
+				if (packet_ver < NRPE_PACKET_VERSION_3 || packet_ver > NRPE_PACKET_VERSION_4)
 					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%ld expected).\n", rc, sizeof(bytes_to_recv));
 			}
 			return -1;
 		}
 
 		packet_ver = ntohs(packet.packet_version);
-		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
+		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3 && packet_ver != NRPE_PACKET_VERSION_4) {
 			printf("CHECK_NRPE: Invalid packet version received from server.\n");
 			return -1;
 		}

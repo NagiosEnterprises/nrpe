@@ -745,6 +745,62 @@ int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 }
 #endif
 
+/*
+ * Given a string, convert any byte pairs representing an escape sequence (e.g. "\\r" into 
+ * the single-byte metacharacter (e.g. '\r')
+ * Currently, this doesn't support octal/hex numbers or unicode code points (\n, \x, \u, \U)
+ */
+char* process_metachars(const char* input)
+{
+	char* copy = strdup(input);
+	int i,j;
+	int length = strlen(input);
+	for (i = 0, j = 0; i < length, j < length; i++, j++) {
+		if (copy[j] != '\\') {
+			copy[i] = copy[j];
+			continue;
+		}
+
+		j += 1;
+		switch (copy[j]) {
+			case 'a':
+				copy[i] = '\a';
+				break;
+			case 'b':
+				copy[i] = '\b';
+				break;
+			case 'f':
+				copy[i] = '\f';
+				break;
+			case 'n':
+				copy[i] = '\n';
+				break;
+			case 'r':
+				copy[i] = '\r';
+				break;
+			case 't':
+				copy[i] = '\t';
+				break;
+			case 'v':
+				copy[i] = '\v';
+				break;
+			case '\\':
+				copy[i] = '\\';
+				break;
+			case '\'':
+				copy[i] = '\'';
+				break;
+			case '"':
+				copy[i] = '\"';
+				break;
+			case '?':
+				copy[i] = '\?';
+				break;
+		}
+	}
+	copy[j] = '\0';
+}
+
 /* read in the configuration file */
 int read_config_file(char *filename)
 {
@@ -1005,7 +1061,7 @@ int read_config_file(char *filename)
 			keep_env_vars = strdup(varvalue);
 
 		else if (!strcmp(varname, "nasty_metachars"))
-			nasty_metachars = strdup(varvalue);
+			nasty_metachars = process_metachars(varvalue);
 
 		else if (!strcmp(varname, "log_file")) {
 			log_file = strdup(varvalue);
@@ -1834,9 +1890,9 @@ void handle_connection(int sock)
 
 	} else {
 
-		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + strlen(send_buff) + 1;
+		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + strlen(send_buff);
 		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + strlen(send_buff) + 1;
+			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + strlen(send_buff);
 		}
 		v3_send_packet = calloc(1, pkt_size);
 		send_pkt = (char *)v3_send_packet;
@@ -2013,7 +2069,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			return -1;
 
 		packet_ver = ntohs(v2_pkt->packet_version);
-		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
+		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3 && packet_ver != NRPE_PACKET_VERSION_4) {
 			logit(LOG_ERR, "Error: (use_ssl == false): Request packet version was invalid!");
 			return -1;
 		}
@@ -2041,7 +2097,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 
 			buffer_size = ntohl(buffer_size);
 			if (buffer_size < 0 || buffer_size > INT_MAX - pkt_size) {
-				logit(LOG_ERR, "Error: Received packet with invalid buffer size");
+				logit(LOG_ERR, "Error: (use_ssl == false): Received packet with invalid buffer size");
 				return -1;
 			}
 			pkt_size += buffer_size;
@@ -2079,7 +2135,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			return -1;
 
 		packet_ver = ntohs(v2_pkt->packet_version);
-		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
+		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3 && packet_ver != NRPE_PACKET_VERSION_4) {
 			logit(LOG_ERR, "Error: (use_ssl == true): Request packet version was invalid!");
 			return -1;
 		}
@@ -2088,7 +2144,13 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			buffer_size = sizeof(v2_packet) - common_size;
 			buff_ptr = (char *)v2_pkt + common_size;
 		} else {
-			int32_t   pkt_size = sizeof(v3_packet) - 1;
+			int32_t   pkt_size = sizeof(v3_packet);
+			if (packet_ver == NRPE_PACKET_VERSION_3) {
+				pkt_size -= NRPE_V3_PACKET_SIZE_OFFSET;
+			}
+			else if (packet_ver == NRPE_PACKET_VERSION_4) {
+				pkt_size -= NRPE_V4_PACKET_SIZE_OFFSET;
+			}
 
 			/* Read the alignment filler */
 			bytes_to_recv = sizeof(int16_t);
@@ -2111,6 +2173,9 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			tot_bytes += rc;
 
 			buffer_size = ntohl(buffer_size);
+			if (buffer_size < 0 || buffer_size > INT_MAX - pkt_size) {
+				logit(LOG_ERR, "Error: (use_ssl == true): Received packet with invalid buffer size");
+			}
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
 				logit(LOG_ERR, "Error: (use_ssl == true): Could not allocate memory for packet");
@@ -2613,6 +2678,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 {
 	u_int32_t	packet_crc32;
 	u_int32_t	calculated_crc32;
+	int32_t		pkt_size, buffer_size;
 	char		*buff, *ptr;
 	int			rc;
 #ifdef ENABLE_COMMAND_ARGUMENTS
@@ -2620,8 +2686,18 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 #endif
 
 	/* check the crc 32 value */
-	if (packet_ver == NRPE_PACKET_VERSION_3) {
-		int32_t   pkt_size = (sizeof(v3_packet) - 1) + ntohl(v3pkt->buffer_length);
+	if (packet_ver >= NRPE_PACKET_VERSION_3) {
+
+		buffer_size = ntohl(v3pkt->buffer_length);
+		if (buffer_size < 0 || buffer_size > INT_MAX - pkt_size) {
+			logit(LOG_ERR, "Error: Request packet had invalid buffer size.");
+			return ERROR;
+		}
+
+		pkt_size = sizeof(v3_packet);
+		pkt_size -= (packet_ver == NRPE_PACKET_VERSION_3 ? NRPE_V3_PACKET_SIZE_OFFSET : NRPE_V4_PACKET_SIZE_OFFSET);
+		pkt_size += buffer_size;
+
 		packet_crc32 = ntohl(v3pkt->crc32_value);
 		v3pkt->crc32_value = 0L;
 		v3pkt->alignment = 0;
@@ -2644,7 +2720,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	}
 
 	/* make sure buffer is terminated */
-	if (packet_ver == NRPE_PACKET_VERSION_3) {
+	if (packet_ver >= NRPE_PACKET_VERSION_3) {
 		int32_t   l = ntohs(v3pkt->buffer_length);
 		v3pkt->buffer[l - 1] = '\x0';
 		buff = v3pkt->buffer;
@@ -2660,7 +2736,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	}
 
 	/* make sure request doesn't contain nasties */
-	if (packet_ver == NRPE_PACKET_VERSION_3)
+	if (packet_ver >= NRPE_PACKET_VERSION_3)
 		rc = contains_nasty_metachars(v3pkt->buffer);
 	else
 		rc = contains_nasty_metachars(v2pkt->buffer);
@@ -2670,7 +2746,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	}
 
 	/* make sure the request doesn't contain arguments */
-	if (strchr(v2pkt->buffer, '!')) {
+	if (strchr(buff, '!')) {
 #ifdef ENABLE_COMMAND_ARGUMENTS
 		if (allow_arguments == FALSE) {
 			logit(LOG_ERR, "Error: Request contained command arguments, but argument option is not enabled!");
