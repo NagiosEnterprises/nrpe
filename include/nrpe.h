@@ -24,6 +24,8 @@
  *
  ****************************************************************************/
 
+#include <limits.h>
+
 typedef struct command_struct {
 	char					*command_name;
 	char					*command_line;

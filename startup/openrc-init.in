@@ -3,15 +3,19 @@
 # Copyright (c) 2017 Nagios(R) Core(TM) Development Team
 #
 
+# Supply a default value for NRPE_CFG in case the corresponding
+# conf.d file is not installed.
+: ${NRPE_CFG:="@sysconfdir@/nrpe.cfg"}
+
 command="@sbindir@/nrpe"
 command_args="--config=${NRPE_CFG} ${NRPE_OPTS}"
 command_args_background="--daemon"
 description="Nagios Remote Plugin Executor (NRPE) daemon"
 extra_started_commands="reload"
-pidfile="@piddir@/nrpe.pid"
+pidfile="@piddir@/${RC_SVCNAME}.pid"
 
 reload() {
-    ebegin "Reloading ${SVCNAME}"
+    ebegin "Reloading ${RC_SVCNAME}"
     start-stop-daemon --signal HUP --pidfile "${pidfile}"
     eend $?
 }
