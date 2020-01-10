@@ -124,7 +124,7 @@ extern char *log_file;
 /* SSL/TLS parameters */
 typedef enum _SSL_VER {
 	SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus, TLSv1,
-	TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus
+	TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus, TLSv1_3, TLSv1_3_plus
 } SslVer;
 
 typedef enum _CLNT_CERTS {
@@ -329,6 +329,10 @@ void init_ssl(void)
 #  ifdef SSL_TXT_TLSV1_2
 	if (sslprm.ssl_proto_ver == TLSv1_2)
 		meth = TLSv1_2_server_method();
+#  ifdef SSL_TXT_TLSV1_3
+	if (sslprm.ssl_proto_ver == TLSv1_3)
+		meth = TLSv1_3_server_method();
+#  endif	/* ifdef SSL_TXT_TLSV1_3 */
 #  endif	/* ifdef SSL_TXT_TLSV1_2 */
 # endif		/* SSL_TXT_TLSV1_1 */
 
@@ -349,6 +353,11 @@ void init_ssl(void)
 	SSL_CTX_set_max_proto_version(ctx, 0);
 
 	switch(sslprm.ssl_proto_ver) {
+		case TLSv1_3:
+			SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
+		case TLSv1_3_plus:
+			SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);
+			break;
 
 		case TLSv1_2:
 			SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
@@ -381,11 +390,14 @@ void init_ssl(void)
 		case SSLv2:
 		case SSLv2_plus:
 			break;
+		case TLSv1_3:
+		case TLSv1_3_plus:
+#ifdef SSL_OP_NO_TLSv1_2
+			ssl_opts |= SSL_OP_NO_TLSv1_2;
+#endif
 		case TLSv1_2:
 		case TLSv1_2_plus:
-#ifdef SSL_OP_NO_TLSv1_1
 			ssl_opts |= SSL_OP_NO_TLSv1_1;
-#endif
 		case TLSv1_1:
 		case TLSv1_1_plus:
 			ssl_opts |= SSL_OP_NO_TLSv1;
@@ -516,6 +528,12 @@ void log_ssl_startup(void)
 		break;
 	case TLSv1_2_plus:
 		vers = "TLSv1_2 And Above";
+		break;
+	case TLSv1_3:
+		vers = "TLSv1_3";
+		break;
+	case TLSv1_3_plus:
+		vers = "TLSv1_3 And Above";
 		break;
 	default:
 		vers = "INVALID VALUE!";
@@ -982,7 +1000,11 @@ int read_config_file(char *filename)
 			}
 
 		} else if (!strcmp(varname, "ssl_version")) {
-			if (!strcmp(varvalue, "TLSv1.2"))
+			if (!strcmp(varvalue, "TLSv1.3"))
+				sslprm.ssl_proto_ver = TLSv1_3;
+			else if (!strcmp(varvalue, "TLSv1.3+"))
+				sslprm.ssl_proto_ver = TLSv1_3_plus;
+			else if (!strcmp(varvalue, "TLSv1.2"))
 				sslprm.ssl_proto_ver = TLSv1_2;
 			else if (!strcmp(varvalue, "TLSv1.2+"))
 				sslprm.ssl_proto_ver = TLSv1_2_plus;
