@@ -160,6 +160,8 @@ static void my_disconnect_sighandler(int sig);
 static void complete_SSL_shutdown(SSL *);
 #endif
 
+int disable_syslog = FALSE;
+
 int main(int argc, char **argv)
 {
 	int       result = OK;
@@ -954,6 +956,9 @@ int read_config_file(char *filename)
 
 		else if (!strcmp(varname, "dont_blame_nrpe"))
 			allow_arguments = (atoi(varvalue) == 1) ? TRUE : FALSE;
+
+		else if (!strcmp(varname, "disable_syslog"))
+			disable_syslog = (atoi(varvalue) == 1) ? TRUE : FALSE;
 
 		else if (!strcmp(varname, "allow_bash_command_substitution"))
 			allow_bash_cmd_subst = (atoi(varvalue) == 1) ? TRUE : FALSE;
@@ -1995,13 +2000,31 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 	char      buffer[MAX_INPUT_BUFFER];
 	SSL      *ssl = (SSL*)ssl_ptr;
 	X509     *peer;
-	int       rc, x;
+	int       rc, x, sockfd, retval;
+	fd_set    rfds;
+	struct timeval timeout;
 
 	SSL_set_fd(ssl, sock);
+	sockfd = SSL_get_fd(ssl);
+
+	FD_ZERO(&rfds);
+	FD_SET(sockfd, &rfds);
+
+	timeout.tv_sec = connection_timeout;
+	timeout.tv_usec = 0;
+
 
 	/* keep attempting the request if needed */
-	while (((rc = SSL_accept(ssl)) != 1)
-			&& (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ));
+	do {
+		retval = select(sockfd + 1, &rfds, NULL, NULL, &timeout);
+
+		if (retval > 0) {
+			rc = SSL_accept(ssl);
+		} else {
+			logit(LOG_ERR, "Error: (!log_opts) Could not complete SSL handshake with %s: timeout %d seconds", remote_host, connection_timeout);
+			return ERROR;
+		}
+	} while (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ);
 
 	if (rc != 1) {
 		/* oops, got an unrecoverable error -- get out */
@@ -2148,10 +2171,28 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 #ifdef HAVE_SSL
 	else {
 		SSL      *ssl = (SSL *) ssl_ptr;
+		int       sockfd, retval;
+		fd_set    rfds;
+		struct timeval timeout;
 
-		while (((rc = SSL_read(ssl, v2_pkt, bytes_to_recv)) <= 0)
-			   && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ)) {
-		}
+		sockfd = SSL_get_fd(ssl);
+
+		FD_ZERO(&rfds);
+		FD_SET(sockfd, &rfds);
+
+		timeout.tv_sec = connection_timeout;
+		timeout.tv_usec = 0;
+
+		do {
+			retval = select(sockfd + 1, &rfds, NULL, NULL, &timeout);
+
+			if (retval > 0) {
+				rc = SSL_read(ssl, v2_pkt, bytes_to_recv);
+			} else {
+				logit(LOG_ERR, "Error (!log_opts): Could not complete SSL_read with %s: timeout %d seconds", remote_host, connection_timeout);
+				return -1;
+			}
+		} while (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ);
 
 		if (rc <= 0 || rc != bytes_to_recv)
 			return -1;
