@@ -3,9 +3,26 @@ NRPE Changelog
 
 3.3.0 - 2019-??-??
 ------------------
+Note: This update includes security fixes which break communication with older versions.
+If you have older NRPE daemons deployed, either update them or supply the new '-3' argument to check_nrpe
+to continue using the old protocol.
+
 **ENHANCEMENTS**
-* Added ability to use TLSv1.3 and TLSv1.3+ on systems with it available
+* Added TLSv1.3 and TLSv1.3+ support for systems that have it (Nigel Yong, Rahul Golam)
 * Added IPv6 ip address to list of default allow_from hosts (Troy Lea)
+* Added options to disable logging to syslog (Tom Griep, Sebastian Wolf)
+* Added -3 option to allow communication with NRPE v3.2.1 and earlier
+* OpenRC: provide a default path for nrpe.cfg (Michael Orlitzky)
+* OpenRC: Use RC_SVCNAME over a hard-coded PID file (j-licht)
+
+**FIXES**
+* Checks for '!' now only occur inside the command buffer for v3 packets (Joni Eskelinen)
+* NRPE daemon is more resilient to DOS attacks (Leonid Vasiliev)
+* allowed_hosts will no longer test getaddrinfo records against the wrong protocol (dombenson)
+* nasty_metachars will now handle C escape sequences properly when specified in the config file (Sebastian Wolf)
+* Calculated packet sizes now struct padding/alignment when sending and receiving messages (Sebastian Wolf)
+* Buffer sizes are now checked before use in packet size calculation (Sebastian Wolf)
+
 
 [3.2.1](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-3.2.1) - 2017-08-31
 ---------------------------------------------------------------------------------------
