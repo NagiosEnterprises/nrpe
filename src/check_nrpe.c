@@ -130,7 +130,7 @@ static int verify_callback(int ok, X509_STORE_CTX * ctx);
 #endif
 void alarm_handler(int);
 int graceful_close(int, int);
-int enable_syslog = FALSE;
+int disable_syslog = FALSE;
 
 
 int main(int argc, char **argv)
@@ -245,6 +245,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		{"license", no_argument, 0, 'l'},
 		{"version", no_argument, 0, 'V'},
 		{"stderr-to-stdout", no_argument, 0, 'E'},
+		{"disable-syslog", no_argument, 0, 'D'},
 		{0, 0, 0, 0}
 	};
 #endif
@@ -254,7 +255,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		return ERROR;
 
 	optind = 0;
-	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:g:2346hlnuVEe");
+	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:g:2346hlnuVED");
 
 	while (1) {
 		if (argindex > 0)
@@ -500,8 +501,8 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			open_log_file();
 			break;
 
-		case 'e':
-			enable_syslog = TRUE;
+		case 'D':
+			disable_syslog = TRUE;
 			break;
 
 
@@ -716,7 +717,7 @@ void usage(int result)
 		printf("       [-P <size>] [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n");
 		printf("       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n");
 		printf("       [-f <cfg-file>] [-p <port>] [-t <interval>:<state>] [-g <log-file>]\n");
-		printf("       [-c <command>] [-E] [-a <arglist...>]\n");
+		printf("       [-c <command>] [-E] [-D] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" -H, --host=HOST              The address of the host running the NRPE daemon\n");
@@ -734,6 +735,7 @@ void usage(int result)
 		printf("                                        (This will be the default in a future release.)\n");
 		printf("                              1         Allow Anonymous Diffie Hellman (default)\n");
 		printf("                              2         Force Anonymous Diffie Hellman\n");
+		printf(" -D, --disable-syslog         Disable logging to syslog facilities\n");
 		printf(" -P, --payload-size=SIZE      Specify non-default payload size for NSClient++\n");
 		printf(" -S, --ssl-version=VERSION    The SSL/TLS version to use. Can be any one of:\n");
 #if OPENSSL_VERSION_NUMBER < 0x10100000
