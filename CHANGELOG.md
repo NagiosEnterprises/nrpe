@@ -1,11 +1,11 @@
 NRPE Changelog
 ==============
 
-3.3.0 - 2019-01-13
-------------------
-Note: This update includes security fixes which break communication with older versions.
-If you have older NRPE daemons deployed, either update them or supply the new '-3' argument to check_nrpe
-to continue using the old protocol.
+[3.3.0](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-3.3.0) - 2019-01-13
+---------------------------------------------------------------------------------------
+Note: This update includes security fixes which degrade communication with older versions.
+If you have older NRPE daemons deployed, either update them or supply the new '-3' argument
+to check_nrpe to continue using the old protocol.
 
 **ENHANCEMENTS**
 * Added TLSv1.3 and TLSv1.3+ support for systems that have it (Nigel Yong, Rahul Golam)
