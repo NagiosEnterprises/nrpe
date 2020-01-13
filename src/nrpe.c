@@ -356,10 +356,14 @@ void init_ssl(void)
 
 	switch(sslprm.ssl_proto_ver) {
 		case TLSv1_3:
+#if OPENSSL_VERSION_NUMBER >= 0x10101000
 			SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
+#endif
 		case TLSv1_3_plus:
+#if OPENSSL_VERSION_NUMBER >= 0x10101000
 			SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);
 			break;
+#endif
 
 		case TLSv1_2:
 			SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
