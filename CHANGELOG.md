@@ -1,7 +1,7 @@
 NRPE Changelog
 ==============
 
-3.3.0 - 2019-??-??
+3.3.0 - 2019-01-13
 ------------------
 Note: This update includes security fixes which break communication with older versions.
 If you have older NRPE daemons deployed, either update them or supply the new '-3' argument to check_nrpe
