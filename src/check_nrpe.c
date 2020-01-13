@@ -1424,8 +1424,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			return -1;
 		}
 
-		packet_ver = ntohs(packet.packet_version);
-		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3 && packet_ver != NRPE_PACKET_VERSION_4) {
+		if (packet_ver != ntohs(packet.packet_version)) {
 			printf("CHECK_NRPE: Invalid packet version received from server.\n");
 			return -1;
 		}
@@ -1512,8 +1511,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			return -1;
 		}
 
-		packet_ver = ntohs(packet.packet_version);
-		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3 && packet_ver != NRPE_PACKET_VERSION_4) {
+		if (packet_ver != ntohs(packet.packet_version)) {
 			printf("CHECK_NRPE: Invalid packet version received from server.\n");
 			return -1;
 		}
