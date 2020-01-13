@@ -22,6 +22,7 @@ to check_nrpe to continue using the old protocol.
 * nasty_metachars will now handle C escape sequences properly when specified in the config file (Sebastian Wolf)
 * Calculated packet sizes now struct padding/alignment when sending and receiving messages (Sebastian Wolf)
 * Buffer sizes are now checked before use in packet size calculation (Sebastian Wolf)
+* When using `include_dir`, individual files' errors do not prevent the remaining files from being read (Sebastian Wolf)
 
 
 [3.2.1](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-3.2.1) - 2017-08-31

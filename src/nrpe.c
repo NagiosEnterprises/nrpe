@@ -1161,11 +1161,7 @@ int read_config_dir(char *dirname)
 				continue;
 
 			/* process the config file */
-			result = read_config_file(config_file);
-
-			/* break out if we encountered an error */
-			if (result == ERROR)
-				break;
+			result |= read_config_file(config_file);
 		}
 
 		/* recurse into subdirectories... */
@@ -1176,12 +1172,7 @@ int read_config_dir(char *dirname)
 				continue;
 
 			/* process the config directory */
-			result = read_config_dir(config_file);
-
-			/* break out if we encountered an error */
-			if (result == ERROR)
-				break;
-
+			result |= read_config_dir(config_file);
 		}
 	}
 
