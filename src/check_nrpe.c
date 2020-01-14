@@ -1329,7 +1329,7 @@ int read_response()
 	if (packet_ver >= NRPE_PACKET_VERSION_3) {
 
 		buffer_size = ntohl(v3_receive_packet->buffer_length);
-		if (buffer_size < 0 || buffer_size > INT_MAX - pkt_size) {
+		if (buffer_size < 0 || buffer_size > 65536) {
 			printf("CHECK_NRPE: Response packet had invalid buffer size.\n");
 			close(sd);
 			if (v3_receive_packet) {
@@ -1471,6 +1471,10 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			tot_bytes += rc;
 
 			buffer_size = ntohl(buffer_size);
+			if (buffer_size < 0 || buffer_size > 65536) {
+				logit(LOG_ERR, "Error: Received packet with invalid buffer size");
+				return -1;
+			}
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
 				logit(LOG_ERR, "Error: Could not allocate memory for packet");
@@ -1563,6 +1567,10 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			tot_bytes += rc;
 
 			buffer_size = ntohl(buffer_size);
+			if (buffer_size < 0 || buffer_size > 65536) {
+				logit(LOG_ERR, "Error: Received packet with invalid buffer size");
+				return -1;
+			}
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
 				logit(LOG_ERR, "Error: Could not allocate memory for packet");
