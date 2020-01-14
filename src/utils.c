@@ -537,7 +537,6 @@ void logit(int priority, const char *format, ...)
 
 	if (!format || !*format)
 		return;
-
 	va_start(ap, format);
 	if(vasprintf(&buffer, format, ap) > 0) {
 		if (log_fp) {
@@ -549,8 +548,9 @@ void logit(int priority, const char *format, ...)
 			fprintf(log_fp, "[%llu] %s\n", (unsigned long long)log_time, buffer);
 			fflush(log_fp);
 
-		} else
+		} else if (!disable_syslog) {
 			syslog(priority, "%s", buffer);
+		}
 
 		free(buffer);
 	}

@@ -65,8 +65,9 @@ char query[MAX_INPUT_BUFFER] = "";
 int show_help = FALSE;
 int show_license = FALSE;
 int show_version = FALSE;
-int packet_ver = NRPE_PACKET_VERSION_3;
+int packet_ver = NRPE_DEFAULT_PACKET_VERSION;
 int force_v2_packet = 0;
+int force_v3_packet = 0;
 int payload_size = 0;
 extern char *log_file;
 
@@ -87,7 +88,7 @@ int use_ssl = FALSE;
 /* SSL/TLS parameters */
 typedef enum _SSL_VER {
 	SSL_Ver_Invalid = 0, SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus,
-	TLSv1, TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus
+	TLSv1, TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus, TLSv1_3, TLSv1_3_plus
 } SslVer;
 
 typedef enum _CLNT_CERTS { Ask_For_Cert = 1, Require_Cert = 2 } ClntCerts;
@@ -129,6 +130,8 @@ static int verify_callback(int ok, X509_STORE_CTX * ctx);
 #endif
 void alarm_handler(int);
 int graceful_close(int, int);
+int disable_syslog = FALSE;
+
 
 int main(int argc, char **argv)
 {
@@ -175,7 +178,7 @@ int main(int argc, char **argv)
 
 	if (result == -1) {
 		/* Failure reading from remote, so try version 2 packet */
-		logit(LOG_INFO, "Remote %s does not support Version 3 Packets", rem_host);
+		logit(LOG_INFO, "Remote %s does not support version 3/4 packets", rem_host);
 		packet_ver = NRPE_PACKET_VERSION_2;
 
 		/* Rerun the setup */
@@ -198,7 +201,7 @@ int main(int argc, char **argv)
 	}
 
 	if (result != -1 && force_v2_packet == 0 && packet_ver == NRPE_PACKET_VERSION_2)
-		logit(LOG_DEBUG, "Remote %s accepted a Version %d Packet", rem_host, packet_ver);
+		logit(LOG_DEBUG, "Remote %s accepted a version %d packet", rem_host, packet_ver);
 
 	close_log_file();			/* close the log file */
 	return result;
@@ -224,6 +227,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		{"no-ssl", no_argument, 0, 'n'},
 		{"unknown-timeout", no_argument, 0, 'u'},
 		{"v2-packets-only", no_argument, 0, '2'},
+		{"v3-packets-only", no_argument, 0, '3'},
 		{"ipv4", no_argument, 0, '4'},
 		{"ipv6", no_argument, 0, '6'},
 		{"use-adh", required_argument, 0, 'd'},
@@ -241,6 +245,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		{"license", no_argument, 0, 'l'},
 		{"version", no_argument, 0, 'V'},
 		{"stderr-to-stdout", no_argument, 0, 'E'},
+		{"disable-syslog", no_argument, 0, 'D'},
 		{0, 0, 0, 0}
 	};
 #endif
@@ -250,7 +255,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		return ERROR;
 
 	optind = 0;
-	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:g:246hlnuVE");
+	snprintf(optchars, MAX_INPUT_BUFFER, "H:f:b:c:a:t:p:S:L:C:K:A:d:s:P:g:2346hlnuVED");
 
 	while (1) {
 		if (argindex > 0)
@@ -366,14 +371,21 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			break;
 
 		case '2':
-			if (from_config_file && packet_ver != NRPE_PACKET_VERSION_3) {
+			if (from_config_file && packet_ver != NRPE_DEFAULT_PACKET_VERSION) {
 				logit(LOG_WARNING, "WARNING: Command-line v2-packets-only (-2) overrides the config file option.");
 				break;
 			}
 			packet_ver = NRPE_PACKET_VERSION_2;
 			force_v2_packet = 1;
 			break;
-
+		case '3':
+			if (from_config_file && packet_ver != NRPE_DEFAULT_PACKET_VERSION) {
+				logit(LOG_WARNING, "Warning: Command-line v3-packets-only (-3) overrides the config file option.");
+				break;
+			}
+			packet_ver = NRPE_PACKET_VERSION_3;
+			force_v3_packet = 1;
+			break;
 		case '4':
 			if (from_config_file && address_family != AF_UNSPEC) {
 				logit(LOG_WARNING, "WARNING: Command-line ipv4 (-4) or ipv6 (-6) overrides the config file option.");
@@ -432,7 +444,11 @@ int process_arguments(int argc, char **argv, int from_config_file)
 				break;
 			}
 
-			if (!strcmp(optarg, "TLSv1.2"))
+			if (!strcmp(optarg, "TLSv1.3"))
+				sslprm.ssl_proto_ver = TLSv1_3;
+			else if (!strcmp(optarg, "TLSv1.3+"))
+				sslprm.ssl_proto_ver = TLSv1_3_plus;
+			else if (!strcmp(optarg, "TLSv1.2"))
 				sslprm.ssl_proto_ver = TLSv1_2;
 			else if (!strcmp(optarg, "TLSv1.2+"))
 				sslprm.ssl_proto_ver = TLSv1_2_plus;
@@ -485,6 +501,11 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			open_log_file();
 			break;
 
+		case 'D':
+			disable_syslog = TRUE;
+			break;
+
+
 		default:
 			return ERROR;
 		}
@@ -523,6 +544,11 @@ int process_arguments(int argc, char **argv, int from_config_file)
 
 	if (payload_size > 0 && packet_ver != NRPE_PACKET_VERSION_2) {
 		printf("Error: if a fixed payload size is specified, '-2' must also be specified\n");
+		return ERROR;
+	}
+
+	if (force_v2_packet && force_v3_packet) {
+		printf("Error: Only one of force_v2_packet (-2) and force_v3_packet (-3) can be specified.\n");
 		return ERROR;
 	}
 
@@ -687,15 +713,16 @@ void usage(int result)
 		printf("SSL/TLS Available: OpenSSL 0.9.6 or higher required\n");
 		printf("\n");
 #endif
-		printf("Usage: check_nrpe -H <host> [-2] [-4] [-6] [-n] [-u] [-V] [-l] [-d <dhopt>]\n");
+		printf("Usage: check_nrpe -H <host> [-2] [-3] [-4] [-6] [-n] [-u] [-V] [-l] [-d <dhopt>]\n");
 		printf("       [-P <size>] [-S <ssl version>]  [-L <cipherlist>] [-C <clientcert>]\n");
 		printf("       [-K <key>] [-A <ca-certificate>] [-s <logopts>] [-b <bindaddr>]\n");
 		printf("       [-f <cfg-file>] [-p <port>] [-t <interval>:<state>] [-g <log-file>]\n");
-		printf("       [-c <command>] [-E] [-a <arglist...>]\n");
+		printf("       [-c <command>] [-E] [-D] [-a <arglist...>]\n");
 		printf("\n");
 		printf("Options:\n");
 		printf(" -H, --host=HOST              The address of the host running the NRPE daemon\n");
-		printf(" -2, --v2-packets-only        Only use version 2 packets, not version 3\n");
+		printf(" -2, --v2-packets-only        Only use version 2 packets, not version 3/4\n");
+		printf(" -3, --v3-packets-only        Only use version 3 packets, not version 4\n");
 		printf(" -4, --ipv4                   Bind to ipv4 only\n");
 		printf(" -6, --ipv6                   Bind to ipv6 only\n");
 		printf(" -n, --no-ssl                 Do no use SSL\n");
@@ -708,6 +735,7 @@ void usage(int result)
 		printf("                                        (This will be the default in a future release.)\n");
 		printf("                              1         Allow Anonymous Diffie Hellman (default)\n");
 		printf("                              2         Force Anonymous Diffie Hellman\n");
+		printf(" -D, --disable-syslog         Disable logging to syslog facilities\n");
 		printf(" -P, --payload-size=SIZE      Specify non-default payload size for NSClient++\n");
 		printf(" -S, --ssl-version=VERSION    The SSL/TLS version to use. Can be any one of:\n");
 #if OPENSSL_VERSION_NUMBER < 0x10100000
@@ -740,6 +768,7 @@ void usage(int result)
 		printf(" -a, --args=LIST              Optional arguments that should be passed to the command,\n");
 		printf("                              separated by a space. If provided, this must be the last\n");
 		printf("                              option supplied on the command line.\n");
+		printf(" -e 	                      Enable syslog debug messages.\n");
 		printf("\n");
 		printf(" NEW TIMEOUT SYNTAX\n");
 		printf(" -t, --timeout=INTERVAL:STATE\n");
@@ -811,6 +840,12 @@ void setup_ssl()
 		case TLSv1_2_plus:
 			val = "TLSv1_2_plus And Above";
 			break;
+		case TLSv1_3:
+			val = "TLSv1_3";
+			break;
+		case TLSv1_3_plus:
+			val = "TLSv1_3_plus And Above";
+			break;
 		default:
 			val = "INVALID VALUE!";
 			break;
@@ -850,6 +885,10 @@ void setup_ssl()
 #  ifdef SSL_TXT_TLSV1_2
 		if (sslprm.ssl_proto_ver == TLSv1_2)
 			meth = TLSv1_2_client_method();
+#  ifdef SSL_TXT_TLSV1_3
+		if (sslprm.ssl_proto_ver == TLSv1_3)
+			meth = TLSv1_3_client_method();
+#  endif	/* ifdef SSL_TXT_TLSV1_3 */
 #  endif	/* ifdef SSL_TXT_TLSV1_2 */
 # endif	/* ifdef SSL_TXT_TLSV1_1 */
 
@@ -865,6 +904,15 @@ void setup_ssl()
 	SSL_CTX_set_max_proto_version(ctx, 0);
 
 	switch(sslprm.ssl_proto_ver) {
+		case TLSv1_3:
+#if OPENSSL_VERSION_NUMBER >= 0x10101000
+			SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
+#endif
+		case TLSv1_3_plus:
+#if OPENSSL_VERSION_NUMBER >= 0x10101000
+			SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);
+			break;
+#endif
 
 		case TLSv1_2:
 			SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
@@ -897,11 +945,14 @@ void setup_ssl()
 			case SSLv2:
 			case SSLv2_plus:
 				break;
+			case TLSv1_3:
+			case TLSv1_3_plus:
+#ifdef SSL_OP_NO_TLSv1_2
+				ssl_opts |= SSL_OP_NO_TLSv1_2;
+#endif
 			case TLSv1_2:
 			case TLSv1_2_plus:
-#ifdef SSL_OP_NO_TLSv1_1
 				ssl_opts |= SSL_OP_NO_TLSv1_1;
-#endif
 			case TLSv1_1:
 			case TLSv1_1_plus:
 				ssl_opts |= SSL_OP_NO_TLSv1;
@@ -1165,9 +1216,13 @@ int send_request()
 
 	} else {
 
-		pkt_size = (sizeof(v3_packet) - 1) + strlen(query) + 1;
-		if (pkt_size < sizeof(v2_packet))
+		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + strlen(query) + 1;
+		if (packet_ver == NRPE_PACKET_VERSION_3) {
+			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + strlen(query) + 1;
+		}
+		if (pkt_size < sizeof(v2_packet)) {
 			pkt_size = sizeof(v2_packet);
+		}
 
 		v3_send_packet = calloc(1, pkt_size);
 		send_pkt = (char *)v3_send_packet;
@@ -1197,10 +1252,12 @@ int send_request()
 	}
 #endif
 
-	if (v3_send_packet)
+	if (v3_send_packet) {
 		free(v3_send_packet);
-	if (v2_send_packet)
+	}
+	if (v2_send_packet) {
 		free(v2_send_packet);
+	}
 
 	if (rc == -1) {
 		printf("CHECK_NRPE: Error sending query to host.\n");
@@ -1214,10 +1271,11 @@ int send_request()
 int read_response()
 {
 	v2_packet *v2_receive_packet = NULL;
+	/* Note: v4 packets will use the v3_packet structure */
 	v3_packet *v3_receive_packet = NULL;
 	u_int32_t packet_crc32;
 	u_int32_t calculated_crc32;
-	int32_t pkt_size;
+	int32_t pkt_size, buffer_size;
 	int rc, result;
 
 	alarm(0);
@@ -1243,32 +1301,50 @@ int read_response()
 
 	/* recv() error */
 	if (rc < 0) {
-		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			if (v3_receive_packet)
-				free(v3_receive_packet);
+		if (v2_receive_packet) {
+			free(v2_receive_packet);
+		}
+		if (v3_receive_packet) {
+			free(v3_receive_packet);
+		}
+		if (packet_ver >= NRPE_PACKET_VERSION_3) {
 			return -1;
 		}
-		if (v2_receive_packet)
-			free(v2_receive_packet);
 		return STATE_UNKNOWN;
 
 	} else if (rc == 0) {
 
 		/* server disconnected */
 		printf("CHECK_NRPE: Received 0 bytes from daemon.  Check the remote server logs for error messages.\n");
-		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			if (v3_receive_packet) {
-				free(v3_receive_packet);
-			}
-		} else if (v2_receive_packet) {
+		if (v3_receive_packet) {
+			free(v3_receive_packet);
+		}
+		if (v2_receive_packet) {
 			free(v2_receive_packet);
 		}
 		return STATE_UNKNOWN;
 	}
 
 	/* check the crc 32 value */
-	if (packet_ver == NRPE_PACKET_VERSION_3) {
-		pkt_size = (sizeof(v3_packet) - 1) + ntohl(v3_receive_packet->buffer_length);
+	if (packet_ver >= NRPE_PACKET_VERSION_3) {
+
+		buffer_size = ntohl(v3_receive_packet->buffer_length);
+		if (buffer_size < 0 || buffer_size > 65536) {
+			printf("CHECK_NRPE: Response packet had invalid buffer size.\n");
+			close(sd);
+			if (v3_receive_packet) {
+				free(v3_receive_packet);
+			}
+			if (v2_receive_packet) {
+				free(v2_receive_packet);
+			}
+			return STATE_UNKNOWN;
+		}
+
+		pkt_size = sizeof(v3_packet);
+		pkt_size -= (packet_ver == NRPE_PACKET_VERSION_3 ? NRPE_V3_PACKET_SIZE_OFFSET : NRPE_V4_PACKET_SIZE_OFFSET);
+		pkt_size += buffer_size;
+
 		packet_crc32 = ntohl(v3_receive_packet->crc32_value);
 		v3_receive_packet->crc32_value = 0L;
 		v3_receive_packet->alignment = 0;
@@ -1286,11 +1362,10 @@ int read_response()
 	if (packet_crc32 != calculated_crc32) {
 		printf("CHECK_NRPE: Response packet had invalid CRC32.\n");
 		close(sd);
-		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			if (v3_receive_packet) {
-				free(v3_receive_packet);
-			}
-		} else if (v2_receive_packet) {
+		if (v3_receive_packet) {
+			free(v3_receive_packet);
+		}
+		if (v2_receive_packet) {
 			free(v2_receive_packet);
 		}
 		return STATE_UNKNOWN;
@@ -1322,11 +1397,10 @@ int read_response()
 		}
 	}
 
-	if (packet_ver == NRPE_PACKET_VERSION_3) {
-		if (v3_receive_packet) {
-			free(v3_receive_packet);
-		}
-	} else if (v2_receive_packet) {
+	if (v3_receive_packet) {
+		free(v3_receive_packet);
+	}
+	if (v2_receive_packet) {
 		free(v2_receive_packet);
 	}
 
@@ -1348,14 +1422,13 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 
 		if (rc <= 0 || rc != bytes_to_recv) {
 			if (rc < bytes_to_recv) {
-				if (packet_ver != NRPE_PACKET_VERSION_3)
+				if (packet_ver <= NRPE_PACKET_VERSION_3)
 					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%ld expected).\n", rc, sizeof(bytes_to_recv));
 			}
 			return -1;
 		}
 
-		packet_ver = ntohs(packet.packet_version);
-		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
+		if (packet_ver != ntohs(packet.packet_version)) {
 			printf("CHECK_NRPE: Invalid packet version received from server.\n");
 			return -1;
 		}
@@ -1398,6 +1471,10 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			tot_bytes += rc;
 
 			buffer_size = ntohl(buffer_size);
+			if (buffer_size < 0 || buffer_size > 65536) {
+				logit(LOG_ERR, "Error: Received packet with invalid buffer size");
+				return -1;
+			}
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
 				logit(LOG_ERR, "Error: Could not allocate memory for packet");
@@ -1413,7 +1490,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		rc = recvall(sock, buff_ptr, &bytes_to_recv, socket_timeout);
 
 		if (rc <= 0 || rc != buffer_size) {
-			if (packet_ver == NRPE_PACKET_VERSION_3) {
+			if (packet_ver >= NRPE_PACKET_VERSION_3) {
 				free(*v3_pkt);
 				*v3_pkt = NULL;
 			} else {
@@ -1436,14 +1513,13 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 
 		if (rc <= 0 || rc != bytes_to_recv) {
 			if (rc < bytes_to_recv) {
-				if (packet_ver != NRPE_PACKET_VERSION_3)
+				if (packet_ver < NRPE_PACKET_VERSION_3 || packet_ver > NRPE_PACKET_VERSION_4)
 					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%ld expected).\n", rc, sizeof(bytes_to_recv));
 			}
 			return -1;
 		}
 
-		packet_ver = ntohs(packet.packet_version);
-		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
+		if (packet_ver != ntohs(packet.packet_version)) {
 			printf("CHECK_NRPE: Invalid packet version received from server.\n");
 			return -1;
 		}
@@ -1491,6 +1567,10 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			tot_bytes += rc;
 
 			buffer_size = ntohl(buffer_size);
+			if (buffer_size < 0 || buffer_size > 65536) {
+				logit(LOG_ERR, "Error: Received packet with invalid buffer size");
+				return -1;
+			}
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
 				logit(LOG_ERR, "Error: Could not allocate memory for packet");
@@ -1517,7 +1597,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		buff_ptr[bytes_read] = 0;
 
 		if (rc < 0 || bytes_read != buffer_size) {
-			if (packet_ver == NRPE_PACKET_VERSION_3) {
+			if (packet_ver >= NRPE_PACKET_VERSION_3) {
 				free(*v3_pkt);
 				*v3_pkt = NULL;
 			} else {
@@ -1525,7 +1605,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 				*v2_pkt = NULL;
 			}
 			if (bytes_read != buffer_size) {
-				if (packet_ver == NRPE_PACKET_VERSION_3) {
+				if (packet_ver >= NRPE_PACKET_VERSION_3) {
 					printf("CHECK_NRPE: Receive buffer size - %ld bytes received (%ld expected).\n", (long)bytes_read, sizeof(buffer_size));
 				} else {
 					printf("CHECK_NRPE: Receive underflow - only %ld bytes received (%ld expected).\n", (long)bytes_read, sizeof(buffer_size));

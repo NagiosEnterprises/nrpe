@@ -49,5 +49,6 @@ void open_log_file();
 void logit(int priority, const char *format, ...);
 void close_log_file();
 void display_license(void);
+extern int disable_syslog;
 
 #endif

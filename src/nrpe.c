@@ -124,7 +124,7 @@ extern char *log_file;
 /* SSL/TLS parameters */
 typedef enum _SSL_VER {
 	SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus, TLSv1,
-	TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus
+	TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus, TLSv1_3, TLSv1_3_plus
 } SslVer;
 
 typedef enum _CLNT_CERTS {
@@ -148,17 +148,19 @@ struct _SSL_PARMS {
 	SslLogging log_opts;
 } sslprm = {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
-NULL, NULL, NULL, "ALL:!MD5:@STRENGTH:@SECLEVEL=0", TLSv1_plus, TRUE, 0, SSL_NoLogging};
+NULL, NULL, NULL, "ALL:!MD5:@STRENGTH:@SECLEVEL=0", TLSv1_plus, TRUE, 0, SSL_NoLogging
 #else
-NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", TLSv1_plus, TRUE, 0, SSL_NoLogging};
+NULL, NULL, NULL, "ALL:!MD5:@STRENGTH", TLSv1_plus, TRUE, 0, SSL_NoLogging
 #endif
-
+};
 
 #ifdef HAVE_SSL
 static int verify_callback(int ok, X509_STORE_CTX * ctx);
 static void my_disconnect_sighandler(int sig);
 static void complete_SSL_shutdown(SSL *);
 #endif
+
+int disable_syslog = FALSE;
 
 int main(int argc, char **argv)
 {
@@ -329,6 +331,10 @@ void init_ssl(void)
 #  ifdef SSL_TXT_TLSV1_2
 	if (sslprm.ssl_proto_ver == TLSv1_2)
 		meth = TLSv1_2_server_method();
+#  ifdef SSL_TXT_TLSV1_3
+	if (sslprm.ssl_proto_ver == TLSv1_3)
+		meth = TLSv1_3_server_method();
+#  endif	/* ifdef SSL_TXT_TLSV1_3 */
 #  endif	/* ifdef SSL_TXT_TLSV1_2 */
 # endif		/* SSL_TXT_TLSV1_1 */
 
@@ -349,6 +355,15 @@ void init_ssl(void)
 	SSL_CTX_set_max_proto_version(ctx, 0);
 
 	switch(sslprm.ssl_proto_ver) {
+		case TLSv1_3:
+#if OPENSSL_VERSION_NUMBER >= 0x10101000
+			SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
+#endif
+		case TLSv1_3_plus:
+#if OPENSSL_VERSION_NUMBER >= 0x10101000
+			SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);
+			break;
+#endif
 
 		case TLSv1_2:
 			SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
@@ -381,11 +396,14 @@ void init_ssl(void)
 		case SSLv2:
 		case SSLv2_plus:
 			break;
+		case TLSv1_3:
+		case TLSv1_3_plus:
+#ifdef SSL_OP_NO_TLSv1_2
+			ssl_opts |= SSL_OP_NO_TLSv1_2;
+#endif
 		case TLSv1_2:
 		case TLSv1_2_plus:
-#ifdef SSL_OP_NO_TLSv1_1
 			ssl_opts |= SSL_OP_NO_TLSv1_1;
-#endif
 		case TLSv1_1:
 		case TLSv1_1_plus:
 			ssl_opts |= SSL_OP_NO_TLSv1;
@@ -516,6 +534,12 @@ void log_ssl_startup(void)
 		break;
 	case TLSv1_2_plus:
 		vers = "TLSv1_2 And Above";
+		break;
+	case TLSv1_3:
+		vers = "TLSv1_3";
+		break;
+	case TLSv1_3_plus:
+		vers = "TLSv1_3 And Above";
 		break;
 	default:
 		vers = "INVALID VALUE!";
@@ -745,6 +769,62 @@ int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 }
 #endif
 
+/*
+ * Given a string, convert any byte pairs representing an escape sequence (e.g. "\\r" into 
+ * the single-byte metacharacter (e.g. '\r')
+ * Currently, this doesn't support octal/hex numbers or unicode code points (\n, \x, \u, \U)
+ */
+char* process_metachars(const char* input)
+{
+	char* copy = strdup(input);
+	int i,j;
+	int length = strlen(input);
+	for (i = 0, j = 0; i < length, j < length; i++, j++) {
+		if (copy[j] != '\\') {
+			copy[i] = copy[j];
+			continue;
+		}
+
+		j += 1;
+		switch (copy[j]) {
+			case 'a':
+				copy[i] = '\a';
+				break;
+			case 'b':
+				copy[i] = '\b';
+				break;
+			case 'f':
+				copy[i] = '\f';
+				break;
+			case 'n':
+				copy[i] = '\n';
+				break;
+			case 'r':
+				copy[i] = '\r';
+				break;
+			case 't':
+				copy[i] = '\t';
+				break;
+			case 'v':
+				copy[i] = '\v';
+				break;
+			case '\\':
+				copy[i] = '\\';
+				break;
+			case '\'':
+				copy[i] = '\'';
+				break;
+			case '"':
+				copy[i] = '\"';
+				break;
+			case '?':
+				copy[i] = '\?';
+				break;
+		}
+	}
+	copy[j] = '\0';
+}
+
 /* read in the configuration file */
 int read_config_file(char *filename)
 {
@@ -881,6 +961,9 @@ int read_config_file(char *filename)
 		else if (!strcmp(varname, "dont_blame_nrpe"))
 			allow_arguments = (atoi(varvalue) == 1) ? TRUE : FALSE;
 
+		else if (!strcmp(varname, "disable_syslog"))
+			disable_syslog = (atoi(varvalue) == 1) ? TRUE : FALSE;
+
 		else if (!strcmp(varname, "allow_bash_command_substitution"))
 			allow_bash_cmd_subst = (atoi(varvalue) == 1) ? TRUE : FALSE;
 
@@ -926,7 +1009,11 @@ int read_config_file(char *filename)
 			}
 
 		} else if (!strcmp(varname, "ssl_version")) {
-			if (!strcmp(varvalue, "TLSv1.2"))
+			if (!strcmp(varvalue, "TLSv1.3"))
+				sslprm.ssl_proto_ver = TLSv1_3;
+			else if (!strcmp(varvalue, "TLSv1.3+"))
+				sslprm.ssl_proto_ver = TLSv1_3_plus;
+			else if (!strcmp(varvalue, "TLSv1.2"))
 				sslprm.ssl_proto_ver = TLSv1_2;
 			else if (!strcmp(varvalue, "TLSv1.2+"))
 				sslprm.ssl_proto_ver = TLSv1_2_plus;
@@ -1005,7 +1092,7 @@ int read_config_file(char *filename)
 			keep_env_vars = strdup(varvalue);
 
 		else if (!strcmp(varname, "nasty_metachars"))
-			nasty_metachars = strdup(varvalue);
+			nasty_metachars = process_metachars(varvalue);
 
 		else if (!strcmp(varname, "log_file")) {
 			log_file = strdup(varvalue);
@@ -1074,11 +1161,7 @@ int read_config_dir(char *dirname)
 				continue;
 
 			/* process the config file */
-			result = read_config_file(config_file);
-
-			/* break out if we encountered an error */
-			if (result == ERROR)
-				break;
+			result |= read_config_file(config_file);
 		}
 
 		/* recurse into subdirectories... */
@@ -1089,12 +1172,7 @@ int read_config_dir(char *dirname)
 				continue;
 
 			/* process the config directory */
-			result = read_config_dir(config_file);
-
-			/* break out if we encountered an error */
-			if (result == ERROR)
-				break;
-
+			result |= read_config_dir(config_file);
 		}
 	}
 
@@ -1834,7 +1912,10 @@ void handle_connection(int sock)
 
 	} else {
 
-		pkt_size = (sizeof(v3_packet) - 1) + strlen(send_buff);
+		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + strlen(send_buff);
+		if (packet_ver == NRPE_PACKET_VERSION_3) {
+			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + strlen(send_buff);
+		}
 		v3_send_packet = calloc(1, pkt_size);
 		send_pkt = (char *)v3_send_packet;
 		/* initialize response packet data */
@@ -1914,13 +1995,31 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 	char      buffer[MAX_INPUT_BUFFER];
 	SSL      *ssl = (SSL*)ssl_ptr;
 	X509     *peer;
-	int       rc, x;
+	int       rc, x, sockfd, retval;
+	fd_set    rfds;
+	struct timeval timeout;
 
 	SSL_set_fd(ssl, sock);
+	sockfd = SSL_get_fd(ssl);
+
+	FD_ZERO(&rfds);
+	FD_SET(sockfd, &rfds);
+
+	timeout.tv_sec = connection_timeout;
+	timeout.tv_usec = 0;
+
 
 	/* keep attempting the request if needed */
-	while (((rc = SSL_accept(ssl)) != 1)
-			&& (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ));
+	do {
+		retval = select(sockfd + 1, &rfds, NULL, NULL, &timeout);
+
+		if (retval > 0) {
+			rc = SSL_accept(ssl);
+		} else {
+			logit(LOG_ERR, "Error: (!log_opts) Could not complete SSL handshake with %s: timeout %d seconds", remote_host, connection_timeout);
+			return ERROR;
+		}
+	} while (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ);
 
 	if (rc != 1) {
 		/* oops, got an unrecoverable error -- get out */
@@ -2010,7 +2109,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			return -1;
 
 		packet_ver = ntohs(v2_pkt->packet_version);
-		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
+		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_4) {
 			logit(LOG_ERR, "Error: (use_ssl == false): Request packet version was invalid!");
 			return -1;
 		}
@@ -2037,6 +2136,10 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			tot_bytes += rc;
 
 			buffer_size = ntohl(buffer_size);
+			if (buffer_size < 0 || buffer_size > 65536) {
+				logit(LOG_ERR, "Error: (use_ssl == false): Received packet with invalid buffer size");
+				return -1;
+			}
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
 				logit(LOG_ERR, "Error: (use_ssl == false): Could not allocate memory for packet");
@@ -2063,16 +2166,34 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 #ifdef HAVE_SSL
 	else {
 		SSL      *ssl = (SSL *) ssl_ptr;
+		int       sockfd, retval;
+		fd_set    rfds;
+		struct timeval timeout;
 
-		while (((rc = SSL_read(ssl, v2_pkt, bytes_to_recv)) <= 0)
-			   && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ)) {
-		}
+		sockfd = SSL_get_fd(ssl);
+
+		FD_ZERO(&rfds);
+		FD_SET(sockfd, &rfds);
+
+		timeout.tv_sec = connection_timeout;
+		timeout.tv_usec = 0;
+
+		do {
+			retval = select(sockfd + 1, &rfds, NULL, NULL, &timeout);
+
+			if (retval > 0) {
+				rc = SSL_read(ssl, v2_pkt, bytes_to_recv);
+			} else {
+				logit(LOG_ERR, "Error (!log_opts): Could not complete SSL_read with %s: timeout %d seconds", remote_host, connection_timeout);
+				return -1;
+			}
+		} while (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ);
 
 		if (rc <= 0 || rc != bytes_to_recv)
 			return -1;
 
 		packet_ver = ntohs(v2_pkt->packet_version);
-		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_3) {
+		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_4) {
 			logit(LOG_ERR, "Error: (use_ssl == true): Request packet version was invalid!");
 			return -1;
 		}
@@ -2081,7 +2202,13 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			buffer_size = sizeof(v2_packet) - common_size;
 			buff_ptr = (char *)v2_pkt + common_size;
 		} else {
-			int32_t   pkt_size = sizeof(v3_packet) - 1;
+			int32_t   pkt_size = sizeof(v3_packet);
+			if (packet_ver == NRPE_PACKET_VERSION_3) {
+				pkt_size -= NRPE_V3_PACKET_SIZE_OFFSET;
+			}
+			else if (packet_ver == NRPE_PACKET_VERSION_4) {
+				pkt_size -= NRPE_V4_PACKET_SIZE_OFFSET;
+			}
 
 			/* Read the alignment filler */
 			bytes_to_recv = sizeof(int16_t);
@@ -2104,6 +2231,10 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			tot_bytes += rc;
 
 			buffer_size = ntohl(buffer_size);
+			if (buffer_size < 0 || buffer_size > 65536) {
+				logit(LOG_ERR, "Error: (use_ssl == true): Received packet with invalid buffer size");
+				return -1;
+			}
 			pkt_size += buffer_size;
 			if ((*v3_pkt = calloc(1, pkt_size)) == NULL) {
 				logit(LOG_ERR, "Error: (use_ssl == true): Could not allocate memory for packet");
@@ -2606,6 +2737,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 {
 	u_int32_t	packet_crc32;
 	u_int32_t	calculated_crc32;
+	int32_t		pkt_size, buffer_size;
 	char		*buff, *ptr;
 	int			rc;
 #ifdef ENABLE_COMMAND_ARGUMENTS
@@ -2613,8 +2745,18 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 #endif
 
 	/* check the crc 32 value */
-	if (packet_ver == NRPE_PACKET_VERSION_3) {
-		int32_t   pkt_size = (sizeof(v3_packet) - 1) + ntohl(v3pkt->buffer_length);
+	if (packet_ver >= NRPE_PACKET_VERSION_3) {
+
+		buffer_size = ntohl(v3pkt->buffer_length);
+		if (buffer_size < 0 || buffer_size > INT_MAX - pkt_size) {
+			logit(LOG_ERR, "Error: Request packet had invalid buffer size.");
+			return ERROR;
+		}
+
+		pkt_size = sizeof(v3_packet);
+		pkt_size -= (packet_ver == NRPE_PACKET_VERSION_3 ? NRPE_V3_PACKET_SIZE_OFFSET : NRPE_V4_PACKET_SIZE_OFFSET);
+		pkt_size += buffer_size;
+
 		packet_crc32 = ntohl(v3pkt->crc32_value);
 		v3pkt->crc32_value = 0L;
 		v3pkt->alignment = 0;
@@ -2637,7 +2779,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	}
 
 	/* make sure buffer is terminated */
-	if (packet_ver == NRPE_PACKET_VERSION_3) {
+	if (packet_ver >= NRPE_PACKET_VERSION_3) {
 		int32_t   l = ntohs(v3pkt->buffer_length);
 		v3pkt->buffer[l - 1] = '\x0';
 		buff = v3pkt->buffer;
@@ -2653,7 +2795,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	}
 
 	/* make sure request doesn't contain nasties */
-	if (packet_ver == NRPE_PACKET_VERSION_3)
+	if (packet_ver >= NRPE_PACKET_VERSION_3)
 		rc = contains_nasty_metachars(v3pkt->buffer);
 	else
 		rc = contains_nasty_metachars(v2pkt->buffer);
@@ -2663,7 +2805,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	}
 
 	/* make sure the request doesn't contain arguments */
-	if (strchr(v2pkt->buffer, '!')) {
+	if (strchr(buff, '!')) {
 #ifdef ENABLE_COMMAND_ARGUMENTS
 		if (allow_arguments == FALSE) {
 			logit(LOG_ERR, "Error: Request contained command arguments, but argument option is not enabled!");
