@@ -11,12 +11,12 @@ versions, but for best results, both programs should be updated.
 * Added TLSv1.3 and TLSv1.3+ support for systems that have it (Nigel Yong, Rahul Golam)
 * Added IPv6 ip address to list of default allow_from hosts (Troy Lea)
 * Added -D option to disable logging to syslog (Tom Griep, Sebastian Wolf)
-* Added -3 option to allow communication with NRPE v3.2.1 and earlier
+* Added -3 option to force check_nrpe to use NRPE v3 packets
 * OpenRC: provide a default path for nrpe.cfg (Michael Orlitzky)
 * OpenRC: Use RC_SVCNAME over a hard-coded PID file (j-licht)
 
 **FIXES**
-* Checks for '!' now only occur inside the command buffer for v3 packets (Joni Eskelinen)
+* Checks for '!' now only occur inside the command buffer (Joni Eskelinen)
 * NRPE daemon is more resilient to DOS attacks (Leonid Vasiliev)
 * allowed_hosts will no longer test getaddrinfo records against the wrong protocol (dombenson)
 * nasty_metachars will now handle C escape sequences properly when specified in the config file (Sebastian Wolf)
