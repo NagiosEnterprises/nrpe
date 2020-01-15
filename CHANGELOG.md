@@ -1,7 +1,7 @@
 NRPE Changelog
 ==============
 
-[4.0.0](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-3.3.0) - 2019-01-13
+[4.0.0](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.0.0) - 2019-01-13
 ---------------------------------------------------------------------------------------
 Note: This update includes security fixes which affect both the check_nrpe plugin and 
 the NRPE daemon. The latest version of NRPE is still able to interoperate with previous
