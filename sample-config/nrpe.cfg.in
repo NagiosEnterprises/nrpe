@@ -361,3 +361,9 @@ command[check_total_procs]=@pluginsdir@/check_procs -w 150 -c 200
 
 #include_dir=<somedirectory>
 #include_dir=<someotherdirectory>
+
+# KEEP ENVIRONMENT VARIABLES
+# This directive allows you to retain specific variables from the environment
+# when starting the NRPE daemon. 
+
+#keep_env_vars=NRPE_MULTILINESUPPORT,NRPE_PROGRAMVERSION
