@@ -1,6 +1,11 @@
 NRPE Changelog
 ==============
 
+[4.0.1](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.0.1) - 2020-01-22
+---------------------------------------------------------------------------------------
+**FIXES**
+* Fixed syslog flooding with CRC-checking errors when both plugin and agent were updated to version 4 (Sebastian Wolf)
+
 [4.0.0](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.0.0) - 2019-01-13
 ---------------------------------------------------------------------------------------
 Note: This update includes security fixes which affect both the check_nrpe plugin and 

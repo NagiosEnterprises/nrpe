@@ -1230,7 +1230,9 @@ int send_request()
 		v3_send_packet->packet_version = htons(packet_ver);
 		v3_send_packet->packet_type = htons(QUERY_PACKET);
 		v3_send_packet->alignment = 0;
-		v3_send_packet->buffer_length = htonl(pkt_size - sizeof(v3_packet) + 1);
+		v3_send_packet->buffer_length = pkt_size - sizeof(v3_packet);
+		v3_send_packet->buffer_length += (packet_ver == NRPE_PACKET_VERSION_4 ? NRPE_V4_PACKET_SIZE_OFFSET : NRPE_V3_PACKET_SIZE_OFFSET);
+		v3_send_packet->buffer_length = htonl(v3_send_packet->buffer_length);
 		strcpy(&v3_send_packet->buffer[0], query);
 
 		/* calculate the crc 32 value of the packet */
@@ -1373,7 +1375,7 @@ int read_response()
 
 	/* get the return code from the remote plugin */
 	/* and print the output returned by the daemon */
-	if (packet_ver == NRPE_PACKET_VERSION_3) {
+	if (packet_ver >= NRPE_PACKET_VERSION_3) {
 		result = ntohs(v3_receive_packet->result_code);
 		if (v3_receive_packet->buffer_length == 0) {
 			printf("CHECK_NRPE: No output returned from daemon.\n");
@@ -1612,8 +1614,9 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 				}
 			}
 			return -1;
-		} else
+		} else {
 			tot_bytes += rc;
+		}
 	}
 #endif
 
