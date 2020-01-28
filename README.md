@@ -2,11 +2,10 @@
 
 [![Build Status](https://travis-ci.org/NagiosEnterprises/nrpe.svg?branch=master)](https://travis-ci.org/NagiosEnterprises/nrpe)
 
-NRPE
-====
+***Notice: As of NRPE version 4.0.1, this project is deprecated. It will not receive any more bugfixes or features, except to resolve security issues.***
 
-## Nagios Remote Plugin Executor
-
+Nagios Remote Plugin Executor (NRPE)
+====================================
 
 For installation instructions and information on the design overview
 of the NRPE addon, please read the PDF documentation that is found in
