@@ -1594,9 +1594,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 				break;
 			bytes_read += rc;
 			bytes_to_recv -= rc;
+			tot_bytes += rc;
 		}
-
-		buff_ptr[bytes_read] = 0;
 
 		if (rc < 0 || bytes_read != buffer_size) {
 			if (packet_ver >= NRPE_PACKET_VERSION_3) {
@@ -1614,8 +1613,6 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 				}
 			}
 			return -1;
-		} else {
-			tot_bytes += rc;
 		}
 	}
 #endif
