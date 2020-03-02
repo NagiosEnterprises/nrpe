@@ -2748,10 +2748,6 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 	if (packet_ver >= NRPE_PACKET_VERSION_3) {
 
 		buffer_size = ntohl(v3pkt->buffer_length);
-		if (buffer_size < 0 || buffer_size > INT_MAX - pkt_size) {
-			logit(LOG_ERR, "Error: Request packet had invalid buffer size.");
-			return ERROR;
-		}
 
 		pkt_size = sizeof(v3_packet);
 		pkt_size -= (packet_ver == NRPE_PACKET_VERSION_3 ? NRPE_V3_PACKET_SIZE_OFFSET : NRPE_V4_PACKET_SIZE_OFFSET);
