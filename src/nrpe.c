@@ -1912,9 +1912,9 @@ void handle_connection(int sock)
 
 	} else {
 
-		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + strlen(send_buff);
+		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + strlen(send_buff) + 1;
 		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + strlen(send_buff);
+			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + strlen(send_buff) + 1;
 		}
 		v3_send_packet = calloc(1, pkt_size);
 		send_pkt = (char *)v3_send_packet;
@@ -1923,7 +1923,7 @@ void handle_connection(int sock)
 		v3_send_packet->packet_type = htons(RESPONSE_PACKET);
 		v3_send_packet->result_code = htons(result);
 		v3_send_packet->alignment = 0;
-		v3_send_packet->buffer_length = htonl(strlen(send_buff));
+		v3_send_packet->buffer_length = htonl(strlen(send_buff) + 1);
 		strcpy(&v3_send_packet->buffer[0], send_buff);
 
 		/* calculate the crc 32 value of the packet */
