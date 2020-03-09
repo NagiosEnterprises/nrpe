@@ -2487,9 +2487,9 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 PKG_NAME=nrpe
-PKG_VERSION="4.0.0"
+PKG_VERSION="4.0.2"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="2020-01-15"
+PKG_REL_DATE="2020-03-09"
 RPM_RELEASE=1
 
 LANG=C
