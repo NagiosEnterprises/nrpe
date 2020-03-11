@@ -1,6 +1,12 @@
 NRPE Changelog
 ==============
 
+[4.0.2](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.0.2) - 2020-03-11
+---------------------------------------------------------------------------------------
+**FIXES**
+- Fixed buffer length calculations/writing past memory boundaries on some systems  (#227, #228) (Andreas Baumann, hariwe, Sebastian Wolf)
+- Fixed use of uninitialized variable when validating requests (#229) (hariwe, Sebastian Wolf)
+
 [4.0.1](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.0.1) - 2020-01-22
 ---------------------------------------------------------------------------------------
 **FIXES**
