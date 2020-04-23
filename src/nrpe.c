@@ -823,6 +823,8 @@ char* process_metachars(const char* input)
 		}
 	}
 	copy[j] = '\0';
+
+	return copy;
 }
 
 /* read in the configuration file */
