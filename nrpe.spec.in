@@ -22,7 +22,7 @@
 %define _sysconfdir /etc/nagios
 
 %define name @PACKAGE_NAME@
-%define version 4.0.3-rc1
+%define version 4.0.3-rc2
 %define release @RPM_RELEASE@
 %define nsusr @nrpe_user@
 %define nsgrp @nrpe_group@

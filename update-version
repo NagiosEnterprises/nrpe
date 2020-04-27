@@ -28,7 +28,7 @@ else
 fi
 
 # Current version number
-CURRENTVERSION=4.0.3-rc1
+CURRENTVERSION=4.0.3-rc2
 
 # Last date
 LASTDATE=2020-04-27

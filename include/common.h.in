@@ -37,7 +37,7 @@
 # endif
 #endif
 
-#define PROGRAM_VERSION "4.0.3-rc1"
+#define PROGRAM_VERSION "4.0.3-rc2"
 #define MODIFICATION_DATE "2020-04-27"
 
 #define OK							0

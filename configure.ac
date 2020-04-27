@@ -11,7 +11,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
 PKG_NAME=nrpe
-PKG_VERSION="4.0.3-rc1"
+PKG_VERSION="4.0.3-rc2"
 PKG_HOME_URL="http://www.nagios.org/"
 PKG_REL_DATE="2020-04-27"
 RPM_RELEASE=1
