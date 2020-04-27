@@ -1,6 +1,11 @@
 NRPE Changelog
 ==============
 
+[4.0.3](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.0.2) - 2020-03-11
+---------------------------------------------------------------------------------------
+**FIXES**
+- Fixed nasty_metachars not being read from config file (#235) (Sebastian Wolf)
+
 [4.0.2](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.0.2) - 2020-03-11
 ---------------------------------------------------------------------------------------
 **FIXES**
