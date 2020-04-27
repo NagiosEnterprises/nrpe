@@ -822,7 +822,7 @@ char* process_metachars(const char* input)
 				break;
 		}
 	}
-	copy[j] = '\0';
+	copy[i] = '\0';
 
 	return copy;
 }
