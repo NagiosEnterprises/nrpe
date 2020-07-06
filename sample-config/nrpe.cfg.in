@@ -268,7 +268,7 @@ connection_timeout=300
 # This option allows you to override the list of characters that cannot
 # be passed to the NRPE daemon.
 
-# nasty_metachars="|`&><'\\[]{};\r\n"
+# nasty_metachars=|`&><'\\[]{};\r\n
 
 # This option allows you to enable or disable logging error messages to the syslog facilities.
 # If this option is not set, the error messages will be logged.
