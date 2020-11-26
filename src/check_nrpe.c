@@ -730,7 +730,7 @@ void usage(int result)
 		printf(" -V, --version                Print version info and quit\n");
 		printf(" -l, --license                Show license\n");
 		printf(" -E, --stderr-to-stdout       Redirect stderr to stdout\n");
-		printf(" -d, --use-dh=DHOPT           Anonymous Diffie Hellman use:\n");
+		printf(" -d, --use-adh=DHOPT          Anonymous Diffie Hellman use:\n");
 		printf("                              0         Don't use Anonymous Diffie Hellman\n");
 		printf("                                        (This will be the default in a future release.)\n");
 		printf("                              1         Allow Anonymous Diffie Hellman (default)\n");
