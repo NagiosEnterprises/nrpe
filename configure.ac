@@ -237,12 +237,30 @@ AC_CHECK_FUNCS([getopt_long],,AC_CHECK_LIB([iberty],[getopt_long],OTHERLIBS="$OT
 dnl Checks for library functions.
 AC_CHECK_LIB(nsl,main,SOCKETLIBS="$SOCKETLIBS -lnsl")
 AC_CHECK_LIB(socket,socket,SOCKETLIBS="$SOCKETLIBS -lsocket")
-AC_CHECK_LIB(wrap,main,[
-	LIBWRAPLIBS="$LIBWRAPLIBS -lwrap"
-	AC_DEFINE(HAVE_LIBWRAP,[1],[Have the TCP wrappers library])
-	AC_TRY_LINK([#include <tcpd.h>
-		],[int a = rfc931_timeout;],AC_DEFINE(HAVE_RFC931_TIMEOUT))
+
+AC_ARG_ENABLE([tcpd],
+	AS_HELP_STRING([--disable-tcpd],[disables support for tcpd even if present]),[
+	if test x$enableval = xyes; then
+		check_for_tcpd=yes
+	else
+		check_for_tcpd=no
+	fi
+	],check_for_tcpd=optional)
+
+AC_MSG_CHECKING(check_for_tcpd=$check_for_tcpd)
+if test x$check_for_tcpd != xno; then
+	AC_CHECK_LIB(wrap,main,[
+		LIBWRAPLIBS="$LIBWRAPLIBS -lwrap"
+		AC_DEFINE(HAVE_LIBWRAP,[1],[Have the TCP wrappers library])
+		AC_TRY_LINK([#include <tcpd.h>
+			],[int a = rfc931_timeout;],AC_DEFINE(HAVE_RFC931_TIMEOUT))
+	],[
+		if test x$check_for_tcpd = xyes; then
+			AC_MSG_ERROR(--enable-tcpd specified but unable to locate libwrap.)
+		fi
 	])
+fi
+
 AC_CHECK_FUNCS(strdup strstr strtoul strtok_r initgroups closesocket sigaction scandir)
 
 dnl socklen_t check - from curl
