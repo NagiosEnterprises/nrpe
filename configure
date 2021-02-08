@@ -756,6 +756,7 @@ with_cgibindir
 with_logdir
 with_piddir
 with_pipedir
+enable_tcpd
 enable_ssl
 with_need_dh
 with_ssl
@@ -1390,6 +1391,7 @@ Optional Features:
                           '--enable-install-method', so you can see the
                           destinations before a full './configure', 'make',
                           'make install' process.
+  --disable-tcpd          disables support for tcpd even if present
   --disable-ssl           disables native SSL support [default=check]
   --enable-command-args   allows clients to specify command arguments. ***
                           THIS IS A SECURITY RISK! *** Read the SECURITY file
@@ -7100,7 +7102,25 @@ if test "x$ac_cv_lib_socket_socket" = xyes; then :
   SOCKETLIBS="$SOCKETLIBS -lsocket"
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lwrap" >&5
+
+# Check whether --enable-tcpd was given.
+if test "${enable_tcpd+set}" = set; then :
+  enableval=$enable_tcpd;
+	if test x$enableval = xyes; then
+		check_for_tcpd=yes
+	else
+		check_for_tcpd=no
+	fi
+
+else
+  check_for_tcpd=optional
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking check_for_tcpd=$check_for_tcpd" >&5
+$as_echo_n "checking check_for_tcpd=$check_for_tcpd... " >&6; }
+if test x$check_for_tcpd != xno; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lwrap" >&5
 $as_echo_n "checking for main in -lwrap... " >&6; }
 if ${ac_cv_lib_wrap_main+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -7154,6 +7174,14 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
+
+else
+
+		if test x$check_for_tcpd = xyes; then
+			as_fn_error $? "--enable-tcpd specified but unable to locate libwrap." "$LINENO" 5
+		fi
+
+fi
 
 fi
 
