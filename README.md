@@ -163,7 +163,7 @@ If you plan on running nrpe under inetd or xinetd and making use
 of TCP wrappers, you need to add a line to your `/etc/services`
 file as follows (modify the port number as you see fit)
 
-     nrpe            5666/tcp    # NRPE
+    nrpe            5666/tcp    # NRPE
 
 The run `make install-inetd` to copy the appropriate file, or
 add the appropriate line to your `/etc/inetd.conf`.
@@ -185,11 +185,11 @@ ignored.
 
    Un-comment the appropriate line, then Restart inetd:
 
-       /etc/rc.d/init.d/inet restart
+      /etc/rc.d/init.d/inet restart
 
    OpenBSD users can use the following command to restart inetd:
 
-       kill -HUP `cat /var/run/inet.pid`
+      kill -HUP `cat /var/run/inet.pid`
 
    Then add entries to your `/etc/hosts.allow` and `/etc/hosts.deny`
    file to enable TCP wrapper protection for the nrpe service.
@@ -202,21 +202,21 @@ ignored.
    will create a file called `nrpe` in your `/etc/xinetd.d`
    directory that contains a file similar to this:
 
-       # default: off
-       # description: NRPE (Nagios Remote Plugin Executor)
-       service nrpe
-       {
-           disable         = yes
-           socket_type     = stream
-           port            = @NRPE_PORT@
-           wait            = no
-           user            = nagios
-           group           = nagios
-           server          = /usr/local/nagios/bin/nrpe
-           server_args     = -c /usr/local/nagios/etc/nrpe.cfg --inetd
-           only_from       = 127.0.0.1
-           log_on_failure  += USERID
-       }
+      # default: off
+      # description: NRPE (Nagios Remote Plugin Executor)
+      service nrpe
+      {
+          disable         = yes
+          socket_type     = stream
+          port            = @NRPE_PORT@
+          wait            = no
+          user            = nagios
+          group           = nagios
+          server          = /usr/local/nagios/bin/nrpe
+          server_args     = -c /usr/local/nagios/etc/nrpe.cfg --inetd
+          only_from       = 127.0.0.1
+          log_on_failure  += USERID
+      }
 
    * Replace `disable = yes` with `disable = no`
    * Replace the `127.0.0.1` field with the IP addresses of hosts which
@@ -228,7 +228,7 @@ ignored.
 
    * Restart xinetd:
 
-          /etc/rc.d/init.d/xinetd restart
+         /etc/rc.d/init.d/xinetd restart
 
 
 Configuring Things On The Nagios Host
