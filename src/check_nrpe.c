@@ -1425,7 +1425,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		if (rc <= 0 || rc != bytes_to_recv) {
 			if (rc < bytes_to_recv) {
 				if (packet_ver <= NRPE_PACKET_VERSION_3)
-					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%ld expected).\n", rc, sizeof(bytes_to_recv));
+					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%zu expected).\n", rc, sizeof(bytes_to_recv));
 			}
 			return -1;
 		}
@@ -1500,7 +1500,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 				*v2_pkt = NULL;
 			}
 			if (rc < buffer_size)
-				printf("CHECK_NRPE: Receive underflow - only %d bytes received (%ld expected).\n", rc, sizeof(buffer_size));
+				printf("CHECK_NRPE: Receive underflow - only %d bytes received (%zu expected).\n", rc, sizeof(buffer_size));
 			return -1;
 		} else
 			tot_bytes += rc;
@@ -1516,7 +1516,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		if (rc <= 0 || rc != bytes_to_recv) {
 			if (rc < bytes_to_recv) {
 				if (packet_ver < NRPE_PACKET_VERSION_3 || packet_ver > NRPE_PACKET_VERSION_4)
-					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%ld expected).\n", rc, sizeof(bytes_to_recv));
+					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%zu expected).\n", rc, sizeof(bytes_to_recv));
 			}
 			return -1;
 		}
@@ -1607,9 +1607,9 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			}
 			if (bytes_read != buffer_size) {
 				if (packet_ver >= NRPE_PACKET_VERSION_3) {
-					printf("CHECK_NRPE: Receive buffer size - %ld bytes received (%ld expected).\n", (long)bytes_read, sizeof(buffer_size));
+					printf("CHECK_NRPE: Receive buffer size - %ld bytes received (%zu expected).\n", (long)bytes_read, sizeof(buffer_size));
 				} else {
-					printf("CHECK_NRPE: Receive underflow - only %ld bytes received (%ld expected).\n", (long)bytes_read, sizeof(buffer_size));
+					printf("CHECK_NRPE: Receive underflow - only %ld bytes received (%zu expected).\n", (long)bytes_read, sizeof(buffer_size));
 				}
 			}
 			return -1;
