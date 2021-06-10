@@ -7725,6 +7725,7 @@ fi
 				echo ""
 				echo "*** Generating DH Parameters for SSL/TLS ***"
 				# awk to strip off meta data at bottom of dhparam output
+				test -d include || mkdir include
 				$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
 			fi
 		fi
