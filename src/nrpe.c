@@ -277,6 +277,12 @@ void init_ssl(void)
 	ssl_opts = SSL_OP_ALL;
 	sslprm.allowDH = 0;
 #endif
+#ifdef SSL_OP_NO_RENEGOTIATION
+	ssl_opts |= SSL_OP_NO_RENEGOTIATION;
+#endif
+#ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
+	ssl_opts |= SSL_OP_CIPHER_SERVER_PREFERENCE;
+#endif
 
 	if (sslprm.log_opts & SSL_LogStartup)
 		log_ssl_startup();
