@@ -420,8 +420,20 @@ void init_ssl(void)
 
 	SSL_CTX_set_options(ctx, ssl_opts);
 
+	if (sslprm.cacert_file != NULL) {
+		if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
+			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+				logit(LOG_ERR, "Error: could not use CA certificate file '%s': %s\n",
+					   sslprm.cacert_file, ERR_reason_error_string(x));
+			}
+			SSL_CTX_free(ctx);
+			logit(LOG_ERR, "Error: could not use CA certificate '%s'", sslprm.cacert_file);
+			exit(STATE_CRITICAL);
+		}
+	}
+
 	if (sslprm.cert_file != NULL) {
-		if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
+		if (!SSL_CTX_use_certificate_chain_file(ctx, sslprm.cert_file)) {
 			SSL_CTX_free(ctx);
 			while ((x = ERR_get_error()) != 0) {
 				ERR_error_string(x, errstr);
@@ -439,22 +451,29 @@ void init_ssl(void)
 			SSL_CTX_free(ctx);
 			exit(STATE_CRITICAL);
 		}
+		if (!SSL_CTX_check_private_key(ctx)) {
+			while ((x = ERR_get_error()) != 0) {
+				ERR_error_string(x, errstr);
+				logit(LOG_ERR, "Error: could not use certificate/private key pair: %s",
+					 errstr);
+			}
+			SSL_CTX_free(ctx);
+			exit(STATE_CRITICAL);
+		}
 	}
 
 	if (sslprm.client_certs != 0) {
+		if (sslprm.cacert_file == NULL) {
+			logit(LOG_ERR, "Error: CA certificate required for client verification.");
+			if ((sslprm.client_certs & Require_Cert) != 0) {
+				SSL_CTX_free(ctx);
+				exit(STATE_CRITICAL);
+			}
+		}
 		vrfy = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
 		if ((sslprm.client_certs & Require_Cert) != 0)
 			vrfy |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 		SSL_CTX_set_verify(ctx, vrfy, verify_callback);
-		if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
-			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-				logit(LOG_ERR, "Error: could not use CA certificate file '%s': %s\n",
-					   sslprm.cacert_file, ERR_reason_error_string(x));
-			}
-			SSL_CTX_free(ctx);
-			logit(LOG_ERR, "Error: could not use CA certificate '%s'", sslprm.cacert_file);
-			exit(STATE_CRITICAL);
-		}
 	}
 
 	if (!sslprm.allowDH) {
