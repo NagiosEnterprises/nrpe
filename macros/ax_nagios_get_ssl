@@ -296,7 +296,7 @@ if test x$SSL_TYPE != xNONE; then
 				echo "*** Generating DH Parameters for SSL/TLS ***"
 				# OpenSSL 3 removes dhparam -C
 				# check version and use our own parser if needed
-				nagios_ssl_major_version=`$sslbin version | awk '{print $2}' | cut -d. -f1`
+				nagios_ssl_major_version=`$sslbin version | cut -d' ' -f2 | cut -d. -f1`
 
 				if test "x$nagios_ssl_major_version" = "x3"; then
 					$CC src/print_c_code.c -o src/print_c_code

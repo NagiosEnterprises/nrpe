@@ -131,7 +131,7 @@ int main() {
 	// Print the first part of the C code:
 
 	printf("#ifndef HEADER_DH_H\n"
-		"#define OPENSSL_API_COMPAT 10101\n"
+		"#define OPENSSL_API_COMPAT 10002\n"
 		"#define OPENSSL_NO_DEPRECATED\n"
 		"#include <openssl/dh.h>\n"
 		"#endif\n"
@@ -163,9 +163,12 @@ int main() {
 		"\tDH *dh;\n"
 		"\n"
 		"\tif ((dh=DH_new()) == NULL) return(NULL);\n"
-		"\tdh->p=BN_bin2bn(dh2048_p,sizeof(dh2048_p),NULL);\n"
-		"\tdh->g=BN_bin2bn(dh2048_g,sizeof(dh2048_g),NULL);\n"
-		"\tif ((dh->p == NULL) || (dh->g == NULL))\n"
+		"\tBIGNUM *p=BN_bin2bn(dh2048_p,sizeof(dh2048_p),NULL);\n"
+		"\tBIGNUM *g=BN_bin2bn(dh2048_g,sizeof(dh2048_g),NULL);\n"
+		"\tif ((p == NULL) || (g == NULL))\n"
+		"\t\t{ DH_free(dh); return(NULL); }\n"
+		"\tint result = DH_set0_pqg(dh, p, NULL, g);\n"
+		"\tif (result == 0)"
 		"\t\t{ DH_free(dh); return(NULL); }\n"
 		"\treturn(dh);\n"
 		"}\n");
