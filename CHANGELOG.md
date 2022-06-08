@@ -1,6 +1,22 @@
 NRPE Changelog
 ==============
 
+4.1.0 - 2022-06-??
+------------------
+**ENHANCEMENTS**
+- Add support for OpenSSL 3 (and EL9/Debian 11/Ubuntu 22)
+- Allow tcpd/libwrap to be excluded from build when present on the system
+- Allow loading of full certificate chains
+- Change -u (connection issues return UNKNOWN) to include all SSL-layer failures.
+- Disable renegotiation and enforce server cipher order when using SSL
+- Verify that private keys match certificates when using SSL
+**FIXES**
+- Fixed incorrect default for nasty_metachars in nrpe.cfg
+- Fixed incorrect help text for --use-adh
+- Fixed potential out-of-bound read when used with IPv6
+
+
+
 [4.0.3](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.0.3) - 2020-04-28
 ---------------------------------------------------------------------------------------
 **FIXES**
