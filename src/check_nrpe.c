@@ -1053,7 +1053,7 @@ void set_sig_handlers()
 
 int connect_to_remote()
 {
-	struct sockaddr addr;
+	struct sockaddr_storage addr;
 	struct in_addr *inaddr;
 	socklen_t addrlen;
 	int result, rc, ssl_err, ern, x, nerrs = 0;
@@ -1065,14 +1065,14 @@ int connect_to_remote()
 	result = STATE_OK;
 	addrlen = sizeof(addr);
 	rc = getpeername(sd, (struct sockaddr *)&addr, &addrlen);
-	if (addr.sa_family == AF_INET) {
+	if (addr.ss_family == AF_INET) {
 		struct sockaddr_in *addrin = (struct sockaddr_in *)&addr;
 		inaddr = &addrin->sin_addr;
 	} else {
 		struct sockaddr_in6 *addrin = (struct sockaddr_in6 *)&addr;
 		inaddr = (struct in_addr *)&addrin->sin6_addr;
 	}
-	if (inet_ntop(addr.sa_family, inaddr, rem_host, sizeof(rem_host)) == NULL)
+	if (inet_ntop(addr.ss_family, inaddr, rem_host, sizeof(rem_host)) == NULL)
 		strncpy(rem_host, "Unknown", sizeof(rem_host));
 	rem_host[MAX_HOST_ADDRESS_LENGTH - 1] = '\0';
 	if ((sslprm.log_opts & SSL_LogIpAddr) != 0)
