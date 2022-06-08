@@ -2489,9 +2489,9 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 PKG_NAME=nrpe
-PKG_VERSION="4.0.3"
+PKG_VERSION="4.1.0RC1"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="2020-04-28"
+PKG_REL_DATE="2022-06-08"
 RPM_RELEASE=1
 
 LANG=C
@@ -7152,11 +7152,11 @@ fi
 $as_echo "$ac_cv_lib_wrap_main" >&6; }
 if test "x$ac_cv_lib_wrap_main" = xyes; then :
 
-	LIBWRAPLIBS="$LIBWRAPLIBS -lwrap"
+		LIBWRAPLIBS="$LIBWRAPLIBS -lwrap"
 
 $as_echo "#define HAVE_LIBWRAP 1" >>confdefs.h
 
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <tcpd.h>
 
@@ -7754,7 +7754,7 @@ fi
 				echo "*** Generating DH Parameters for SSL/TLS ***"
 				# OpenSSL 3 removes dhparam -C
 				# check version and use our own parser if needed
-				nagios_ssl_major_version=`$sslbin version | awk '{print }' | cut -d. -f1`
+				nagios_ssl_major_version=`$sslbin version | cut -d' ' -f2 | cut -d. -f1`
 
 				test -d include || mkdir include
 				if test "x$nagios_ssl_major_version" = "x3"; then
