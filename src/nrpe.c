@@ -35,16 +35,18 @@
  ****************************************************************************/
 
 #include "config.h"
-#include "common.h"
-#include "nrpe.h"
-#include "utils.h"
-#include "acl.h"
 
 #ifdef HAVE_SSL
 # ifdef USE_SSL_DH
 #  include "../include/dh.h"
 # endif
 #endif
+
+#include "common.h"
+#include "nrpe.h"
+#include "utils.h"
+#include "acl.h"
+
 #ifndef HAVE_ASPRINTF
 extern int asprintf(char **ptr, const char *format, ...);
 #endif

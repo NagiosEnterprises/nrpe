@@ -730,7 +730,7 @@ void usage(int result)
 		printf(" -V, --version                Print version info and quit\n");
 		printf(" -l, --license                Show license\n");
 		printf(" -E, --stderr-to-stdout       Redirect stderr to stdout\n");
-		printf(" -d, --use-dh=DHOPT           Anonymous Diffie Hellman use:\n");
+		printf(" -d, --use-adh=DHOPT          Anonymous Diffie Hellman use:\n");
 		printf("                              0         Don't use Anonymous Diffie Hellman\n");
 		printf("                                        (This will be the default in a future release.)\n");
 		printf("                              1         Allow Anonymous Diffie Hellman (default)\n");
@@ -970,7 +970,7 @@ void setup_ssl()
 		SSL_CTX_set_options(ctx, ssl_opts);
 
 		if (sslprm.cert_file != NULL && sslprm.privatekey_file != NULL) {
-			if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
+			if (!SSL_CTX_use_certificate_chain_file(ctx, sslprm.cert_file)) {
 				printf("Error: could not use certificate file '%s'.\n", sslprm.cert_file);
 				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
 					printf("Error: could not use certificate file '%s': %s\n", sslprm.cert_file, ERR_reason_error_string(x));
@@ -1053,7 +1053,7 @@ void set_sig_handlers()
 
 int connect_to_remote()
 {
-	struct sockaddr addr;
+	struct sockaddr_storage addr;
 	struct in_addr *inaddr;
 	socklen_t addrlen;
 	int result, rc, ssl_err, ern, x, nerrs = 0;
@@ -1065,14 +1065,14 @@ int connect_to_remote()
 	result = STATE_OK;
 	addrlen = sizeof(addr);
 	rc = getpeername(sd, (struct sockaddr *)&addr, &addrlen);
-	if (addr.sa_family == AF_INET) {
+	if (addr.ss_family == AF_INET) {
 		struct sockaddr_in *addrin = (struct sockaddr_in *)&addr;
 		inaddr = &addrin->sin_addr;
 	} else {
 		struct sockaddr_in6 *addrin = (struct sockaddr_in6 *)&addr;
 		inaddr = (struct in_addr *)&addrin->sin6_addr;
 	}
-	if (inet_ntop(addr.sa_family, inaddr, rem_host, sizeof(rem_host)) == NULL)
+	if (inet_ntop(addr.ss_family, inaddr, rem_host, sizeof(rem_host)) == NULL)
 		strncpy(rem_host, "Unknown", sizeof(rem_host));
 	rem_host[MAX_HOST_ADDRESS_LENGTH - 1] = '\0';
 	if ((sslprm.log_opts & SSL_LogIpAddr) != 0)
