@@ -298,6 +298,7 @@ if test x$SSL_TYPE != xNONE; then
 				# check version and use our own parser if needed
 				nagios_ssl_major_version=`$sslbin version | cut -d' ' -f2 | cut -d. -f1`
 
+				test -d include || mkdir include
 				if test "x$nagios_ssl_major_version" = "x3"; then
 					$CC src/print_c_code.c -o src/print_c_code
 					$sslbin dhparam -text 2048 | ./src/print_c_code > include/dh.h
@@ -305,7 +306,6 @@ if test x$SSL_TYPE != xNONE; then
 					# awk to strip off meta data at bottom of dhparam output
 					$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
 				fi
-				
 			fi
 		fi
 	fi

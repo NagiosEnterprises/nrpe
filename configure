@@ -7756,6 +7756,7 @@ fi
 				# check version and use our own parser if needed
 				nagios_ssl_major_version=`$sslbin version | awk '{print }' | cut -d. -f1`
 
+				test -d include || mkdir include
 				if test "x$nagios_ssl_major_version" = "x3"; then
 					$CC src/print_c_code.c -o src/print_c_code
 					$sslbin dhparam -text 2048 | ./src/print_c_code > include/dh.h
@@ -7763,7 +7764,6 @@ fi
 					# awk to strip off meta data at bottom of dhparam output
 					$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
 				fi
-
 			fi
 		fi
 	fi
