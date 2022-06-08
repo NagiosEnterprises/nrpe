@@ -970,7 +970,7 @@ void setup_ssl()
 		SSL_CTX_set_options(ctx, ssl_opts);
 
 		if (sslprm.cert_file != NULL && sslprm.privatekey_file != NULL) {
-			if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
+			if (!SSL_CTX_use_certificate_chain_file(ctx, sslprm.cert_file)) {
 				printf("Error: could not use certificate file '%s'.\n", sslprm.cert_file);
 				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
 					printf("Error: could not use certificate file '%s': %s\n", sslprm.cert_file, ERR_reason_error_string(x));

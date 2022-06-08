@@ -423,7 +423,7 @@ void init_ssl(void)
 	SSL_CTX_set_options(ctx, ssl_opts);
 
 	if (sslprm.cert_file != NULL) {
-		if (!SSL_CTX_use_certificate_file(ctx, sslprm.cert_file, SSL_FILETYPE_PEM)) {
+		if (!SSL_CTX_use_certificate_chain_file(ctx, sslprm.cert_file)) {
 			SSL_CTX_free(ctx);
 			while ((x = ERR_get_error()) != 0) {
 				ERR_error_string(x, errstr);
