@@ -300,7 +300,9 @@ if test x$SSL_TYPE != xNONE; then
 
 				test -d include || mkdir include
 				if test "x$nagios_ssl_major_version" = "x3"; then
-					$CC src/print_c_code.c -o src/print_c_code
+					AC_DEFINE_UNQUOTED(OPENSSL_V3,[1],[Have OpenSSL v3])
+					test -d src || mkdir src
+					$CC ${srcdir}/src/print_c_code.c -o src/print_c_code
 					$sslbin dhparam -text 2048 | ./src/print_c_code > include/dh.h
 				else
 					# awk to strip off meta data at bottom of dhparam output

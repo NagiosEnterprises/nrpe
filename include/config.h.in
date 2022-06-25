@@ -324,6 +324,7 @@ typedef int int32_t;
 
 /* Have SSL support */
 #undef HAVE_SSL
+#undef OPENSSL_V3
 
 /* Have the krb5.h header file */
 #undef HAVE_KRB5_H
