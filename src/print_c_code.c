@@ -130,12 +130,7 @@ int main() {
 
 	// Print the first part of the C code:
 
-	printf("#ifndef HEADER_DH_H\n"
-		"#define OPENSSL_API_COMPAT 10002\n"
-		"#define OPENSSL_NO_DEPRECATED\n"
-		"#include <openssl/dh.h>\n"
-		"#endif\n"
-		"DH *get_dh2048()\n"
+	printf("DH *get_dh2048()\n"
 		"{\n"
 		"\tstatic unsigned char dh2048_p[]={");
 
