@@ -1,7 +1,7 @@
 NRPE Changelog
 ==============
 
-4.1.0 - 2022-06-??
+[4.1.0](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.1.0) - 2022-07-18
 ------------------
 **ENHANCEMENTS**
 - Add support for OpenSSL 3 (and EL9/Debian 11/Ubuntu 22)
@@ -10,6 +10,7 @@ NRPE Changelog
 - Change -u (connection issues return UNKNOWN) to include all SSL-layer failures.
 - Disable renegotiation and enforce server cipher order when using SSL
 - Verify that private keys match certificates when using SSL
+
 **FIXES**
 - Fixed incorrect default for nasty_metachars in nrpe.cfg
 - Fixed incorrect help text for --use-adh
