@@ -2095,21 +2095,16 @@ void free_memory(void)
 	return;
 }
 
+static int my_system_parent(pid_t pid, int fd, int timeout, time_t start_time, int *early_timeout, char **output);
+static int my_system_child(const char *command, int timeout, int fd);
+
 /* executes a system command via popen(), but protects against timeouts */
 int my_system(char *command, int timeout, int *early_timeout, char **output)
 {
-	FILE     *fp;
 	pid_t     pid;
-	time_t    start_time, end_time;
-	int       status;
+	time_t    start_time;
 	int       result;
-	char      buffer[MAX_INPUT_BUFFER];
 	int       fd[2];
-	int       bytes_read = 0, tot_bytes = 0;
-	int       output_size;
-#ifdef HAVE_SIGACTION
-	struct sigaction sig_action;
-#endif
 
 	*early_timeout = FALSE;		/* initialize return variables */
 
@@ -2140,16 +2135,7 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 
 	/* return an error if we couldn't fork */
 	if (pid == -1) {
-		snprintf(buffer, sizeof(buffer) - 1, "NRPE: Call to fork() failed\n");
-		buffer[sizeof(buffer) - 1] = '\x0';
-
-		if (packet_ver == NRPE_PACKET_VERSION_2) {
-			int       output_size = sizeof(v2_packet);
-			*output = calloc(1, output_size);
-			strncpy(*output, buffer, output_size - 1);
-			*output[output_size - 1] = '\0';
-		} else
-			*output = strdup(buffer);
+		asprintf(output, "NRPE: Call to fork() failed (errno=%i)\n", errno);
 
 		/* close both ends of the pipe */
 		close(fd[0]);
@@ -2169,122 +2155,150 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 		close(fd[0]);			/* close pipe for reading */
 		setpgid(0, 0);			/* become process group leader */
 
-		/* trap commands that timeout */
-#ifdef HAVE_SIGACTION
-		sig_action.sa_sigaction = NULL;
-		sig_action.sa_handler = my_system_sighandler;
-		sigfillset(&sig_action.sa_mask);
-		sig_action.sa_flags = SA_NODEFER | SA_RESTART;
-		sigaction(SIGALRM, &sig_action, NULL);
-#else
-		signal(SIGALRM, my_system_sighandler);
-#endif	 /* HAVE_SIGACTION */
-		alarm(timeout);
-
-		fp = popen(command, "r");	/* run the command */
-
-		/* report an error if we couldn't run the command */
-		if (fp == NULL) {
-			strncpy(buffer, "NRPE: Call to popen() failed\n", sizeof(buffer) - 1);
-			buffer[sizeof(buffer) - 1] = '\x0';
-
-			/* write the error back to the parent process */
-			if (write(fd[1], buffer, strlen(buffer) + 1) == -1)
-				logit(LOG_ERR, "ERROR: my_system() write(fd, buffer)-1 failed...");
-
-			result = STATE_CRITICAL;
-
-		} else {
-
-			/* read all lines of output - supports Nagios 3.x multiline output */
-			while ((bytes_read = fread(buffer, 1, sizeof(buffer) - 1, fp)) > 0) {
-				/* write the output back to the parent process */
-				if (write(fd[1], buffer, bytes_read) == -1)
-					logit(LOG_ERR, "ERROR: my_system() write(fd, buffer)-2 failed...");
-			}
-
-			if (write(fd[1], "\0", 1) == -1)
-				logit(LOG_ERR, "ERROR: my_system() write(fd, NULL) failed...");
-
-			status = pclose(fp);	/* close the command and get termination status */
-
-			/* report an error if we couldn't close the command */
-			if (status == -1)
-				result = STATE_CRITICAL;
-			else if (!WIFEXITED(status))
-				/* report an error if child died due to signal (Klas Lindfors) */
-				result = STATE_CRITICAL;
-			else
-				result = WEXITSTATUS(status);
-		}
-
-		close(fd[1]);			/* close pipe for writing */
-		alarm(0);				/* reset the alarm */
+		result = my_system_child(command, timeout, fd[1]);
 		exit(result);			/* return plugin exit code to parent process */
-
 	} else {
 		/* parent waits for child to finish executing command */
 
-		commands_running++;
-
 		close(fd[1]);			/* close pipe for writing */
-		waitpid(pid, &status, 0);	/* wait for child to exit */
-		time(&end_time);		/* get the end time for running the command */
-		result = WEXITSTATUS(status);	/* get the exit code returned from the program */
 
-		/* because of my idiotic idea of having UNKNOWN states be equivalent to -1, I must hack things a bit... */
-		if (result == 255)
-			result = STATE_UNKNOWN;
-
-		/* check bounds on the return value */
-		if (result < 0 || result > 3)
-			result = STATE_UNKNOWN;
-
-		if (packet_ver == NRPE_PACKET_VERSION_2) {
-			output_size = sizeof(v2_packet);
-			*output = calloc(1, output_size);
-		} else {
-			output_size = 1024 * 64;	/* Maximum buffer is 64K */
-			*output = calloc(1, output_size);
-		}
-
-		/* try and read the results from the command output (retry if we encountered a signal) */
-		for (;;) {
-			bytes_read = read(fd[0], buffer, sizeof(buffer) - 1);
-			if (bytes_read == 0)
-				break;
-			if (bytes_read == -1) {
-				if (errno == EINTR)
-					continue;
-				else
-					break;
-			}
-			if (tot_bytes < output_size)	/* If buffer is full, discard the rest */
-				strncat(*output, buffer, output_size - tot_bytes - 1);
-			tot_bytes += bytes_read;
-		}
-
-		(*output)[output_size - 1] = '\0';
-
-		/* if there was a critical return code and no output AND the
-		 * command time exceeded the timeout thresholds, assume a timeout */
-		if (result == STATE_CRITICAL && bytes_read == -1 && (end_time - start_time) >= timeout) {
-			*early_timeout = TRUE;
-
-			/* send termination signal to child process group */
-			kill((pid_t) (-pid), SIGTERM);
-			kill((pid_t) (-pid), SIGKILL);
-		}
-
-		close(fd[0]);			/* close the pipe for reading */
-
-		commands_running--;
+		result = my_system_parent(pid, fd[0], timeout, start_time, early_timeout, output);
 	}
 
 #ifdef DEBUG
 	printf("my_system() end\n");
 #endif
 
+	return result;
+}
+
+int my_system_parent(pid_t pid, int fd, int timeout, time_t start_time, int *early_timeout, char **output)
+{
+	int       status;
+	int       result;
+	int       output_size;
+	int       bytes_read = 0, tot_bytes = 0;
+	char      buffer[MAX_INPUT_BUFFER];
+	time_t    end_time;
+
+	commands_running++;
+
+	waitpid(pid, &status, 0);	/* wait for child to exit */
+	time(&end_time);		/* get the end time for running the command */
+	result = WEXITSTATUS(status);	/* get the exit code returned from the program */
+
+	/* because of my idiotic idea of having UNKNOWN states be equivalent to -1, I must hack things a bit... */
+	if (result == 255)
+		result = STATE_UNKNOWN;
+
+	/* check bounds on the return value */
+	if (result < 0 || result > 3)
+		result = STATE_UNKNOWN;
+
+	if (packet_ver == NRPE_PACKET_VERSION_2) {
+		output_size = sizeof(v2_packet);
+		*output = calloc(1, output_size);
+	} else {
+		output_size = 1024 * 64;	/* Maximum buffer is 64K */
+		*output = calloc(1, output_size);
+	}
+
+	/* try and read the results from the command output (retry if we encountered a signal) */
+	for (;;) {
+		bytes_read = read(fd, buffer, sizeof(buffer) - 1);
+		if (bytes_read == 0)
+			break;
+		if (bytes_read == -1) {
+			if (errno == EINTR)
+				continue;
+			else
+				break;
+		}
+		if (tot_bytes < output_size)	/* If buffer is full, discard the rest */
+			strncat(*output, buffer, output_size - tot_bytes - 1);
+		tot_bytes += bytes_read;
+	}
+
+	(*output)[output_size - 1] = '\0';
+
+	/* if there was a critical return code and no output AND the
+		* command time exceeded the timeout thresholds, assume a timeout */
+	if (result == STATE_CRITICAL && bytes_read == -1 && (end_time - start_time) >= timeout) {
+		*early_timeout = TRUE;
+
+		/* send termination signal to child process group */
+		kill((pid_t) (-pid), SIGTERM);
+		kill((pid_t) (-pid), SIGKILL);
+	}
+
+	close(fd);			/* close the pipe for reading */
+
+	commands_running--;
+	return result;
+}
+
+int my_system_child(const char *command, int timeout, int fd)
+{
+	FILE     *fp;
+	int       status;
+	int       result;
+	int       bytes_read = 0;
+	char      buffer[MAX_INPUT_BUFFER];
+#ifdef HAVE_SIGACTION
+	struct sigaction sig_action;
+#endif
+
+	/* trap commands that timeout */
+#ifdef HAVE_SIGACTION
+	sig_action.sa_sigaction = NULL;
+	sig_action.sa_handler = my_system_sighandler;
+	sigfillset(&sig_action.sa_mask);
+	sig_action.sa_flags = SA_NODEFER | SA_RESTART;
+	sigaction(SIGALRM, &sig_action, NULL);
+#else
+	signal(SIGALRM, my_system_sighandler);
+#endif	 /* HAVE_SIGACTION */
+	alarm(timeout);
+
+	fp = popen(command, "r");	/* run the command */
+
+	/* report an error if we couldn't run the command */
+	if (fp == NULL) {
+		strncpy(buffer, "NRPE: Call to popen() failed\n", sizeof(buffer) - 1);
+		buffer[sizeof(buffer) - 1] = '\x0';
+
+		/* write the error back to the parent process */
+		if (write(fd, buffer, strlen(buffer) + 1) == -1)
+			logit(LOG_ERR, "ERROR: my_system() write(fd, buffer)-1 failed...");
+
+		result = STATE_CRITICAL;
+
+	} else {
+
+		/* read all lines of output - supports Nagios 3.x multiline output */
+		while ((bytes_read = fread(buffer, 1, sizeof(buffer) - 1, fp)) > 0) {
+			/* write the output back to the parent process */
+			if (write(fd, buffer, bytes_read) == -1)
+				logit(LOG_ERR, "ERROR: my_system() write(fd, buffer)-2 failed...");
+		}
+
+		if (write(fd, "\0", 1) == -1)
+			logit(LOG_ERR, "ERROR: my_system() write(fd, NULL) failed...");
+
+		status = pclose(fp);	/* close the command and get termination status */
+
+		/* report an error if we couldn't close the command */
+		if (status == -1)
+			result = STATE_CRITICAL;
+		else if (!WIFEXITED(status))
+			/* report an error if child died due to signal (Klas Lindfors) */
+			result = STATE_CRITICAL;
+		else
+			result = WEXITSTATUS(status);
+	}
+
+	close(fd);				/* close pipe for writing */
+	alarm(0);				/* reset the alarm */
 	return result;
 }
 
