@@ -135,7 +135,6 @@ int main(int argc, char **argv)
 {
 	int       result = OK;
 	int       x;
-	uint32_t  y;
 	char      buffer[MAX_INPUT_BUFFER];
 
 	init();
@@ -574,7 +573,7 @@ char* process_metachars(const char* input)
 	char* copy = strdup(input);
 	int i,j;
 	int length = strlen(input);
-	for (i = 0, j = 0; i < length, j < length; i++, j++) {
+	for (i = 0, j = 0; j < length; i++, j++) {
 		if (copy[j] != '\\') {
 			copy[i] = copy[j];
 			continue;
@@ -625,7 +624,6 @@ char* process_metachars(const char* input)
 /* read in the configuration file */
 int read_config_file(char *filename)
 {
-	struct stat st;
 	FILE     *fp;
 	char      config_file[MAX_FILENAME_LENGTH];
 	char      input_buffer[MAX_INPUT_BUFFER];
@@ -920,6 +918,7 @@ int read_config_dir(char *dirname)
 	struct stat buf;
 	char      config_file[MAX_FILENAME_LENGTH];
 	int       result = OK;
+	int rc;
 
 #ifdef HAVE_SCANDIR
 	/* read and sort the directory contents */
@@ -945,7 +944,11 @@ int read_config_dir(char *dirname)
 		/* process all files in the directory... */
 
 		/* create the full path to the config file or subdirectory */
-		snprintf(config_file, sizeof(config_file) - 1, "%s/%s", dirname, dirfile->d_name);
+		rc = snprintf(config_file, sizeof(config_file) - 1, "%s/%s", dirname, dirfile->d_name);
+		if (rc >= sizeof(config_file) - 1) {
+			logit(LOG_ERR, "Config file path too long '%s/%s'.\n", dirname, dirfile->d_name);
+			return ERROR;
+		}
 		config_file[sizeof(config_file) - 1] = '\x0';
 		stat(config_file, &buf);
 

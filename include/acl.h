@@ -56,10 +56,6 @@ struct dns_acl {
         struct dns_acl *next;
 };
 
-/* Pointers to head ACL structs */
-static struct ip_acl *ip_acl_head, *ip_acl_prev;
-static struct dns_acl *dns_acl_head, *dns_acl_prev;
-
 /* Functions */
 void parse_allowed_hosts(char *allowed_hosts);
 int add_ipv4_to_acl(char *ipv4);

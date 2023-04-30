@@ -53,6 +53,10 @@
 #include <stdarg.h>
 
 
+/* Pointers to head ACL structs */
+static struct ip_acl *ip_acl_head, *ip_acl_prev;
+static struct dns_acl *dns_acl_head, *dns_acl_prev;
+
 extern int debug;
 
 /* This function checks if a char argument from valid char range.
@@ -576,7 +580,6 @@ int is_an_allowed_host(int family, void *host)
 											  "for allowed host >%s<\n",
 									  formattedStr, dns_acl_curr->domain);
 							}
-							struct in6_addr *resolved = &(((struct sockaddr_in6 *) (ai->ai_addr))->sin6_addr);
 							memcpy((char *) &addr6, ai->ai_addr, sizeof(addr6));
 							if (!memcmp(&addr6.sin6_addr, host, sizeof(addr6.sin6_addr))) {
 								if (debug == TRUE)

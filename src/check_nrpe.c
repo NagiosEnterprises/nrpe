@@ -958,7 +958,7 @@ int connect_to_remote()
 		}
 
 		if ((sslprm.log_opts & SSL_LogIfClientCert) || (sslprm.log_opts & SSL_LogCertDetails)) {
-			char peer_cn[256], buffer[2048];
+			char buffer[2048];
 			X509 *peer = SSL_get_peer_certificate(ssl);
 
 			if (peer) {
