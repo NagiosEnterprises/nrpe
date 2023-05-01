@@ -2174,64 +2174,92 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 
 int my_system_parent(pid_t pid, int fd, int timeout, time_t start_time, int *early_timeout, char **output)
 {
+	time_t    end_time;
 	int       status;
 	int       result;
-	int       output_size;
-	int       bytes_read = 0, tot_bytes = 0;
-	char      buffer[MAX_INPUT_BUFFER];
-	time_t    end_time;
+	int       output_size = 1024 * 64;	/* Maximum buffer is 64K */
+	int       bytes_read = 0;
+	int       do_wait = 1;
 
 	commands_running++;
 
-	waitpid(pid, &status, 0);	/* wait for child to exit */
-	time(&end_time);		/* get the end time for running the command */
-	result = WEXITSTATUS(status);	/* get the exit code returned from the program */
+	if (packet_ver == NRPE_PACKET_VERSION_2) {
+		output_size = MAX_PACKETBUFFER_LENGTH;
+	}
+	*output = calloc(1, output_size);
 
-	/* because of my idiotic idea of having UNKNOWN states be equivalent to -1, I must hack things a bit... */
-	if (result == 255)
-		result = STATE_UNKNOWN;
+	while (1) {
+		int rc;
+		fd_set rfds;
+		struct timeval tv;
+
+		if (do_wait) {
+			/* Check for child exit */
+			rc = waitpid(pid, &status, WNOHANG);
+			if (rc == pid || rc == -1) {
+				time(&end_time);	/* get the end time for running the command */
+				do_wait = 0;
+			}
+		}
+
+		FD_ZERO(&rfds);
+		FD_SET(fd, &rfds);
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+
+		rc = select(fd + 1, &rfds, 0, 0, &tv);
+		if (rc == -1)
+			break;
+
+		if (rc == 0) {
+			/* if child process has already exited and there is nothing to read, don't wait for grandkids */
+			if (!do_wait)
+				break;
+			continue;
+		}
+
+		if (FD_ISSET(fd, &rfds)) {
+			/* try and read the results from the command output (retry if we encountered a signal) */
+			rc = read(fd, *output + bytes_read, output_size - bytes_read);
+			if (rc == -1) {
+				if (errno == EINTR)
+					continue;
+				break;
+			} else if (rc == 0) {
+				break;
+			}
+
+			bytes_read += rc;
+			if (bytes_read == output_size)
+				break;
+		}
+	}
+
+	/* Ensure output buffer termination */
+	(*output)[output_size - 1] = '\0';
+	/* close the pipe for reading */
+	close(fd);
+
+	if (do_wait) {
+		/* Child hasn't exited yet*/
+		waitpid(pid, &status, 0);
+		time(&end_time);	/* get the end time for running the command */
+	}
+	result = WEXITSTATUS(status);	/* get the exit code returned from the program */
 
 	/* check bounds on the return value */
 	if (result < 0 || result > 3)
 		result = STATE_UNKNOWN;
 
-	if (packet_ver == NRPE_PACKET_VERSION_2) {
-		output_size = sizeof(v2_packet);
-		*output = calloc(1, output_size);
-	} else {
-		output_size = 1024 * 64;	/* Maximum buffer is 64K */
-		*output = calloc(1, output_size);
-	}
-
-	/* try and read the results from the command output (retry if we encountered a signal) */
-	for (;;) {
-		bytes_read = read(fd, buffer, sizeof(buffer) - 1);
-		if (bytes_read == 0)
-			break;
-		if (bytes_read == -1) {
-			if (errno == EINTR)
-				continue;
-			else
-				break;
-		}
-		if (tot_bytes < output_size)	/* If buffer is full, discard the rest */
-			strncat(*output, buffer, output_size - tot_bytes - 1);
-		tot_bytes += bytes_read;
-	}
-
-	(*output)[output_size - 1] = '\0';
-
 	/* if there was a critical return code and no output AND the
-		* command time exceeded the timeout thresholds, assume a timeout */
-	if (result == STATE_CRITICAL && bytes_read == -1 && (end_time - start_time) >= timeout) {
+	 * command time exceeded the timeout thresholds, assume a timeout */
+	if (result == STATE_CRITICAL && bytes_read == 0 && (end_time - start_time) >= timeout) {
 		*early_timeout = TRUE;
 
 		/* send termination signal to child process group */
 		kill((pid_t) (-pid), SIGTERM);
 		kill((pid_t) (-pid), SIGKILL);
 	}
-
-	close(fd);			/* close the pipe for reading */
 
 	commands_running--;
 	return result;
@@ -2242,7 +2270,6 @@ int my_system_child(const char *command, int timeout, int fd)
 	FILE     *fp;
 	int       status;
 	int       result;
-	int       bytes_read = 0;
 	char      buffer[MAX_INPUT_BUFFER];
 #ifdef HAVE_SIGACTION
 	struct sigaction sig_action;
@@ -2274,16 +2301,67 @@ int my_system_child(const char *command, int timeout, int fd)
 		result = STATE_CRITICAL;
 
 	} else {
+		int do_read = 1;
+		int bytes_read = 0;
 
 		/* read all lines of output - supports Nagios 3.x multiline output */
-		while ((bytes_read = fread(buffer, 1, sizeof(buffer) - 1, fp)) > 0) {
-			/* write the output back to the parent process */
-			if (write(fd, buffer, bytes_read) == -1)
-				logit(LOG_ERR, "ERROR: my_system() write(fd, buffer)-2 failed...");
-		}
+		while (do_read || bytes_read) {
+			int rc;
+			int max_fd = 0;
+			fd_set rfds;
+			fd_set wfds;
+			struct timeval tv;
 
-		if (write(fd, "\0", 1) == -1)
-			logit(LOG_ERR, "ERROR: my_system() write(fd, NULL) failed...");
+			FD_ZERO(&rfds);
+			FD_ZERO(&wfds);
+			if (do_read && bytes_read < sizeof(buffer)) {
+				FD_SET(fileno(fp), &rfds);
+				max_fd = fileno(fp);
+			}
+			if (bytes_read) {
+				FD_SET(fd, &wfds);
+				max_fd = fd > max_fd ? fd : max_fd;
+			}
+			tv.tv_sec = 5;
+			tv.tv_usec = 0;
+
+			rc = select(max_fd + 1, &rfds, &wfds, 0, &tv);
+			if (rc == -1) {
+				logit(LOG_ERR, "ERROR: my_system_child() select failed (errno=%i)", errno);
+				break;
+			}
+
+			if (rc == 0)
+				continue;
+
+			if (FD_ISSET(fileno(fp), &rfds)) {
+				rc = fread(buffer + bytes_read, 1, sizeof(buffer) - bytes_read, fp);
+				if (rc <= 0) {
+					/* error or eof reached */
+					do_read = 0;
+
+					/* Add terminating NUL to send */
+					buffer[bytes_read] = '\0';
+					bytes_read++;
+				} else {
+					bytes_read += rc;
+				}
+			}
+
+			if (bytes_read) {
+				/* We always try to write if we have anything... we'll just get EAGAIN if still full */
+				rc = write(fd, buffer, bytes_read);
+				if (rc == -1) {
+					if (errno != EAGAIN) {
+						logit(LOG_ERR, "ERROR: my_system_child() write(fd, buffer) failed (errno=%i)", errno);
+						break;
+					}
+				} else if (rc > 0) {
+					memmove(buffer, buffer + rc, bytes_read - rc);
+					bytes_read -= rc;
+				}
+			}
+		}
 
 		status = pclose(fp);	/* close the command and get termination status */
 
@@ -2305,6 +2383,8 @@ int my_system_child(const char *command, int timeout, int fd)
 /* handle timeouts when executing commands via my_system() */
 void my_system_sighandler(int sig)
 {
+	/* try to kill any child processes in our group */
+	kill(0, SIGTERM);
 	exit(STATE_CRITICAL);		/* force the child process to exit... */
 }
 
