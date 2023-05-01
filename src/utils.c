@@ -264,7 +264,7 @@ int clean_environ(const char *keep_env_vars, const char *nrpe_user)
 #else
 	static char	*path = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 #endif
-	struct passwd *pw;
+	struct passwd *pw = NULL;
 	size_t len, var_sz = 0;
 	char **kept = NULL, *value, *var, *keep = NULL;
 	int i, j, keepcnt = 0;
