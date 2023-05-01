@@ -16,6 +16,7 @@ sample-config/nrpe.cfg
 src/Makefile
 src/check_nrpe
 src/nrpe
+src/*.o
 autom4te.cache/
 nbproject/
 .settings/

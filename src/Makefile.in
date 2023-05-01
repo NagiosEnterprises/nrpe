@@ -44,11 +44,14 @@ SNPRINTF_O=@SNPRINTF_O@
 
 all: nrpe check_nrpe
 
-nrpe: $(srcdir)/nrpe.c $(srcdir)/utils.c $(srcdir)/acl.c $(SRC_INCLUDE)/nrpe.h $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h $(SRC_INCLUDE)/acl.h $(SNPRINTF_O)
-	$(CC) $(CFLAGS) -o $@ $(srcdir)/nrpe.c $(srcdir)/utils.c $(srcdir)/acl.c $(LDFLAGS) $(SOCKETLIBS) $(LIBWRAPLIBS) $(SNPRINTF_O) $(OTHERLIBS)
+nrpe: $(srcdir)/nrpe.c utils.o $(srcdir)/acl.c $(SRC_INCLUDE)/nrpe.h $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h $(SRC_INCLUDE)/acl.h $(SNPRINTF_O)
+	$(CC) $(CFLAGS) -o $@ $(srcdir)/nrpe.c utils.o $(srcdir)/acl.c $(LDFLAGS) $(SOCKETLIBS) $(LIBWRAPLIBS) $(SNPRINTF_O) $(OTHERLIBS)
 
-check_nrpe: $(srcdir)/check_nrpe.c $(srcdir)/utils.c $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
-	$(CC) $(CFLAGS) -o $@ $(srcdir)/check_nrpe.c $(srcdir)/utils.c $(LDFLAGS) $(SOCKETLIBS) $(SNPRINTF_O) $(OTHERLIBS)
+check_nrpe: $(srcdir)/check_nrpe.c utils.o $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
+	$(CC) $(CFLAGS) -o $@ $(srcdir)/check_nrpe.c utils.o $(LDFLAGS) $(SOCKETLIBS) $(SNPRINTF_O) $(OTHERLIBS)
+
+utils.o: $(srcdir)/utils.c $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
+	$(CC) $(CFLAGS) -c -o $@ $(srcdir)/utils.c
 
 install:
 	$(MAKE) install-plugin
@@ -77,7 +80,7 @@ install-uninstall:
 	$(INSTALL) -m 755 ../uninstall $(SBINDIR)/nrpe-uninstall
 
 clean:
-	rm -f core nrpe check_nrpe $(SNPRINTF_O)
+	rm -f core nrpe check_nrpe utils.o $(SNPRINTF_O)
 	rm -f *~ */*~
 	rm -rf nrpe.dSYM check_nrpe.dSYM
 
