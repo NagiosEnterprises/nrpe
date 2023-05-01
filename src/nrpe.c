@@ -716,10 +716,11 @@ int read_config_file(char *filename)
 				return ERROR;
 			}
 
-		} else if (!strcmp(varname, "command_prefix"))
+		} else if (!strcmp(varname, "command_prefix")) {
+			free(command_prefix);
 			command_prefix = strdup(varvalue);
 
-		else if (!strcmp(varname, "server_address")) {
+		} else if (!strcmp(varname, "server_address")) {
 			strncpy(server_address, varvalue, sizeof(server_address) - 1);
 			server_address[sizeof(server_address) - 1] = '\0';
 
@@ -747,13 +748,15 @@ int read_config_file(char *filename)
 			else
 				debug = FALSE;
 
-		} else if (!strcmp(varname, "nrpe_user"))
+		} else if (!strcmp(varname, "nrpe_user")) {
+			free(nrpe_user);
 			nrpe_user = strdup(varvalue);
 
-		else if (!strcmp(varname, "nrpe_group"))
+		} else if (!strcmp(varname, "nrpe_group")) {
+			free(nrpe_group);
 			nrpe_group = strdup(varvalue);
 
-		else if (!strcmp(varname, "dont_blame_nrpe"))
+		} else if (!strcmp(varname, "dont_blame_nrpe"))
 			allow_arguments = (atoi(varvalue) == 1) ? TRUE : FALSE;
 
 		else if (!strcmp(varname, "disable_syslog"))
@@ -791,10 +794,11 @@ int read_config_file(char *filename)
 		} else if (!strcmp(varname, "allow_weak_random_seed"))
 			allow_weak_random_seed = (atoi(varvalue) == 1) ? TRUE : FALSE;
 
-		else if (!strcmp(varname, "pid_file"))
+		else if (!strcmp(varname, "pid_file")) {
+			free(pid_file);
 			pid_file = strdup(varvalue);
 
-		else if (!strcmp(varname, "listen_queue_size")) {
+		} else if (!strcmp(varname, "listen_queue_size")) {
 			listen_queue_size = atoi(varvalue);
 			if (listen_queue_size == 0) {
 				logit(LOG_ERR,
@@ -852,16 +856,19 @@ int read_config_file(char *filename)
 			strncpy(sslprm.cipher_list, varvalue, sizeof(sslprm.cipher_list) - 1);
 			sslprm.cipher_list[sizeof(sslprm.cipher_list) - 1] = '\0';
 
-		} else if (!strcmp(varname, "ssl_cert_file"))
+		} else if (!strcmp(varname, "ssl_cert_file")) {
+			free(sslprm.cert_file);
 			sslprm.cert_file = strdup(varvalue);
 
-		else if (!strcmp(varname, "ssl_cacert_file"))
+		} else if (!strcmp(varname, "ssl_cacert_file")) {
+			free(sslprm.cacert_file);
 			sslprm.cacert_file = strdup(varvalue);
 
-		else if (!strcmp(varname, "ssl_privatekey_file"))
+		} else if (!strcmp(varname, "ssl_privatekey_file")) {
+			free(sslprm.privatekey_file);
 			sslprm.privatekey_file = strdup(varvalue);
 
-		else if (!strcmp(varname, "ssl_client_certs")) {
+		} else if (!strcmp(varname, "ssl_client_certs")) {
 			sslprm.client_certs = atoi(varvalue);
 			if ((int)sslprm.client_certs < 0 || sslprm.client_certs > Require_Cert) {
 				logit(LOG_ERR,
@@ -883,13 +890,15 @@ int read_config_file(char *filename)
 					   "Invalid log_facility specified in config file '%s' - Line %d\n",
 					   filename, line);
 
-		} else if (!strcmp(varname, "keep_env_vars"))
+		} else if (!strcmp(varname, "keep_env_vars")) {
+			free(keep_env_vars);
 			keep_env_vars = strdup(varvalue);
 
-		else if (!strcmp(varname, "nasty_metachars"))
+		} else if (!strcmp(varname, "nasty_metachars"))
 			nasty_metachars = process_metachars(varvalue);
 
 		else if (!strcmp(varname, "log_file")) {
+			free(log_file);
 			log_file = strdup(varvalue);
 			open_log_file();
 
@@ -1173,11 +1182,13 @@ void wait_for_connections(void)
 	socklen_t fromlen;
 	fd_set   *fdset = NULL;
 	int       maxfd = 0, new_sd = 0, i, rc, retval;
-
+	int       count_fdset = 0;
 	setup_wait_conn();
 
 	/* listen for connection requests - fork() if we get one */
 	while (1) {
+		int need_fdset;
+
 		/* bail out if necessary */
 		if (sigrestart == TRUE || sigshutdown == TRUE)
 			break;
@@ -1187,9 +1198,14 @@ void wait_for_connections(void)
 				maxfd = listen_socks[i];
 		}
 
-		if (fdset != NULL)
+		need_fdset = how_many(maxfd + 1, NFDBITS);
+		if (need_fdset > count_fdset) {
 			free(fdset);
-		fdset = (fd_set *) calloc(how_many(maxfd + 1, NFDBITS), sizeof(fd_mask));
+			fdset = (fd_set *) calloc(need_fdset, sizeof(fd_mask));
+			count_fdset = need_fdset;
+		} else {
+			memset(fdset, 0, count_fdset * sizeof(fd_mask));
+		}
 
 		for (i = 0; i < num_listen_socks; i++)
 			FD_SET(listen_socks[i], fdset);
@@ -1256,6 +1272,7 @@ void wait_for_connections(void)
 	close_listen_socks();
 	freeaddrinfo(listen_addrs);
 	listen_addrs = NULL;
+	free(fdset);
 
 	return;
 }
