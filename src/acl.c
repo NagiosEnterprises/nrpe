@@ -500,7 +500,7 @@ int add_domain_to_acl(char *domain) {
 
 int is_an_allowed_host(int family, void *host)
 {
-	struct ip_acl		*ip_acl_curr = ip_acl_head;
+	struct ip_acl		*ip_acl_curr;
 	int					nbytes;
 	int					x;
 	struct dns_acl		*dns_acl_curr = dns_acl_head;
@@ -509,43 +509,44 @@ int is_an_allowed_host(int family, void *host)
 	struct addrinfo		*res, *ai;
 	struct in_addr		tmp;
 
-	while (ip_acl_curr != NULL) {
-		if(ip_acl_curr->family == family) {
-			switch(ip_acl_curr->family) {
+	for (ip_acl_curr = ip_acl_head; ip_acl_curr != NULL; ip_acl_curr = ip_acl_curr->next) {
+		if (ip_acl_curr->family != family)
+			continue;
+
+		switch (ip_acl_curr->family) {
 			case AF_INET:
 				if (debug == TRUE) {
-					tmp.s_addr = ((struct in_addr*)host)->s_addr;
-					logit(LOG_INFO, "is_an_allowed_host (AF_INET): is host >%s< "
-							"an allowed host >%s<\n",
-						 inet_ntoa(tmp), inet_ntoa(ip_acl_curr->addr));
+					char host_addr[INET_ADDRSTRLEN];
+					char acl_addr[INET_ADDRSTRLEN];
+					logit(LOG_INFO, "is_an_allowed_host (AF_INET): is host >%s< an allowed host >%s<\n",
+						inet_ntop(AF_INET, host, host_addr, INET_ADDRSTRLEN),
+						inet_ntop(AF_INET, &ip_acl_curr->addr, acl_addr, INET_ADDRSTRLEN));
 				}
-				if((((struct in_addr *)host)->s_addr & 
+				if ((((struct in_addr *)host)->s_addr &
 						ip_acl_curr->mask.s_addr) == 
 						ip_acl_curr->addr.s_addr) {
 					if (debug == TRUE)
 						logit(LOG_INFO, "is_an_allowed_host (AF_INET): host is in allowed host list!");
 					return 1;
-					}
+				}
 				break;
 			case AF_INET6:
 				nbytes = sizeof(ip_acl_curr->mask6.s6_addr) / 
 						sizeof(ip_acl_curr->mask6.s6_addr[0]);
-				for(x = 0; x < nbytes; x++) {
-					if((((struct in6_addr *)host)->s6_addr[x] & 
+				for (x = 0; x < nbytes; x++) {
+					if ((((struct in6_addr *)host)->s6_addr[x] &
 							ip_acl_curr->mask6.s6_addr[x]) != 
 							ip_acl_curr->addr6.s6_addr[x]) {
 						break;
-						}
 					}
-				if(x == nbytes) { 
+				}
+				if (x == nbytes) {
 					/* All bytes in host's address pass the netmask mask */
 					return 1;
-					}
-				break;
 				}
-			}
-		ip_acl_curr = ip_acl_curr->next;
-        }
+				break;
+		}
+	}
 
 	while(dns_acl_curr != NULL) {
 		if (!getaddrinfo(dns_acl_curr->domain, NULL, NULL, &res)) {
