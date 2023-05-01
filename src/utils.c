@@ -485,7 +485,7 @@ char *my_strsep(char **stringp, const char *delim)
 	return begin;
 }
 
-void open_log_file()
+void open_log_file(void)
 {
 	int fh;
 	int flags = O_RDWR|O_APPEND|O_CREAT;
@@ -557,7 +557,7 @@ void logit(int priority, const char *format, ...)
 	va_end(ap);
 }
 
-void close_log_file()
+void close_log_file(void)
 {
 	if(!log_fp)
 		return;

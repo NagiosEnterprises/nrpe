@@ -71,7 +71,6 @@ int       rfc931_timeout=15;
 
 #define how_many(x,y) (((x)+((y)-1))/(y))
 
-extern int errno;
 struct addrinfo *listen_addrs = NULL;
 int       listen_socks[MAX_LISTEN_SOCKS];
 char      remote_host[MAX_HOST_ADDRESS_LENGTH];
