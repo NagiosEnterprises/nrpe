@@ -1271,10 +1271,15 @@ void setup_wait_conn(void)
 
 	for (ai = listen_addrs; ai; ai = ai->ai_next) {
 		if (debug == TRUE) {
+			char *fam = "";
 			inet_ntop (ai->ai_family, ai->ai_addr->sa_data, addrstr, 100);
 			ptr = &((struct sockaddr_in *) ai->ai_addr)->sin_addr;
 			inet_ntop (ai->ai_family, ptr, addrstr, 100);
-			logit(LOG_INFO, "SETUP_WAIT_CONN FOR: IPv4 address: %s (%s)\n", addrstr, ai->ai_canonname);
+			if (ai->ai_family == AF_INET)
+				fam = "AF_INET";
+			else if (ai->ai_family == AF_INET6)
+				fam = "AF_INET6";
+			logit(LOG_INFO, "SETUP_WAIT_CONN FOR: %s address: %s (%s)\n", fam, addrstr, ai->ai_canonname);
 		}
 		create_listener(ai);
 	}
