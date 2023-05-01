@@ -724,6 +724,7 @@ int read_config_file(char *filename)
 			server_address[sizeof(server_address) - 1] = '\0';
 
 		} else if (!strcmp(varname, "allowed_hosts")) {
+			free(allowed_hosts);
 			allowed_hosts = strdup(varvalue);
 			parse_allowed_hosts(allowed_hosts);
 			if (debug == TRUE)

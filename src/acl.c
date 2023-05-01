@@ -617,6 +617,38 @@ void trim( char *src, char *dest) {
 	return;
 }
 
+/*
+ * Free all existing ACLs
+ */
+
+static void clear_allowed_hosts(void) {
+	int count;
+
+	count = 0;
+	while (ip_acl_head) {
+		struct ip_acl *next = ip_acl_head->next;
+		free(ip_acl_head);
+		ip_acl_head = next;
+		count++;
+	}
+	ip_acl_prev = NULL;
+
+	if (debug == TRUE)
+		logit(LOG_INFO, "clear_allowed_hosts: Cleared %i IP ACLs\n", count);
+
+	count = 0;
+	while (dns_acl_head) {
+		struct dns_acl *next = dns_acl_head->next;
+		free(dns_acl_head);
+		dns_acl_head = next;
+		count++;
+	}
+	dns_acl_prev = NULL;
+
+	if (debug == TRUE)
+		logit(LOG_INFO, "clear_allowed_hosts: Cleared %i DNS ACLs\n", count);
+}
+
 /* This function splits allowed_hosts to substrings with comma(,) as a delimiter.
  * It doesn't check validness of ACL record (add_ipv4_to_acl() and add_domain_to_acl() do),
  * just trims spaces from ACL records.
@@ -630,6 +662,8 @@ void parse_allowed_hosts(char *allowed_hosts) {
 	const char *delim = ",";
 	char *trimmed_tok;
     int add_to_acl = 0;
+
+	clear_allowed_hosts();
 
 	if (debug == TRUE)
 		logit(LOG_INFO,
@@ -688,18 +722,26 @@ void parse_allowed_hosts(char *allowed_hosts) {
  * Converts mask in unsigned long format to two digit prefix
  */
 
-unsigned int prefix_from_mask(struct in_addr mask) {
-        int prefix = 0;
-        unsigned long bit = 1;
-        int i;
+unsigned int prefix_from_mask(int family, const void* mask) {
+	int prefix = 0;
+	int bytes = 4;
+	int i;
+	const unsigned char *ptr = mask;
 
-        for (i = 0; i < 32; i++) {
-                if (mask.s_addr & bit)
-                        prefix++;
+	if (family == AF_INET6)
+		bytes = 16;
 
-                bit = bit << 1;
-        }
-        return (prefix);
+	for (i = 0; i < bytes; i++) {
+		int j;
+
+		for (j = 0; j < 8; j++) {
+			unsigned char bit = 1 << j;
+
+			if (ptr[i] & bit)
+				prefix++;
+		}
+	}
+	return (prefix);
 }
 
 /*
@@ -714,8 +756,15 @@ void show_acl_lists(void)
 	logit(LOG_INFO, "Showing ACL lists for both IP and DOMAIN acl's:\n" );
 
 	while (ip_acl_curr != NULL) {
-		logit(LOG_INFO, "   IP ACL: %s/%u %u\n", inet_ntoa(ip_acl_curr->addr),
-			 prefix_from_mask(ip_acl_curr->mask), ip_acl_curr->addr.s_addr);
+		if (ip_acl_curr->family == AF_INET) {
+			logit(LOG_INFO, "   IP ACL: %s/%u %u\n", inet_ntoa(ip_acl_curr->addr),
+				prefix_from_mask(AF_INET, &ip_acl_curr->mask), ip_acl_curr->addr.s_addr);
+		} else if (ip_acl_curr->family == AF_INET6) {
+			char formattedStr[INET6_ADDRSTRLEN];
+			logit(LOG_INFO, "   IP ACL: %s/%u\n",
+				inet_ntop(AF_INET6, &ip_acl_curr->addr6, formattedStr, INET6_ADDRSTRLEN),
+				prefix_from_mask(AF_INET6, &ip_acl_curr->mask6));
+		}
 		ip_acl_curr = ip_acl_curr->next;
 	}
 
