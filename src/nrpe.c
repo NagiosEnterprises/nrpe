@@ -1771,8 +1771,11 @@ void handle_connection(int sock)
     		return;
         }
 
-		if (handle_conn_ssl(sock, ssl) != OK)
+		if (handle_conn_ssl(sock, ssl) != OK) {
+			complete_SSL_shutdown(ssl);
+			SSL_free(ssl);
 			return;
+		}
 	}
 #endif
 
