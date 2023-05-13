@@ -855,11 +855,13 @@ void setup_ssl()
 
 	/* initialize SSL */
 	if (use_ssl == TRUE) {
+#if OPENSSL_VERSION_NUMBER < 0x10100000
 		SSL_load_error_strings();
 		SSL_library_init();
 		ENGINE_load_builtin_engines();
 		RAND_set_rand_engine(NULL);
  		ENGINE_register_all_complete();
+#endif
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
 
@@ -952,7 +954,9 @@ void setup_ssl()
 #endif
 			case TLSv1_2:
 			case TLSv1_2_plus:
+#ifdef SSL_OP_NO_TLSv1_1
 				ssl_opts |= SSL_OP_NO_TLSv1_1;
+#endif
 			case TLSv1_1:
 			case TLSv1_1_plus:
 				ssl_opts |= SSL_OP_NO_TLSv1;
@@ -972,7 +976,7 @@ void setup_ssl()
 		if (sslprm.cert_file != NULL && sslprm.privatekey_file != NULL) {
 			if (!SSL_CTX_use_certificate_chain_file(ctx, sslprm.cert_file)) {
 				printf("Error: could not use certificate file '%s'.\n", sslprm.cert_file);
-				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+				while ((x = ERR_get_error()) != 0) {
 					printf("Error: could not use certificate file '%s': %s\n", sslprm.cert_file, ERR_reason_error_string(x));
 				}
 				SSL_CTX_free(ctx);
@@ -981,7 +985,7 @@ void setup_ssl()
 			if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
 				SSL_CTX_free(ctx);
 				printf("Error: could not use private key file '%s'.\n", sslprm.privatekey_file);
-				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+				while ((x = ERR_get_error()) != 0) {
 					printf("Error: could not use private key file '%s': %s\n", sslprm.privatekey_file, ERR_reason_error_string(x));
 				}
 				SSL_CTX_free(ctx);
@@ -994,8 +998,8 @@ void setup_ssl()
 			SSL_CTX_set_verify(ctx, vrfy, verify_callback);
 			if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
 				printf("Error: could not use CA certificate '%s'.\n", sslprm.cacert_file);
-				while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-					printf("Error: could not use CA certificate '%s': %s\n", sslprm.privatekey_file, ERR_reason_error_string(x));
+				while ((x = ERR_get_error()) != 0) {
+					printf("Error: could not use CA certificate '%s': %s\n", sslprm.cacert_file, ERR_reason_error_string(x));
 				}
 				SSL_CTX_free(ctx);
 				exit(timeout_return_code);
@@ -1021,7 +1025,7 @@ void setup_ssl()
 
 		if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
 			printf("Error: Could not set SSL/TLS cipher list: %s\n", sslprm.cipher_list);
-			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+			while ((x = ERR_get_error()) != 0) {
 				printf("Could not set SSL/TLS cipher list '%s': %s\n", sslprm.cipher_list, ERR_reason_error_string(x));
 			}
 			SSL_CTX_free(ctx);
@@ -1095,15 +1099,15 @@ int connect_to_remote()
 
 		if (sslprm.log_opts & (SSL_LogCertDetails | SSL_LogIfClientCert)) {
 			rc = 0;
-			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-				logit(LOG_ERR, "Error: (ERR_get_error_line_data = %d), Could not complete SSL handshake with %s: %s", x, rem_host, ERR_reason_error_string(x));
+			while ((x = ERR_get_error()) != 0) {
+				logit(LOG_ERR, "Error: (ERR_get_error = 0x%08x), Could not complete SSL handshake with %s: %s", x, rem_host, ERR_reason_error_string(x));
 				++nerrs;
 			}
 			if (nerrs == 0) {
 				logit(LOG_ERR, "Error: (nerrs = 0) Could not complete SSL handshake with %s: rc=%d SSL-error=%d", rem_host, rc, ssl_err);
 			}
 		} else {
-			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+			while ((x = ERR_get_error()) != 0) {
 				logit(LOG_ERR, "Error: (!log_opts) Could not complete SSL handshake with %s: %s", rem_host, ERR_reason_error_string(x));
 				++nerrs;
 			}

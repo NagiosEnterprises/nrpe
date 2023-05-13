@@ -288,15 +288,14 @@ void init_ssl(void)
 	if (sslprm.log_opts & SSL_LogStartup)
 		log_ssl_startup();
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000
 	/* initialize SSL */
 	SSL_load_error_strings();
 	SSL_library_init();
 	ENGINE_load_builtin_engines();
 	RAND_set_rand_engine(NULL);
  	ENGINE_register_all_complete();
-
-	meth = SSLv23_server_method();
-
+#endif
 	/* use week random seed if necessary */
 	if (allow_weak_random_seed && (RAND_status() == 0)) {
 		if (RAND_file_name(seedfile, sizeof(seedfile) - 1))
@@ -322,6 +321,7 @@ void init_ssl(void)
 
 #else		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
 
+	meth = SSLv23_server_method();
 # ifndef OPENSSL_NO_SSL2
 	if (sslprm.ssl_proto_ver == SSLv2)
 		meth = SSLv2_server_method();
@@ -410,7 +410,9 @@ void init_ssl(void)
 #endif
 		case TLSv1_2:
 		case TLSv1_2_plus:
+#ifdef SSL_OP_NO_TLSv1_1
 			ssl_opts |= SSL_OP_NO_TLSv1_1;
+#endif
 		case TLSv1_1:
 		case TLSv1_1_plus:
 			ssl_opts |= SSL_OP_NO_TLSv1;
@@ -429,7 +431,7 @@ void init_ssl(void)
 
 	if (sslprm.cacert_file != NULL) {
 		if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
-			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+			while ((x = ERR_get_error()) != 0) {
 				logit(LOG_ERR, "Error: could not use CA certificate file '%s': %s\n",
 					   sslprm.cacert_file, ERR_reason_error_string(x));
 			}
@@ -2057,9 +2059,9 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 		if (sslprm.log_opts & (SSL_LogCertDetails | SSL_LogIfClientCert)) {
 			int nerrs = 0;
 			rc = 0;
-			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+			while ((x = ERR_get_error()) != 0) {
 				errmsg = ERR_reason_error_string(x);
-				logit(LOG_ERR, "Error: (ERR_get_error_line_data = %d), Could not complete SSL handshake with %s: %s", x, remote_host, errmsg);
+				logit(LOG_ERR, "Error: (ERR_get_error = 0x%08x), Could not complete SSL handshake with %s: %s", x, remote_host, errmsg);
 				
 				if (errmsg && !strcmp(errmsg, "no shared cipher") && (sslprm.cert_file == NULL || sslprm.cacert_file == NULL))
 					logit(LOG_ERR, "Error: This could be because you have not specified certificate or ca-certificate files");
@@ -2068,10 +2070,10 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 			}
 
 			if (nerrs == 0) {
-				logit(LOG_ERR, "Error: (nerrs = 0) Could not complete SSL handshake with %s: %d", remote_host, SSL_get_error(ssl, rc));
+				logit(LOG_ERR, "Error: (nerrs = 0) Could not complete SSL handshake with %s: 0x%08x", remote_host, SSL_get_error(ssl, rc));
 			}
 		} else {
-			logit(LOG_ERR, "Error: (!log_opts) Could not complete SSL handshake with %s: %d", remote_host, SSL_get_error(ssl, rc));
+			logit(LOG_ERR, "Error: (!log_opts) Could not complete SSL handshake with %s: 0x%08x", remote_host, SSL_get_error(ssl, rc));
 		}
 # ifdef DEBUG
 		errfp = fopen("/tmp/err.log", "a");
