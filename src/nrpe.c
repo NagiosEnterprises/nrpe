@@ -187,7 +187,7 @@ int main(int argc, char **argv)
 		buffer[sizeof(buffer) - 1] = '\x0';
 
 		/* get absolute path of current working directory */
-		strcpy(config_file, "");
+		config_file[0] = '\0';
 		if (getcwd(config_file, sizeof(config_file)) == NULL) {
 			printf("ERROR: getcwd(): %s, bailing out...\n", strerror(errno));
 			exit(STATE_CRITICAL);
@@ -487,8 +487,9 @@ void init_ssl(void)
 	}
 
 	if (!sslprm.allowDH) {
-		if (strlen(sslprm.cipher_list) < sizeof(sslprm.cipher_list) - 6)
-			strcat(sslprm.cipher_list, ":!ADH");
+		i = strlen(sslprm.cipher_list);
+		if (i < sizeof(sslprm.cipher_list) - 6)
+			strncpy(sslprm.cipher_list + i, ":!ADH", sizeof(sslprm.cipher_list) - i);
 	} else {
 		/* use anonymous DH ciphers */
 		if (sslprm.allowDH == 2) {
@@ -1710,7 +1711,8 @@ void conn_check_peer(int sock)
 
 		case AF_INET6:
 			/* log info */
-			strcpy(remote_host, ipstr);
+			strncpy(remote_host, ipstr, sizeof(remote_host));
+			remote_host[sizeof(remote_host) - 1] = '\0';
 			if (debug == TRUE || (sslprm.log_opts & SSL_LogIpAddr)) {
 				logit(LOG_DEBUG, "Connection from %s port %d", ipstr, nptr6->sin6_port);
 			}
@@ -1860,8 +1862,9 @@ void handle_connection(int sock)
 		if (v3_receive_packet)
 			send_buff = strdup(buffer);
 		else {
-			send_buff = calloc(1, sizeof(buffer));
-			strcpy(send_buff, buffer);
+			int size = sizeof(buffer);
+			send_buff = calloc(1, size);
+			strncpy(send_buff, buffer, size);
 		}
 		result = STATE_OK;
 
@@ -1877,8 +1880,9 @@ void handle_connection(int sock)
 			if (v3_receive_packet)
 				send_buff = strdup(buffer);
 			else {
-				send_buff = calloc(1, sizeof(buffer));
-				strcpy(send_buff, buffer);
+				int size = sizeof(buffer);
+				send_buff = calloc(1, size);
+				strncpy(send_buff, buffer, size);
 			}
 			result = STATE_UNKNOWN;
 
@@ -1897,7 +1901,7 @@ void handle_connection(int sock)
 				logit(LOG_DEBUG, "Running command: %s", processed_command);
 
 			/* run the command */
-			strcpy(buffer, "");
+			buffer[0] = '\0';
 			result = my_system(processed_command, command_timeout, &early_timeout, &send_buff);
 
 			if (debug == TRUE)	/* log debug info */
@@ -1906,11 +1910,13 @@ void handle_connection(int sock)
 
 			/* see if the command timed out */
 			if (early_timeout == TRUE) {
-				sprintf(send_buff, "NRPE: Command timed out after %d seconds\n",
+				free(send_buff);
+				asprintf(&send_buff, "NRPE: Command timed out after %d seconds\n",
 						command_timeout);
 				result = STATE_UNKNOWN;
 			} else if (!strcmp(send_buff, "")) {
-				sprintf(send_buff, "NRPE: Unable to read output\n");
+				free(send_buff);
+				asprintf(&send_buff, "NRPE: Unable to read output\n");
 				result = STATE_UNKNOWN;
 			}
 
@@ -1959,10 +1965,10 @@ void handle_connection(int sock)
 		send_packet.crc32_value = htonl(calculated_crc32);
 
 	} else {
-
-		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + strlen(send_buff) + 1;
+		int send_buff_len = strlen(send_buff);
+		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + send_buff_len + 1;
 		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + strlen(send_buff) + 1;
+			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + send_buff_len + 1;
 		}
 		v3_send_packet = calloc(1, pkt_size);
 		send_pkt = (char *)v3_send_packet;
@@ -1971,8 +1977,8 @@ void handle_connection(int sock)
 		v3_send_packet->packet_type = htons(RESPONSE_PACKET);
 		v3_send_packet->result_code = htons(result);
 		v3_send_packet->alignment = 0;
-		v3_send_packet->buffer_length = htonl(strlen(send_buff) + 1);
-		strcpy(&v3_send_packet->buffer[0], send_buff);
+		v3_send_packet->buffer_length = htonl(send_buff_len + 1);
+		memcpy(&v3_send_packet->buffer[0], send_buff, send_buff_len + 1);
 
 		/* calculate the crc 32 value of the packet */
 		v3_send_packet->crc32_value = 0;
@@ -2653,7 +2659,7 @@ int write_pid_file(void)
 
 	/* write new pid file */
 	if ((fd = open(pid_file, O_WRONLY | O_CREAT, 0644)) >= 0) {
-		sprintf(pbuf, "%d\n", (int)getpid());
+		snprintf(pbuf, sizeof(pbuf), "%d\n", (int)getpid());
 
 		if (write(fd, pbuf, strlen(pbuf)) == -1)
 			logit(LOG_ERR, "ERROR: write_pid_file() write(fd, pbuf) failed...");
@@ -2929,7 +2935,7 @@ int process_macros(char *input_buffer, char *output_buffer, int buffer_length)
 	int       arg_index = 0;
 	char     *selected_macro = NULL;
 
-	strcpy(output_buffer, "");
+	output_buffer[0] = '\0';
 
 	in_macro = FALSE;
 
