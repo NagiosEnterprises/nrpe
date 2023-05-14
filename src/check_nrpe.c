@@ -36,7 +36,9 @@
  *
  ****************************************************************************/
 
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 #include "common.h"
 #include "utils.h"
 
@@ -966,6 +968,9 @@ void setup_ssl()
 			case SSLv3:
 			case SSLv3_plus:
 				ssl_opts |= SSL_OP_NO_SSLv2;
+				break;
+			case SSL_Ver_Invalid:
+				/* Should never be seen, silence warning */
 				break;
 		}
 

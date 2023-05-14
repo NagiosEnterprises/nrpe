@@ -32,9 +32,12 @@
  *
  ****************************************************************************/
 
-#include "../include/config.h"
-#include "../include/common.h"
-#include "../include/utils.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+#include "common.h"
+#include "utils.h"
+#include "acl.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -49,7 +52,6 @@
 #include <netdb.h>
 #include <stdarg.h>
 
-#include "../include/acl.h"
 
 extern int debug;
 

@@ -265,7 +265,7 @@ void init_ssl(void)
 {
 #ifdef HAVE_SSL
 	char          seedfile[FILENAME_MAX];
-	char          errstr[120] = { "" };
+	char          errstr[256] = { "" };
 	int           i, c, x, vrfy;
 	unsigned long ssl_opts = SSL_OP_ALL | SSL_OP_SINGLE_DH_USE;
 
@@ -493,7 +493,7 @@ void init_ssl(void)
 		/* use anonymous DH ciphers */
 		if (sslprm.allowDH == 2) {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
-			strncpy(sslprm.cipher_list, "ADH@SECLEVEL=0", MAX_FILENAME_LENGTH - 1);
+			strncpy(sslprm.cipher_list, "ADH:@SECLEVEL=0", MAX_FILENAME_LENGTH - 1);
 #else
 			strncpy(sslprm.cipher_list, "ADH", MAX_FILENAME_LENGTH - 1);
 #endif
@@ -542,7 +542,7 @@ void log_ssl_startup(void)
 	logit(LOG_INFO, "SSL CA Certificate File: %s",
 		   sslprm.cacert_file ? sslprm.cacert_file : "None");
 	logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
-	logit(LOG_INFO, "SSL Allow ADH: %d", sslprm.allowDH == 0);
+	logit(LOG_INFO, "SSL Allow ADH: %d", sslprm.allowDH);
 	logit(LOG_INFO, "SSL Client Certs: %s",
 		   sslprm.client_certs == 0 ? "Don't Ask" : (sslprm.client_certs ==
 													 1 ? "Accept" : "Require"));
