@@ -20,8 +20,6 @@ SOCKETLIBS=@SOCKETLIBS@
 LIBWRAPLIBS=@LIBWRAPLIBS@
 OTHERLIBS=@OTHERLIBS@
 
-CP=@CP@
-
 prefix=$(DESTDIR)@prefix@
 exec_prefix=$(DESTDIR)@exec_prefix@
 CFGDIR=$(DESTDIR)@pkgsysconfdir@
@@ -41,10 +39,13 @@ SRC_TMPFILE=@src_tmpfile@
 # Generated automatically from configure script
 SNPRINTF_O=@SNPRINTF_O@
 
+SSLBIN=@sslbin@
+SSL_DH_HEADER=@SSL_DH_HEADER@
+
 
 all: nrpe check_nrpe
 
-nrpe: $(srcdir)/nrpe.c utils.o $(srcdir)/acl.c $(SRC_INCLUDE)/nrpe.h $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h $(SRC_INCLUDE)/acl.h $(SNPRINTF_O)
+nrpe: $(srcdir)/nrpe.c utils.o $(srcdir)/acl.c $(SRC_INCLUDE)/nrpe.h $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h $(SRC_INCLUDE)/acl.h $(SNPRINTF_O) $(SSL_DH_HEADER)
 	$(CC) $(CFLAGS) -o $@ $(srcdir)/nrpe.c utils.o $(srcdir)/acl.c $(LDFLAGS) $(SOCKETLIBS) $(LIBWRAPLIBS) $(SNPRINTF_O) $(OTHERLIBS)
 
 check_nrpe: $(srcdir)/check_nrpe.c utils.o $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
@@ -52,6 +53,9 @@ check_nrpe: $(srcdir)/check_nrpe.c utils.o $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)
 
 utils.o: $(srcdir)/utils.c $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
 	$(CC) $(CFLAGS) -c -o $@ $(srcdir)/utils.c
+
+@SSL_DH_HEADER_MAKE@
+
 
 install:
 	$(MAKE) install-plugin
@@ -80,7 +84,7 @@ install-uninstall:
 	$(INSTALL) -m 755 ../uninstall $(SBINDIR)/nrpe-uninstall
 
 clean:
-	rm -f core nrpe check_nrpe utils.o $(SNPRINTF_O)
+	rm -f core nrpe check_nrpe generate_dh_params utils.o $(SNPRINTF_O) $(SSL_DH_HEADER)
 	rm -f *~ */*~
 	rm -rf nrpe.dSYM check_nrpe.dSYM
 

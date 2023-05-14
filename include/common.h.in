@@ -29,15 +29,12 @@
 #define SSL_TYPE_@SSL_TYPE@
 
 #ifdef HAVE_SSL
-#ifdef OPENSSL_V3
-# define OPENSSL_API_COMPAT 10002
-# define OPENSSL_NO_DEPRECATED
-#endif
 #include <@SSL_INC_PREFIX@@SSL_HDR@>
 # ifdef SSL_TYPE_openssl
 #  include <@SSL_INC_PREFIX@err.h>
 #  include <@SSL_INC_PREFIX@rand.h>
 #  include <@SSL_INC_PREFIX@engine.h>
+#  include <@SSL_INC_PREFIX@evp.h>
 # endif
 #endif
 

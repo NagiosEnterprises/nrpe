@@ -34,15 +34,17 @@
  *
  ****************************************************************************/
 
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 #include "common.h"
 #include "nrpe.h"
 #include "utils.h"
 #include "acl.h"
 
 #ifdef HAVE_SSL
-# ifdef USE_SSL_DH
-#  include "../include/dh.h"
+# if defined(USE_SSL_DH) && !defined(AUTO_SSL_DH)
+#  include "dh.h"
 # endif
 #endif
 
@@ -262,7 +264,6 @@ int init(void)
 void init_ssl(void)
 {
 #ifdef HAVE_SSL
-	DH            *dh;
 	char          seedfile[FILENAME_MAX];
 	char          errstr[120] = { "" };
 	int           i, c, x, vrfy;
@@ -498,10 +499,24 @@ void init_ssl(void)
 #endif
 		}
 
-#ifdef USE_SSL_DH
-		dh = get_dh2048();
-		SSL_CTX_set_tmp_dh(ctx, dh);
-		DH_free(dh);
+#ifdef AUTO_SSL_DH
+		SSL_CTX_set_dh_auto(ctx, 1);
+#else
+# ifdef USE_SSL_DH
+		{
+#  if OPENSSL_VERSION_NUMBER >= 0x30000000
+			EVP_PKEY *pkey = get_dh2048_key();
+			if (pkey) {
+					if (!SSL_CTX_set0_tmp_dh_pkey(ctx, pkey))
+						EVP_PKEY_free(pkey);
+			}
+#  else
+			DH *dh = get_dh2048();
+			SSL_CTX_set_tmp_dh(ctx, dh);
+			DH_free(dh);
+#  endif
+		}
+# endif
 #endif
 	}
 
