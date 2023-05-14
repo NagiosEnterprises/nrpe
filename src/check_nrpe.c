@@ -529,7 +529,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			if (i <= 0)
 				break;
 
-			strcat(query, "!");
+			strncat(query, "!", i);
 			strncat(query, argv[c], i);
 			query[sizeof(query) - 1] = '\x0';
 		}
@@ -1012,8 +1012,9 @@ void setup_ssl()
 		}
 
 		if (!sslprm.allowDH) {
-			if (strlen(sslprm.cipher_list) < sizeof(sslprm.cipher_list) - 6) {
-				strcat(sslprm.cipher_list, ":!ADH");
+			x = strlen(sslprm.cipher_list);
+			if (x < sizeof(sslprm.cipher_list) - 6) {
+				strncpy(sslprm.cipher_list + x, ":!ADH", sizeof(sslprm.cipher_list) - x);
 				if (sslprm.log_opts & SSL_LogStartup)
 					logit(LOG_INFO, "New SSL Cipher List: %s", sslprm.cipher_list);
 			}
@@ -1062,10 +1063,13 @@ void set_sig_handlers()
 
 int connect_to_remote()
 {
+#ifdef HAVE_SSL
+	int rc, ssl_err, ern, x, nerrs = 0;
+#endif
 	struct sockaddr_storage addr;
 	struct in_addr *inaddr;
 	socklen_t addrlen;
-	int result, rc, ssl_err, ern, x, nerrs = 0;
+	int result;
 
 	/* try to connect to the host at the given port number */
 	if ((sd = my_connect(server_name, &hostaddr, server_port, address_family, bind_address, stderr_to_stdout)) < 0)
@@ -1073,7 +1077,7 @@ int connect_to_remote()
 
 	result = STATE_OK;
 	addrlen = sizeof(addr);
-	rc = getpeername(sd, (struct sockaddr *)&addr, &addrlen);
+	getpeername(sd, (struct sockaddr *)&addr, &addrlen);
 	if (addr.ss_family == AF_INET) {
 		struct sockaddr_in *addrin = (struct sockaddr_in *)&addr;
 		inaddr = &addrin->sin_addr;
@@ -1224,10 +1228,10 @@ int send_request()
 		v2_send_packet->crc32_value = htonl(calculated_crc32);
 
 	} else {
-
-		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + strlen(query) + 1;
+		int query_len = strlen(query);
+		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + query_len + 1;
 		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + strlen(query) + 1;
+			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + query_len + 1;
 		}
 		if (pkt_size < sizeof(v2_packet)) {
 			pkt_size = sizeof(v2_packet);
@@ -1242,7 +1246,7 @@ int send_request()
 		v3_send_packet->buffer_length = pkt_size - sizeof(v3_packet);
 		v3_send_packet->buffer_length += (packet_ver == NRPE_PACKET_VERSION_4 ? NRPE_V4_PACKET_SIZE_OFFSET : NRPE_V3_PACKET_SIZE_OFFSET);
 		v3_send_packet->buffer_length = htonl(v3_send_packet->buffer_length);
-		strcpy(&v3_send_packet->buffer[0], query);
+		memcpy(&v3_send_packet->buffer[0], query, query_len + 1);
 
 		/* calculate the crc 32 value of the packet */
 		v3_send_packet->crc32_value = 0;
@@ -1253,7 +1257,9 @@ int send_request()
 	/* send the request to the remote */
 	bytes_to_send = pkt_size;
 
+#ifdef HAVE_SSL
 	if (use_ssl == FALSE)
+#endif
 		rc = sendall(sd, (char *)send_pkt, &bytes_to_send);
 #ifdef HAVE_SSL
 	else {
@@ -1420,8 +1426,11 @@ int read_response()
 
 int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pkt)
 {
+#ifdef HAVE_SSL
+	int32_t bytes_read = 0;
+#endif
 	v2_packet	packet;
-	int32_t pkt_size, common_size, tot_bytes, bytes_to_recv, buffer_size, bytes_read = 0;
+	int32_t pkt_size, common_size, tot_bytes, bytes_to_recv, buffer_size;
 	int rc;
 	char *buff_ptr;
 

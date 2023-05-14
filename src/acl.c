@@ -466,7 +466,8 @@ int add_domain_to_acl(char *domain) {
                         logit(LOG_ERR,"Can't allocate memory for ACL, malloc error\n");
                         return 0;
                 }
-                strcpy(dns_acl_curr->domain, domain);
+                strncpy(dns_acl_curr->domain, domain, sizeof(dns_acl_curr->domain));
+				dns_acl_curr->domain[sizeof(dns_acl_curr->domain) - 1] = '\0';
                 dns_acl_curr->next = NULL;
 
                 if (dns_acl_head == NULL)
