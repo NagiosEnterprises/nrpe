@@ -627,6 +627,7 @@ ac_subst_vars='PERL
 SSL_DH_HEADER_MAKE
 sslbin
 PKG_CONFIG
+SSL_OBJS
 SSL_DH_HEADER
 SSL_LIB_DIR
 SSL_INC_PREFIX
@@ -7390,7 +7391,6 @@ if test "${with_ssl_lib+set}" = set; then :
 fi
 
 
-#auto_dh=yes
 # Check whether --enable-auto_dh was given.
 if test "${enable_auto_dh+set}" = set; then :
   enableval=$enable_auto_dh; auto_dh=no
@@ -7724,6 +7724,7 @@ if ac_fn_c_try_link "$LINENO"; then :
 
 				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
+				SSL_OBJS="ssl.o"
 
 
 else

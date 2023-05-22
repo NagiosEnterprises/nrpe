@@ -63,6 +63,7 @@ AC_SUBST(SSL_HDR)
 AC_SUBST(SSL_INC_PREFIX)
 AC_SUBST(SSL_LIB_DIR)
 AC_SUBST(SSL_DH_HEADER)
+AC_SUBST(SSL_OBJS)
 
 
 dnl Makefile for generating DH parameters, pre 3.0 and post 3.0
@@ -296,6 +297,7 @@ if test x$SSL_TYPE != xNONE; then
 			[AC_LANG_PROGRAM([#include <${SSL_INC_PREFIX}${SSL_HDR}>], [SSL_new(NULL)])],
 			[
 				AC_MSG_RESULT([yes])
+				SSL_OBJS="ssl.o"
 				$1
 			], [
 				AC_MSG_ERROR([no])

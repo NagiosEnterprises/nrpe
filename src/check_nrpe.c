@@ -41,6 +41,7 @@
 #endif
 #include "common.h"
 #include "utils.h"
+#include "ssl.h"
 
 #define DEFAULT_NRPE_COMMAND "_NRPE_CHECK"	/* check version of NRPE daemon */
 
@@ -73,46 +74,15 @@ int force_v3_packet = 0;
 int payload_size = 0;
 extern char *log_file;
 
+
 #ifdef HAVE_SSL
-# if (defined(__sun) && defined(SOLARIS_10)) || defined(_AIX) || defined(__hpux)
-SSL_METHOD *meth;
-# else
-const SSL_METHOD *meth;
-# endif
-SSL_CTX *ctx;
 SSL *ssl;
-int use_ssl = TRUE;
 unsigned long ssl_opts = SSL_OP_ALL;
-#else
-int use_ssl = FALSE;
 #endif
-
-/* SSL/TLS parameters */
-typedef enum _SSL_VER {
-	SSL_Ver_Invalid = 0, SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus,
-	TLSv1, TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus, TLSv1_3, TLSv1_3_plus
-} SslVer;
-
-typedef enum _CLNT_CERTS { Ask_For_Cert = 1, Require_Cert = 2 } ClntCerts;
-
-typedef enum _SSL_LOGGING {
-	SSL_NoLogging = 0, SSL_LogStartup = 1, SSL_LogIpAddr = 2,
-	SSL_LogVersion = 4, SSL_LogCipher = 8, SSL_LogIfClientCert = 16,
-	SSL_LogCertDetails = 32,
-} SslLogging;
-
-struct _SSL_PARMS {
-	char *cert_file;
-	char *cacert_file;
-	char *privatekey_file;
-	char cipher_list[MAX_FILENAME_LENGTH];
-	SslVer ssl_proto_ver;
-	int allowDH;
-	ClntCerts client_certs;
-	SslLogging log_opts;
-} sslprm = {
-NULL, NULL, NULL, "", SSL_Ver_Invalid, -1, 0, SSL_NoLogging};
 int have_log_opts = FALSE;
+SslParms sslprm = {
+	NULL, NULL, NULL, "", SSL_Ver_Invalid, -1, 0, SSL_NoLogging
+};
 
 int process_arguments(int, char **, int);
 int read_config_file(char *);
@@ -744,8 +714,10 @@ void usage(int result)
 		printf("                              SSLv2     SSL v2 only\n");
 		printf("                              SSLv2+    SSL v2 or above\n");
 #endif
+#if OPENSSL_VERSION_NUMBER < 0x30000000
 		printf("                              SSLv3     SSL v3 only\n");
 		printf("                              SSLv3+    SSL v3 or above \n");
+#endif
 		printf("                              TLSv1     TLS v1 only\n");
 		printf("                              TLSv1+    TLS v1 or above (DEFAULT)\n");
 		printf("                              TLSv1.1   TLS v1.1 only\n");
@@ -799,244 +771,67 @@ void usage(int result)
 void setup_ssl()
 {
 #ifdef HAVE_SSL
-	int vrfy, x;
+	int vrfy;
 
-	if (sslprm.log_opts & SSL_LogStartup) {
-		char *val;
-
-		logit(LOG_INFO, "SSL Certificate File: %s", sslprm.cert_file ? sslprm.cert_file : "None");
-		logit(LOG_INFO, "SSL Private Key File: %s", sslprm.privatekey_file ? sslprm.privatekey_file : "None");
-		logit(LOG_INFO, "SSL CA Certificate File: %s", sslprm.cacert_file ? sslprm.cacert_file : "None");
-		logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
-		logit(LOG_INFO, "SSL Allow ADH: %d", sslprm.allowDH);
-		logit(LOG_INFO, "SSL Log Options: 0x%02x", sslprm.log_opts);
-
-		switch (sslprm.ssl_proto_ver) {
-		case SSLv2:
-			val = "SSLv2";
-			break;
-		case SSLv2_plus:
-			val = "SSLv2 And Above";
-			break;
-		case SSLv3:
-			val = "SSLv3";
-			break;
-		case SSLv3_plus:
-			val = "SSLv3_plus And Above";
-			break;
-		case TLSv1:
-			val = "TLSv1";
-			break;
-		case TLSv1_plus:
-			val = "TLSv1_plus And Above";
-			break;
-		case TLSv1_1:
-			val = "TLSv1_1";
-			break;
-		case TLSv1_1_plus:
-			val = "TLSv1_1_plus And Above";
-			break;
-		case TLSv1_2:
-			val = "TLSv1_2";
-			break;
-		case TLSv1_2_plus:
-			val = "TLSv1_2_plus And Above";
-			break;
-		case TLSv1_3:
-			val = "TLSv1_3";
-			break;
-		case TLSv1_3_plus:
-			val = "TLSv1_3_plus And Above";
-			break;
-		default:
-			val = "INVALID VALUE!";
-			break;
-		}
-		logit(LOG_INFO, "SSL Version: %s", val);
-	}
+	if (sslprm.log_opts & SSL_LogStartup)
+		ssl_log_startup(FALSE);
 
 	/* initialize SSL */
-	if (use_ssl == TRUE) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000
-		SSL_load_error_strings();
-		SSL_library_init();
-		ENGINE_load_builtin_engines();
-		RAND_set_rand_engine(NULL);
- 		ENGINE_register_all_complete();
-#endif
+	if (use_ssl == FALSE)
+		return;
+
+	ssl_initialize();
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
-
-		meth = TLS_method();
-
+	meth = TLS_client_method();
 #else		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
-
-		meth = SSLv23_client_method();
-
+	meth = SSLv23_client_method();
 # ifndef OPENSSL_NO_SSL2
-		if (sslprm.ssl_proto_ver == SSLv2)
-			meth = SSLv2_client_method();
+	if (sslprm.ssl_proto_ver == SSLv2)
+		meth = SSLv2_client_method();
 # endif
 # ifndef OPENSSL_NO_SSL3
-		if (sslprm.ssl_proto_ver == SSLv3)
-			meth = SSLv3_client_method();
+	if (sslprm.ssl_proto_ver == SSLv3)
+		meth = SSLv3_client_method();
 # endif
-		if (sslprm.ssl_proto_ver == TLSv1)
-			meth = TLSv1_client_method();
+	if (sslprm.ssl_proto_ver == TLSv1)
+		meth = TLSv1_client_method();
 # ifdef SSL_TXT_TLSV1_1
-		if (sslprm.ssl_proto_ver == TLSv1_1)
-			meth = TLSv1_1_client_method();
+	if (sslprm.ssl_proto_ver == TLSv1_1)
+		meth = TLSv1_1_client_method();
 #  ifdef SSL_TXT_TLSV1_2
-		if (sslprm.ssl_proto_ver == TLSv1_2)
-			meth = TLSv1_2_client_method();
-#  ifdef SSL_TXT_TLSV1_3
-		if (sslprm.ssl_proto_ver == TLSv1_3)
-			meth = TLSv1_3_client_method();
-#  endif	/* ifdef SSL_TXT_TLSV1_3 */
+	if (sslprm.ssl_proto_ver == TLSv1_2)
+		meth = TLSv1_2_client_method();
+#   ifdef SSL_TXT_TLSV1_3
+	if (sslprm.ssl_proto_ver == TLSv1_3)
+		meth = TLSv1_3_client_method();
+#   endif	/* ifdef SSL_TXT_TLSV1_3 */
 #  endif	/* ifdef SSL_TXT_TLSV1_2 */
 # endif	/* ifdef SSL_TXT_TLSV1_1 */
 
 #endif		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
 
-		if ((ctx = SSL_CTX_new(meth)) == NULL) {
-			printf("CHECK_NRPE: Error - could not create SSL context.\n");
-			exit(timeout_return_code);
-		}
-
-#if OPENSSL_VERSION_NUMBER >= 0x10100000
-
-	SSL_CTX_set_max_proto_version(ctx, 0);
-
-	switch(sslprm.ssl_proto_ver) {
-		case TLSv1_3:
-#if OPENSSL_VERSION_NUMBER >= 0x10101000
-			SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
-#endif
-		case TLSv1_3_plus:
-#if OPENSSL_VERSION_NUMBER >= 0x10101000
-			SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);
-			break;
-#endif
-
-		case TLSv1_2:
-			SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
-		case TLSv1_2_plus:
-			SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION);
-			break;
-
-		case TLSv1_1:
-			SSL_CTX_set_max_proto_version(ctx, TLS1_1_VERSION);
-		case TLSv1_1_plus:
-			SSL_CTX_set_min_proto_version(ctx, TLS1_1_VERSION);
-			break;
-
-		case TLSv1:
-			SSL_CTX_set_max_proto_version(ctx, TLS1_VERSION);
-		case TLSv1_plus:
-			SSL_CTX_set_min_proto_version(ctx, TLS1_VERSION);
-			break;
-
-		case SSLv3:
-			SSL_CTX_set_max_proto_version(ctx, SSL3_VERSION);
-		case SSLv3_plus:
-			SSL_CTX_set_min_proto_version(ctx, SSL3_VERSION);
-			break;
+	if ((ctx = SSL_CTX_new(meth)) == NULL) {
+		printf("CHECK_NRPE: Error - could not create SSL context.\n");
+		exit(timeout_return_code);
 	}
 
-#else		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
+	ssl_set_protocol_version(sslprm.ssl_proto_ver, &ssl_opts);
+	SSL_CTX_set_options(ctx, ssl_opts);
 
-		switch(sslprm.ssl_proto_ver) {
-			case SSLv2:
-			case SSLv2_plus:
-				break;
-			case TLSv1_3:
-			case TLSv1_3_plus:
-#ifdef SSL_OP_NO_TLSv1_2
-				ssl_opts |= SSL_OP_NO_TLSv1_2;
-#endif
-			case TLSv1_2:
-			case TLSv1_2_plus:
-#ifdef SSL_OP_NO_TLSv1_1
-				ssl_opts |= SSL_OP_NO_TLSv1_1;
-#endif
-			case TLSv1_1:
-			case TLSv1_1_plus:
-				ssl_opts |= SSL_OP_NO_TLSv1;
-			case TLSv1:
-			case TLSv1_plus:
-				ssl_opts |= SSL_OP_NO_SSLv3;
-			case SSLv3:
-			case SSLv3_plus:
-				ssl_opts |= SSL_OP_NO_SSLv2;
-				break;
-			case SSL_Ver_Invalid:
-				/* Should never be seen, silence warning */
-				break;
-		}
+	if (!ssl_load_certificates()) {
+		SSL_CTX_free(ctx);
+		exit(timeout_return_code);
+	}
 
-#endif		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
+	if (sslprm.cacert_file != NULL) {
+		vrfy = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+		SSL_CTX_set_verify(ctx, vrfy, verify_callback);
+	}
 
-		SSL_CTX_set_options(ctx, ssl_opts);
-
-		if (sslprm.cert_file != NULL && sslprm.privatekey_file != NULL) {
-			if (!SSL_CTX_use_certificate_chain_file(ctx, sslprm.cert_file)) {
-				printf("Error: could not use certificate file '%s'.\n", sslprm.cert_file);
-				while ((x = ERR_get_error()) != 0) {
-					printf("Error: could not use certificate file '%s': %s\n", sslprm.cert_file, ERR_reason_error_string(x));
-				}
-				SSL_CTX_free(ctx);
-				exit(timeout_return_code);
-			}
-			if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
-				SSL_CTX_free(ctx);
-				printf("Error: could not use private key file '%s'.\n", sslprm.privatekey_file);
-				while ((x = ERR_get_error()) != 0) {
-					printf("Error: could not use private key file '%s': %s\n", sslprm.privatekey_file, ERR_reason_error_string(x));
-				}
-				SSL_CTX_free(ctx);
-				exit(timeout_return_code);
-			}
-		}
-
-		if (sslprm.cacert_file != NULL) {
-			vrfy = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-			SSL_CTX_set_verify(ctx, vrfy, verify_callback);
-			if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
-				printf("Error: could not use CA certificate '%s'.\n", sslprm.cacert_file);
-				while ((x = ERR_get_error()) != 0) {
-					printf("Error: could not use CA certificate '%s': %s\n", sslprm.cacert_file, ERR_reason_error_string(x));
-				}
-				SSL_CTX_free(ctx);
-				exit(timeout_return_code);
-			}
-		}
-
-		if (!sslprm.allowDH) {
-			x = strlen(sslprm.cipher_list);
-			if (x < sizeof(sslprm.cipher_list) - 6) {
-				strncpy(sslprm.cipher_list + x, ":!ADH", sizeof(sslprm.cipher_list) - x);
-				if (sslprm.log_opts & SSL_LogStartup)
-					logit(LOG_INFO, "New SSL Cipher List: %s", sslprm.cipher_list);
-			}
-		} else {
-			/* use anonymous DH ciphers */
-			if (sslprm.allowDH == 2) {
-#if OPENSSL_VERSION_NUMBER >= 0x10100000
-				strncpy(sslprm.cipher_list, "ADH@SECLEVEL=0", MAX_FILENAME_LENGTH - 1);
-#else
-				strncpy(sslprm.cipher_list, "ADH", MAX_FILENAME_LENGTH - 1);
-#endif
-			}
-		}
-
-		if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
-			printf("Error: Could not set SSL/TLS cipher list: %s\n", sslprm.cipher_list);
-			while ((x = ERR_get_error()) != 0) {
-				printf("Could not set SSL/TLS cipher list '%s': %s\n", sslprm.cipher_list, ERR_reason_error_string(x));
-			}
-			SSL_CTX_free(ctx);
-			exit(timeout_return_code);
-		}
+	if (!ssl_set_ciphers()) {
+		SSL_CTX_free(ctx);
+		exit(timeout_return_code);
 	}
 #endif
 }
@@ -1641,30 +1436,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 #ifdef HAVE_SSL
 int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 {
-	char name[256], issuer[256];
-	X509 *err_cert;
-	int err;
-	SSL *ssl;
-
-	if (preverify_ok || ((sslprm.log_opts & SSL_LogCertDetails) == 0))
-		return preverify_ok;
-
-	err_cert = X509_STORE_CTX_get_current_cert(ctx);
-	err = X509_STORE_CTX_get_error(ctx);
-
-	/* Get the pointer to the SSL of the current connection */
-	ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
-
-	X509_NAME_oneline(X509_get_subject_name(err_cert), name, 256);
-	X509_NAME_oneline(X509_get_issuer_name(err_cert), issuer, 256);
-
-	if (!preverify_ok && sslprm.client_certs >= Ask_For_Cert
-		&& (sslprm.log_opts & SSL_LogCertDetails)) {
-		
-		logit(LOG_ERR, "SSL Client has an invalid certificate: %s (issuer=%s) err=%d:%s", name, issuer, err, X509_verify_cert_error_string(err));
-	}
-
-	return preverify_ok;
+	return ssl_verify_callback_common(preverify_ok, ctx, !preverify_ok && sslprm.client_certs >= Ask_For_Cert);
 }
 #endif
 
