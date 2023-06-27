@@ -2137,7 +2137,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			return -1;
 
 		packet_ver = ntohs(v2_pkt->packet_version);
-		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_4) {
+		if (packet_ver < NRPE_PACKET_VERSION_2 || packet_ver > NRPE_PACKET_VERSION_4) {
 			logit(LOG_ERR, "Error: (use_ssl == false): Request packet version was invalid!");
 			return -1;
 		}
@@ -2147,7 +2147,13 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			buff_ptr = (char *)v2_pkt + common_size;
 
 		} else {
-			int32_t   pkt_size = sizeof(v3_packet) - 1;
+			int32_t   pkt_size = sizeof(v3_packet);
+			if (packet_ver == NRPE_PACKET_VERSION_3) {
+				pkt_size -= NRPE_V3_PACKET_SIZE_OFFSET;
+			}
+			else if (packet_ver == NRPE_PACKET_VERSION_4) {
+				pkt_size -= NRPE_V4_PACKET_SIZE_OFFSET;
+			}
 
 			/* Read the alignment filler */
 			bytes_to_recv = sizeof(int16_t);
@@ -2221,7 +2227,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			return -1;
 
 		packet_ver = ntohs(v2_pkt->packet_version);
-		if (packet_ver != NRPE_PACKET_VERSION_2 && packet_ver != NRPE_PACKET_VERSION_4) {
+		if (packet_ver < NRPE_PACKET_VERSION_2 || packet_ver > NRPE_PACKET_VERSION_4) {
 			logit(LOG_ERR, "Error: (use_ssl == true): Request packet version was invalid!");
 			return -1;
 		}
