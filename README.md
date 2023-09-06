@@ -1,11 +1,5 @@
 ![Nagios!](https://www.nagios.com/wp-content/uploads/2015/05/Nagios-Black-500x124.png)
 
-[![Build Status](https://travis-ci.org/NagiosEnterprises/nrpe.svg?branch=master)](https://travis-ci.org/NagiosEnterprises/nrpe)
-
- 🔴 🔴 🔴
-***Notice: As of NRPE version 4.0.1, this project is deprecated. It will not receive any more bugfixes or features, except to resolve security issues.***
- 🔴 🔴 🔴
-
 Nagios Remote Plugin Executor (NRPE)
 ====================================
 
