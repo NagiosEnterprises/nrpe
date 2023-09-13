@@ -119,11 +119,11 @@ int translate_state (char *state_text);
 void set_timeout_state (char *state);
 int parse_timeout_string (char *timeout_str);
 void usage(int result);
-void setup_ssl();
-void set_sig_handlers();
-int connect_to_remote();
-int send_request();
-int read_response();
+void setup_ssl(void);
+void set_sig_handlers(void);
+int connect_to_remote(void);
+int send_request(void);
+int read_response(void);
 int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pkt);
 #ifdef HAVE_SSL
 static int verify_callback(int ok, X509_STORE_CTX * ctx);
@@ -794,7 +794,7 @@ void usage(int result)
 	exit(STATE_UNKNOWN);
 }
 
-void setup_ssl()
+void setup_ssl(void)
 {
 #ifdef HAVE_SSL
 	int vrfy, x;
@@ -937,6 +937,14 @@ void setup_ssl()
 		case SSLv3_plus:
 			SSL_CTX_set_min_proto_version(ctx, SSL3_VERSION);
 			break;
+
+		case SSLv2:
+		case SSLv2_plus:
+			/* SSLv2 support dropped */
+			break;
+		case SSL_Ver_Invalid:
+			/* Should never be seen, silence warning */
+			break;
 	}
 
 #else		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
@@ -1031,7 +1039,7 @@ void setup_ssl()
 #endif
 }
 
-void set_sig_handlers()
+void set_sig_handlers(void)
 {
 #ifdef HAVE_SIGACTION
 	struct sigaction sig_action;
@@ -1051,7 +1059,7 @@ void set_sig_handlers()
 	alarm(socket_timeout);
 }
 
-int connect_to_remote()
+int connect_to_remote(void)
 {
 	struct sockaddr_storage addr;
 	struct in_addr *inaddr;
@@ -1150,7 +1158,7 @@ int connect_to_remote()
 		}
 
 		if ((sslprm.log_opts & SSL_LogIfClientCert) || (sslprm.log_opts & SSL_LogCertDetails)) {
-			char peer_cn[256], buffer[2048];
+			char buffer[2048];
 			X509 *peer = SSL_get_peer_certificate(ssl);
 
 			if (peer) {
@@ -1180,7 +1188,7 @@ int connect_to_remote()
 	return result;
 }
 
-int send_request()
+int send_request(void)
 {
 	v2_packet *v2_send_packet = NULL;
 	v3_packet *v3_send_packet = NULL;
@@ -1270,7 +1278,7 @@ int send_request()
 	return STATE_OK;
 }
 
-int read_response()
+int read_response(void)
 {
 	v2_packet *v2_receive_packet = NULL;
 	/* Note: v4 packets will use the v3_packet structure */
@@ -1626,16 +1634,12 @@ int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 	char name[256], issuer[256];
 	X509 *err_cert;
 	int err;
-	SSL *ssl;
 
 	if (preverify_ok || ((sslprm.log_opts & SSL_LogCertDetails) == 0))
 		return preverify_ok;
 
 	err_cert = X509_STORE_CTX_get_current_cert(ctx);
 	err = X509_STORE_CTX_get_error(ctx);
-
-	/* Get the pointer to the SSL of the current connection */
-	ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
 
 	X509_NAME_oneline(X509_get_subject_name(err_cert), name, 256);
 	X509_NAME_oneline(X509_get_issuer_name(err_cert), issuer, 256);

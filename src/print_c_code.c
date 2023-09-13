@@ -87,7 +87,7 @@ DH *get_dh2048()
 #include <stdlib.h>
 #include <string.h>
 
-int main() {
+int main(void) {
 	char line[1024];
 	int result;
 	unsigned int term = 0;
@@ -130,7 +130,7 @@ int main() {
 
 	// Print the first part of the C code:
 
-	printf("DH *get_dh2048()\n"
+	printf("DH *get_dh2048(void)\n"
 		"{\n"
 		"\tstatic unsigned char dh2048_p[]={");
 

@@ -264,9 +264,9 @@ int clean_environ(const char *keep_env_vars, const char *nrpe_user)
 #else
 	static char	*path = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 #endif
-	struct passwd *pw;
+	struct passwd *pw = NULL;
 	size_t len, var_sz = 0;
-	char **kept = NULL, *value, *var, *keep = NULL;
+	char **kept = NULL, *value, *var, *keep = NULL, *tmp;
 	int i, j, keepcnt = 0;
 
 	if (keep_env_vars && *keep_env_vars)
@@ -289,7 +289,8 @@ int clean_environ(const char *keep_env_vars, const char *nrpe_user)
 		logit(LOG_ERR, "Could not sanitize the environment. Aborting!");
 		return ERROR;
 	}
-	for (i = 0, var = my_strsep(&keep, ","); var != NULL; var = my_strsep(&keep, ","))
+	tmp = keep;		/* use temp variable as strsep will update it */
+	for (i = 0, var = my_strsep(&tmp, ","); var != NULL; var = my_strsep(&tmp, ","))
 		kept[i++] = strip(var);
 
 	var = NULL;
@@ -485,7 +486,7 @@ char *my_strsep(char **stringp, const char *delim)
 	return begin;
 }
 
-void open_log_file()
+void open_log_file(void)
 {
 	int fh;
 	int flags = O_RDWR|O_APPEND|O_CREAT;
@@ -557,7 +558,7 @@ void logit(int priority, const char *format, ...)
 	va_end(ap);
 }
 
-void close_log_file()
+void close_log_file(void)
 {
 	if(!log_fp)
 		return;
