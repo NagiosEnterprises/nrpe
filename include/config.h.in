@@ -97,6 +97,9 @@
 /* Set to 1 to use SSL DH */
 #undef USE_SSL_DH
 
+/* Define to auto configure SSL DH parameters */
+#undef AUTO_SSL_DH
+
 /* stupid stuff for u_int32_t */
 #undef U_INT32_T_IS_USHORT
 #undef U_INT32_T_IS_UINT

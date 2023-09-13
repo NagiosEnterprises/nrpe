@@ -53,17 +53,27 @@ try_pkg_config=1
 ssl_dir=
 ssl_inc_dir=
 ssl_lib_dir=
-SSL_INC_DIR=
 SSL_INC_PREFIX=
 SSL_HDR=
 SSL_LIB_DIR=
 
 AC_SUBST(HAVE_SSL)
 AC_SUBST(SSL_TYPE)
-AC_SUBST(SSL_INC_DIR)
 AC_SUBST(SSL_HDR)
 AC_SUBST(SSL_INC_PREFIX)
 AC_SUBST(SSL_LIB_DIR)
+AC_SUBST(SSL_DH_HEADER)
+AC_SUBST(SSL_OBJS)
+
+
+dnl Makefile for generating DH parameters, pre 3.0 and post 3.0
+SSL_DH_HEADER_MAKE_OLD="../include/dh.h:
+	\$(SSLBIN) dhparam -C 2048 | awk '/^-----/ {exit} {print}' > \@S|@@"
+SSL_DH_HEADER_MAKE_NEW="../include/dh.h: generate_dh_params
+	./generate_dh_params > \@S|@@
+
+generate_dh_params: \$(srcdir)/generate_dh_params.c
+	\$(CC) \$(CFLAGS) -o \@S|@@ \$(srcdir)/generate_dh_params.c \$(LDFLAGS)"
 
 
 # gnutls/openssl.h
@@ -85,6 +95,11 @@ AC_ARG_WITH([ssl-inc],
 AC_ARG_WITH([ssl-lib],
 	AS_HELP_STRING([--with-ssl-lib=DIR],[sets location of the SSL libraries]),
 	[ssl_lib_dir=$withval])
+
+AC_ARG_ENABLE([auto_dh],
+	AS_HELP_STRING([--disable-auto-dh],[disables using builtin DH parameters (if available) and generates custom parameters]),
+	auto_dh=no,
+	auto_dh=yes)
 
 if test x$ssl_inc_dir != x -o x$ssl_lib_dir != x; then
 	try_pkg_config=0
@@ -167,7 +182,9 @@ if test x$SSL_TYPE != xNONE; then
 	fi
 
 	# First, try using pkg_config
-	AC_CHECK_TOOL([PKG_CONFIG], [pkg-config])
+	if test $try_pkg_config -ne 0 ; then
+		AC_CHECK_TOOL([PKG_CONFIG], [pkg-config])
+	fi
 	if test x"$PKG_CONFIG" != x -a $try_pkg_config -ne 0 ; then
 		cflags=`$PKG_CONFIG $SSL_TYPE --cflags-only-I 2>/dev/null`
 		if test $? -eq 0; then
@@ -188,10 +205,17 @@ if test x$SSL_TYPE != xNONE; then
 				continue
 			fi
 			ssldir="$dir"
+			sslincdir="$dir"
+			if test -f "$dir/$SSL_INC_PREFIX/$SSL_HDR"; then
+				found_ssl=yes
+				CFLAGS="$CFLAGS -I$dir"
+				ssldir="$dir/.."
+				break
+			fi
 			if test -f "$dir/include/$SSL_INC_PREFIX/$SSL_HDR"; then
 				found_ssl=yes
-				CFLAGS="$CFLAGS -I$dir/include/$SSL_INC_PREFIX -I$ssldir/include"
-				SSL_INC_DIR="$dir/include/$SSL_INC_PREFIX"
+				CFLAGS="$CFLAGS -I$dir/include"
+				sslincdir="$dir/include"
 				break
 			fi
 			if test -f "$dir/include/$SSL_HDR"; then
@@ -200,21 +224,13 @@ if test x$SSL_TYPE != xNONE; then
 					SSL_INC_PREFIX=""
 				fi
 				CFLAGS="$CFLAGS -I$dir/include"
-				SSL_INC_DIR="$dir/include"
+				sslincdir="$dir/include"
 				break
 			fi
 			if test -f "$dir/$SSL_HDR"; then
 				found_ssl=yes
 				SSL_INC_PREFIX=""
 				CFLAGS="$CFLAGS -I$dir"
-				SSL_INC_DIR="$dir"
-				break
-			fi
-			if test -f "$dir/$SSL_INC_PREFIX/$SSL_HDR"; then
-				found_ssl=yes
-				CFLAGS="$CFLAGS -I$dir/$SSL_INC_PREFIX"
-				SSL_INC_DIR="$dir/$SSL_INC_PREFIX"
-				ssldir="$dir/.."
 				break
 			fi
 		done
@@ -222,7 +238,7 @@ if test x$SSL_TYPE != xNONE; then
 		if test x_$found_ssl != x_yes; then
 			AC_MSG_ERROR(Cannot find ssl headers)
 		else
-			AC_MSG_RESULT(found in $ssldir)
+			AC_MSG_RESULT(found in $sslincdir)
 
 			# Now try and find SSL libraries
 
@@ -241,13 +257,18 @@ if test x$SSL_TYPE != xNONE; then
 			elif test "`uname -s`" = "AIX" ; then
 				soext="a"
 			else
-				soext="so"
+				soext="so a"
 			fi
 
 			for dir in $ssl_lib_dirs; do
-				if test -f "$dir/$ssl_lib.$soext"; then
-					found_ssl=yes
-					SSL_LIB_DIR="$dir"
+				for ext in $soext; do
+					if test -f "$dir/$ssl_lib.$ext"; then
+						found_ssl=yes
+						SSL_LIB_DIR="$dir"
+						break
+					fi
+				done
+				if test x_$found_ssl == x_yes; then
 					break
 				fi
 			done
@@ -257,7 +278,7 @@ if test x$SSL_TYPE != xNONE; then
 			else
 				AC_MSG_RESULT(found in $SSL_LIB_DIR)
 
-				LDFLAGS="$LDFLAGS -L$SSL_LIB_DIR";
+				LDFLAGS="$LDFLAGS -L$SSL_LIB_DIR -Wl,-rpath,$SSL_LIB_DIR";
 				LIBS="$LIBS -l`echo $ssl_lib | sed -e 's/^lib//'` -lcrypto";
 				AC_DEFINE_UNQUOTED(HAVE_SSL,[1],[Have SSL support])
 			fi
@@ -276,6 +297,7 @@ if test x$SSL_TYPE != xNONE; then
 			[AC_LANG_PROGRAM([#include <${SSL_INC_PREFIX}${SSL_HDR}>], [SSL_new(NULL)])],
 			[
 				AC_MSG_RESULT([yes])
+				SSL_OBJS="ssl.o"
 				$1
 			], [
 				AC_MSG_ERROR([no])
@@ -285,30 +307,53 @@ if test x$SSL_TYPE != xNONE; then
 
 	if test x$found_ssl = xyes -a x$need_dh = xyes; then
 
-		# Find the openssl program
+		AC_LINK_IFELSE([dnl
+			AC_LANG_PROGRAM(
+			[
+				#include <stdio.h>
+				#include <${SSL_INC_PREFIX}${SSL_HDR}>
+			],
+			[
+				#ifdef OPENSSL_VERSION_MAJOR
+					printf("%i %i", OPENSSL_VERSION_MAJOR, OPENSSL_VERSION_MINOR);
+				#else
+					printf("%i %i", (int)((OPENSSL_VERSION_NUMBER >> 28) & 0x0f), (int)((OPENSSL_VERSION_NUMBER >> 20) & 0xff));
+				#endif
+				])],
+			[
+				nagios_ssl_version=$(./conftest$EXEEXT)
+				SSL_MAJOR=$(echo $nagios_ssl_version | cut -d' ' -f1)
+				SSL_MINOR=$(echo $nagios_ssl_version | cut -d' ' -f2)
+			],
+			AC_MSG_ERROR(Failed to detect OpenSSL version!))
 
-		if test x$need_dh = xyes; then
-			AC_PATH_PROG(sslbin,openssl,value-if-not-found,$ssl_dir/sbin$PATH_SEPARATOR$ssl_dir/bin$PATH_SEPARATOR$PATH)
-			AC_DEFINE(USE_SSL_DH)
-			# Generate DH parameters
-			if test -f "$sslbin"; then
-				echo ""
-				echo "*** Generating DH Parameters for SSL/TLS ***"
-				# OpenSSL 3 removes dhparam -C
-				# check version and use our own parser if needed
-				nagios_ssl_major_version=`$sslbin version | cut -d' ' -f2 | cut -d. -f1`
+		if test x$auto_dh = xyes -a $SSL_MAJOR -lt 1 -o \( $SSL_MAJOR -eq 1 -a $SSL_MINOR -lt 1 \); then
+			# auto_dh not available before v1.1.0
+			auto_dh=no
+		fi
 
-				test -d include || mkdir include
-				if test "x$nagios_ssl_major_version" = "x3"; then
-					AC_DEFINE_UNQUOTED(OPENSSL_V3,[1],[Have OpenSSL v3])
-					test -d src || mkdir src
-					$CC ${srcdir}/src/print_c_code.c -o src/print_c_code
-					$sslbin dhparam -text 2048 | ./src/print_c_code > include/dh.h
+		if test x$auto_dh = xyes; then
+			AC_DEFINE(AUTO_SSL_DH)
+		fi
+
+
+		dnl Do the Makefile rules here to maintain compatibility and not rely on GNU Make
+
+		if test x$need_dh = xyes ; then
+			if test x$auto_dh = xno ; then
+				if test $SSL_MAJOR -lt 3 ; then
+					# Find the openssl program
+					# Only need openssl binary if we're not using auto or using version less than 3.0
+					AC_PATH_PROG(sslbin,openssl,value-if-not-found,${ssldir}/sbin${PATH_SEPARATOR}${ssldir}/bin${PATH_SEPARATOR}${PATH})
+
+					AC_SUBST(SSL_DH_HEADER_MAKE, ${SSL_DH_HEADER_MAKE_OLD})
 				else
-					# awk to strip off meta data at bottom of dhparam output
-					$sslbin dhparam -C 2048 | awk '/^-----/ {exit} {print}' > include/dh.h
+					AC_SUBST(SSL_DH_HEADER_MAKE, ${SSL_DH_HEADER_MAKE_NEW})
 				fi
+
+				AC_SUBST(SSL_DH_HEADER,../include/dh.h)
 			fi
+			AC_DEFINE(USE_SSL_DH)
 		fi
 	fi
 fi

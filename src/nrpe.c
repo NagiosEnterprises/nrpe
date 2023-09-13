@@ -34,15 +34,18 @@
  *
  ****************************************************************************/
 
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 #include "common.h"
 #include "nrpe.h"
 #include "utils.h"
 #include "acl.h"
+#include "ssl.h"
 
 #ifdef HAVE_SSL
-# ifdef USE_SSL_DH
-#  include "../include/dh.h"
+# if defined(USE_SSL_DH) && !defined(AUTO_SSL_DH)
+#  include "dh.h"
 # endif
 #endif
 
@@ -58,17 +61,6 @@ int       rfc931_timeout=15;
 # endif
 #endif
 
-#ifdef HAVE_SSL
-# if (defined(__sun) && defined(SOLARIS_10)) || defined(_AIX) || defined(__hpux)
-SSL_METHOD *meth;
-# else
-const SSL_METHOD *meth;
-# endif
-SSL_CTX  *ctx;
-int       use_ssl = TRUE;
-#else
-int       use_ssl = FALSE;
-#endif
 
 #define DEFAULT_COMMAND_TIMEOUT			60	/* default timeout for execution of plugins */
 #define MAXFD							64
@@ -122,32 +114,8 @@ int       listen_queue_size = DEFAULT_LISTEN_QUEUE_SIZE;
 char     *nasty_metachars = NULL;
 extern char *log_file;
 
-/* SSL/TLS parameters */
-typedef enum _SSL_VER {
-	SSLv2 = 1, SSLv2_plus, SSLv3, SSLv3_plus, TLSv1,
-	TLSv1_plus, TLSv1_1, TLSv1_1_plus, TLSv1_2, TLSv1_2_plus, TLSv1_3, TLSv1_3_plus
-} SslVer;
 
-typedef enum _CLNT_CERTS {
-	ClntCerts_Unknown = 0, Ask_For_Cert = 1, Require_Cert = 2
-} ClntCerts;
-
-typedef enum _SSL_LOGGING {
-	SSL_NoLogging = 0, SSL_LogStartup = 1, SSL_LogIpAddr = 2,
-	SSL_LogVersion = 4, SSL_LogCipher = 8, SSL_LogIfClientCert = 16,
-	SSL_LogCertDetails = 32
-} SslLogging;
-
-struct _SSL_PARMS {
-	char     *cert_file;
-	char     *cacert_file;
-	char     *privatekey_file;
-	char      cipher_list[MAX_FILENAME_LENGTH];
-	SslVer    ssl_proto_ver;
-	int       allowDH;
-	ClntCerts client_certs;
-	SslLogging log_opts;
-} sslprm = {
+SslParms sslprm = {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
 NULL, NULL, NULL, "ALL:!MD5:@STRENGTH:@SECLEVEL=0", TLSv1_plus, TRUE, 0, SSL_NoLogging
 #else
@@ -185,7 +153,7 @@ int main(int argc, char **argv)
 		buffer[sizeof(buffer) - 1] = '\x0';
 
 		/* get absolute path of current working directory */
-		strcpy(config_file, "");
+		config_file[0] = '\0';
 		if (getcwd(config_file, sizeof(config_file)) == NULL) {
 			printf("ERROR: getcwd(): %s, bailing out...\n", strerror(errno));
 			exit(STATE_CRITICAL);
@@ -262,9 +230,8 @@ int init(void)
 void init_ssl(void)
 {
 #ifdef HAVE_SSL
-	DH            *dh;
 	char          seedfile[FILENAME_MAX];
-	char          errstr[120] = { "" };
+	char          errstr[256] = { "" };
 	int           i, c, x, vrfy;
 	unsigned long ssl_opts = SSL_OP_ALL | SSL_OP_SINGLE_DH_USE;
 
@@ -286,16 +253,9 @@ void init_ssl(void)
 #endif
 
 	if (sslprm.log_opts & SSL_LogStartup)
-		log_ssl_startup();
+		ssl_log_startup(TRUE);
 
-	/* initialize SSL */
-	SSL_load_error_strings();
-	SSL_library_init();
-	ENGINE_load_builtin_engines();
-	RAND_set_rand_engine(NULL);
- 	ENGINE_register_all_complete();
-
-	meth = SSLv23_server_method();
+	ssl_initialize();
 
 	/* use week random seed if necessary */
 	if (allow_weak_random_seed && (RAND_status() == 0)) {
@@ -317,11 +277,9 @@ void init_ssl(void)
 	}
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
-
-	meth = TLS_method();
-
+	meth = TLS_server_method();
 #else		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
-
+	meth = SSLv23_server_method();
 # ifndef OPENSSL_NO_SSL2
 	if (sslprm.ssl_proto_ver == SSLv2)
 		meth = SSLv2_server_method();
@@ -353,120 +311,15 @@ void init_ssl(void)
 			ERR_error_string(x, errstr);
 			logit(LOG_ERR, "Error: could not create SSL context : %s", errstr);
 		}
-		SSL_CTX_free(ctx);
 		exit(STATE_CRITICAL);
 	}
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000
-
-	SSL_CTX_set_max_proto_version(ctx, 0);
-
-	switch(sslprm.ssl_proto_ver) {
-		case TLSv1_3:
-#if OPENSSL_VERSION_NUMBER >= 0x10101000
-			SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
-#endif
-		case TLSv1_3_plus:
-#if OPENSSL_VERSION_NUMBER >= 0x10101000
-			SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);
-			break;
-#endif
-
-		case TLSv1_2:
-			SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
-		case TLSv1_2_plus:
-			SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION);
-			break;
-
-		case TLSv1_1:
-			SSL_CTX_set_max_proto_version(ctx, TLS1_1_VERSION);
-		case TLSv1_1_plus:
-			SSL_CTX_set_min_proto_version(ctx, TLS1_1_VERSION);
-			break;
-
-		case TLSv1:
-			SSL_CTX_set_max_proto_version(ctx, TLS1_VERSION);
-		case TLSv1_plus:
-			SSL_CTX_set_min_proto_version(ctx, TLS1_VERSION);
-			break;
-
-		case SSLv3:
-			SSL_CTX_set_max_proto_version(ctx, SSL3_VERSION);
-		case SSLv3_plus:
-			SSL_CTX_set_min_proto_version(ctx, SSL3_VERSION);
-			break;
-	}
-
-#else		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
-
-	switch(sslprm.ssl_proto_ver) {
-		case SSLv2:
-		case SSLv2_plus:
-			break;
-		case TLSv1_3:
-		case TLSv1_3_plus:
-#ifdef SSL_OP_NO_TLSv1_2
-			ssl_opts |= SSL_OP_NO_TLSv1_2;
-#endif
-		case TLSv1_2:
-		case TLSv1_2_plus:
-			ssl_opts |= SSL_OP_NO_TLSv1_1;
-		case TLSv1_1:
-		case TLSv1_1_plus:
-			ssl_opts |= SSL_OP_NO_TLSv1;
-		case TLSv1:
-		case TLSv1_plus:
-			ssl_opts |= SSL_OP_NO_SSLv3;
-		case SSLv3:
-		case SSLv3_plus:
-			ssl_opts |= SSL_OP_NO_SSLv2;
-			break;
-	}
-
-#endif		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
-
+	ssl_set_protocol_version(sslprm.ssl_proto_ver, &ssl_opts);
 	SSL_CTX_set_options(ctx, ssl_opts);
 
-	if (sslprm.cacert_file != NULL) {
-		if (!SSL_CTX_load_verify_locations(ctx, sslprm.cacert_file, NULL)) {
-			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
-				logit(LOG_ERR, "Error: could not use CA certificate file '%s': %s\n",
-					   sslprm.cacert_file, ERR_reason_error_string(x));
-			}
-			SSL_CTX_free(ctx);
-			logit(LOG_ERR, "Error: could not use CA certificate '%s'", sslprm.cacert_file);
-			exit(STATE_CRITICAL);
-		}
-	}
-
-	if (sslprm.cert_file != NULL) {
-		if (!SSL_CTX_use_certificate_chain_file(ctx, sslprm.cert_file)) {
-			SSL_CTX_free(ctx);
-			while ((x = ERR_get_error()) != 0) {
-				ERR_error_string(x, errstr);
-				logit(LOG_ERR, "Error: could not use certificate file %s : %s",
-					   sslprm.cert_file, errstr);
-			}
-			exit(STATE_CRITICAL);
-		}
-		if (!SSL_CTX_use_PrivateKey_file(ctx, sslprm.privatekey_file, SSL_FILETYPE_PEM)) {
-			while ((x = ERR_get_error()) != 0) {
-				ERR_error_string(x, errstr);
-				logit(LOG_ERR, "Error: could not use private key file '%s' : %s",
-					 sslprm.privatekey_file, errstr);
-			}
-			SSL_CTX_free(ctx);
-			exit(STATE_CRITICAL);
-		}
-		if (!SSL_CTX_check_private_key(ctx)) {
-			while ((x = ERR_get_error()) != 0) {
-				ERR_error_string(x, errstr);
-				logit(LOG_ERR, "Error: could not use certificate/private key pair: %s",
-					 errstr);
-			}
-			SSL_CTX_free(ctx);
-			exit(STATE_CRITICAL);
-		}
+	if (!ssl_load_certificates()) {
+		SSL_CTX_free(ctx);
+		exit(STATE_CRITICAL);
 	}
 
 	if (sslprm.client_certs != 0) {
@@ -483,95 +336,33 @@ void init_ssl(void)
 		SSL_CTX_set_verify(ctx, vrfy, verify_callback);
 	}
 
-	if (!sslprm.allowDH) {
-		if (strlen(sslprm.cipher_list) < sizeof(sslprm.cipher_list) - 6)
-			strcat(sslprm.cipher_list, ":!ADH");
-	} else {
-		/* use anonymous DH ciphers */
-		if (sslprm.allowDH == 2) {
-#if OPENSSL_VERSION_NUMBER >= 0x10100000
-			strncpy(sslprm.cipher_list, "ADH@SECLEVEL=0", MAX_FILENAME_LENGTH - 1);
+#ifdef AUTO_SSL_DH
+	SSL_CTX_set_dh_auto(ctx, 1);
 #else
-			strncpy(sslprm.cipher_list, "ADH", MAX_FILENAME_LENGTH - 1);
-#endif
+# ifdef USE_SSL_DH
+	{
+#  if OPENSSL_VERSION_NUMBER >= 0x30000000
+		EVP_PKEY *pkey = get_dh2048_key();
+		if (pkey) {
+				if (!SSL_CTX_set0_tmp_dh_pkey(ctx, pkey))
+					EVP_PKEY_free(pkey);
 		}
-
-#ifdef USE_SSL_DH
-		dh = get_dh2048();
+#  else
+		DH *dh = get_dh2048();
 		SSL_CTX_set_tmp_dh(ctx, dh);
 		DH_free(dh);
-#endif
+#  endif
 	}
+# endif
+#endif
 
-	if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
+	if (!ssl_set_ciphers()) {
 		SSL_CTX_free(ctx);
-		logit(LOG_ERR, "Error: Could not set SSL/TLS cipher list");
 		exit(STATE_CRITICAL);
 	}
 
 	if (debug == TRUE)
 		logit(LOG_INFO, "INFO: SSL/TLS initialized. All network traffic will be encrypted.");
-#endif
-}
-
-void log_ssl_startup(void)
-{
-#ifdef HAVE_SSL
-	char     *vers;
-
-	logit(LOG_INFO, "SSL Certificate File: %s", sslprm.cert_file ? sslprm.cert_file : "None");
-	logit(LOG_INFO, "SSL Private Key File: %s",
-		   sslprm.privatekey_file ? sslprm.privatekey_file : "None");
-	logit(LOG_INFO, "SSL CA Certificate File: %s",
-		   sslprm.cacert_file ? sslprm.cacert_file : "None");
-	logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
-	logit(LOG_INFO, "SSL Allow ADH: %d", sslprm.allowDH == 0);
-	logit(LOG_INFO, "SSL Client Certs: %s",
-		   sslprm.client_certs == 0 ? "Don't Ask" : (sslprm.client_certs ==
-													 1 ? "Accept" : "Require"));
-	logit(LOG_INFO, "SSL Log Options: 0x%02x", sslprm.log_opts);
-	switch (sslprm.ssl_proto_ver) {
-	case SSLv2:
-		vers = "SSLv2";
-		break;
-	case SSLv2_plus:
-		vers = "SSLv2 And Above";
-		break;
-	case SSLv3:
-		vers = "SSLv3";
-		break;
-	case SSLv3_plus:
-		vers = "SSLv3 And Above";
-		break;
-	case TLSv1:
-		vers = "TLSv1";
-		break;
-	case TLSv1_plus:
-		vers = "TLSv1 And Above";
-		break;
-	case TLSv1_1:
-		vers = "TLSv1_1";
-		break;
-	case TLSv1_1_plus:
-		vers = "TLSv1_1 And Above";
-		break;
-	case TLSv1_2:
-		vers = "TLSv1_2";
-		break;
-	case TLSv1_2_plus:
-		vers = "TLSv1_2 And Above";
-		break;
-	case TLSv1_3:
-		vers = "TLSv1_3";
-		break;
-	case TLSv1_3_plus:
-		vers = "TLSv1_3 And Above";
-		break;
-	default:
-		vers = "INVALID VALUE!";
-		break;
-	}
-	logit(LOG_INFO, "SSL Version: %s", vers);
 #endif
 }
 
@@ -769,29 +560,7 @@ void cleanup(void)
 #ifdef HAVE_SSL
 int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 {
-	char      name[256], issuer[256];
-	X509     *err_cert;
-	int       err;
-	SSL      *ssl;
-
-	if (preverify_ok || ((sslprm.log_opts & SSL_LogCertDetails) == 0))
-		return preverify_ok;
-
-	err_cert = X509_STORE_CTX_get_current_cert(ctx);
-	err = X509_STORE_CTX_get_error(ctx);
-
-	/* Get the pointer to the SSL of the current connection */
-	ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
-
-	X509_NAME_oneline(X509_get_subject_name(err_cert), name, 256);
-	X509_NAME_oneline(X509_get_issuer_name(err_cert), issuer, 256);
-
-	if (!preverify_ok && (sslprm.log_opts & SSL_LogCertDetails)) {
-		logit(LOG_ERR, "SSL Client has an invalid certificate: %s (issuer=%s) err=%d:%s",
-			   name, issuer, err, X509_verify_cert_error_string(err));
-	}
-
-	return preverify_ok;
+	return ssl_verify_callback_common(preverify_ok, ctx, !preverify_ok);
 }
 #endif
 
@@ -1693,7 +1462,8 @@ void conn_check_peer(int sock)
 
 		case AF_INET6:
 			/* log info */
-			strcpy(remote_host, ipstr);
+			strncpy(remote_host, ipstr, sizeof(remote_host));
+			remote_host[sizeof(remote_host) - 1] = '\0';
 			if (debug == TRUE || (sslprm.log_opts & SSL_LogIpAddr)) {
 				logit(LOG_DEBUG, "Connection from %s port %d", ipstr, nptr6->sin6_port);
 			}
@@ -1771,8 +1541,11 @@ void handle_connection(int sock)
     		return;
         }
 
-		if (handle_conn_ssl(sock, ssl) != OK)
+		if (handle_conn_ssl(sock, ssl) != OK) {
+			complete_SSL_shutdown(ssl);
+			SSL_free(ssl);
 			return;
+		}
 	}
 #endif
 
@@ -1840,8 +1613,9 @@ void handle_connection(int sock)
 		if (v3_receive_packet)
 			send_buff = strdup(buffer);
 		else {
-			send_buff = calloc(1, sizeof(buffer));
-			strcpy(send_buff, buffer);
+			int size = sizeof(buffer);
+			send_buff = calloc(1, size);
+			strncpy(send_buff, buffer, size);
 		}
 		result = STATE_OK;
 
@@ -1857,8 +1631,9 @@ void handle_connection(int sock)
 			if (v3_receive_packet)
 				send_buff = strdup(buffer);
 			else {
-				send_buff = calloc(1, sizeof(buffer));
-				strcpy(send_buff, buffer);
+				int size = sizeof(buffer);
+				send_buff = calloc(1, size);
+				strncpy(send_buff, buffer, size);
 			}
 			result = STATE_UNKNOWN;
 
@@ -1877,7 +1652,7 @@ void handle_connection(int sock)
 				logit(LOG_DEBUG, "Running command: %s", processed_command);
 
 			/* run the command */
-			strcpy(buffer, "");
+			buffer[0] = '\0';
 			result = my_system(processed_command, command_timeout, &early_timeout, &send_buff);
 
 			if (debug == TRUE)	/* log debug info */
@@ -1886,11 +1661,13 @@ void handle_connection(int sock)
 
 			/* see if the command timed out */
 			if (early_timeout == TRUE) {
-				sprintf(send_buff, "NRPE: Command timed out after %d seconds\n",
+				free(send_buff);
+				asprintf(&send_buff, "NRPE: Command timed out after %d seconds\n",
 						command_timeout);
 				result = STATE_UNKNOWN;
 			} else if (!strcmp(send_buff, "")) {
-				sprintf(send_buff, "NRPE: Unable to read output\n");
+				free(send_buff);
+				asprintf(&send_buff, "NRPE: Unable to read output\n");
 				result = STATE_UNKNOWN;
 			}
 
@@ -1939,10 +1716,10 @@ void handle_connection(int sock)
 		send_packet.crc32_value = htonl(calculated_crc32);
 
 	} else {
-
-		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + strlen(send_buff) + 1;
+		int send_buff_len = strlen(send_buff);
+		pkt_size = (sizeof(v3_packet) - NRPE_V4_PACKET_SIZE_OFFSET) + send_buff_len + 1;
 		if (packet_ver == NRPE_PACKET_VERSION_3) {
-			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + strlen(send_buff) + 1;
+			pkt_size = (sizeof(v3_packet) - NRPE_V3_PACKET_SIZE_OFFSET) + send_buff_len + 1;
 		}
 		v3_send_packet = calloc(1, pkt_size);
 		send_pkt = (char *)v3_send_packet;
@@ -1951,8 +1728,8 @@ void handle_connection(int sock)
 		v3_send_packet->packet_type = htons(RESPONSE_PACKET);
 		v3_send_packet->result_code = htons(result);
 		v3_send_packet->alignment = 0;
-		v3_send_packet->buffer_length = htonl(strlen(send_buff) + 1);
-		strcpy(&v3_send_packet->buffer[0], send_buff);
+		v3_send_packet->buffer_length = htonl(send_buff_len + 1);
+		memcpy(&v3_send_packet->buffer[0], send_buff, send_buff_len + 1);
 
 		/* calculate the crc 32 value of the packet */
 		v3_send_packet->crc32_value = 0;
@@ -2054,9 +1831,9 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 		if (sslprm.log_opts & (SSL_LogCertDetails | SSL_LogIfClientCert)) {
 			int nerrs = 0;
 			rc = 0;
-			while ((x = ERR_get_error_line_data(NULL, NULL, NULL, NULL)) != 0) {
+			while ((x = ERR_get_error()) != 0) {
 				errmsg = ERR_reason_error_string(x);
-				logit(LOG_ERR, "Error: (ERR_get_error_line_data = %d), Could not complete SSL handshake with %s: %s", x, remote_host, errmsg);
+				logit(LOG_ERR, "Error: (ERR_get_error = 0x%08x), Could not complete SSL handshake with %s: %s", x, remote_host, errmsg);
 				
 				if (errmsg && !strcmp(errmsg, "no shared cipher") && (sslprm.cert_file == NULL || sslprm.cacert_file == NULL))
 					logit(LOG_ERR, "Error: This could be because you have not specified certificate or ca-certificate files");
@@ -2065,10 +1842,10 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 			}
 
 			if (nerrs == 0) {
-				logit(LOG_ERR, "Error: (nerrs = 0) Could not complete SSL handshake with %s: %d", remote_host, SSL_get_error(ssl, rc));
+				logit(LOG_ERR, "Error: (nerrs = 0) Could not complete SSL handshake with %s: 0x%08x", remote_host, SSL_get_error(ssl, rc));
 			}
 		} else {
-			logit(LOG_ERR, "Error: (!log_opts) Could not complete SSL handshake with %s: %d", remote_host, SSL_get_error(ssl, rc));
+			logit(LOG_ERR, "Error: (!log_opts) Could not complete SSL handshake with %s: 0x%08x", remote_host, SSL_get_error(ssl, rc));
 		}
 # ifdef DEBUG
 		errfp = fopen("/tmp/err.log", "a");
@@ -2633,7 +2410,7 @@ int write_pid_file(void)
 
 	/* write new pid file */
 	if ((fd = open(pid_file, O_WRONLY | O_CREAT, 0644)) >= 0) {
-		sprintf(pbuf, "%d\n", (int)getpid());
+		snprintf(pbuf, sizeof(pbuf), "%d\n", (int)getpid());
 
 		if (write(fd, pbuf, strlen(pbuf)) == -1)
 			logit(LOG_ERR, "ERROR: write_pid_file() write(fd, pbuf) failed...");
@@ -2909,7 +2686,7 @@ int process_macros(char *input_buffer, char *output_buffer, int buffer_length)
 	int       arg_index = 0;
 	char     *selected_macro = NULL;
 
-	strcpy(output_buffer, "");
+	output_buffer[0] = '\0';
 
 	in_macro = FALSE;
 
