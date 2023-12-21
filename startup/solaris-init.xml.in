@@ -105,7 +105,7 @@
 		<exec_method
 			type='method'
 			name='refresh'
-			exec=':hup'
+			exec=':kill -HUP'
 			timeout_seconds='60'/>
 
 		<property_group name='startd' type='framework'>
