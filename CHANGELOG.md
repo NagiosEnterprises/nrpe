@@ -1,6 +1,11 @@
 NRPE Changelog
 ==============
 
+[4.1.1] - 2024-XX-XX
+------------------
+**ENHANCEMENTS**
+- Remove options for Anonymous Diffie Hellman key exchange
+
 [4.1.0](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.1.0) - 2022-07-18
 ------------------
 **ENHANCEMENTS**
