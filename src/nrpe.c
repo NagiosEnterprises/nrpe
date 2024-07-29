@@ -144,7 +144,6 @@ struct _SSL_PARMS {
 	char     *privatekey_file;
 	char      cipher_list[MAX_FILENAME_LENGTH];
 	SslVer    ssl_proto_ver;
-	int       allowDH;
 	ClntCerts client_certs;
 	SslLogging log_opts;
 } sslprm = {
@@ -274,10 +273,6 @@ void init_ssl(void)
 		return;
 	}
 
-#ifndef USE_SSL_DH
-	ssl_opts = SSL_OP_ALL;
-	sslprm.allowDH = 0;
-#endif
 #ifdef SSL_OP_NO_RENEGOTIATION
 	ssl_opts |= SSL_OP_NO_RENEGOTIATION;
 #endif
@@ -483,26 +478,6 @@ void init_ssl(void)
 		SSL_CTX_set_verify(ctx, vrfy, verify_callback);
 	}
 
-	if (!sslprm.allowDH) {
-		if (strlen(sslprm.cipher_list) < sizeof(sslprm.cipher_list) - 6)
-			strcat(sslprm.cipher_list, ":!ADH");
-	} else {
-		/* use anonymous DH ciphers */
-		if (sslprm.allowDH == 2) {
-#if OPENSSL_VERSION_NUMBER >= 0x10100000
-			strncpy(sslprm.cipher_list, "ADH@SECLEVEL=0", MAX_FILENAME_LENGTH - 1);
-#else
-			strncpy(sslprm.cipher_list, "ADH", MAX_FILENAME_LENGTH - 1);
-#endif
-		}
-
-#ifdef USE_SSL_DH
-		dh = get_dh2048();
-		SSL_CTX_set_tmp_dh(ctx, dh);
-		DH_free(dh);
-#endif
-	}
-
 	if (SSL_CTX_set_cipher_list(ctx, sslprm.cipher_list) == 0) {
 		SSL_CTX_free(ctx);
 		logit(LOG_ERR, "Error: Could not set SSL/TLS cipher list");
@@ -525,7 +500,6 @@ void log_ssl_startup(void)
 	logit(LOG_INFO, "SSL CA Certificate File: %s",
 		   sslprm.cacert_file ? sslprm.cacert_file : "None");
 	logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
-	logit(LOG_INFO, "SSL Allow ADH: %d", sslprm.allowDH == 0);
 	logit(LOG_INFO, "SSL Client Certs: %s",
 		   sslprm.client_certs == 0 ? "Don't Ask" : (sslprm.client_certs ==
 													 1 ? "Accept" : "Require"));
@@ -1065,15 +1039,6 @@ int read_config_file(char *filename)
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 			else {
 				logit(LOG_ERR, "Invalid ssl version specified in config file '%s' - Line %d",
-					   filename, line);
-				return ERROR;
-			}
-
-		} else if (!strcmp(varname, "ssl_use_adh")) {
-			sslprm.allowDH = atoi(varvalue);
-			if (sslprm.allowDH < 0 || sslprm.allowDH > 2) {
-				logit(LOG_ERR,
-					   "Invalid use adh value specified in config file '%s' - Line %d",
 					   filename, line);
 				return ERROR;
 			}

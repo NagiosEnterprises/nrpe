@@ -67,23 +67,11 @@ that *version or above* will be used. openSSL will always negotiate
 the highest available allowed version available on both ends. This
 directive currently defaults to `TLSv1+`.
 
-The `ssl_use_adh` directive is **DEPRECATED**, even though it is new.
-Possible values are `0` to not allow ADH at all, `1` to allow ADH,
-and `2` to require ADH. The `2` should never be required, but it's
-there just in case it's needed, for whatever reason. `1` is currently
-the default, which allows older `check_nrpe` plugins to connect using
-ADH. When all the plugins are migrated to the newer version, it
-should be set to `0`. In an upcoming version of NRPE, ADH will no
-longer be allowed at all. Note that if you use a `2` here, NRPE will
-override any `ssl_cipher_list` entries (below) to *only* allow ADH.
-
 The `ssl_cipher_list` directive lets you specify which ciphers you
 want to allow. It currently defaults to `ALL:!MD5:@STRENGTH` but can
 take any value allowed by openSSL. In an upcoming version of NRPE, it
 will be changed to something more secure, something like
-`ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!RC4:!MD5:@STRENGTH`. Note that
-if you have `ssl_use_adh=2`, this string will be overridden with
-`ADH` which only only allow ADH.
+`ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!RC4:!MD5:@STRENGTH`.
 
 The `ssl_cacert_file`, `ssl_cert_file` and `ssl_privatekey_file`
 directives are used to specify which *.pem files are to be used for
@@ -122,10 +110,6 @@ encryption and allow the use of client certificates. The command line
 has several new options, which are outlined below. Both the long and
 short arguments are presented.
 
-`--no-adh` or `-d` will disable the use of ADH. This option is
-**DEPRECATED**, even though it's new. It will be removed in a
-future version.
-
 `--ssl-version=<ver>` or `-S <ver>` specifies minimum SSL/TLS version
 to use. See the `ssl_version` directive above for possible values.
 
@@ -141,12 +125,6 @@ key file to use. This goes along with `--client-cert` above.
 
 `--ca-cert-file=<path>` or `-A <path>` specifies the CA certificate
 to use in order to validate the nrpe daemon's public key.
-
-`--no-adh` or `-d` is **DEPRECATED**
-
-`--use-adh` or `-d [num]` is **DEPRECATED**, even though it is new.
-If you use `-d` or `-d 0` it acts the same way as as the old `-d`.
-Otherwise, use `1` to allow ADH, and `2` to require ADH.
 
 `--ssl-logging=<num>` or `-s <num>` allows you to log some additional
 data to syslog. OR (or add) values together to have more than one

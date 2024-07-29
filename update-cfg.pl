@@ -55,7 +55,6 @@ sub check_ssl
 
 	while (<IN>) {
 		if ($_ =~ /ssl_version=/ or
-			$_ =~ /ssl_use_adh=/ or
 			$_ =~ /ssl_cipher_list=/ or
 			$_ =~ /ssl_cacert_file=/ or
 			$_ =~ /ssl_cert_file=/ or
@@ -95,13 +94,6 @@ my $txt = <<"END_SSL";
 # ends are able to do TLSv1.2 and use specify SSLv2, you will get TLSv1.2.
 
 #ssl_version=SSLv2+
-
-# SSL USE ADH
-# This is for backward compatibility and is DEPRECATED. Set to 1 to enable
-# ADH or 2 to require ADH. 1 is currently the default but will be changed
-# in a later version.
-
-#ssl_use_adh=1
 
 # SSL CIPHER LIST
 # This lists which ciphers can be used. For backward compatibility, this

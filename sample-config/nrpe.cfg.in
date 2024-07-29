@@ -216,13 +216,6 @@ connection_timeout=300
 
 #ssl_version=SSLv2+
 
-# SSL USE ADH
-# This is for backward compatibility and is DEPRECATED. Set to 1 to enable
-# ADH or 2 to require ADH. 1 is currently the default but will be changed
-# in a later version.
-
-#ssl_use_adh=1
-
 # SSL CIPHER LIST
 # This lists which ciphers can be used. For backward compatibility, this
 # defaults to 'ssl_cipher_list=ALL:!MD5:@STRENGTH' for < OpenSSL 1.1.0,
@@ -231,7 +224,7 @@ connection_timeout=300
 
 #ssl_cipher_list=ALL:!MD5:@STRENGTH
 #ssl_cipher_list=ALL:!MD5:@STRENGTH:@SECLEVEL=0
-#ssl_cipher_list=ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!RC4:!MD5:@STRENGTH
+#ssl_cipher_list=ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!RC4:!MD5:!ADH:@STRENGTH
 
 # SSL Certificate and Private Key Files
 

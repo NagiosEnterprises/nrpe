@@ -105,7 +105,6 @@ struct _SSL_PARMS {
 	char *privatekey_file;
 	char cipher_list[MAX_FILENAME_LENGTH];
 	SslVer ssl_proto_ver;
-	int allowDH;
 	ClntCerts client_certs;
 	SslLogging log_opts;
 } sslprm = {
@@ -158,8 +157,6 @@ int main(int argc, char **argv)
 #endif
 	if (sslprm.ssl_proto_ver == SSL_Ver_Invalid)
 		sslprm.ssl_proto_ver = TLSv1_plus;
-	if (sslprm.allowDH == -1)
-		sslprm.allowDH = TRUE;
 
 	generate_crc32_table();		/* generate the CRC 32 table */
 	setup_ssl();				/* Do all the SSL/TLS set up */
@@ -230,7 +227,6 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		{"v3-packets-only", no_argument, 0, '3'},
 		{"ipv4", no_argument, 0, '4'},
 		{"ipv6", no_argument, 0, '6'},
-		{"use-adh", required_argument, 0, 'd'},
 		{"ssl-version", required_argument, 0, 'S'},
 		{"cipher-list", required_argument, 0, 'L'},
 		{"client-cert", required_argument, 0, 'C'},
@@ -400,16 +396,6 @@ int process_arguments(int argc, char **argv, int from_config_file)
 				break;
 			}
 			address_family = AF_INET6;
-			break;
-
-		case 'd':
-			if (from_config_file && sslprm.allowDH != -1) {
-				logit(LOG_WARNING, "WARNING: Command-line use-adh (-d) overrides the config file option.");
-				break;
-			}
-			if (!optarg || optarg[0] < '0' || optarg[0] > '2')
-				return ERROR;
-			sslprm.allowDH = atoi(optarg);
 			break;
 
 		case 'A':
@@ -730,11 +716,6 @@ void usage(int result)
 		printf(" -V, --version                Print version info and quit\n");
 		printf(" -l, --license                Show license\n");
 		printf(" -E, --stderr-to-stdout       Redirect stderr to stdout\n");
-		printf(" -d, --use-adh=DHOPT          Anonymous Diffie Hellman use:\n");
-		printf("                              0         Don't use Anonymous Diffie Hellman\n");
-		printf("                                        (This will be the default in a future release.)\n");
-		printf("                              1         Allow Anonymous Diffie Hellman (default)\n");
-		printf("                              2         Force Anonymous Diffie Hellman\n");
 		printf(" -D, --disable-syslog         Disable logging to syslog facilities\n");
 		printf(" -P, --payload-size=SIZE      Specify non-default payload size for NSClient++\n");
 		printf(" -S, --ssl-version=VERSION    The SSL/TLS version to use. Can be any one of:\n");
@@ -806,7 +787,6 @@ void setup_ssl()
 		logit(LOG_INFO, "SSL Private Key File: %s", sslprm.privatekey_file ? sslprm.privatekey_file : "None");
 		logit(LOG_INFO, "SSL CA Certificate File: %s", sslprm.cacert_file ? sslprm.cacert_file : "None");
 		logit(LOG_INFO, "SSL Cipher List: %s", sslprm.cipher_list);
-		logit(LOG_INFO, "SSL Allow ADH: %d", sslprm.allowDH);
 		logit(LOG_INFO, "SSL Log Options: 0x%02x", sslprm.log_opts);
 
 		switch (sslprm.ssl_proto_ver) {
@@ -999,23 +979,6 @@ void setup_ssl()
 				}
 				SSL_CTX_free(ctx);
 				exit(timeout_return_code);
-			}
-		}
-
-		if (!sslprm.allowDH) {
-			if (strlen(sslprm.cipher_list) < sizeof(sslprm.cipher_list) - 6) {
-				strcat(sslprm.cipher_list, ":!ADH");
-				if (sslprm.log_opts & SSL_LogStartup)
-					logit(LOG_INFO, "New SSL Cipher List: %s", sslprm.cipher_list);
-			}
-		} else {
-			/* use anonymous DH ciphers */
-			if (sslprm.allowDH == 2) {
-#if OPENSSL_VERSION_NUMBER >= 0x10100000
-				strncpy(sslprm.cipher_list, "ADH@SECLEVEL=0", MAX_FILENAME_LENGTH - 1);
-#else
-				strncpy(sslprm.cipher_list, "ADH", MAX_FILENAME_LENGTH - 1);
-#endif
 			}
 		}
 
