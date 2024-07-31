@@ -1,5 +1,11 @@
 NRPE Changelog
 ==============
+[4.1.1](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.1.1) - 2024-08-01
+------------------
+**FIXES**
+- Use correct HUP signal for Solaris
+
+
 
 [4.1.0](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.1.0) - 2022-07-18
 ------------------
