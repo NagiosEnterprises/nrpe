@@ -47,7 +47,8 @@ still not allow it. In my testing, openSSL 1.0.1e allowed DH keys
 of 512 bits, and 1.0.1k would not allow 2048 bit keys. In addition
 we now call `SSL_CTX_set_options(ctx, SSL_OP_SINGLE_DH_USE)` so a
 new key is generated on each connection, based on the 2048-bit
-key generated.
+key generated. As of openSSL 1.0.2f, `SSL_OP_SINGLE_DH_USE` is 
+always on.
 
 The NRPE configuration file has added new SSL/TLS options. The
 defaults currently will allow old check_nrpe plugins to continue to
@@ -67,11 +68,17 @@ that *version or above* will be used. openSSL will always negotiate
 the highest available allowed version available on both ends. This
 directive currently defaults to `TLSv1+`.
 
+The `ssl_use_adh` directive is **DEPRECATED**, even though it is new.
+ADH is no longer be allowed at all and will give a warning. You can 
+still use the `ssl_cipher_list` options to configure the usage of ADH.
+
 The `ssl_cipher_list` directive lets you specify which ciphers you
 want to allow. It currently defaults to `ALL:!MD5:@STRENGTH` but can
 take any value allowed by openSSL. In an upcoming version of NRPE, it
 will be changed to something more secure, something like
-`ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!RC4:!MD5:@STRENGTH`.
+`ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!RC4:!MD5:@STRENGTH`. You can add
+options like `ADH` and `!ADH` to achieve similar effects to what
+`ssl_use_adh` accomplished
 
 The `ssl_cacert_file`, `ssl_cert_file` and `ssl_privatekey_file`
 directives are used to specify which *.pem files are to be used for
@@ -109,6 +116,12 @@ The `check_nrpe` plugin has also been updated to provide more secure
 encryption and allow the use of client certificates. The command line
 has several new options, which are outlined below. Both the long and
 short arguments are presented.
+
+`--no-adh` or `-d` is now **DEPRECATED** and will issue a warning
+if used.
+
+`--use-adh` or `-d [num]` is now **DEPRECATED** and will issue a
+warning if used.
 
 `--ssl-version=<ver>` or `-S <ver>` specifies minimum SSL/TLS version
 to use. See the `ssl_version` directive above for possible values.

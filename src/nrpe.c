@@ -265,7 +265,7 @@ void init_ssl(void)
 	char          seedfile[FILENAME_MAX];
 	char          errstr[120] = { "" };
 	int           i, c, x, vrfy;
-	unsigned long ssl_opts = SSL_OP_ALL | SSL_OP_SINGLE_DH_USE;
+	unsigned long ssl_opts = SSL_OP_ALL;
 
 	if (use_ssl == FALSE) {
 		if (debug == TRUE)
@@ -1042,6 +1042,9 @@ int read_config_file(char *filename)
 					   filename, line);
 				return ERROR;
 			}
+		} else if (!strcmp(varname, "ssl_use_adh")) {
+			logit(LOG_WARNING, "Deprecated ssl_use_adh specified in config file '%s' - Line %d\n", filename, line);
+			continue;
 
 		} else if (!strcmp(varname, "ssl_logging"))
 			sslprm.log_opts = strtoul(varvalue, NULL, 0);

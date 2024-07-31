@@ -227,6 +227,7 @@ int process_arguments(int argc, char **argv, int from_config_file)
 		{"v3-packets-only", no_argument, 0, '3'},
 		{"ipv4", no_argument, 0, '4'},
 		{"ipv6", no_argument, 0, '6'},
+		{"use-adh", optional_argument, 0, 'd'},
 		{"ssl-version", required_argument, 0, 'S'},
 		{"cipher-list", required_argument, 0, 'L'},
 		{"client-cert", required_argument, 0, 'C'},
@@ -396,6 +397,10 @@ int process_arguments(int argc, char **argv, int from_config_file)
 				break;
 			}
 			address_family = AF_INET6;
+			break;
+
+		case 'd':
+			logit(LOG_WARNING, "WARNING: Command-line use-adh (-d) is deprecated and has been removed.");
 			break;
 
 		case 'A':
