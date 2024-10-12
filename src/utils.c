@@ -270,10 +270,10 @@ int clean_environ(const char *keep_env_vars, const char *nrpe_user)
 	int i, j, keepcnt = 0;
 
 	if (keep_env_vars && *keep_env_vars)
-		asprintf(&keep, "%s,NRPE_MULTILINESUPPORT,NRPE_PROGRAMVERSION", keep_env_vars);
+		i = asprintf(&keep, "%s,NRPE_MULTILINESUPPORT,NRPE_PROGRAMVERSION", keep_env_vars);
 	else
-		asprintf(&keep, "NRPE_MULTILINESUPPORT,NRPE_PROGRAMVERSION");
-	if (keep == NULL) {
+		i = asprintf(&keep, "NRPE_MULTILINESUPPORT,NRPE_PROGRAMVERSION");
+	if (i == -1 || keep == NULL) {
 		logit(LOG_ERR, "Could not sanitize the environment. Aborting!");
 		return ERROR;
 	}
