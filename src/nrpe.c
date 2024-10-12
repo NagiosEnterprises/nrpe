@@ -209,10 +209,10 @@ int init(void)
 	int       result = OK;
 
 	/* set some environment variables */
-	asprintf(&env_string, "NRPE_MULTILINESUPPORT=1");
-	putenv(env_string);
-	asprintf(&env_string, "NRPE_PROGRAMVERSION=%s", PROGRAM_VERSION);
-	putenv(env_string);
+	if (asprintf(&env_string, "NRPE_MULTILINESUPPORT=1") > 0)
+		putenv(env_string);
+	if (asprintf(&env_string, "NRPE_PROGRAMVERSION=%s", PROGRAM_VERSION) > 0)
+		putenv(env_string);
 
 	/* open a connection to the syslog facility */
 	/* facility name may be overridden later */
@@ -1687,12 +1687,17 @@ void handle_connection(int sock)
 			/* see if the command timed out */
 			if (early_timeout == TRUE) {
 				free(send_buff);
-				asprintf(&send_buff, "NRPE: Command timed out after %d seconds\n",
-						command_timeout);
+				if (asprintf(&send_buff, "NRPE: Command timed out after %d seconds\n", command_timeout) == -1) {
+					logit(LOG_ERR, "Unable to build response, possible memory issue, bailing out...");
+					return;
+				}
 				result = STATE_UNKNOWN;
 			} else if (!strcmp(send_buff, "")) {
 				free(send_buff);
-				asprintf(&send_buff, "NRPE: Unable to read output\n");
+				if (asprintf(&send_buff, "NRPE: Unable to read output\n") == -1) {
+					logit(LOG_ERR, "Unable to build response, possible memory issue, bailing out...");
+					return;
+				}
 				result = STATE_UNKNOWN;
 			}
 
@@ -2157,7 +2162,8 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 
 	/* return an error if we couldn't fork */
 	if (pid == -1) {
-		asprintf(output, "NRPE: Call to fork() failed (errno=%i)\n", errno);
+		if (asprintf(output, "NRPE: Call to fork() failed (errno=%i)\n", errno) == -1)
+			logit(LOG_ERR, "Unable to build output, possible memory issue, bailing out...");
 
 		/* close both ends of the pipe */
 		close(fd[0]);
