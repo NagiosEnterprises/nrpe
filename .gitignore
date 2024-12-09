@@ -15,7 +15,9 @@ package/solaris/Makefile
 sample-config/nrpe.cfg
 src/Makefile
 src/check_nrpe
+src/generate_dh_params
 src/nrpe
+src/*.o
 autom4te.cache/
 nbproject/
 .settings/

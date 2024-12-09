@@ -20,8 +20,6 @@ SOCKETLIBS=@SOCKETLIBS@
 LIBWRAPLIBS=@LIBWRAPLIBS@
 OTHERLIBS=@OTHERLIBS@
 
-CP=@CP@
-
 prefix=$(DESTDIR)@prefix@
 exec_prefix=$(DESTDIR)@exec_prefix@
 CFGDIR=$(DESTDIR)@pkgsysconfdir@
@@ -41,14 +39,27 @@ SRC_TMPFILE=@src_tmpfile@
 # Generated automatically from configure script
 SNPRINTF_O=@SNPRINTF_O@
 
+SSLBIN=@sslbin@
+SSL_DH_HEADER=@SSL_DH_HEADER@
+SSL_OBJS=@SSL_OBJS@
+
 
 all: nrpe check_nrpe
 
-nrpe: $(srcdir)/nrpe.c $(srcdir)/utils.c $(srcdir)/acl.c $(SRC_INCLUDE)/nrpe.h $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h $(SRC_INCLUDE)/acl.h $(SNPRINTF_O)
-	$(CC) $(CFLAGS) -o $@ $(srcdir)/nrpe.c $(srcdir)/utils.c $(srcdir)/acl.c $(LDFLAGS) $(SOCKETLIBS) $(LIBWRAPLIBS) $(SNPRINTF_O) $(OTHERLIBS)
+nrpe: $(srcdir)/nrpe.c utils.o $(srcdir)/acl.c $(SRC_INCLUDE)/nrpe.h $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h $(SRC_INCLUDE)/acl.h $(SNPRINTF_O) $(SSL_DH_HEADER) $(SSL_OBJS)
+	$(CC) $(CFLAGS) -o $@ $(srcdir)/nrpe.c utils.o $(SSL_OBJS) $(srcdir)/acl.c $(LDFLAGS) $(SOCKETLIBS) $(LIBWRAPLIBS) $(SNPRINTF_O) $(OTHERLIBS)
 
-check_nrpe: $(srcdir)/check_nrpe.c $(srcdir)/utils.c $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
-	$(CC) $(CFLAGS) -o $@ $(srcdir)/check_nrpe.c $(srcdir)/utils.c $(LDFLAGS) $(SOCKETLIBS) $(SNPRINTF_O) $(OTHERLIBS)
+check_nrpe: $(srcdir)/check_nrpe.c utils.o $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h $(SSL_OBJS)
+	$(CC) $(CFLAGS) -o $@ $(srcdir)/check_nrpe.c utils.o $(SSL_OBJS) $(LDFLAGS) $(SOCKETLIBS) $(SNPRINTF_O) $(OTHERLIBS)
+
+utils.o: $(srcdir)/utils.c $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
+	$(CC) $(CFLAGS) -c -o $@ $(srcdir)/utils.c
+
+ssl.o: $(srcdir)/ssl.c $(SRC_INCLUDE)/ssl.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
+	$(CC) $(CFLAGS) -c -o $@ $(srcdir)/ssl.c
+
+@SSL_DH_HEADER_MAKE@
+
 
 install:
 	$(MAKE) install-plugin
@@ -77,7 +88,7 @@ install-uninstall:
 	$(INSTALL) -m 755 ../uninstall $(SBINDIR)/nrpe-uninstall
 
 clean:
-	rm -f core nrpe check_nrpe $(SNPRINTF_O)
+	rm -f core nrpe check_nrpe generate_dh_params utils.o ssl.o $(SNPRINTF_O) $(SSL_DH_HEADER)
 	rm -f *~ */*~
 	rm -rf nrpe.dSYM check_nrpe.dSYM
 
