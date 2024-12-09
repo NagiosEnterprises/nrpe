@@ -1,5 +1,13 @@
 NRPE Changelog
 ==============
+[4.1.2](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.1.2) - 2024-XX-XX
+------------------
+**FIXES**
+- Fixed printing of incorrect packet version to just logging the error
+
+
+
+
 [4.1.1](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.1.1) - 2024-08-01
 ------------------
 **FIXES**

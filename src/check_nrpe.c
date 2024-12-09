@@ -1431,7 +1431,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		}
 
 		if (packet_ver != ntohs(packet.packet_version)) {
-			printf("CHECK_NRPE: Invalid packet version received from server.\n");
+			// Log this error instead of printing because we will check for other versions, it's not a total failure
+			logit(LOG_ERR, "Error: Invalid packet version received from server.\n");
 			return -1;
 		}
 
@@ -1522,7 +1523,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		}
 
 		if (packet_ver != ntohs(packet.packet_version)) {
-			printf("CHECK_NRPE: Invalid packet version received from server.\n");
+			// Log this error instead of printing because we will check for other versions, it's not a total failure
+			logit(LOG_ERR, "Error: Invalid packet version received from server.\n");
 			return -1;
 		}
 
