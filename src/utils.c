@@ -28,8 +28,12 @@
  *
  ****************************************************************************/
 
-#include "../include/common.h"
-#include "../include/utils.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#include "common.h"
+#include "utils.h"
 #include <stdarg.h>
 #ifdef HAVE_PATHS_H
 #include <paths.h>

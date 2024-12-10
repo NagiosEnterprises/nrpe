@@ -331,7 +331,9 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			break;
 
 		case 'n':
+#ifdef HAVE_SSL
 			use_ssl = FALSE;
+#endif
 			break;
 
 		case 'u':
@@ -554,7 +556,7 @@ int read_config_file(char *fname)
 		logit(LOG_ERR, "Error: read_config_file fail to allocate memory");
 		return ERROR;
 	}
-	if ((sz = fread(buf, 1, st.st_size, f)) != st.st_size) {
+	if ((sz = fread(buf, 1, st.st_size, f)) != (size_t)st.st_size) {
 		fclose(f);
 		free(buf);
 		logit(LOG_ERR, "Error: Failed to completely read config file %s", fname);
@@ -993,7 +995,8 @@ int send_request(void)
 	v2_packet *v2_send_packet = NULL;
 	v3_packet *v3_send_packet = NULL;
 	u_int32_t calculated_crc32;
-	int rc, bytes_to_send, pkt_size;
+	int rc, bytes_to_send;
+	size_t pkt_size;
 	char *send_pkt;
 
 	if (packet_ver == NRPE_PACKET_VERSION_2) {
@@ -1229,10 +1232,13 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 	int rc;
 	char *buff_ptr;
 
+	(void)ssl_ptr;
 	/* Read only the part that's common between versions 2 & 3 */
 	common_size = tot_bytes = bytes_to_recv = (char *)packet.buffer - (char *)&packet;
 
+#ifdef HAVE_SSL
 	if (use_ssl == FALSE) {
+#endif
 		rc = recvall(sock, (char *)&packet, &tot_bytes, socket_timeout);
 
 		if (rc <= 0 || rc != bytes_to_recv) {
@@ -1318,8 +1324,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			return -1;
 		} else
 			tot_bytes += rc;
-	}
 #ifdef HAVE_SSL
+	}
 	else {
 		SSL *ssl = (SSL *) ssl_ptr;
 
@@ -1449,6 +1455,8 @@ void alarm_handler(int sig)
 	const char	msg3[] = " seconds.\n";
 	const char	*text = state_text(timeout_return_code);
 	size_t		lth1 = 0, lth2 = 0;
+
+	(void)sig;
 
 	for (lth1 = 0; lth1 < 10; ++lth1)
 		if (text[lth1] == 0)

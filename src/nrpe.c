@@ -230,8 +230,8 @@ void init_ssl(void)
 #ifdef HAVE_SSL
 	char          seedfile[FILENAME_MAX];
 	char          errstr[256] = { "" };
-	int           i, c, x, vrfy;
-	unsigned long ssl_opts = SSL_OP_ALL | SSL_OP_SINGLE_DH_USE;
+	int           i, x, vrfy;
+	unsigned long c, ssl_opts = SSL_OP_ALL | SSL_OP_SINGLE_DH_USE;
 
 	if (use_ssl == FALSE) {
 		if (debug == TRUE)
@@ -954,7 +954,7 @@ int read_config_dir(char *dirname)
 
 		/* create the full path to the config file or subdirectory */
 		rc = snprintf(config_file, sizeof(config_file) - 1, "%s/%s", dirname, dirfile->d_name);
-		if (rc >= sizeof(config_file) - 1) {
+		if (rc >= (long)sizeof(config_file) - 1) {
 			logit(LOG_ERR, "Config file path too long '%s/%s'.\n", dirname, dirfile->d_name);
 			return ERROR;
 		}
@@ -1769,12 +1769,12 @@ void handle_connection(int sock)
 
 	/* send the response back to the client */
 	bytes_to_send = pkt_size;
-	if (use_ssl == FALSE)
-		sendall(sock, send_pkt, &bytes_to_send);
 #ifdef HAVE_SSL
-	else
+	if (use_ssl)
 		SSL_write(ssl, send_pkt, bytes_to_send);
+	else
 #endif
+		sendall(sock, send_pkt, &bytes_to_send);
 
 #ifdef HAVE_SSL
 	if (ssl) {
@@ -1818,9 +1818,9 @@ void init_handle_conn(void)
 	alarm(connection_timeout);
 }
 
+#ifdef HAVE_SSL
 int handle_conn_ssl(int sock, void *ssl_ptr)
 {
-#ifdef HAVE_SSL
 # if (defined(__sun) && defined(SOLARIS_10)) || defined(_AIX) || defined(__hpux)
 	SSL_CIPHER *c;
 #else
@@ -1923,10 +1923,10 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 			logit(LOG_NOTICE, "SSL Client %s did not present a certificate",
 				   remote_host);
 	}
-#endif
 
 	return OK;
 }
+#endif
 
 int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt)
 {
@@ -1934,10 +1934,13 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 	int       rc;
 	char     *buff_ptr;
 
+	(void)ssl_ptr;
 	/* Read only the part that's common between versions 2 & 3 */
 	common_size = tot_bytes = bytes_to_recv = (char *)&v2_pkt->buffer - (char *)v2_pkt;
 
+#ifdef HAVE_SSL
 	if (use_ssl == FALSE) {
+#endif
 		rc = recvall(sock, (char *)v2_pkt, &tot_bytes, socket_timeout);
 
 		if (rc <= 0 || rc != bytes_to_recv)
@@ -1997,8 +2000,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			return -1;
 		} else
 			tot_bytes += rc;
-	}
 #ifdef HAVE_SSL
+	}
 	else {
 		SSL      *ssl = (SSL *) ssl_ptr;
 		int       sockfd, retval;
@@ -2342,7 +2345,7 @@ int my_system_child(const char *command, int timeout, int fd)
 
 			FD_ZERO(&rfds);
 			FD_ZERO(&wfds);
-			if (do_read && bytes_read < sizeof(buffer)) {
+			if (do_read && bytes_read < (long)sizeof(buffer)) {
 				FD_SET(fileno(fp), &rfds);
 				max_fd = fileno(fp);
 			}
@@ -2411,6 +2414,7 @@ int my_system_child(const char *command, int timeout, int fd)
 /* handle timeouts when executing commands via my_system() */
 void my_system_sighandler(int sig)
 {
+	(void)sig;
 	/* try to kill any child processes in our group */
 	kill(0, SIGTERM);
 	exit(STATE_CRITICAL);		/* force the child process to exit... */
@@ -2419,6 +2423,7 @@ void my_system_sighandler(int sig)
 /* handle errors where connection takes too long */
 void my_connection_sighandler(int sig)
 {
+	(void)sig;
 	logit(LOG_ERR, "Connection has taken too long to establish. Exiting...");
 	exit(STATE_CRITICAL);
 }
@@ -2574,6 +2579,7 @@ int remove_pid_file(void)
 
 void my_disconnect_sighandler(int sig)
 {
+	(void)sig;
 	logit(LOG_ERR, "SSL_shutdown() has taken too long to complete. Exiting now..");
 	exit(STATE_CRITICAL);
 }
@@ -2659,6 +2665,7 @@ void sighandler(int sig)
 /* handle signals (child processes) */
 void child_sighandler(int sig)
 {
+	(void)sig;
 	exit(0);					/* terminate */
 }
 
@@ -2797,7 +2804,7 @@ int contains_nasty_metachars(char *str)
 		return FALSE;
 
 	result = strcspn(str, nasty_metachars);
-	if (result != strlen(str))
+	if (result != (long)strlen(str))
 		return TRUE;
 
 	return FALSE;
@@ -2821,7 +2828,7 @@ int process_macros(char *input_buffer, char *output_buffer, int buffer_length)
 		selected_macro = NULL;
 
 		if (in_macro == FALSE) {
-			if (strlen(output_buffer) + strlen(temp_buffer) < buffer_length - 1) {
+			if (strlen(output_buffer) + strlen(temp_buffer) < (size_t)buffer_length - 1) {
 				strncat(output_buffer, temp_buffer, buffer_length - strlen(output_buffer) - 1);
 				output_buffer[buffer_length - 1] = '\x0';
 			}
@@ -2829,7 +2836,7 @@ int process_macros(char *input_buffer, char *output_buffer, int buffer_length)
 
 		} else {
 
-			if (strlen(output_buffer) + strlen(temp_buffer) < buffer_length - 1) {
+			if (strlen(output_buffer) + strlen(temp_buffer) < (size_t)buffer_length - 1) {
 
 				/* argument macro */
 				if (strstr(temp_buffer, "ARG") == temp_buffer) {
@@ -2948,7 +2955,9 @@ int process_arguments(int argc, char **argv)
 			break;
 
 		case 'n':
+#ifdef HAVE_SSL
 			use_ssl = FALSE;
+#endif
 			break;
 
 		case 's':				/* Argument s to indicate SRC option */
