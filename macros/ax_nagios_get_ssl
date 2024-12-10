@@ -297,7 +297,7 @@ if test x$SSL_TYPE != xNONE; then
 			[AC_LANG_PROGRAM([#include <${SSL_INC_PREFIX}${SSL_HDR}>], [SSL_new(NULL)])],
 			[
 				AC_MSG_RESULT([yes])
-				SSL_OBJS="ssl.o"
+				SSL_OBJS="nrpe-ssl.o"
 				$1
 			], [
 				AC_MSG_ERROR([no])

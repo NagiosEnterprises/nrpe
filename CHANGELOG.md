@@ -1,11 +1,17 @@
 NRPE Changelog
 ==============
+[4.1.3](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.1.3) - 2024-12-10
+------------------
+**FIXES**
+- Change of ssl.c and ssl.h to nrpe-ssl.c and nrpe-ssl.h
+
+
+
 [4.1.2](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.1.2) - 2024-12-09
 ------------------
 **FIXES**
 - Fixed printing of incorrect packet version to just logging the error
 - Fixed and updated SSL
-
 
 
 
