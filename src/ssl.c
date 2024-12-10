@@ -2,7 +2,7 @@
 # include "config.h"
 #endif
 #include "common.h"
-#include "ssl.h"
+#include "nrpe-ssl.h"
 #include "utils.h"
 
 #ifdef HAVE_SSL

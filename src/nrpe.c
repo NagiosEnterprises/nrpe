@@ -41,7 +41,7 @@
 #include "nrpe.h"
 #include "utils.h"
 #include "acl.h"
-#include "ssl.h"
+#include "nrpe-ssl.h"
 
 #ifdef HAVE_SSL
 # if defined(USE_SSL_DH) && !defined(AUTO_SSL_DH)

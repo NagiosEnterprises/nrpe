@@ -55,7 +55,7 @@ check_nrpe: $(srcdir)/check_nrpe.c utils.o $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)
 utils.o: $(srcdir)/utils.c $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
 	$(CC) $(CFLAGS) -c -o $@ $(srcdir)/utils.c
 
-ssl.o: $(srcdir)/ssl.c $(SRC_INCLUDE)/ssl.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
+ssl.o: $(srcdir)/ssl.c $(SRC_INCLUDE)/nrpe-ssl.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
 	$(CC) $(CFLAGS) -c -o $@ $(srcdir)/ssl.c
 
 @SSL_DH_HEADER_MAKE@

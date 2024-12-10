@@ -41,7 +41,7 @@
 #endif
 #include "common.h"
 #include "utils.h"
-#include "ssl.h"
+#include "nrpe-ssl.h"
 
 #define DEFAULT_NRPE_COMMAND "_NRPE_CHECK"	/* check version of NRPE daemon */
 
