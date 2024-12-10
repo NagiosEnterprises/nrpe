@@ -241,7 +241,7 @@ int add_ipv4_to_acl(char *ipv4) {
 
         /* Convert ip and mask to unsigned long */
         ip = htonl((data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3]);
-        mask =  htonl(-1 << (32 - data[4]));
+        mask =  htonl(~0u << (32 - data[4]));
 
         /* Wrong network address */
         if ( (ip & mask) != ip) {
