@@ -1804,7 +1804,7 @@ else
 /* end confdefs.h.  */
 $4
 int
-main (void)
+main ()
 {
 if (sizeof ($2))
 	 return 0;
@@ -1817,7 +1817,7 @@ if ac_fn_c_try_compile "$LINENO"; then :
 /* end confdefs.h.  */
 $4
 int
-main (void)
+main ()
 {
 if (sizeof (($2)))
 	    return 0;
@@ -1855,7 +1855,7 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 $4
 int
-main (void)
+main ()
 {
 static int test_array [1 - 2 * !(($2) >= 0)];
 test_array [0] = 0;
@@ -1872,7 +1872,7 @@ if ac_fn_c_try_compile "$LINENO"; then :
 /* end confdefs.h.  */
 $4
 int
-main (void)
+main ()
 {
 static int test_array [1 - 2 * !(($2) <= $ac_mid)];
 test_array [0] = 0;
@@ -1899,7 +1899,7 @@ else
 /* end confdefs.h.  */
 $4
 int
-main (void)
+main ()
 {
 static int test_array [1 - 2 * !(($2) < 0)];
 test_array [0] = 0;
@@ -1916,7 +1916,7 @@ if ac_fn_c_try_compile "$LINENO"; then :
 /* end confdefs.h.  */
 $4
 int
-main (void)
+main ()
 {
 static int test_array [1 - 2 * !(($2) >= $ac_mid)];
 test_array [0] = 0;
@@ -1951,7 +1951,7 @@ while test "x$ac_lo" != "x$ac_hi"; do
 /* end confdefs.h.  */
 $4
 int
-main (void)
+main ()
 {
 static int test_array [1 - 2 * !(($2) <= $ac_mid)];
 test_array [0] = 0;
@@ -1976,12 +1976,12 @@ esac
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 $4
-static long int longval (void) { return $2; }
-static unsigned long int ulongval (void) { return $2; }
+static long int longval () { return $2; }
+static unsigned long int ulongval () { return $2; }
 #include <stdio.h>
 #include <stdlib.h>
 int
-main (void)
+main ()
 {
 
   FILE *f = fopen ("conftest.val", "w");
@@ -2088,7 +2088,7 @@ else
 #define $2 innocuous_$2
 
 /* System header to define __stub macros and hopefully few prototypes,
-    which can conflict with char $2 (void); below.
+    which can conflict with char $2 (); below.
     Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
     <limits.h> exists even on freestanding compilers.  */
 
@@ -2106,7 +2106,7 @@ else
 #ifdef __cplusplus
 extern "C"
 #endif
-char $2 (void);
+char $2 ();
 /* The GNU C library defines this for functions which it implements
     to always fail with ENOSYS.  Some functions are actually named
     something starting with __ and the normal name is an alias.  */
@@ -2115,7 +2115,7 @@ choke me
 #endif
 
 int
-main (void)
+main ()
 {
 return $2 ();
   ;
@@ -2505,9 +2505,9 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 PKG_NAME=nrpe
-PKG_VERSION="4.1.1"
+PKG_VERSION="4.1.2"
 PKG_HOME_URL="http://www.nagios.org/"
-PKG_REL_DATE="2024-08-01"
+PKG_REL_DATE="2024-12-09"
 RPM_RELEASE=1
 
 LANG=C
@@ -5329,7 +5329,7 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
-main (void)
+main ()
 {
 
   ;
@@ -5469,7 +5469,7 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <stdio.h>
 int
-main (void)
+main ()
 {
 FILE *f = fopen ("conftest.out", "w");
  return ferror (f) || fclose (f) != 0;
@@ -5533,7 +5533,7 @@ else
 /* end confdefs.h.  */
 
 int
-main (void)
+main ()
 {
 
   ;
@@ -5584,7 +5584,7 @@ else
 /* end confdefs.h.  */
 
 int
-main (void)
+main ()
 {
 #ifndef __GNUC__
        choke me
@@ -5625,7 +5625,7 @@ else
 /* end confdefs.h.  */
 
 int
-main (void)
+main ()
 {
 
   ;
@@ -5640,7 +5640,7 @@ else
 /* end confdefs.h.  */
 
 int
-main (void)
+main ()
 {
 
   ;
@@ -5656,7 +5656,7 @@ else
 /* end confdefs.h.  */
 
 int
-main (void)
+main ()
 {
 
   ;
@@ -5705,7 +5705,9 @@ struct stat;
 /* Most of the following tests are stolen from RCS 5.7's src/conf.sh.  */
 struct buf { int x; };
 FILE * (*rcsopen) (struct buf *, struct stat *, int);
-static char *e (char **p, int i)
+static char *e (p, i)
+     char **p;
+     int i;
 {
   return p[i];
 }
@@ -5740,7 +5742,7 @@ int pairnames (int, char **, FILE *(*)(struct buf *, struct stat *, int), int, i
 int argc;
 char **argv;
 int
-main (void)
+main ()
 {
 return f (e, argv, 0) != argv[0]  ||  f (e, argv, 1) != argv[1];
   ;
@@ -6098,7 +6100,7 @@ else
 #include <float.h>
 
 int
-main (void)
+main ()
 {
 
   ;
@@ -6168,7 +6170,7 @@ else
 
 #define XOR(e, f) (((e) && !(f)) || (!(e) && (f)))
 int
-main (void)
+main ()
 {
   int i;
   for (i = 0; i < 256; i++)
@@ -6209,7 +6211,7 @@ else
 #include <time.h>
 
 int
-main (void)
+main ()
 {
 if ((struct tm *) 0)
 return 0;
@@ -6249,7 +6251,7 @@ else
 #endif
 
 int
-main (void)
+main ()
 {
   int s;
   wait (&s);
@@ -6364,7 +6366,7 @@ else
 /* end confdefs.h.  */
 
 int
-main (void)
+main ()
 {
 
 #ifndef __cplusplus
@@ -6447,7 +6449,7 @@ else
 #include <time.h>
 
 int
-main (void)
+main ()
 {
 struct tm tm;
 				     int *p = &tm.tm_sec;
@@ -6515,7 +6517,7 @@ else
 #include <signal.h>
 
 int
-main (void)
+main ()
 {
 return *(signal (0, 0)) (0) == 1;
   ;
@@ -6584,7 +6586,7 @@ $ac_includes_default
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
 int
-main (void)
+main ()
 {
   gid_t gidset[NGID];
   int i, n;
@@ -6848,7 +6850,7 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #include <stdarg.h>
 va_list ap1,ap2;
 int
-main (void)
+main ()
 {
 va_copy(ap1,ap2);
   ;
@@ -6881,7 +6883,7 @@ else
 #include <stdarg.h>
 	va_list ap1,ap2;
 int
-main (void)
+main ()
 {
 __va_copy(ap1,ap2);
   ;
@@ -7014,9 +7016,9 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char getopt_long (void);
+char getopt_long ();
 int
-main (void)
+main ()
 {
 return getopt_long ();
   ;
@@ -7054,7 +7056,7 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 
 
 int
-main (void)
+main ()
 {
 return main ();
   ;
@@ -7092,9 +7094,9 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char socket (void);
+char socket ();
 int
-main (void)
+main ()
 {
 return socket ();
   ;
@@ -7146,7 +7148,7 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 
 
 int
-main (void)
+main ()
 {
 return main ();
   ;
@@ -7175,7 +7177,7 @@ $as_echo "#define HAVE_LIBWRAP 1" >>confdefs.h
 #include <tcpd.h>
 
 int
-main (void)
+main ()
 {
 int a = rfc931_timeout;
   ;
@@ -7243,7 +7245,7 @@ else
 					int getpeername (int, $arg2 *, $t *);
 
 int
-main (void)
+main ()
 {
 
 					$t len;
@@ -7289,7 +7291,7 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #include <sys/socket.h>
 
 int
-main (void)
+main ()
 {
 int a = send(1, (const void *)0, (size_t *) 0, (int *) 0);
   ;
@@ -7350,6 +7352,7 @@ ssl_lib_dir=
 SSL_INC_PREFIX=
 SSL_HDR=
 SSL_LIB_DIR=
+
 
 
 
@@ -7713,7 +7716,7 @@ $as_echo_n "checking whether compiling and linking against SSL works... " >&6; }
 /* end confdefs.h.  */
 #include <${SSL_INC_PREFIX}${SSL_HDR}>
 int
-main (void)
+main ()
 {
 SSL_new(NULL)
   ;
@@ -7746,7 +7749,7 @@ rm -f core conftest.err conftest.$ac_objext \
 				#include <${SSL_INC_PREFIX}${SSL_HDR}>
 
 int
-main (void)
+main ()
 {
 
 				#ifdef OPENSSL_VERSION_MAJOR
