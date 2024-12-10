@@ -7727,7 +7727,7 @@ if ac_fn_c_try_link "$LINENO"; then :
 
 				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-				SSL_OBJS="ssl.o"
+				SSL_OBJS="nrpe-ssl.o"
 
 
 else

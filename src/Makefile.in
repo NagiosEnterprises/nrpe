@@ -55,8 +55,8 @@ check_nrpe: $(srcdir)/check_nrpe.c utils.o $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)
 utils.o: $(srcdir)/utils.c $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
 	$(CC) $(CFLAGS) -c -o $@ $(srcdir)/utils.c
 
-ssl.o: $(srcdir)/ssl.c $(SRC_INCLUDE)/ssl.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
-	$(CC) $(CFLAGS) -c -o $@ $(srcdir)/ssl.c
+nrpe-ssl.o: $(srcdir)/nrpe-ssl.c $(SRC_INCLUDE)/nrpe-ssl.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
+	$(CC) $(CFLAGS) -c -o $@ $(srcdir)/nrpe-ssl.c
 
 @SSL_DH_HEADER_MAKE@
 
@@ -88,7 +88,7 @@ install-uninstall:
 	$(INSTALL) -m 755 ../uninstall $(SBINDIR)/nrpe-uninstall
 
 clean:
-	rm -f core nrpe check_nrpe generate_dh_params utils.o ssl.o $(SNPRINTF_O) $(SSL_DH_HEADER)
+	rm -f core nrpe check_nrpe generate_dh_params utils.o nrpe-ssl.o $(SNPRINTF_O) $(SSL_DH_HEADER)
 	rm -f *~ */*~
 	rm -rf nrpe.dSYM check_nrpe.dSYM
 
