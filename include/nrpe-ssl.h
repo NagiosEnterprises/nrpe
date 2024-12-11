@@ -36,8 +36,6 @@ extern SSL_CTX  *ctx;
 extern SslParms sslprm;
 #endif
 
-extern int       use_ssl;
-
 
 void ssl_initialize(void);
 void ssl_set_protocol_version(SslVer ssl_proto_ver, unsigned long *ssl_opts);

@@ -77,7 +77,10 @@ extern char *log_file;
 
 #ifdef HAVE_SSL
 SSL *ssl;
+int use_ssl = TRUE;
 unsigned long ssl_opts = SSL_OP_ALL;
+#else
+int use_ssl = FALSE;
 #endif
 int have_log_opts = FALSE;
 SslParms sslprm = {
