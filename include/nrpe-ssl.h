@@ -36,12 +36,12 @@ extern SSL_CTX  *ctx;
 extern SslParms sslprm;
 #endif
 
-extern int       use_ssl;
-
 
 void ssl_initialize(void);
 void ssl_set_protocol_version(SslVer ssl_proto_ver, unsigned long *ssl_opts);
 void ssl_log_startup(int server);
 int ssl_load_certificates(void);
 int ssl_set_ciphers(void);
+#ifdef HAVE_SSL
 int ssl_verify_callback_common(int preverify_ok, X509_STORE_CTX * ctx, int is_invalid);
+#endif

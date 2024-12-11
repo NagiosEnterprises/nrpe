@@ -61,6 +61,12 @@ int       rfc931_timeout=15;
 # endif
 #endif
 
+#ifdef HAVE_SSL
+int       use_ssl = TRUE;
+#else
+int       use_ssl = FALSE;
+#endif
+
 
 #define DEFAULT_COMMAND_TIMEOUT			60	/* default timeout for execution of plugins */
 #define MAXFD							64
