@@ -56,10 +56,6 @@ struct dns_acl {
         struct dns_acl *next;
 };
 
-/* Pointers to head ACL structs */
-static struct ip_acl *ip_acl_head, *ip_acl_prev;
-static struct dns_acl *dns_acl_head, *dns_acl_prev;
-
 /* Functions */
 void parse_allowed_hosts(char *allowed_hosts);
 int add_ipv4_to_acl(char *ipv4);
@@ -67,7 +63,7 @@ int add_ipv6_to_acl(char *ipv6);
 int add_domain_to_acl(char *domain);
 //int is_an_allowed_host(struct in_addr);
 int is_an_allowed_host(int, void *);
-unsigned int prefix_from_mask(struct in_addr mask);
+unsigned int prefix_from_mask(int family, const void* mask);
 void show_acl_lists(void);
 
 #endif /* ACL_H_INCLUDED */

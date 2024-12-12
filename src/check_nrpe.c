@@ -91,11 +91,11 @@ int translate_state (char *state_text);
 void set_timeout_state (char *state);
 int parse_timeout_string (char *timeout_str);
 void usage(int result);
-void setup_ssl();
-void set_sig_handlers();
-int connect_to_remote();
-int send_request();
-int read_response();
+void setup_ssl(void);
+void set_sig_handlers(void);
+int connect_to_remote(void);
+int send_request(void);
+int read_response(void);
 int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pkt);
 #ifdef HAVE_SSL
 static int verify_callback(int ok, X509_STORE_CTX * ctx);
@@ -331,7 +331,9 @@ int process_arguments(int argc, char **argv, int from_config_file)
 			break;
 
 		case 'n':
+#ifdef HAVE_SSL
 			use_ssl = FALSE;
+#endif
 			break;
 
 		case 'u':
@@ -554,7 +556,7 @@ int read_config_file(char *fname)
 		logit(LOG_ERR, "Error: read_config_file fail to allocate memory");
 		return ERROR;
 	}
-	if ((sz = fread(buf, 1, st.st_size, f)) != st.st_size) {
+	if ((sz = fread(buf, 1, st.st_size, f)) != (size_t)st.st_size) {
 		fclose(f);
 		free(buf);
 		logit(LOG_ERR, "Error: Failed to completely read config file %s", fname);
@@ -768,7 +770,7 @@ void usage(int result)
 	exit(STATE_UNKNOWN);
 }
 
-void setup_ssl()
+void setup_ssl(void)
 {
 #ifdef HAVE_SSL
 	int vrfy;
@@ -836,7 +838,7 @@ void setup_ssl()
 #endif
 }
 
-void set_sig_handlers()
+void set_sig_handlers(void)
 {
 #ifdef HAVE_SIGACTION
 	struct sigaction sig_action;
@@ -856,7 +858,7 @@ void set_sig_handlers()
 	alarm(socket_timeout);
 }
 
-int connect_to_remote()
+int connect_to_remote(void)
 {
 #ifdef HAVE_SSL
 	int rc, ssl_err, ern, x, nerrs = 0;
@@ -958,7 +960,7 @@ int connect_to_remote()
 		}
 
 		if ((sslprm.log_opts & SSL_LogIfClientCert) || (sslprm.log_opts & SSL_LogCertDetails)) {
-			char peer_cn[256], buffer[2048];
+			char buffer[2048];
 			X509 *peer = SSL_get_peer_certificate(ssl);
 
 			if (peer) {
@@ -988,12 +990,13 @@ int connect_to_remote()
 	return result;
 }
 
-int send_request()
+int send_request(void)
 {
 	v2_packet *v2_send_packet = NULL;
 	v3_packet *v3_send_packet = NULL;
 	u_int32_t calculated_crc32;
-	int rc, bytes_to_send, pkt_size;
+	int rc, bytes_to_send;
+	size_t pkt_size;
 	char *send_pkt;
 
 	if (packet_ver == NRPE_PACKET_VERSION_2) {
@@ -1080,7 +1083,7 @@ int send_request()
 	return STATE_OK;
 }
 
-int read_response()
+int read_response(void)
 {
 	v2_packet *v2_receive_packet = NULL;
 	/* Note: v4 packets will use the v3_packet structure */
@@ -1229,10 +1232,13 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 	int rc;
 	char *buff_ptr;
 
+	(void)ssl_ptr;
 	/* Read only the part that's common between versions 2 & 3 */
 	common_size = tot_bytes = bytes_to_recv = (char *)packet.buffer - (char *)&packet;
 
+#ifdef HAVE_SSL
 	if (use_ssl == FALSE) {
+#endif
 		rc = recvall(sock, (char *)&packet, &tot_bytes, socket_timeout);
 
 		if (rc <= 0 || rc != bytes_to_recv) {
@@ -1318,8 +1324,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 			return -1;
 		} else
 			tot_bytes += rc;
-	}
 #ifdef HAVE_SSL
+	}
 	else {
 		SSL *ssl = (SSL *) ssl_ptr;
 
@@ -1449,6 +1455,8 @@ void alarm_handler(int sig)
 	const char	msg3[] = " seconds.\n";
 	const char	*text = state_text(timeout_return_code);
 	size_t		lth1 = 0, lth2 = 0;
+
+	(void)sig;
 
 	for (lth1 = 0; lth1 < 10; ++lth1)
 		if (text[lth1] == 0)
