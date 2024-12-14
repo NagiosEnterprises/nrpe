@@ -97,24 +97,6 @@ int isvalidchar(int c) {
 }
 
 /*
- * Get substring from allowed_hosts from s position to e position.
- */
-
-char * acl_substring(char *string, int s, int e) {
-    char *substring;
-    int len = e - s;
-
-        if (len < 0)
-                return NULL;
-
-    if ( (substring = malloc(len + 1)) == NULL)
-        return NULL;
-
-    memmove(substring, string + s, len + 1);
-    return substring;
-}
-
-/*
  * Add IPv4 host or network to IP ACL. IPv4 format is X.X.X.X[/X].
  * Host will be added to ACL only if it has passed IPv4 format check.
  *

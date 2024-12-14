@@ -52,13 +52,11 @@ void setup_wait_conn(void);
 int wait_conn_fork(int sock);
 void conn_check_peer(int sock);
 void handle_connection(int);
-void init_handle_conn(void);
 int handle_conn_ssl(int sock, void *ssl_ptr);
 int read_packet(int sock, void *ssl_ptr, v2_packet *v2_pkt, v3_packet **v3_pkt);
 void free_memory(void);
 int my_system(char*, int, int*, char**);	/* executes a command via popen(), but also protects against timeouts */
 void my_system_sighandler(int);				/* handles timeouts when executing commands via my_system() */
-void my_connection_sighandler(int);			/* handles timeouts of connection */
 int drop_privileges(char *,char *, int);
 int write_pid_file(void);
 int remove_pid_file(void);

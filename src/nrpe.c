@@ -1768,29 +1768,6 @@ void handle_connection(int sock)
 	return;
 }
 
-void init_handle_conn(void)
-{
-#ifdef HAVE_SIGACTION
-	struct sigaction sig_action;
-#endif
-
-	/* log info */
-	if (debug == TRUE)
-		logit(LOG_DEBUG, "Handling the connection...");
-
-	/* set connection handler */
-#ifdef HAVE_SIGACTION
-	sig_action.sa_sigaction = NULL;
-	sig_action.sa_handler = my_connection_sighandler;
-	sigfillset(&sig_action.sa_mask);
-	sig_action.sa_flags = SA_NODEFER | SA_RESTART;
-	sigaction(SIGALRM, &sig_action, NULL);
-#else
-	signal(SIGALRM, my_connection_sighandler);
-#endif	 /* HAVE_SIGACTION */
-	alarm(connection_timeout);
-}
-
 int handle_conn_ssl(int sock, void *ssl_ptr)
 {
 #ifdef HAVE_SSL
@@ -2292,13 +2269,6 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 void my_system_sighandler(int sig)
 {
 	exit(STATE_CRITICAL);		/* force the child process to exit... */
-}
-
-/* handle errors where connection takes too long */
-void my_connection_sighandler(int sig)
-{
-	logit(LOG_ERR, "Connection has taken too long to establish. Exiting...");
-	exit(STATE_CRITICAL);
 }
 
 /* drops privileges */
