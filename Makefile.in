@@ -199,3 +199,15 @@ distclean: clean
 
 devclean: distclean
 
+test:
+	$(MAKE) -C $(SRC_BASE) nrpe check_nrpe
+	$(MAKE) -C tests test
+
+coverage: test
+	@if ! which lcov >/dev/null 2>&1; then \
+		echo "ERROR: You must install lcov and genhtml first"; \
+	else \
+		lcov -c -d . -o nagioscore.info-file; \
+		genhtml nagioscore.info-file -o coverage-report; \
+		echo "Your coverage report is in coverage-report/index.html"; \
+	fi

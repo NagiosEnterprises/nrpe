@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sleep 10s
+echo DONE
+exit 0

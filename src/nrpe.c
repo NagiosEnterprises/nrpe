@@ -112,6 +112,7 @@ int       use_src = FALSE;		/* Define parameter for SRC option */
 int       no_forking = FALSE;
 int       listen_queue_size = DEFAULT_LISTEN_QUEUE_SIZE;
 char     *nasty_metachars = NULL;
+int       dont_chdir = FALSE;
 extern char *log_file;
 
 
@@ -496,9 +497,11 @@ void set_stdio_sigs(void)
 	struct sigaction sig_action;
 #endif
 
-	if (chdir("/") == -1) {
-		printf("ERROR: chdir(): %s, bailing out...\n", strerror(errno));
-		exit(STATE_CRITICAL);
+	if (!dont_chdir) {
+		if (chdir("/") == -1) {
+			printf("ERROR: chdir(): %s, bailing out...\n", strerror(errno));
+			exit(STATE_CRITICAL);
+		}
 	}
 
 	close(0);					/* close standard file descriptors */
@@ -2763,6 +2766,7 @@ int process_arguments(int argc, char **argv)
 		{"help", no_argument, 0, 'h'},
 		{"license", no_argument, 0, 'l'},
 		{"version", no_argument, 0, 'V'},
+		{"dont-chdir", no_argument, 0, 'C'},
 		{0, 0, 0, 0}
 	};
 #endif
@@ -2835,6 +2839,10 @@ int process_arguments(int argc, char **argv)
 			use_inetd = FALSE;
 			no_forking = TRUE;
 			have_mode = TRUE;
+			break;
+
+		case 'C':
+			dont_chdir = TRUE;
 			break;
 
 		default:

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+dir=$(dirname $0)
+
+cat $dir/lorem.$1.txt
+exit 0

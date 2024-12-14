@@ -76,6 +76,7 @@ fi
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
 	src/Makefile
+	tests/Makefile
 	nrpe.spec
 	uninstall
 	sample-config/nrpe.cfg
