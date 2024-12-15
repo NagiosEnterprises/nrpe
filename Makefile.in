@@ -74,10 +74,10 @@ all:
 	echo ""
 
 nrpe:
-	cd $(SRC_BASE); $(MAKE)
+	cd $(SRC_BASE); $(MAKE) $@
 
 check_nrpe:
-	cd $(SRC_BASE); $(MAKE)
+	cd $(SRC_BASE); $(MAKE) $@
 
 install-plugin:
 	cd $(SRC_BASE); $(MAKE) $@

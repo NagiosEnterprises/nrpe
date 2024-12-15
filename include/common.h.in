@@ -33,7 +33,9 @@
 # ifdef SSL_TYPE_openssl
 #  include <@SSL_INC_PREFIX@err.h>
 #  include <@SSL_INC_PREFIX@rand.h>
+#if OPENSSL_VERSION_NUMBER < 0x30000000
 #  include <@SSL_INC_PREFIX@engine.h>
+#endif
 #  include <@SSL_INC_PREFIX@evp.h>
 # endif
 #endif

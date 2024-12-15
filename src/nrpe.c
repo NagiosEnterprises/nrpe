@@ -71,7 +71,6 @@ int       rfc931_timeout=15;
 
 #define how_many(x,y) (((x)+((y)-1))/(y))
 
-extern int errno;
 struct addrinfo *listen_addrs = NULL;
 int       listen_socks[MAX_LISTEN_SOCKS];
 char      remote_host[MAX_HOST_ADDRESS_LENGTH];
@@ -135,7 +134,6 @@ int main(int argc, char **argv)
 {
 	int       result = OK;
 	int       x;
-	uint32_t  y;
 	char      buffer[MAX_INPUT_BUFFER];
 
 	init();
@@ -211,10 +209,10 @@ int init(void)
 	int       result = OK;
 
 	/* set some environment variables */
-	asprintf(&env_string, "NRPE_MULTILINESUPPORT=1");
-	putenv(env_string);
-	asprintf(&env_string, "NRPE_PROGRAMVERSION=%s", PROGRAM_VERSION);
-	putenv(env_string);
+	if (asprintf(&env_string, "NRPE_MULTILINESUPPORT=1") > 0)
+		putenv(env_string);
+	if (asprintf(&env_string, "NRPE_PROGRAMVERSION=%s", PROGRAM_VERSION) > 0)
+		putenv(env_string);
 
 	/* open a connection to the syslog facility */
 	/* facility name may be overridden later */
@@ -232,8 +230,8 @@ void init_ssl(void)
 #ifdef HAVE_SSL
 	char          seedfile[FILENAME_MAX];
 	char          errstr[256] = { "" };
-	int           i, c, x, vrfy;
-	unsigned long ssl_opts = SSL_OP_ALL | SSL_OP_SINGLE_DH_USE;
+	int           i, x, vrfy;
+	unsigned long c, ssl_opts = SSL_OP_ALL | SSL_OP_SINGLE_DH_USE;
 
 	if (use_ssl == FALSE) {
 		if (debug == TRUE)
@@ -574,7 +572,7 @@ char* process_metachars(const char* input)
 	char* copy = strdup(input);
 	int i,j;
 	int length = strlen(input);
-	for (i = 0, j = 0; i < length, j < length; i++, j++) {
+	for (i = 0, j = 0; j < length; i++, j++) {
 		if (copy[j] != '\\') {
 			copy[i] = copy[j];
 			continue;
@@ -625,7 +623,6 @@ char* process_metachars(const char* input)
 /* read in the configuration file */
 int read_config_file(char *filename)
 {
-	struct stat st;
 	FILE     *fp;
 	char      config_file[MAX_FILENAME_LENGTH];
 	char      input_buffer[MAX_INPUT_BUFFER];
@@ -719,14 +716,16 @@ int read_config_file(char *filename)
 				return ERROR;
 			}
 
-		} else if (!strcmp(varname, "command_prefix"))
+		} else if (!strcmp(varname, "command_prefix")) {
+			free(command_prefix);
 			command_prefix = strdup(varvalue);
 
-		else if (!strcmp(varname, "server_address")) {
+		} else if (!strcmp(varname, "server_address")) {
 			strncpy(server_address, varvalue, sizeof(server_address) - 1);
 			server_address[sizeof(server_address) - 1] = '\0';
 
 		} else if (!strcmp(varname, "allowed_hosts")) {
+			free(allowed_hosts);
 			allowed_hosts = strdup(varvalue);
 			parse_allowed_hosts(allowed_hosts);
 			if (debug == TRUE)
@@ -749,13 +748,15 @@ int read_config_file(char *filename)
 			else
 				debug = FALSE;
 
-		} else if (!strcmp(varname, "nrpe_user"))
+		} else if (!strcmp(varname, "nrpe_user")) {
+			free(nrpe_user);
 			nrpe_user = strdup(varvalue);
 
-		else if (!strcmp(varname, "nrpe_group"))
+		} else if (!strcmp(varname, "nrpe_group")) {
+			free(nrpe_group);
 			nrpe_group = strdup(varvalue);
 
-		else if (!strcmp(varname, "dont_blame_nrpe"))
+		} else if (!strcmp(varname, "dont_blame_nrpe"))
 			allow_arguments = (atoi(varvalue) == 1) ? TRUE : FALSE;
 
 		else if (!strcmp(varname, "disable_syslog"))
@@ -793,10 +794,11 @@ int read_config_file(char *filename)
 		} else if (!strcmp(varname, "allow_weak_random_seed"))
 			allow_weak_random_seed = (atoi(varvalue) == 1) ? TRUE : FALSE;
 
-		else if (!strcmp(varname, "pid_file"))
+		else if (!strcmp(varname, "pid_file")) {
+			free(pid_file);
 			pid_file = strdup(varvalue);
 
-		else if (!strcmp(varname, "listen_queue_size")) {
+		} else if (!strcmp(varname, "listen_queue_size")) {
 			listen_queue_size = atoi(varvalue);
 			if (listen_queue_size == 0) {
 				logit(LOG_ERR,
@@ -854,16 +856,19 @@ int read_config_file(char *filename)
 			strncpy(sslprm.cipher_list, varvalue, sizeof(sslprm.cipher_list) - 1);
 			sslprm.cipher_list[sizeof(sslprm.cipher_list) - 1] = '\0';
 
-		} else if (!strcmp(varname, "ssl_cert_file"))
+		} else if (!strcmp(varname, "ssl_cert_file")) {
+			free(sslprm.cert_file);
 			sslprm.cert_file = strdup(varvalue);
 
-		else if (!strcmp(varname, "ssl_cacert_file"))
+		} else if (!strcmp(varname, "ssl_cacert_file")) {
+			free(sslprm.cacert_file);
 			sslprm.cacert_file = strdup(varvalue);
 
-		else if (!strcmp(varname, "ssl_privatekey_file"))
+		} else if (!strcmp(varname, "ssl_privatekey_file")) {
+			free(sslprm.privatekey_file);
 			sslprm.privatekey_file = strdup(varvalue);
 
-		else if (!strcmp(varname, "ssl_client_certs")) {
+		} else if (!strcmp(varname, "ssl_client_certs")) {
 			sslprm.client_certs = atoi(varvalue);
 			if ((int)sslprm.client_certs < 0 || sslprm.client_certs > Require_Cert) {
 				logit(LOG_ERR,
@@ -885,13 +890,15 @@ int read_config_file(char *filename)
 					   "Invalid log_facility specified in config file '%s' - Line %d\n",
 					   filename, line);
 
-		} else if (!strcmp(varname, "keep_env_vars"))
+		} else if (!strcmp(varname, "keep_env_vars")) {
+			free(keep_env_vars);
 			keep_env_vars = strdup(varvalue);
 
-		else if (!strcmp(varname, "nasty_metachars"))
+		} else if (!strcmp(varname, "nasty_metachars"))
 			nasty_metachars = process_metachars(varvalue);
 
 		else if (!strcmp(varname, "log_file")) {
+			free(log_file);
 			log_file = strdup(varvalue);
 			open_log_file();
 
@@ -920,6 +927,7 @@ int read_config_dir(char *dirname)
 	struct stat buf;
 	char      config_file[MAX_FILENAME_LENGTH];
 	int       result = OK;
+	int rc;
 
 #ifdef HAVE_SCANDIR
 	/* read and sort the directory contents */
@@ -945,7 +953,11 @@ int read_config_dir(char *dirname)
 		/* process all files in the directory... */
 
 		/* create the full path to the config file or subdirectory */
-		snprintf(config_file, sizeof(config_file) - 1, "%s/%s", dirname, dirfile->d_name);
+		rc = snprintf(config_file, sizeof(config_file) - 1, "%s/%s", dirname, dirfile->d_name);
+		if (rc >= (long)sizeof(config_file) - 1) {
+			logit(LOG_ERR, "Config file path too long '%s/%s'.\n", dirname, dirfile->d_name);
+			return ERROR;
+		}
 		config_file[sizeof(config_file) - 1] = '\x0';
 		stat(config_file, &buf);
 
@@ -1170,11 +1182,13 @@ void wait_for_connections(void)
 	socklen_t fromlen;
 	fd_set   *fdset = NULL;
 	int       maxfd = 0, new_sd = 0, i, rc, retval;
-
+	int       count_fdset = 0;
 	setup_wait_conn();
 
 	/* listen for connection requests - fork() if we get one */
 	while (1) {
+		int need_fdset;
+
 		/* bail out if necessary */
 		if (sigrestart == TRUE || sigshutdown == TRUE)
 			break;
@@ -1184,9 +1198,14 @@ void wait_for_connections(void)
 				maxfd = listen_socks[i];
 		}
 
-		if (fdset != NULL)
+		need_fdset = how_many(maxfd + 1, NFDBITS);
+		if (need_fdset > count_fdset) {
 			free(fdset);
-		fdset = (fd_set *) calloc(how_many(maxfd + 1, NFDBITS), sizeof(fd_mask));
+			fdset = (fd_set *) calloc(need_fdset, sizeof(fd_mask));
+			count_fdset = need_fdset;
+		} else {
+			memset(fdset, 0, count_fdset * sizeof(fd_mask));
+		}
 
 		for (i = 0; i < num_listen_socks; i++)
 			FD_SET(listen_socks[i], fdset);
@@ -1253,6 +1272,7 @@ void wait_for_connections(void)
 	close_listen_socks();
 	freeaddrinfo(listen_addrs);
 	listen_addrs = NULL;
+	free(fdset);
 
 	return;
 }
@@ -1268,10 +1288,15 @@ void setup_wait_conn(void)
 
 	for (ai = listen_addrs; ai; ai = ai->ai_next) {
 		if (debug == TRUE) {
+			char *fam = "";
 			inet_ntop (ai->ai_family, ai->ai_addr->sa_data, addrstr, 100);
 			ptr = &((struct sockaddr_in *) ai->ai_addr)->sin_addr;
 			inet_ntop (ai->ai_family, ptr, addrstr, 100);
-			logit(LOG_INFO, "SETUP_WAIT_CONN FOR: IPv4 address: %s (%s)\n", addrstr, ai->ai_canonname);
+			if (ai->ai_family == AF_INET)
+				fam = "AF_INET";
+			else if (ai->ai_family == AF_INET6)
+				fam = "AF_INET6";
+			logit(LOG_INFO, "SETUP_WAIT_CONN FOR: %s address: %s (%s)\n", fam, addrstr, ai->ai_canonname);
 		}
 		create_listener(ai);
 	}
@@ -1662,12 +1687,17 @@ void handle_connection(int sock)
 			/* see if the command timed out */
 			if (early_timeout == TRUE) {
 				free(send_buff);
-				asprintf(&send_buff, "NRPE: Command timed out after %d seconds\n",
-						command_timeout);
+				if (asprintf(&send_buff, "NRPE: Command timed out after %d seconds\n", command_timeout) == -1) {
+					logit(LOG_ERR, "Unable to build response, possible memory issue, bailing out...");
+					return;
+				}
 				result = STATE_UNKNOWN;
 			} else if (!strcmp(send_buff, "")) {
 				free(send_buff);
-				asprintf(&send_buff, "NRPE: Unable to read output\n");
+				if (asprintf(&send_buff, "NRPE: Unable to read output\n") == -1) {
+					logit(LOG_ERR, "Unable to build response, possible memory issue, bailing out...");
+					return;
+				}
 				result = STATE_UNKNOWN;
 			}
 
@@ -1739,12 +1769,12 @@ void handle_connection(int sock)
 
 	/* send the response back to the client */
 	bytes_to_send = pkt_size;
-	if (use_ssl == FALSE)
-		sendall(sock, send_pkt, &bytes_to_send);
 #ifdef HAVE_SSL
-	else
+	if (use_ssl)
 		SSL_write(ssl, send_pkt, bytes_to_send);
+	else
 #endif
+		sendall(sock, send_pkt, &bytes_to_send);
 
 #ifdef HAVE_SSL
 	if (ssl) {
@@ -1788,9 +1818,9 @@ void init_handle_conn(void)
 	alarm(connection_timeout);
 }
 
+#ifdef HAVE_SSL
 int handle_conn_ssl(int sock, void *ssl_ptr)
 {
-#ifdef HAVE_SSL
 # if (defined(__sun) && defined(SOLARIS_10)) || defined(_AIX) || defined(__hpux)
 	SSL_CIPHER *c;
 #else
@@ -1893,10 +1923,10 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 			logit(LOG_NOTICE, "SSL Client %s did not present a certificate",
 				   remote_host);
 	}
-#endif
 
 	return OK;
 }
+#endif
 
 int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt)
 {
@@ -1904,10 +1934,13 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 	int       rc;
 	char     *buff_ptr;
 
+	(void)ssl_ptr;
 	/* Read only the part that's common between versions 2 & 3 */
 	common_size = tot_bytes = bytes_to_recv = (char *)&v2_pkt->buffer - (char *)v2_pkt;
 
+#ifdef HAVE_SSL
 	if (use_ssl == FALSE) {
+#endif
 		rc = recvall(sock, (char *)v2_pkt, &tot_bytes, socket_timeout);
 
 		if (rc <= 0 || rc != bytes_to_recv)
@@ -1967,8 +2000,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			return -1;
 		} else
 			tot_bytes += rc;
-	}
 #ifdef HAVE_SSL
+	}
 	else {
 		SSL      *ssl = (SSL *) ssl_ptr;
 		int       sockfd, retval;
@@ -2092,21 +2125,16 @@ void free_memory(void)
 	return;
 }
 
+static int my_system_parent(pid_t pid, int fd, int timeout, time_t start_time, int *early_timeout, char **output);
+static int my_system_child(const char *command, int timeout, int fd);
+
 /* executes a system command via popen(), but protects against timeouts */
 int my_system(char *command, int timeout, int *early_timeout, char **output)
 {
-	FILE     *fp;
 	pid_t     pid;
-	time_t    start_time, end_time;
-	int       status;
+	time_t    start_time;
 	int       result;
-	char      buffer[MAX_INPUT_BUFFER];
 	int       fd[2];
-	int       bytes_read = 0, tot_bytes = 0;
-	int       output_size;
-#ifdef HAVE_SIGACTION
-	struct sigaction sig_action;
-#endif
 
 	*early_timeout = FALSE;		/* initialize return variables */
 
@@ -2137,16 +2165,8 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 
 	/* return an error if we couldn't fork */
 	if (pid == -1) {
-		snprintf(buffer, sizeof(buffer) - 1, "NRPE: Call to fork() failed\n");
-		buffer[sizeof(buffer) - 1] = '\x0';
-
-		if (packet_ver == NRPE_PACKET_VERSION_2) {
-			int       output_size = sizeof(v2_packet);
-			*output = calloc(1, output_size);
-			strncpy(*output, buffer, output_size - 1);
-			*output[output_size - 1] = '\0';
-		} else
-			*output = strdup(buffer);
+		if (asprintf(output, "NRPE: Call to fork() failed (errno=%i)\n", errno) == -1)
+			logit(LOG_ERR, "Unable to build output, possible memory issue, bailing out...");
 
 		/* close both ends of the pipe */
 		close(fd[0]);
@@ -2166,116 +2186,14 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 		close(fd[0]);			/* close pipe for reading */
 		setpgid(0, 0);			/* become process group leader */
 
-		/* trap commands that timeout */
-#ifdef HAVE_SIGACTION
-		sig_action.sa_sigaction = NULL;
-		sig_action.sa_handler = my_system_sighandler;
-		sigfillset(&sig_action.sa_mask);
-		sig_action.sa_flags = SA_NODEFER | SA_RESTART;
-		sigaction(SIGALRM, &sig_action, NULL);
-#else
-		signal(SIGALRM, my_system_sighandler);
-#endif	 /* HAVE_SIGACTION */
-		alarm(timeout);
-
-		fp = popen(command, "r");	/* run the command */
-
-		/* report an error if we couldn't run the command */
-		if (fp == NULL) {
-			strncpy(buffer, "NRPE: Call to popen() failed\n", sizeof(buffer) - 1);
-			buffer[sizeof(buffer) - 1] = '\x0';
-
-			/* write the error back to the parent process */
-			if (write(fd[1], buffer, strlen(buffer) + 1) == -1)
-				logit(LOG_ERR, "ERROR: my_system() write(fd, buffer)-1 failed...");
-
-			result = STATE_CRITICAL;
-
-		} else {
-
-			/* read all lines of output - supports Nagios 3.x multiline output */
-			while ((bytes_read = fread(buffer, 1, sizeof(buffer) - 1, fp)) > 0) {
-				/* write the output back to the parent process */
-				if (write(fd[1], buffer, bytes_read) == -1)
-					logit(LOG_ERR, "ERROR: my_system() write(fd, buffer)-2 failed...");
-			}
-
-			if (write(fd[1], "\0", 1) == -1)
-				logit(LOG_ERR, "ERROR: my_system() write(fd, NULL) failed...");
-
-			status = pclose(fp);	/* close the command and get termination status */
-
-			/* report an error if we couldn't close the command */
-			if (status == -1)
-				result = STATE_CRITICAL;
-			else if (!WIFEXITED(status))
-				/* report an error if child died due to signal (Klas Lindfors) */
-				result = STATE_CRITICAL;
-			else
-				result = WEXITSTATUS(status);
-		}
-
-		close(fd[1]);			/* close pipe for writing */
-		alarm(0);				/* reset the alarm */
+		result = my_system_child(command, timeout, fd[1]);
 		exit(result);			/* return plugin exit code to parent process */
-
 	} else {
 		/* parent waits for child to finish executing command */
 
-		commands_running++;
-
 		close(fd[1]);			/* close pipe for writing */
-		waitpid(pid, &status, 0);	/* wait for child to exit */
-		time(&end_time);		/* get the end time for running the command */
-		result = WEXITSTATUS(status);	/* get the exit code returned from the program */
 
-		/* because of my idiotic idea of having UNKNOWN states be equivalent to -1, I must hack things a bit... */
-		if (result == 255)
-			result = STATE_UNKNOWN;
-
-		/* check bounds on the return value */
-		if (result < 0 || result > 3)
-			result = STATE_UNKNOWN;
-
-		if (packet_ver == NRPE_PACKET_VERSION_2) {
-			output_size = sizeof(v2_packet);
-			*output = calloc(1, output_size);
-		} else {
-			output_size = 1024 * 64;	/* Maximum buffer is 64K */
-			*output = calloc(1, output_size);
-		}
-
-		/* try and read the results from the command output (retry if we encountered a signal) */
-		for (;;) {
-			bytes_read = read(fd[0], buffer, sizeof(buffer) - 1);
-			if (bytes_read == 0)
-				break;
-			if (bytes_read == -1) {
-				if (errno == EINTR)
-					continue;
-				else
-					break;
-			}
-			if (tot_bytes < output_size)	/* If buffer is full, discard the rest */
-				strncat(*output, buffer, output_size - tot_bytes - 1);
-			tot_bytes += bytes_read;
-		}
-
-		(*output)[output_size - 1] = '\0';
-
-		/* if there was a critical return code and no output AND the
-		 * command time exceeded the timeout thresholds, assume a timeout */
-		if (result == STATE_CRITICAL && bytes_read == -1 && (end_time - start_time) >= timeout) {
-			*early_timeout = TRUE;
-
-			/* send termination signal to child process group */
-			kill((pid_t) (-pid), SIGTERM);
-			kill((pid_t) (-pid), SIGKILL);
-		}
-
-		close(fd[0]);			/* close the pipe for reading */
-
-		commands_running--;
+		result = my_system_parent(pid, fd[0], timeout, start_time, early_timeout, output);
 	}
 
 #ifdef DEBUG
@@ -2285,15 +2203,227 @@ int my_system(char *command, int timeout, int *early_timeout, char **output)
 	return result;
 }
 
+int my_system_parent(pid_t pid, int fd, int timeout, time_t start_time, int *early_timeout, char **output)
+{
+	time_t    end_time;
+	int       status;
+	int       result;
+	int       output_size = 1024 * 64;	/* Maximum buffer is 64K */
+	int       bytes_read = 0;
+	int       do_wait = 1;
+
+	commands_running++;
+
+	if (packet_ver == NRPE_PACKET_VERSION_2) {
+		output_size = MAX_PACKETBUFFER_LENGTH;
+	}
+	*output = calloc(1, output_size);
+
+	while (1) {
+		int rc;
+		fd_set rfds;
+		struct timeval tv;
+
+		if (do_wait) {
+			/* Check for child exit */
+			rc = waitpid(pid, &status, WNOHANG);
+			if (rc == pid || rc == -1) {
+				time(&end_time);	/* get the end time for running the command */
+				do_wait = 0;
+			}
+		}
+
+		FD_ZERO(&rfds);
+		FD_SET(fd, &rfds);
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+
+		rc = select(fd + 1, &rfds, 0, 0, &tv);
+		if (rc == -1)
+			break;
+
+		if (rc == 0) {
+			/* if child process has already exited and there is nothing to read, don't wait for grandkids */
+			if (!do_wait)
+				break;
+			continue;
+		}
+
+		if (FD_ISSET(fd, &rfds)) {
+			/* try and read the results from the command output (retry if we encountered a signal) */
+			rc = read(fd, *output + bytes_read, output_size - bytes_read);
+			if (rc == -1) {
+				if (errno == EINTR)
+					continue;
+				break;
+			} else if (rc == 0) {
+				break;
+			}
+
+			bytes_read += rc;
+			if (bytes_read == output_size)
+				break;
+		}
+	}
+
+	/* Ensure output buffer termination */
+	(*output)[output_size - 1] = '\0';
+	/* close the pipe for reading */
+	close(fd);
+
+	if (do_wait) {
+		/* Child hasn't exited yet*/
+		waitpid(pid, &status, 0);
+		time(&end_time);	/* get the end time for running the command */
+	}
+	result = WEXITSTATUS(status);	/* get the exit code returned from the program */
+
+	/* check bounds on the return value */
+	if (result < 0 || result > 3)
+		result = STATE_UNKNOWN;
+
+	/* if there was a critical return code and no output AND the
+	 * command time exceeded the timeout thresholds, assume a timeout */
+	if (result == STATE_CRITICAL && bytes_read == 0 && (end_time - start_time) >= timeout) {
+		*early_timeout = TRUE;
+
+		/* send termination signal to child process group */
+		kill((pid_t) (-pid), SIGTERM);
+		kill((pid_t) (-pid), SIGKILL);
+	}
+
+	commands_running--;
+	return result;
+}
+
+int my_system_child(const char *command, int timeout, int fd)
+{
+	FILE     *fp;
+	int       status;
+	int       result;
+	char      buffer[MAX_INPUT_BUFFER];
+#ifdef HAVE_SIGACTION
+	struct sigaction sig_action;
+#endif
+
+	/* trap commands that timeout */
+#ifdef HAVE_SIGACTION
+	sig_action.sa_sigaction = NULL;
+	sig_action.sa_handler = my_system_sighandler;
+	sigfillset(&sig_action.sa_mask);
+	sig_action.sa_flags = SA_NODEFER | SA_RESTART;
+	sigaction(SIGALRM, &sig_action, NULL);
+#else
+	signal(SIGALRM, my_system_sighandler);
+#endif	 /* HAVE_SIGACTION */
+	alarm(timeout);
+
+	fp = popen(command, "r");	/* run the command */
+
+	/* report an error if we couldn't run the command */
+	if (fp == NULL) {
+		strncpy(buffer, "NRPE: Call to popen() failed\n", sizeof(buffer) - 1);
+		buffer[sizeof(buffer) - 1] = '\x0';
+
+		/* write the error back to the parent process */
+		if (write(fd, buffer, strlen(buffer) + 1) == -1)
+			logit(LOG_ERR, "ERROR: my_system() write(fd, buffer)-1 failed...");
+
+		result = STATE_CRITICAL;
+
+	} else {
+		int do_read = 1;
+		int bytes_read = 0;
+
+		/* read all lines of output - supports Nagios 3.x multiline output */
+		while (do_read || bytes_read) {
+			int rc;
+			int max_fd = 0;
+			fd_set rfds;
+			fd_set wfds;
+			struct timeval tv;
+
+			FD_ZERO(&rfds);
+			FD_ZERO(&wfds);
+			if (do_read && bytes_read < (long)sizeof(buffer)) {
+				FD_SET(fileno(fp), &rfds);
+				max_fd = fileno(fp);
+			}
+			if (bytes_read) {
+				FD_SET(fd, &wfds);
+				max_fd = fd > max_fd ? fd : max_fd;
+			}
+			tv.tv_sec = 5;
+			tv.tv_usec = 0;
+
+			rc = select(max_fd + 1, &rfds, &wfds, 0, &tv);
+			if (rc == -1) {
+				logit(LOG_ERR, "ERROR: my_system_child() select failed (errno=%i)", errno);
+				break;
+			}
+
+			if (rc == 0)
+				continue;
+
+			if (FD_ISSET(fileno(fp), &rfds)) {
+				rc = fread(buffer + bytes_read, 1, sizeof(buffer) - bytes_read, fp);
+				if (rc <= 0) {
+					/* error or eof reached */
+					do_read = 0;
+
+					/* Add terminating NUL to send */
+					buffer[bytes_read] = '\0';
+					bytes_read++;
+				} else {
+					bytes_read += rc;
+				}
+			}
+
+			if (bytes_read) {
+				/* We always try to write if we have anything... we'll just get EAGAIN if still full */
+				rc = write(fd, buffer, bytes_read);
+				if (rc == -1) {
+					if (errno != EAGAIN) {
+						logit(LOG_ERR, "ERROR: my_system_child() write(fd, buffer) failed (errno=%i)", errno);
+						break;
+					}
+				} else if (rc > 0) {
+					memmove(buffer, buffer + rc, bytes_read - rc);
+					bytes_read -= rc;
+				}
+			}
+		}
+
+		status = pclose(fp);	/* close the command and get termination status */
+
+		/* report an error if we couldn't close the command */
+		if (status == -1)
+			result = STATE_CRITICAL;
+		else if (!WIFEXITED(status))
+			/* report an error if child died due to signal (Klas Lindfors) */
+			result = STATE_CRITICAL;
+		else
+			result = WEXITSTATUS(status);
+	}
+
+	close(fd);				/* close pipe for writing */
+	alarm(0);				/* reset the alarm */
+	return result;
+}
+
 /* handle timeouts when executing commands via my_system() */
 void my_system_sighandler(int sig)
 {
+	(void)sig;
+	/* try to kill any child processes in our group */
+	kill(0, SIGTERM);
 	exit(STATE_CRITICAL);		/* force the child process to exit... */
 }
 
 /* handle errors where connection takes too long */
 void my_connection_sighandler(int sig)
 {
+	(void)sig;
 	logit(LOG_ERR, "Connection has taken too long to establish. Exiting...");
 	exit(STATE_CRITICAL);
 }
@@ -2449,6 +2579,7 @@ int remove_pid_file(void)
 
 void my_disconnect_sighandler(int sig)
 {
+	(void)sig;
 	logit(LOG_ERR, "SSL_shutdown() has taken too long to complete. Exiting now..");
 	exit(STATE_CRITICAL);
 }
@@ -2534,6 +2665,7 @@ void sighandler(int sig)
 /* handle signals (child processes) */
 void child_sighandler(int sig)
 {
+	(void)sig;
 	exit(0);					/* terminate */
 }
 
@@ -2672,7 +2804,7 @@ int contains_nasty_metachars(char *str)
 		return FALSE;
 
 	result = strcspn(str, nasty_metachars);
-	if (result != strlen(str))
+	if (result != (long)strlen(str))
 		return TRUE;
 
 	return FALSE;
@@ -2696,7 +2828,7 @@ int process_macros(char *input_buffer, char *output_buffer, int buffer_length)
 		selected_macro = NULL;
 
 		if (in_macro == FALSE) {
-			if (strlen(output_buffer) + strlen(temp_buffer) < buffer_length - 1) {
+			if (strlen(output_buffer) + strlen(temp_buffer) < (size_t)buffer_length - 1) {
 				strncat(output_buffer, temp_buffer, buffer_length - strlen(output_buffer) - 1);
 				output_buffer[buffer_length - 1] = '\x0';
 			}
@@ -2704,7 +2836,7 @@ int process_macros(char *input_buffer, char *output_buffer, int buffer_length)
 
 		} else {
 
-			if (strlen(output_buffer) + strlen(temp_buffer) < buffer_length - 1) {
+			if (strlen(output_buffer) + strlen(temp_buffer) < (size_t)buffer_length - 1) {
 
 				/* argument macro */
 				if (strstr(temp_buffer, "ARG") == temp_buffer) {
@@ -2823,7 +2955,9 @@ int process_arguments(int argc, char **argv)
 			break;
 
 		case 'n':
+#ifdef HAVE_SSL
 			use_ssl = FALSE;
+#endif
 			break;
 
 		case 's':				/* Argument s to indicate SRC option */
