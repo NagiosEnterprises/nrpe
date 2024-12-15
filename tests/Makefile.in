@@ -1,0 +1,27 @@
+# Makefile for nrpe tests using perl
+
+srcdir=@srcdir@
+builddir=@builddir@
+abs_top_builddir=@abs_top_builddir@
+
+
+all: 
+
+test: configs checks
+	@[ -d logs ] || mkdir logs
+	@[ -d run ] || mkdir run
+	prove $(srcdir)/*.t :: $(abs_top_builddir)
+
+configs: $(srcdir)/configs
+	ln -s $< $@
+
+checks: $(srcdir)/checks
+	ln -s $< $@
+
+clean:
+	rm -rf logs run
+ifneq ($(srcdir),$(builddir))
+	rm -rf configs checks
+endif
+
+distclean: clean

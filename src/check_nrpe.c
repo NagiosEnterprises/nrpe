@@ -56,7 +56,7 @@ struct sockaddr hostaddr;
 #endif
 int address_family = AF_UNSPEC;
 char *command_name = NULL;
-int socket_timeout = DEFAULT_SOCKET_TIMEOUT;
+int socket_timeout = -1; // after processing command line (including possible config file), this will be set to DEFAULT_SOCKET_TIMEOUT if unchanged;
 char timeout_txt[10];
 int timeout_return_code = -1;
 int stderr_to_stdout = 0;
@@ -114,8 +114,6 @@ int main(int argc, char **argv)
 	if (result != OK || show_help == TRUE || show_license == TRUE || show_version == TRUE)
 		usage(result);			/* usage() will call exit() */
 
-	snprintf(timeout_txt, sizeof(timeout_txt), "%d", socket_timeout);
-
 	if (server_port == 0)
 		server_port = DEFAULT_SERVER_PORT;
 	if (socket_timeout == -1)
@@ -132,6 +130,8 @@ int main(int argc, char **argv)
 		sslprm.ssl_proto_ver = TLSv1_plus;
 	if (sslprm.allowDH == -1)
 		sslprm.allowDH = TRUE;
+
+	snprintf(timeout_txt, sizeof(timeout_txt), "%d", socket_timeout);
 
 	generate_crc32_table();		/* generate the CRC 32 table */
 	setup_ssl();				/* Do all the SSL/TLS set up */
@@ -1236,7 +1236,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		rc = recvall(sock, (char *)&packet, &tot_bytes, socket_timeout);
 
 		if (rc <= 0 || rc != bytes_to_recv) {
-			if (rc < bytes_to_recv) {
+			if (rc >= 0 && rc < bytes_to_recv) {
 				if (packet_ver <= NRPE_PACKET_VERSION_3)
 					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%zu expected).\n", rc, sizeof(bytes_to_recv));
 			}
