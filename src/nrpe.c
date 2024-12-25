@@ -135,6 +135,49 @@ static void my_disconnect_sighandler(int sig);
 static void complete_SSL_shutdown(SSL *);
 #endif
 
+static void free_commands(void);
+
+static void reset_config(void)
+{
+	address_family = AF_UNSPEC;
+	allow_arguments = FALSE;
+	allow_bash_cmd_subst = FALSE;
+	allow_weak_random_seed = FALSE;
+	command_timeout = DEFAULT_COMMAND_TIMEOUT;
+	connection_timeout = DEFAULT_CONNECTION_TIMEOUT;
+	debug = FALSE;
+	disable_syslog = FALSE;
+	listen_queue_size = DEFAULT_LISTEN_QUEUE_SIZE;
+	log_facility = LOG_DAEMON;
+	max_commands = 0;
+	server_port = DEFAULT_SERVER_PORT;
+	socket_timeout = DEFAULT_SOCKET_TIMEOUT;
+	ssl_shutdown_timeout = DEFAULT_SSL_SHUTDOWN_TIMEOUT;
+
+	memset(server_address, 0, sizeof(server_address));
+
+	free(allowed_hosts);
+	allowed_hosts = NULL;
+	free(command_prefix);
+	command_prefix = NULL;
+	free(keep_env_vars);
+	keep_env_vars = NULL;
+	free(log_file);
+	log_file = NULL;
+	free(nasty_metachars);
+	nasty_metachars = strdup(NASTY_METACHARS);
+
+	// These shouldn't change on restart. Maybe warn or abort if detected?
+//	nrpe_group = NULL;
+//	nrpe_user = NULL;
+//	pid_file = NULL;
+
+	free_commands();
+
+#ifdef HAVE_SSL
+	use_ssl = TRUE;
+#endif
+}
 
 int main(int argc, char **argv)
 {
@@ -200,8 +243,12 @@ int main(int argc, char **argv)
 		run_daemon();
 
 #ifdef HAVE_SSL
-	if (use_ssl == TRUE)
-		SSL_CTX_free(ctx);
+	if (use_ssl == TRUE) {
+		if (ctx) {
+			SSL_CTX_free(ctx);
+			ctx = NULL;
+		}
+	}
 #endif
 
 	/* We are now running in daemon mode, or the connection handed over by inetd has
@@ -563,16 +610,27 @@ void cleanup(void)
 {
 	int       result;
 
-	free_memory();				/* free all memory we allocated */
+	free_commands();				/* free all memory we allocated */
 
 	if (sigrestart == TRUE && sigshutdown == FALSE) {
+#ifdef HAVE_SSL
+		if (use_ssl == TRUE) {
+			if (ctx) {
+				SSL_CTX_free(ctx);
+				ctx = NULL;
+			}
+		}
+#endif
 		close_log_file();
+		reset_config();
 		result = read_config_file(config_file);	/* read the config file */
 
 		if (result == ERROR) {	/* exit if there are errors... */
 			logit(LOG_ERR, "Config file '%s' contained errors, bailing out...", config_file);
 			exit(STATE_CRITICAL);
 		}
+
+		init_ssl();
 		return;
 	}
 
@@ -1120,6 +1178,27 @@ command  *find_command(char *command_name)
 			return temp_command;
 
 	return NULL;
+}
+
+void free_commands(void)
+{
+	command  *this_command;
+	command  *next_command;
+
+	/* free memory for the command list */
+	this_command = command_list;
+	while (this_command != NULL) {
+		next_command = this_command->next;
+		if (this_command->command_name)
+			free(this_command->command_name);
+		if (this_command->command_line)
+			free(this_command->command_line);
+		free(this_command);
+		this_command = next_command;
+	}
+
+	command_list = NULL;
+	return;
 }
 
 /* Start listen on a particular port */
@@ -2109,27 +2188,6 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 	return tot_bytes;
 }
 
-/* free all allocated memory */
-void free_memory(void)
-{
-	command  *this_command;
-	command  *next_command;
-
-	/* free memory for the command list */
-	this_command = command_list;
-	while (this_command != NULL) {
-		next_command = this_command->next;
-		if (this_command->command_name)
-			free(this_command->command_name);
-		if (this_command->command_line)
-			free(this_command->command_line);
-		free(this_command);
-		this_command = next_command;
-	}
-
-	command_list = NULL;
-	return;
-}
 
 static int my_system_parent(pid_t pid, int fd, int timeout, time_t start_time, int *early_timeout, char **output);
 static int my_system_child(const char *command, int timeout, int fd);
