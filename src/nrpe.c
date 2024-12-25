@@ -315,6 +315,29 @@ void init_ssl(void)
 	ssl_set_protocol_version(sslprm.ssl_proto_ver, &ssl_opts);
 	SSL_CTX_set_options(ctx, ssl_opts);
 
+	if (sslprm.allowDH && sslprm.cert_file == 0) {
+		/* If we allow ADH and we don't have a certificate, we need to limit the protocol to below TLSv1.3 as it
+		 * doesn't have support for any ADH cipher suites. OpenSSL will fall back to TLSv1.2 automatically however
+		 * LibreSSL will not.
+		 */
+		int limited = 0;
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+		int max_ver = SSL_CTX_get_max_proto_version(ctx);
+		if (max_ver == 0 || max_ver > TLS1_2_VERSION) {
+			SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
+			limited = 1;
+		}
+#elif defined(SSL_OP_NO_TLSv1_3)
+		if ((ssl_opts & SSL_OP_NO_TLSv1_3) == 0) {
+			ssl_opts |= SSL_OP_NO_TLSv1_3;
+			limited = 1;
+		}
+#endif
+		if (limited)
+			logit(LOG_WARNING, "WARN: Limiting SSL/TLS version to v1.2 to support ADH");
+	}
+
 	if (!ssl_load_certificates()) {
 		SSL_CTX_free(ctx);
 		exit(STATE_CRITICAL);
