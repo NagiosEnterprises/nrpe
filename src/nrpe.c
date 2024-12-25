@@ -71,47 +71,54 @@ int       rfc931_timeout=15;
 
 #define how_many(x,y) (((x)+((y)-1))/(y))
 
+
+/* Runtime variables */
 struct addrinfo *listen_addrs = NULL;
 int       listen_socks[MAX_LISTEN_SOCKS];
+int       num_listen_socks = 0;
 char      remote_host[MAX_HOST_ADDRESS_LENGTH];
 char     *macro_argv[MAX_COMMAND_ARGUMENTS];
-char      config_file[MAX_INPUT_BUFFER] = "nrpe.cfg";
-char      server_address[NI_MAXHOST] = "";
 char     *command_name = NULL;
+int       packet_ver = 0;
+int       wrote_pid_file = FALSE;
+int       sigrestart = FALSE;
+int       sigshutdown = FALSE;
+int       commands_running = 0;
+
+/* Command line configuration */
+char      config_file[MAX_INPUT_BUFFER] = "nrpe.cfg";
+int       show_help = FALSE;
+int       show_license = FALSE;
+int       show_version = FALSE;
+int       use_inetd = TRUE;
+int       use_src = FALSE;		/* Define parameter for SRC option */
+int       no_forking = FALSE;
+
+/* Config */
 int       log_facility = LOG_DAEMON;
+char      server_address[NI_MAXHOST] = "";
 int       server_port = DEFAULT_SERVER_PORT;
-int       num_listen_socks = 0;
 int       address_family = AF_UNSPEC;
 int       socket_timeout = DEFAULT_SOCKET_TIMEOUT;
 int       command_timeout = DEFAULT_COMMAND_TIMEOUT;
 int       connection_timeout = DEFAULT_CONNECTION_TIMEOUT;
 int       ssl_shutdown_timeout = DEFAULT_SSL_SHUTDOWN_TIMEOUT;
 char     *command_prefix = NULL;
-int       packet_ver = 0;
 command  *command_list = NULL;
 char     *nrpe_user = NULL;
 char     *nrpe_group = NULL;
 char     *allowed_hosts = NULL;
 char     *keep_env_vars = NULL;
 char     *pid_file = NULL;
-int       wrote_pid_file = FALSE;
 int       allow_arguments = FALSE;
 int       allow_bash_cmd_subst = FALSE;
 int       allow_weak_random_seed = FALSE;
-int       sigrestart = FALSE;
-int       sigshutdown = FALSE;
-int       show_help = FALSE;
-int       show_license = FALSE;
-int       show_version = FALSE;
-int       use_inetd = TRUE;
-int 	  commands_running = 0;
 int       max_commands = 0;
 int       debug = FALSE;
-int       use_src = FALSE;		/* Define parameter for SRC option */
-int       no_forking = FALSE;
 int       listen_queue_size = DEFAULT_LISTEN_QUEUE_SIZE;
 char     *nasty_metachars = NULL;
 extern char *log_file;
+int       disable_syslog = FALSE;
 
 
 SslParms sslprm = {
@@ -128,7 +135,6 @@ static void my_disconnect_sighandler(int sig);
 static void complete_SSL_shutdown(SSL *);
 #endif
 
-int disable_syslog = FALSE;
 
 int main(int argc, char **argv)
 {
