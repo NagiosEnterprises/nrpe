@@ -515,10 +515,14 @@ void set_stdio_sigs(void)
 	sigaction(SIGQUIT, &sig_action, NULL);
 	sigaction(SIGTERM, &sig_action, NULL);
 	sigaction(SIGHUP, &sig_action, NULL);
+
+	sig_action.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sig_action, NULL);
 #else	 /* HAVE_SIGACTION */
 	signal(SIGQUIT, sighandler);
 	signal(SIGTERM, sighandler);
 	signal(SIGHUP, sighandler);
+	signal(SIGPIPE, SIG_IGN);
 #endif	 /* HAVE_SIGACTION */
 
 	logit(LOG_NOTICE, "Starting up daemon");	/* log info */

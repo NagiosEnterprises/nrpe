@@ -842,16 +842,18 @@ void set_sig_handlers(void)
 {
 #ifdef HAVE_SIGACTION
 	struct sigaction sig_action;
-#endif
 
-#ifdef HAVE_SIGACTION
 	sig_action.sa_sigaction = NULL;
 	sig_action.sa_handler = alarm_handler;
 	sigfillset(&sig_action.sa_mask);
 	sig_action.sa_flags = SA_NODEFER | SA_RESTART;
 	sigaction(SIGALRM, &sig_action, NULL);
+
+	sig_action.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sig_action, NULL);
 #else
 	signal(SIGALRM, alarm_handler);
+	signal(SIGPIPE, SIG_IGN);
 #endif	 /* HAVE_SIGACTION */
 
 	/* set socket timeout */
