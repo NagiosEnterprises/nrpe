@@ -335,8 +335,10 @@ int clean_environ(const char *keep_env_vars, const char *nrpe_user)
 	char * user = NULL;
 
 	if (nrpe_user != NULL) {
-		user = strdup(nrpe_user);
 		pw = (struct passwd *)getpwnam(nrpe_user);
+		if (pw != NULL) {
+			user = strdup(nrpe_user);
+		}
 	}
 
 	if (nrpe_user == NULL || pw == NULL) {

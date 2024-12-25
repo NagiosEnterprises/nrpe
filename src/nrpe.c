@@ -205,14 +205,8 @@ int main(int argc, char **argv)
 
 int init(void)
 {
-	char     *env_string = NULL;
-	int       result = OK;
-
-	/* set some environment variables */
-	if (asprintf(&env_string, "NRPE_MULTILINESUPPORT=1") > 0)
-		putenv(env_string);
-	if (asprintf(&env_string, "NRPE_PROGRAMVERSION=%s", PROGRAM_VERSION) > 0)
-		putenv(env_string);
+	setenv("NRPE_MULTILINESUPPORT", "1", 1);
+	setenv("NRPE_PROGRAMVERSION", PROGRAM_VERSION, 1);
 
 	/* open a connection to the syslog facility */
 	/* facility name may be overridden later */
@@ -222,7 +216,7 @@ int init(void)
 	/* generate the CRC 32 table */
 	generate_crc32_table();
 
-	return result;
+	return OK;
 }
 
 void init_ssl(void)
@@ -921,10 +915,11 @@ int read_config_file(char *filename)
 			free(keep_env_vars);
 			keep_env_vars = strdup(varvalue);
 
-		} else if (!strcmp(varname, "nasty_metachars"))
+		} else if (!strcmp(varname, "nasty_metachars")) {
+			free(nasty_metachars);
 			nasty_metachars = process_metachars(varvalue);
 
-		else if (!strcmp(varname, "log_file")) {
+		} else if (!strcmp(varname, "log_file")) {
 			free(log_file);
 			log_file = strdup(varvalue);
 			open_log_file();
@@ -1190,12 +1185,12 @@ void create_listener(struct addrinfo *ai)
 /* Close all listening sockets */
 static void close_listen_socks(void)
 {
-	int       i;
+	int i;
 
-	for (i = 0; i <= num_listen_socks; i++) {
+	for (i = 0; i < num_listen_socks; i++) {
 		close(listen_socks[i]);
-		num_listen_socks--;
 	}
+	num_listen_socks = 0;
 }
 
 /* wait for incoming connection requests */
@@ -1920,7 +1915,7 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 				logit(LOG_NOTICE, "SSL Client %s Cert Issuer: %s",
 					   remote_host, buffer);
 			}
-
+			X509_free(peer);
 		} else if (sslprm.client_certs == 0)
 			logit(LOG_NOTICE, "SSL Not asking for client certification");
 
