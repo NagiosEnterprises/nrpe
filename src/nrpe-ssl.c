@@ -266,7 +266,7 @@ int ssl_verify_callback_common(int preverify_ok, X509_STORE_CTX * ctx, int is_in
 	X509 *err_cert;
 	int err;
 
-	if (preverify_ok || ((sslprm.log_opts & SSL_LogCertDetails) == 0))
+	if (preverify_ok && ((sslprm.log_opts & SSL_LogCertDetails) == 0))
 		return preverify_ok;
 
 	if (is_invalid || sslprm.log_opts & SSL_LogCertDetails) {
