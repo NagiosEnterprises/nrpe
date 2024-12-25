@@ -532,7 +532,10 @@ void open_log_file(void)
 	}
 
 	(void)fcntl(fileno(log_fp), F_SETFD, FD_CLOEXEC);
+	fprintf(log_fp, "\n[%llu]        --------------- Startup ---------------\n", (unsigned long long)time(NULL));
 }
+
+static const char* log_priority_names[] = {" EMERG", " ALERT", "  CRIT", " ERROR", "  WARN", "NOTICE", "  INFO", " DEBUG"};
 
 void logit(int priority, const char *format, ...)
 {
@@ -550,7 +553,7 @@ void logit(int priority, const char *format, ...)
 			strip(buffer);
 
 			/* write the buffer to the log file */
-			fprintf(log_fp, "[%llu] %s\n", (unsigned long long)log_time, buffer);
+			fprintf(log_fp, "[%llu] %s %s\n", (unsigned long long)log_time, log_priority_names[priority & 0x07], buffer);
 			fflush(log_fp);
 
 		} else if (!disable_syslog) {
