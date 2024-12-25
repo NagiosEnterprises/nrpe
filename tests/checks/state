@@ -1,0 +1,19 @@
+#!/bin/sh
+
+case "$1" in
+    0)
+        echo "OK: Everything is normal"
+        exit 0
+        ;;
+    1)
+        echo "WARNING: That's strange."
+        exit 1
+        ;;
+    2)
+        echo "CRITICAL: Danger!"
+        exit 2
+        ;;
+esac
+
+echo "UNKNOWN: Huh?"
+exit 3

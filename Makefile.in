@@ -181,11 +181,15 @@ install-groups-users:
 
 clean:
 	cd $(SRC_BASE); $(MAKE) $@; cd ..
+	(cd tests; $(MAKE) $@)
 	rm -f core
 	rm -f *~ */*~
+	rm -f nrpe.info-file
+	rm -rf coverage-report
 
 distclean: clean
 	cd $(SRC_BASE); $(MAKE) $@; cd ..
+	(cd tests; $(MAKE) $@)
 	rm -rf autom4te.cache
 	rm -f config.log config.status config.cache sample-config/nrpe.cfg $(SRC_INCLUDE)/config.h
 	rm -f startup/bsd-init startup/debian-init startup/default-init startup/default-inetd
@@ -199,3 +203,21 @@ distclean: clean
 
 devclean: distclean
 
+test:
+	(cd $(SRC_BASE); $(MAKE) nrpe check_nrpe)
+	(cd tests; $(MAKE) $@)
+
+src/check_nrpe-check_nrpe.gcda:
+	$(MAKE) test
+
+src/nrpe-nrpe.gcda:
+	$(MAKE) test
+
+coverage: src/nrpe-nrpe.gcda src/check_nrpe-check_nrpe.gcda
+	@if ! which lcov >/dev/null 2>&1; then \
+		echo "ERROR: You must install lcov and genhtml first"; \
+	else \
+		lcov -c -d . -o nrpe.info-file; \
+		genhtml nrpe.info-file -o coverage-report; \
+		echo "Your coverage report is in coverage-report/index.html"; \
+	fi

@@ -5348,7 +5348,7 @@ fi
 
 ac_config_headers="$ac_config_headers include/config.h"
 
-ac_config_files="$ac_config_files Makefile src/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-init.plist startup/mac-inetd.plist startup/newbsd-init startup/openbsd-init startup/openrc-conf startup/openrc-init startup/solaris-init.xml startup/solaris-inetd.xml startup/tmpfile.conf startup/upstart-init startup/rh-upstart-init include/common.h"
+ac_config_files="$ac_config_files Makefile src/Makefile tests/Makefile nrpe.spec uninstall sample-config/nrpe.cfg startup/bsd-init startup/debian-init startup/default-init startup/default-inetd startup/default-service startup/default-socket startup/default-socket-svc startup/default-xinetd startup/mac-init.plist startup/mac-inetd.plist startup/newbsd-init startup/openbsd-init startup/openrc-conf startup/openrc-init startup/solaris-init.xml startup/solaris-inetd.xml startup/tmpfile.conf startup/upstart-init startup/rh-upstart-init include/common.h tests/misc.cfg"
 
 
 
@@ -9225,6 +9225,7 @@ do
     "include/config.h") CONFIG_HEADERS="$CONFIG_HEADERS include/config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
+    "tests/Makefile") CONFIG_FILES="$CONFIG_FILES tests/Makefile" ;;
     "nrpe.spec") CONFIG_FILES="$CONFIG_FILES nrpe.spec" ;;
     "uninstall") CONFIG_FILES="$CONFIG_FILES uninstall" ;;
     "sample-config/nrpe.cfg") CONFIG_FILES="$CONFIG_FILES sample-config/nrpe.cfg" ;;
@@ -9248,6 +9249,7 @@ do
     "startup/upstart-init") CONFIG_FILES="$CONFIG_FILES startup/upstart-init" ;;
     "startup/rh-upstart-init") CONFIG_FILES="$CONFIG_FILES startup/rh-upstart-init" ;;
     "include/common.h") CONFIG_FILES="$CONFIG_FILES include/common.h" ;;
+    "tests/misc.cfg") CONFIG_FILES="$CONFIG_FILES tests/misc.cfg" ;;
 
   *) as_fn_error $? "invalid argument: '$ac_config_target'" "$LINENO" 5;;
   esac

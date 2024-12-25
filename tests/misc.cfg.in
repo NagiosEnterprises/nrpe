@@ -1,0 +1,2 @@
+nrpe_user=@nrpe_user@
+nrpe_group=@nrpe_group@

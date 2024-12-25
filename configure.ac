@@ -77,6 +77,7 @@ fi
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
 	src/Makefile
+	tests/Makefile
 	nrpe.spec
 	uninstall
 	sample-config/nrpe.cfg
@@ -100,6 +101,7 @@ AC_CONFIG_FILES([Makefile
 	startup/upstart-init
 	startup/rh-upstart-init
 	include/common.h
+	tests/misc.cfg
 ])
 
 dnl Checks for programs.
