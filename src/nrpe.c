@@ -2857,7 +2857,7 @@ int process_arguments(int argc, char **argv)
 		/* To compatibility between short and long options but not used on AIX */
 		{"src", no_argument, 0, 's'},
 		{"no-forking", no_argument, 0, 'f'},
-		{"4", no_argument, 0, '4'},
+		{"ipv4", no_argument, 0, '4'},
 		{"ipv6", no_argument, 0, '6'},
 		{"daemon", no_argument, 0, 'd'},
 		{"no-ssl", no_argument, 0, 'n'},
