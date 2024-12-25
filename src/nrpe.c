@@ -93,6 +93,7 @@ int       show_version = FALSE;
 int       use_inetd = TRUE;
 int       use_src = FALSE;		/* Define parameter for SRC option */
 int       no_forking = FALSE;
+int       dont_chdir = FALSE;
 
 /* Config */
 int       log_facility = LOG_DAEMON;
@@ -564,9 +565,11 @@ void set_stdio_sigs(void)
 	struct sigaction sig_action;
 #endif
 
-	if (chdir("/") == -1) {
-		printf("ERROR: chdir(): %s, bailing out...\n", strerror(errno));
-		exit(STATE_CRITICAL);
+	if (!dont_chdir) {
+		if (chdir("/") == -1) {
+			printf("ERROR: chdir(): %s, bailing out...\n", strerror(errno));
+			exit(STATE_CRITICAL);
+		}
 	}
 
 	close(0);					/* close standard file descriptors */
@@ -800,6 +803,19 @@ int read_config_file(char *filename)
 					   filename, line);
 				return ERROR;
 			}
+		} else if (!strcmp(varname, "address_family")) {
+			if (!strcmp(varvalue, "any") || !strcmp(varvalue, "both"))
+				address_family = AF_UNSPEC;
+			else if (!strcmp(varvalue, "4"))
+				address_family = AF_INET;
+			else if (!strcmp(varvalue, "6"))
+				address_family = AF_INET6;
+			else {
+				logit(LOG_ERR,
+					   "Invalid address family specified in config file '%s' - Line %d\n",
+					   filename, line);
+				return ERROR;
+			}
 
 		} else if (!strcmp(varname, "command_prefix")) {
 			free(command_prefix);
@@ -892,6 +908,10 @@ int read_config_file(char *filename)
 				return ERROR;
 			}
 
+		} else if (!strcmp(varname, "ssl_enabled")) {
+#ifdef HAVE_SSL
+			use_ssl = (atoi(varvalue) == 1) ? TRUE : FALSE;
+#endif
 		} else if (!strcmp(varname, "ssl_version")) {
 			if (!strcmp(varvalue, "TLSv1.3"))
 				sslprm.ssl_proto_ver = TLSv1_3;
@@ -2951,6 +2971,7 @@ int process_arguments(int argc, char **argv)
 		{"help", no_argument, 0, 'h'},
 		{"license", no_argument, 0, 'l'},
 		{"version", no_argument, 0, 'V'},
+		{"dont-chdir", no_argument, 0, 'C'},
 		{0, 0, 0, 0}
 	};
 #endif
@@ -3025,6 +3046,10 @@ int process_arguments(int argc, char **argv)
 			use_inetd = FALSE;
 			no_forking = TRUE;
 			have_mode = TRUE;
+			break;
+
+		case 'C':
+			dont_chdir = TRUE;
 			break;
 
 		default:
