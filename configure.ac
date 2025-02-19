@@ -8,6 +8,7 @@ m4_include([build-aux/custom_help.m4])
 AC_INIT([nrpe],[newdate],[nagios-users@lists.sourceforge.net],[nrpe],[https://www.nagios.org/downloads/nagios-core-addons/])
 AC_CONFIG_SRCDIR([src/nrpe.c])
 AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_MACRO_DIR([macros])
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
 PKG_NAME=nrpe
@@ -61,7 +62,7 @@ AC_NAGIOS_GET_PATHS
 AC_NAGIOS_GET_FILES
 
 if test "$dist_type" = solaris -a "$dist_ver" = 10; then
-	AC_DEFINE(SOLARIS_10,yes)
+	AC_DEFINE(SOLARIS_10,[1],[Set to 1 if we are on Solaris 10])
 fi
 
 dnl Do they just want to see where things will go?
@@ -171,8 +172,8 @@ AC_CHECK_TYPES([struct sockaddr_storage],[],[],[#include <sys/socket.h>])
 
 dnl Should we use seteuid() or setresuid()?
 AC_CHECK_FUNC(seteuid,
-	AC_DEFINE(SETEUID(id),[seteuid(id)]),
-	AC_DEFINE(SETEUID(id),[setresuid((uid_t) -1, id, (uid_t) -1)])
+	AC_DEFINE(SETEUID(id),[seteuid(id)],[Use seteuid() or setresuid() depending on the platform]),
+	AC_DEFINE(SETEUID(id),[setresuid((uid_t) -1, id, (uid_t) -1)],[Use seteuid() or setresuid() depending on the platform])
 )
 
 dnl Check for asprintf() and friends...
@@ -194,10 +195,10 @@ else
 	fi
 fi
 
-AC_CHECK_FUNC(vsnprintf,,SNPRINTF_O=./snprintf.o)
-AC_CHECK_FUNC(snprintf,,SNPRINTF_O=./snprintf.o)
-AC_CHECK_FUNC(asprintf,,SNPRINTF_O=./snprintf.o)
-AC_CHECK_FUNC(vasprintf,,SNPRINTF_O=./snprintf.o)
+AC_CHECK_FUNC(vsnprintf,,SNPRINTF_O=snprintf.o)
+AC_CHECK_FUNC(snprintf,,SNPRINTF_O=snprintf.o)
+AC_CHECK_FUNC(asprintf,,SNPRINTF_O=snprintf.o)
+AC_CHECK_FUNC(vasprintf,,SNPRINTF_O=snprintf.o)
 
 AC_CACHE_CHECK([for C99 vsnprintf],ac_cv_HAVE_C99_VSNPRINTF,[
 AC_TRY_RUN([
@@ -229,7 +230,7 @@ if test x"$ac_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
 	AC_DEFINE(HAVE_C99_VSNPRINTF,1,[Define if system has C99 compatible vsnprintf])
 fi
 
-dnl AC_CHECK_FUNC(snprintf,AC_DEFINE(HAVE_SNPRINTF),SNPRINTF_O=./snprintf.o)
+dnl AC_CHECK_FUNC(snprintf,AC_DEFINE(HAVE_SNPRINTF),SNPRINTF_O=snprintf.o)
 
 dnl Check for getopt_long (Solaris)
 AC_CHECK_FUNCS([getopt_long],,AC_CHECK_LIB([iberty],[getopt_long],OTHERLIBS="$OTHERLIBS -liberty"))
@@ -253,7 +254,7 @@ if test x$check_for_tcpd != xno; then
 		LIBWRAPLIBS="$LIBWRAPLIBS -lwrap"
 		AC_DEFINE(HAVE_LIBWRAP,[1],[Have the TCP wrappers library])
 		AC_TRY_LINK([#include <tcpd.h>
-			],[int a = rfc931_timeout;],AC_DEFINE(HAVE_RFC931_TIMEOUT))
+			],[int a = rfc931_timeout;],AC_DEFINE(HAVE_RFC931_TIMEOUT, [1], [Set to 1 if you have rfc931_timeout]))
 	],[
 		if test x$check_for_tcpd = xyes; then
 			AC_MSG_ERROR(--enable-tcpd specified but unable to locate libwrap.)

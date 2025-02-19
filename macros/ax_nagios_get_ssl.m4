@@ -242,6 +242,8 @@ if test x$SSL_TYPE != xNONE; then
 
 			# Now try and find SSL libraries
 
+			AX_CHECK_LINK_FLAG([-Wl,-rpath,/], [RPATH=yes], [RPATH=no])
+
 			AC_MSG_CHECKING(for SSL libraries)
 			found_ssl=no
 			ssl_lib_dirs=`echo "$ssl_lib_dirs" | sed -e "s|{ssldir}|$ssldir|g"`
@@ -278,9 +280,36 @@ if test x$SSL_TYPE != xNONE; then
 			else
 				AC_MSG_RESULT(found in $SSL_LIB_DIR)
 
-				LDFLAGS="$LDFLAGS -L$SSL_LIB_DIR -Wl,-rpath,$SSL_LIB_DIR";
+				LDFLAGS="$LDFLAGS -L$SSL_LIB_DIR";
 				LIBS="$LIBS -l`echo $ssl_lib | sed -e 's/^lib//'` -lcrypto";
-				AC_DEFINE_UNQUOTED(HAVE_SSL,[1],[Have SSL support])
+
+				if test x$RPATH == xyes ; then
+					# Do we need to add rpath?
+					if test -n "$SSL_INC_PREFIX" ; then
+						tmp_prefix="${SSL_INC_PREFIX}/"
+					fi
+
+					AC_MSG_CHECKING([checking if rpath is required...])
+					AC_RUN_IFELSE(
+						[AC_LANG_PROGRAM([[
+							#include <${tmp_prefix}opensslv.h>
+							#include <${tmp_prefix}crypto.h>
+						]],[[
+							#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+								return OpenSSL_version_num() == OPENSSL_VERSION_NUMBER ? EXIT_SUCCESS : EXIT_FAILURE;
+							#else
+								return SSLeay() == OPENSSL_VERSION_NUMBER ? EXIT_SUCCESS : EXIT_FAILURE;
+							#endif
+						]])],
+						[AC_MSG_RESULT([no])],
+						[AC_MSG_RESULT([yes])
+						 LDFLAGS="$LDFLAGS -Wl,-rpath,$SSL_LIB_DIR"],
+						[AC_MSG_RESULT([no])]
+					)
+
+					tmp_prefix=""
+				fi
+				AC_DEFINE([HAVE_SSL], [1], [Have SSL support])
 			fi
 		fi
 	fi
@@ -333,7 +362,7 @@ if test x$SSL_TYPE != xNONE; then
 		fi
 
 		if test x$auto_dh = xyes; then
-			AC_DEFINE(AUTO_SSL_DH)
+			AC_DEFINE([AUTO_SSL_DH], [1], [Define to 1 to auto configure SSL DH parameters])
 		fi
 
 
@@ -353,7 +382,7 @@ if test x$SSL_TYPE != xNONE; then
 
 				AC_SUBST(SSL_DH_HEADER,../include/dh.h)
 			fi
-			AC_DEFINE(USE_SSL_DH)
+			AC_DEFINE([USE_SSL_DH], [1], [Define to 1 to use SSL DH])
 		fi
 	fi
 fi

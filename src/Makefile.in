@@ -55,6 +55,9 @@ check_nrpe: $(srcdir)/check_nrpe.c utils.o $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)
 utils.o: $(srcdir)/utils.c $(SRC_INCLUDE)/utils.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
 	$(CC) $(CFLAGS) -c -o $@ $(srcdir)/utils.c
 
+snprintf.o: $(srcdir)/snprintf.c
+	$(CC) $(CFLAGS) -c -o $@ $(srcdir)/snprintf.c
+
 nrpe-ssl.o: $(srcdir)/nrpe-ssl.c $(SRC_INCLUDE)/nrpe-ssl.h $(CFG_INCLUDE)/common.h $(CFG_INCLUDE)/config.h
 	$(CC) $(CFLAGS) -c -o $@ $(srcdir)/nrpe-ssl.c
 
