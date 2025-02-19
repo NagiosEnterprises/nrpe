@@ -1821,7 +1821,7 @@ void init_handle_conn(void)
 #ifdef HAVE_SSL
 int handle_conn_ssl(int sock, void *ssl_ptr)
 {
-# if (defined(__sun) && defined(SOLARIS_10)) || defined(_AIX) || defined(__hpux)
+# if (defined(__sun) && defined(SOLARIS_10)) || defined(__hpux)
 	SSL_CIPHER *c;
 #else
 	const SSL_CIPHER *c;
