@@ -44,7 +44,6 @@
 #   exception to the GPL to apply to your modified version as well.
 # ===========================================================================
 
-AU_ALIAS([AC_NAGIOS_GET_DISTRIB_TYPE], [AX_NAGIOS_GET_DISTRIB_TYPE])
 AC_DEFUN([AX_NAGIOS_GET_DISTRIB_TYPE],
 [
 
@@ -55,8 +54,7 @@ AC_SUBST(dist_ver)
 # Get user hints for possible cross-compile
 #
 	AC_MSG_CHECKING(what the distribution type is )
-	AC_ARG_WITH(dist-type, AC_HELP_STRING([--with-dist-type=type],
-	[specify distribution type (suse, rh, debian, etc.)]),
+	AC_ARG_WITH(dist-type, AS_HELP_STRING([--with-dist-type=type],[specify distribution type (suse, rh, debian, etc.)]),
 		[
 			#
 			# Run this if --with was specified

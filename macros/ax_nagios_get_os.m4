@@ -38,7 +38,6 @@
 #   exception to the GPL to apply to your modified version as well.
 # ===========================================================================
 
-AU_ALIAS([AC_NAGIOS_GET_OS], [AX_NAGIOS_GET_OS])
 AC_DEFUN([AX_NAGIOS_GET_OS],
 [
 
@@ -49,8 +48,7 @@ AC_SUBST(arch)
 # Get user hints
 #
 	AC_MSG_CHECKING(what the operating system is )
-	AC_ARG_WITH(opsys, AC_HELP_STRING([--with-opsys=OS],
-	[specify operating system (linux, osx, bsd, solaris, irix, cygwin,
+	AC_ARG_WITH(opsys, AS_HELP_STRING([--with-opsys=OS],[specify operating system (linux, osx, bsd, solaris, irix, cygwin,
 	 aix, hp-ux, etc.)]),
 		[
 			#

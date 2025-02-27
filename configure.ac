@@ -8,7 +8,7 @@ m4_include([build-aux/custom_help.m4])
 AC_INIT([nrpe],[newdate],[nagios-users@lists.sourceforge.net],[nrpe],[https://www.nagios.org/downloads/nagios-core-addons/])
 AC_CONFIG_SRCDIR([src/nrpe.c])
 AC_CONFIG_AUX_DIR([build-aux])
-AC_CONFIG_MACRO_DIR([macros])
+AC_CONFIG_MACRO_DIRS([macros])
 AC_PREFIX_DEFAULT(/usr/local/nagios)
 
 PKG_NAME=nrpe
@@ -54,12 +54,12 @@ dnl Figure out how to invoke "install" and what install options to use.
 AC_PROG_INSTALL
 
 dnl Get O/S, Distribution, init, inetd, system-specific directories
-AC_NAGIOS_GET_OS
-AC_NAGIOS_GET_DISTRIB_TYPE
-AC_NAGIOS_GET_INIT
-AC_NAGIOS_GET_INETD
-AC_NAGIOS_GET_PATHS
-AC_NAGIOS_GET_FILES
+AX_NAGIOS_GET_OS
+AX_NAGIOS_GET_DISTRIB_TYPE
+AX_NAGIOS_GET_INIT
+AX_NAGIOS_GET_INETD
+AX_NAGIOS_GET_PATHS
+AX_NAGIOS_GET_FILES
 
 if test "$dist_type" = solaris -a "$dist_ver" = 10; then
 	AC_DEFINE(SOLARIS_10,[1],[Set to 1 if we are on Solaris 10])
@@ -68,7 +68,7 @@ fi
 dnl Do they just want to see where things will go?
 if test x${showdirs_only} = xyes; then
 	AC_CONFIG_FILES([paths])
-	AC_OUTPUT()
+	AC_OUTPUT
 	chmod 755 paths
 	./paths
 	exit 0
@@ -107,8 +107,6 @@ AC_PROG_CC
 AC_PROG_MAKE_SET
 
 dnl Checks for header files.
-AC_HEADER_STDC
-AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(ctype.h dirent.h errno.h fcntl.h getopt.h grp.h inttypes.h)
 AC_CHECK_HEADERS(netdb.h pwd.h signal.h stdint.h strings.h string.h syslog.h)
@@ -122,7 +120,7 @@ AC_STRUCT_TM
 AC_TYPE_MODE_T
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
-AC_TYPE_SIGNAL
+
 AC_TYPE_GETGROUPS
 
 dnl Check lengths for later tests of u_int32_t and int32_t
@@ -178,18 +176,14 @@ AC_CHECK_FUNC(seteuid,
 
 dnl Check for asprintf() and friends...
 AC_CACHE_CHECK([for va_copy],ac_cv_HAVE_VA_COPY,[
-AC_TRY_LINK([#include <stdarg.h>
-va_list ap1,ap2;], [va_copy(ap1,ap2);],
-ac_cv_HAVE_VA_COPY=yes,
-ac_cv_HAVE_VA_COPY=no)])
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <stdarg.h>
+va_list ap1,ap2;]], [[va_copy(ap1,ap2);]])],[ac_cv_HAVE_VA_COPY=yes],[ac_cv_HAVE_VA_COPY=no])])
 if test x"$ac_cv_HAVE_VA_COPY" = x"yes"; then
 	AC_DEFINE(HAVE_VA_COPY,1,[Whether va_copy() is available])
 else
 	AC_CACHE_CHECK([for __va_copy],ac_cv_HAVE___VA_COPY,[
-	AC_TRY_LINK([#include <stdarg.h>
-	va_list ap1,ap2;], [__va_copy(ap1,ap2);],
-	ac_cv_HAVE___VA_COPY=yes,
-	ac_cv_HAVE___VA_COPY=no)])
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <stdarg.h>
+	va_list ap1,ap2;]], [[__va_copy(ap1,ap2);]])],[ac_cv_HAVE___VA_COPY=yes],[ac_cv_HAVE___VA_COPY=no])])
 	if test x"$ac_cv_HAVE___VA_COPY" = x"yes"; then
 		AC_DEFINE(HAVE___VA_COPY,1,[Whether __va_copy() is available])
 	fi
@@ -201,7 +195,7 @@ AC_CHECK_FUNC(asprintf,,SNPRINTF_O=snprintf.o)
 AC_CHECK_FUNC(vasprintf,,SNPRINTF_O=snprintf.o)
 
 AC_CACHE_CHECK([for C99 vsnprintf],ac_cv_HAVE_C99_VSNPRINTF,[
-AC_TRY_RUN([
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <sys/types.h>
 #include <stdarg.h>
 void foo(const char *format, ...) {
@@ -224,8 +218,7 @@ void foo(const char *format, ...) {
 	exit(0);
 }
 main() { foo("hello"); }
-],
-ac_cv_HAVE_C99_VSNPRINTF=yes,ac_cv_HAVE_C99_VSNPRINTF=no,ac_cv_HAVE_C99_VSNPRINTF=cross)])
+]])],[ac_cv_HAVE_C99_VSNPRINTF=yes],[ac_cv_HAVE_C99_VSNPRINTF=no],[ac_cv_HAVE_C99_VSNPRINTF=cross])])
 if test x"$ac_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
 	AC_DEFINE(HAVE_C99_VSNPRINTF,1,[Define if system has C99 compatible vsnprintf])
 fi
@@ -253,8 +246,8 @@ if test x$check_for_tcpd != xno; then
 	AC_CHECK_LIB(wrap,main,[
 		LIBWRAPLIBS="$LIBWRAPLIBS -lwrap"
 		AC_DEFINE(HAVE_LIBWRAP,[1],[Have the TCP wrappers library])
-		AC_TRY_LINK([#include <tcpd.h>
-			],[int a = rfc931_timeout;],AC_DEFINE(HAVE_RFC931_TIMEOUT, [1], [Set to 1 if you have rfc931_timeout]))
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <tcpd.h>
+			]], [[int a = rfc931_timeout;]])],[AC_DEFINE(HAVE_RFC931_TIMEOUT, 1, Set to 1 if you have rfc931_timeout)],[])
 	],[
 		if test x$check_for_tcpd = xyes; then
 			AC_MSG_ERROR(--enable-tcpd specified but unable to locate libwrap.)
@@ -274,7 +267,7 @@ AC_CHECK_TYPE([socklen_t], ,[
 		curl_cv_socklen_t_equiv=
 		for arg2 in "struct sockaddr" void; do
 			for t in int size_t unsigned long "unsigned long"; do
-				AC_TRY_COMPILE([
+				AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 					#ifdef HAVE_SYS_TYPES_H
 					#include <sys/types.h>
 					#endif
@@ -283,13 +276,13 @@ AC_CHECK_TYPE([socklen_t], ,[
 					#endif
 
 					int getpeername (int, $arg2 *, $t *);
-				],[
+				]], [[
 					$t len;
 					getpeername(0,0,&len);
-				],[
+				]])],[
 					curl_cv_socklen_t_equiv="$t"
 					break
-				])
+				],[])
 			done
 		done
 
@@ -305,13 +298,10 @@ AC_CHECK_TYPE([socklen_t], ,[
 
 
 AC_MSG_CHECKING(for type of socket size)
-AC_TRY_COMPILE([#include <stdlib.h>
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-],
-[int a = send(1, (const void *)0, (size_t *) 0, (int *) 0);],
-[AC_DEFINE(SOCKET_SIZE_TYPE, size_t, [Socket Size Type]) AC_MSG_RESULT(size_t)],
-[AC_DEFINE(SOCKET_SIZE_TYPE, int, [Socket Size Type]) AC_MSG_RESULT(int)])
+]], [[int a = send(1, (const void *)0, (size_t *) 0, (int *) 0);]])],[AC_DEFINE(SOCKET_SIZE_TYPE, size_t, [Socket Size Type]) AC_MSG_RESULT(size_t)],[AC_DEFINE(SOCKET_SIZE_TYPE, int, [Socket Size Type]) AC_MSG_RESULT(int)])
 
 dnl Does user want to check for SSL?
 AC_ARG_ENABLE([ssl],
@@ -333,7 +323,7 @@ dnl Optional SSL library and include paths
 if test x$check_for_ssl = xyes; then
 	# need_dh should only be set for NRPE
 	#need_dh=yes
-	AC_NAGIOS_GET_SSL
+	AX_NAGIOS_GET_SSL
 fi
 
 AC_ARG_WITH([log_facility],
@@ -390,7 +380,7 @@ AC_ARG_ENABLE([bash-command-substitution],
 
 
 AC_PATH_PROG(PERL,perl)
-AC_OUTPUT()
+AC_OUTPUT
 
 dnl Review options
 echo ""

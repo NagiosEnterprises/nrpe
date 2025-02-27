@@ -40,7 +40,6 @@
 #   exception to the GPL to apply to your modified version as well.
 # ===========================================================================
 
-AU_ALIAS([AC_NAGIOS_GET_SSL], [AX_NAGIOS_GET_SSL])
 AC_DEFUN([AX_NAGIOS_GET_SSL],
 [
 
@@ -76,14 +75,6 @@ generate_dh_params: \$(srcdir)/generate_dh_params.c
 	\$(CC) \$(CFLAGS) -o \@S|@@ \$(srcdir)/generate_dh_params.c \$(LDFLAGS)"
 
 
-# gnutls/openssl.h
-# nss_compat_ossl/nss_compat_ossl.h
-
-dnl # Which type - openssl, gnutls-openssl, nss
-dnl AC_ARG_WITH([ssl-type],
-dnl dnl	AS_HELP_STRING([--with-ssl-type=TYPE],[replace TYPE with gnutls or nss to use one of these instead of openssl]),
-dnl 	AS_HELP_STRING([--with-ssl-type=TYPE],[replace TYPE with gnutls to use that instead of openssl]),
-dnl 	[SSL_TYPE=$withval])
 
 AC_ARG_WITH([ssl],
 	AS_HELP_STRING([--with-ssl=DIR],[sets location of the SSL installation]),
@@ -138,32 +129,20 @@ AS_CASE([$SSL_TYPE],
 		 SSL_INC_PREFIX=openssl
 		 SSL_HDR=ssl.h
 		 ssl_lib=libssl],
-	[gnutls],
-		[ssl_hdr_dirs=`echo "$dflt_hdrs" | sed -e 's/{AAA}/gnutls/g' | sed -e 's/{BBB}/gnutls/g'`
-		 ssl_lib_dirs=`echo "$dflt_libs" | sed -e 's/{AAA}/gnutls/g' | sed -e 's/{BBB}/gnutls/g'`
-		 SSL_INC_PREFIX=gnutls
-		 SSL_TYPE=gnutls_compat
-		 SSL_HDR=compat.h
-		 ssl_lib=libgnutls],
-	[nss],
-		[ssl_hdr_dirs=`echo "$dflt_hdrs" | sed -e 's/{AAA}/nss_compat_ossl/g' | sed -e 's/{BBB}/nss_compat_ossl/g'`
-		 ssl_lib_dirs=`echo "$dflt_libs" | sed -e 's/{AAA}/nss_compat_ossl/g' | sed -e 's/{BBB}/nss_compat_ossl/g'`
-		 SSL_HDR=nss_compat_ossl.h
-		 ssl_lib=libnss_compat],
 	[*], echo >&6; AC_MSG_ERROR(['--with-ssl-type=$SSL_TYPE' is invalid])
 )
 
 
-# Check for SSL support
+dnl Check for SSL support
 
 if test x$SSL_TYPE != xNONE; then
 
 	found_ssl=no
 
-	# RedHat 8.0 and 9.0 include openssl compiled with kerberos,
-	# so we must include header file
-	# Must come before openssl checks for Redhat EL 3
-	AC_MSG_CHECKING(for Kerberos include files)
+	dnl RedHat 8.0 and 9.0 include openssl compiled with kerberos,
+	dnl so we must include header file
+	dnl Must come before openssl checks for Redhat EL 3
+	AC_MSG_CHECKING([for Kerberos include files])
 	found_kerberos=no
 	for dir in $kerberos_inc_dir /usr/kerberos/include /usr/include/krb5 \
 				/usr/include; do
@@ -171,18 +150,18 @@ if test x$SSL_TYPE != xNONE; then
 		if test -f "$dir/krb5.h"; then
 			found_kerberos=yes
 			CFLAGS="$CFLAGS -I$kerbdir"
-			AC_DEFINE_UNQUOTED(HAVE_KRB5_H,[1],[Have the krb5.h header file])
+			AC_DEFINE([HAVE_KRB5_H],[1],[Have the krb5.h header file])
 			break
 		fi
 	done
 
 	if test x_$found_kerberos != x_yes; then
-		AC_MSG_WARN(could not find include files)
+		AC_MSG_WARN([could not find include files])
 	else
-		AC_MSG_RESULT(found Kerberos include files in $kerbdir)
+		AC_MSG_RESULT([found Kerberos include files in $kerbdir])
 	fi
 
-	# First, try using pkg_config
+	dnl First, try using pkg_config
 	if test $try_pkg_config -ne 0 ; then
 		AC_CHECK_TOOL([PKG_CONFIG], [pkg-config])
 	fi
@@ -208,8 +187,8 @@ if test x$SSL_TYPE != xNONE; then
 
 	if test x_$found_ssl != x_yes; then
 
-		# Find the SSL Headers
-		AC_MSG_CHECKING(for SSL headers)
+		dnl Find the SSL Headers
+		AC_MSG_CHECKING([for SSL headers])
 		for dir in $ssl_hdr_dirs; do
 			if test "$dir" = "/include"; then
 				continue
@@ -246,15 +225,16 @@ if test x$SSL_TYPE != xNONE; then
 		done
 
 		if test x_$found_ssl != x_yes; then
-			AC_MSG_ERROR(Cannot find ssl headers)
+			AC_MSG_ERROR([Cannot find ssl headers])
 		else
-			AC_MSG_RESULT(found in $sslincdir)
+			AX_NORMALIZE_PATH([sslincdir])
+			AC_MSG_RESULT([found in $sslincdir])
 
-			# Now try and find SSL libraries
+			dnl Now try and find SSL libraries
 
 			AX_CHECK_LINK_FLAG([-Wl,-rpath,/], [RPATH=yes], [RPATH=no])
 
-			AC_MSG_CHECKING(for SSL libraries)
+			AC_MSG_CHECKING([for SSL libraries])
 			found_ssl=no
 			ssl_lib_dirs=`echo "$ssl_lib_dirs" | sed -e "s|{ssldir}|$ssldir|g"`
 
@@ -286,9 +266,10 @@ if test x$SSL_TYPE != xNONE; then
 			done
 
 			if test x_$found_ssl != x_yes; then
-				AC_MSG_ERROR(Cannot find ssl libraries)
+				AC_MSG_ERROR([Cannot find ssl libraries])
 			else
-				AC_MSG_RESULT(found in $SSL_LIB_DIR)
+				AX_NORMALIZE_PATH([SSL_LIB_DIR])
+				AC_MSG_RESULT([found in $SSL_LIB_DIR])
 
 				LDFLAGS="$LDFLAGS -L$SSL_LIB_DIR";
 
@@ -311,7 +292,7 @@ if test x$SSL_TYPE != xNONE; then
 			SSL_INC_PREFIX="${SSL_INC_PREFIX}/"
 		fi
 
-		# try to compile and link to see if SSL is set up properly
+		dnl try to compile and link to see if SSL is set up properly
 		AC_MSG_CHECKING([whether compiling and linking against SSL works])
 
 		AC_LINK_IFELSE(
@@ -353,10 +334,10 @@ if test x$SSL_TYPE != xNONE; then
 				SSL_MAJOR=$(echo $nagios_ssl_version | cut -d' ' -f1)
 				SSL_MINOR=$(echo $nagios_ssl_version | cut -d' ' -f2)
 			],
-			AC_MSG_ERROR(Failed to detect OpenSSL version!))
+			AC_MSG_ERROR([Failed to detect OpenSSL version!]))
 
 		if test x$auto_dh = xyes -a $SSL_MAJOR -lt 1 -o \( $SSL_MAJOR -eq 1 -a $SSL_MINOR -lt 1 \); then
-			# auto_dh not available before v1.1.0
+			dnl auto_dh not available before v1.1.0
 			auto_dh=no
 		fi
 
@@ -370,16 +351,16 @@ if test x$SSL_TYPE != xNONE; then
 		if test x$need_dh = xyes ; then
 			if test x$auto_dh = xno ; then
 				if test $SSL_MAJOR -lt 3 ; then
-					# Find the openssl program
-					# Only need openssl binary if we're not using auto or using version less than 3.0
-					AC_PATH_PROG(sslbin,openssl,value-if-not-found,${ssldir}/sbin${PATH_SEPARATOR}${ssldir}/bin${PATH_SEPARATOR}${PATH})
+					dnl Find the openssl program
+					dnl Only need openssl binary if we are not using auto or using version less than 3.0
+					AC_PATH_PROG([sslbin],[openssl],[value-if-not-found],[${ssldir}/sbin${PATH_SEPARATOR}${ssldir}/bin${PATH_SEPARATOR}${PATH}])
 
-					AC_SUBST(SSL_DH_HEADER_MAKE, ${SSL_DH_HEADER_MAKE_OLD})
+					AC_SUBST([SSL_DH_HEADER_MAKE], [${SSL_DH_HEADER_MAKE_OLD}])
 				else
-					AC_SUBST(SSL_DH_HEADER_MAKE, ${SSL_DH_HEADER_MAKE_NEW})
+					AC_SUBST([SSL_DH_HEADER_MAKE], [${SSL_DH_HEADER_MAKE_NEW}])
 				fi
 
-				AC_SUBST(SSL_DH_HEADER,../include/dh.h)
+				AC_SUBST([SSL_DH_HEADER],[../include/dh.h])
 			fi
 			AC_DEFINE([USE_SSL_DH], [1], [Define to 1 to use SSL DH])
 		fi

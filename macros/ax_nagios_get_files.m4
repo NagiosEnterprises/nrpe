@@ -41,7 +41,6 @@
 #   exception to the GPL to apply to your modified version as well.
 # ===========================================================================
 
-AU_ALIAS([AC_NAGIOS_GET_FILES], [AX_NAGIOS_GET_FILES])
 AC_DEFUN([AX_NAGIOS_GET_FILES],
 [
 

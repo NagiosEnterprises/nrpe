@@ -48,7 +48,6 @@
 #   exception to the GPL to apply to your modified version as well.
 # ===========================================================================
 
-AU_ALIAS([AC_NAGIOS_GET_INETD], [AX_NAGIOS_GET_INETD])
 AC_DEFUN([AX_NAGIOS_GET_INETD],
 [
 
@@ -58,8 +57,7 @@ AC_SUBST(inetd_type)
 # Get user hints for possible cross-compile
 #
 	AC_MSG_CHECKING(what inetd is being used )
-	AC_ARG_WITH(inetd_type, AC_HELP_STRING([--with-inetd-type=type],
-	[which super-server the system runs (inetd, xinetd, systemd, launchd,
+	AC_ARG_WITH(inetd_type, AS_HELP_STRING([--with-inetd-type=type],[which super-server the system runs (inetd, xinetd, systemd, launchd,
 	 smf10, smf11, etc.)]),
 		[
 			inetd_type_wanted=yes
