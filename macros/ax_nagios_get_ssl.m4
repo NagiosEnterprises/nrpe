@@ -193,8 +193,17 @@ if test x$SSL_TYPE != xNONE; then
 			LDFLAGS="$LDFLAGS `$PKG_CONFIG $SSL_TYPE --libs-only-L 2>/dev/null`"
 			LIBS="$LIBS `$PKG_CONFIG $SSL_TYPE --libs-only-l 2>/dev/null`"
 			found_ssl=yes
-			AC_DEFINE_UNQUOTED(HAVE_SSL,[1],[Have SSL support])
 		fi
+	fi
+
+	ax_nagios_run_ssl_save_LIBS=$LIBS
+	if test "x_$found_ssl" != "x_yes"; then
+		LIBS="$LIBS -l`echo $ssl_lib | sed -e 's/^lib//'` -lcrypto";
+	fi
+
+	dnl Next try just compiling with default settings (unless inc/lib were specified)
+	if test "x_$found_ssl" != "x_yes" && test "x$ssl_inc_dir" == "x" && test "x$ssl_lib_dir" == "x"; then
+		_AX_NAGIOS_RUN_SSL([found_ssl=yes])
 	fi
 
 	if test x_$found_ssl != x_yes; then
@@ -282,35 +291,17 @@ if test x$SSL_TYPE != xNONE; then
 				AC_MSG_RESULT(found in $SSL_LIB_DIR)
 
 				LDFLAGS="$LDFLAGS -L$SSL_LIB_DIR";
-				LIBS="$LIBS -l`echo $ssl_lib | sed -e 's/^lib//'` -lcrypto";
 
 				if test x$RPATH == xyes ; then
 					# Do we need to add rpath?
-					if test -n "$SSL_INC_PREFIX" ; then
-						tmp_prefix="${SSL_INC_PREFIX}/"
-					fi
-
 					AC_MSG_CHECKING([checking if rpath is required...])
-					AC_RUN_IFELSE(
-						[AC_LANG_PROGRAM([[
-							#include <${tmp_prefix}opensslv.h>
-							#include <${tmp_prefix}crypto.h>
-						]],[[
-							#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-								return OpenSSL_version_num() == OPENSSL_VERSION_NUMBER ? EXIT_SUCCESS : EXIT_FAILURE;
-							#else
-								return SSLeay() == OPENSSL_VERSION_NUMBER ? EXIT_SUCCESS : EXIT_FAILURE;
-							#endif
-						]])],
+					_AX_NAGIOS_RUN_SSL(
 						[AC_MSG_RESULT([no])],
 						[AC_MSG_RESULT([yes])
 						 LDFLAGS="$LDFLAGS -Wl,-rpath,$SSL_LIB_DIR"],
 						[AC_MSG_RESULT([no])]
 					)
-
-					tmp_prefix=""
 				fi
-				AC_DEFINE([HAVE_SSL], [1], [Have SSL support])
 			fi
 		fi
 	fi
@@ -328,12 +319,19 @@ if test x$SSL_TYPE != xNONE; then
 			[
 				AC_MSG_RESULT([yes])
 				SSL_OBJS="nrpe-ssl.o"
+				AC_DEFINE([HAVE_SSL], [1], [Have SSL support])
 				$1
 			], [
 				AC_MSG_ERROR([no])
 				$2
 			])
 	fi
+
+	dnl Detection finished. Reset LIBS if we did not succeed
+	if test "x_$found_ssl" != "x_yes"; then
+		LIBS=$ax_nagios_run_ssl_save_LIBS
+	fi
+
 
 	if test x$found_ssl = xyes -a x$need_dh = xyes; then
 
@@ -387,4 +385,29 @@ if test x$SSL_TYPE != xNONE; then
 		fi
 	fi
 fi
+])
+
+
+# _AX_NAGIOS_RUN_SSL([action-if-true], [action-if-false], [action-if-cross-compiling])
+AC_DEFUN([_AX_NAGIOS_RUN_SSL], [
+	tmp_prefix=""
+	if test -n "$SSL_INC_PREFIX" ; then
+		tmp_prefix="${SSL_INC_PREFIX}/"
+	fi
+
+	AC_RUN_IFELSE(
+		[AC_LANG_PROGRAM([
+			#include <${tmp_prefix}opensslv.h>
+			#include <${tmp_prefix}crypto.h>
+		],[
+			#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+				return OpenSSL_version_num() == OPENSSL_VERSION_NUMBER ? EXIT_SUCCESS : EXIT_FAILURE;
+			#else
+				return SSLeay() == OPENSSL_VERSION_NUMBER ? EXIT_SUCCESS : EXIT_FAILURE;
+			#endif
+		])],
+		[$1],
+		[$2],
+		[$3]
+	)
 ])
