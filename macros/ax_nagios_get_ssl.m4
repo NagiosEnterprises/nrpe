@@ -116,10 +116,11 @@ fi
 
 
 dflt_hdrs="$ssl_inc_dir $ssl_dir $ssl_inc_dir/include $ssl_dir/include \
+			/usr/include /usr /usr/local /usr/pkg /usr/sfw /usr/sfw/include \
 			/usr/local/opt/{BBB} /usr/include/{BBB} /usr/local/include/{BBB} \
 			/usr/local/{AAA} /usr/local/{BBB} /usr/lib/{AAA} /usr/lib/{BBB} \
-			/usr/{AAA} /usr/pkg /usr/local /usr /usr/freeware/lib/{BBB} \
-			/usr/sfw /usr/sfw/include /opt/{BBB}"
+			/usr/{AAA} /usr/freeware/lib/{BBB} /opt/{BBB}"
+
 
 dflt_libs="$ssl_lib_dir {ssldir} {ssldir}/lib {ssldir}/lib64 /usr/lib64 \
 			/usr/lib /usr/lib/x86_64-linux-gnu /usr/lib/i386-linux-gnu \
