@@ -31,9 +31,11 @@
 #ifdef HAVE_SSL
 #include <@SSL_INC_PREFIX@@SSL_HDR@>
 # ifdef SSL_TYPE_openssl
+#	 if OPENSSL_VERSION_NUMBER < 0x10100000
+#	  include <openssl/engine.h>
+#	 endif
 #  include <@SSL_INC_PREFIX@err.h>
 #  include <@SSL_INC_PREFIX@rand.h>
-#  include <@SSL_INC_PREFIX@engine.h>
 #  include <@SSL_INC_PREFIX@evp.h>
 # endif
 #endif
