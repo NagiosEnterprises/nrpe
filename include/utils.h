@@ -45,9 +45,9 @@ char* strip(char*);
 int sendall(int, char*, int*);
 int recvall(int, char*, int*, int);
 char *my_strsep(char**, const char*);
-void open_log_file();
+void open_log_file(void);
 void logit(int priority, const char *format, ...);
-void close_log_file();
+void close_log_file(void);
 void display_license(void);
 extern int disable_syslog;
 

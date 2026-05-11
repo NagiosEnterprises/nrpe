@@ -34,7 +34,7 @@ void ssl_initialize(void)
 void ssl_set_protocol_version(SslVer ssl_proto_ver, unsigned long *ssl_opts)
 {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
-
+	(void)ssl_opts;
 	SSL_CTX_set_max_proto_version(ctx, 0);
 
 	switch(ssl_proto_ver) {
@@ -223,7 +223,7 @@ int ssl_load_certificates(void)
 
 int ssl_set_ciphers(void)
 {
-    int x;
+    size_t x;
     int changed = FALSE;
 	char errstr[256] = { "" };
 
