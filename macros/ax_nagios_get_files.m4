@@ -1,11 +1,14 @@
 # ===========================================================================
 # SYNOPSIS
 #
-#   AX_NAGIOS_GET_OS
+#   AX_NAGIOS_GET_FILES
 #
 # DESCRIPTION
 #
-#    This macro determines the operating system of the computer it is run on.
+#    This macro figures out which init and/or inetd files to use based
+#    on the results of the AX_NAGIOS_GET_OS, AX_NAGIOS_GET_DISTRIB_TYPE,
+#    AX_NAGIOS_GET_INIT and AX_NAGIOS_GET_INETD macros. It will select
+#    the appropriate files(s) from the 'startup' directory and copy it.
 #
 # LICENSE
 #
@@ -38,64 +41,90 @@
 #   exception to the GPL to apply to your modified version as well.
 # ===========================================================================
 
-AU_ALIAS([AC_NAGIOS_GET_OS], [AX_NAGIOS_GET_OS])
-AC_DEFUN([AX_NAGIOS_GET_OS],
+AC_DEFUN([AX_NAGIOS_GET_FILES],
 [
 
-AC_SUBST(opsys)
-AC_SUBST(arch)
+AC_SUBST(src_init)
+AC_SUBST(src_inetd)
+AC_SUBST(src_tmpfile)
+AC_SUBST(bsd_enable)
 
-#
-# Get user hints
-#
-	AC_MSG_CHECKING(what the operating system is )
-	AC_ARG_WITH(opsys, AC_HELP_STRING([--with-opsys=OS],
-	[specify operating system (linux, osx, bsd, solaris, irix, cygwin,
-	 aix, hp-ux, etc.)]),
-		[
-			#
-			# Run this if --with was specified
-			#
-			if test "x$withval" = x -o x$withval = xno; then
-				opsys_wanted=yes
-			else
-				opsys_wanted=no
-				opsys="$withval"
-				AC_MSG_RESULT($opsys)
-			fi
-		], [
-			#
-			# Run this if --with was not specified
-			#
-			opsys_wanted=yes
-		])
+src_inetd=""
+src_init=""
+bsd_enable=""
 
-		if test x$opsys = xno; then
-			opsys=""
-			opsys_wanted=yes
-		elif test x$opsys = xyes; then
-			AC_MSG_ERROR([you must enter an O/S type if '--with-opsys' is specified])
-		fi
+AC_MSG_CHECKING(for which init file to use )
 
-		#
-		# Determine operating system if it wasn't supplied
-		#
-		if test $opsys_wanted=yes; then
-			opsys=`uname -s | tr ["[A-Z]" "[a-z]"]`
-			if test x"$opsys" = "x"; then opsys="unknown"; fi
-			AS_CASE([$opsys],
-				[darwin*],		opsys="osx",
-				[*bsd*],		opsys="bsd",
-				[dragonfly],	opsys="bsd",
-				[sunos],		opsys="solaris",
-				[gnu/hurd],		opsys="linux",
-				[irix*],		opsys="irix",
-				[cygwin*],		opsys="cygwin",
-				[mingw*],		opsys="mingw",
-				[msys*],		opsys="msys")
-		fi
+AS_CASE([$init_type],
 
-		arch=`uname -m | tr ["[A-Z]" "[a-z]"]`
+	[sysv],
+		src_init=default-init,
 
-		AC_MSG_RESULT($opsys)
+	[systemd],
+		src_tmpfile=tmpfile.conf
+		src_init=default-service,
+
+	[bsd],
+		src_init=bsd-init,
+
+	[newbsd],
+		if test $dist_type = freebsd ; then
+			bsd_enable="_enable"
+			src_init=newbsd-init
+		elif test $dist_type = openbsd ; then
+			bsd_enable="_flags"
+			src_init=openbsd-init
+		elif test $dist_type = netbsd ; then
+			bsd_enable=""
+			src_init=newbsd-init
+		fi,
+
+#	[gentoo],
+
+	[openrc],
+		src_init=openrc-init,
+
+	[smf*],
+		src_init="solaris-init.xml"
+		src_inetd="solaris-inetd.xml",
+
+	[upstart],
+		if test $dist_type = rh ; then
+			src_init=rh-upstart-init
+		else
+			src_init=upstart-init
+		fi,
+
+	[launchd],
+		src_init="mac-init.plist",
+
+	[*],
+		src_init="unknown"
+)
+AC_MSG_RESULT($src_init)
+
+AC_MSG_CHECKING(for which inetd files to use )
+
+if test x$src_inetd = x; then
+
+	AS_CASE([$inetd_type],
+		[inetd*],
+			src_inetd=default-inetd,
+
+		[xinetd],
+			src_inetd=default-xinetd,
+
+		[systemd],
+			src_inetd=default-socket,
+
+		[launchd],
+			src_inetd="mac-inetd.plist",
+
+		[*],
+			src_inetd="unknown"
+	)
+
+fi
+AC_MSG_RESULT($src_inetd)
+
 ])

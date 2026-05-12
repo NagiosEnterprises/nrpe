@@ -50,7 +50,6 @@
 #   exception to the GPL to apply to your modified version as well.
 # ===========================================================================
 
-AU_ALIAS([AC_NAGIOS_GET_INIT], [AX_NAGIOS_GET_INIT])
 AC_DEFUN([AX_NAGIOS_GET_INIT],
 [
 
@@ -60,8 +59,7 @@ AC_SUBST(init_type)
 # Get user hints for possible cross-compile
 #
 	AC_MSG_CHECKING(what init system is being used )
-	AC_ARG_WITH(init_type,AC_HELP_STRING([--with-init-type=type],
-	 [specify init type (bsd, sysv, systemd, launchd, smf10, smf11, upstart,
+	AC_ARG_WITH(init_type,AS_HELP_STRING([--with-init-type=type],[specify init type (bsd, sysv, systemd, launchd, smf10, smf11, upstart,
 		openrc, etc.)]),
 		[
 			#

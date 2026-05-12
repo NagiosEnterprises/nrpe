@@ -6,7 +6,7 @@
 #include "utils.h"
 
 #ifdef HAVE_SSL
-# if (defined(__sun) && defined(SOLARIS_10)) || defined(_AIX) || defined(__hpux)
+# if (defined(__sun) && defined(SOLARIS_10)) || defined(__hpux)
 SSL_METHOD *meth;
 # else
 const SSL_METHOD *meth;

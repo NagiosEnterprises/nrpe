@@ -18,7 +18,7 @@ Contents
 
 The collection consists of the following macros:
 
-### AX_NAGIOS_GET_OS alias AC_NAGIOS_GET_OS
+### AX_NAGIOS_GET_OS
 
 > Output Variable : `opsys`
 
@@ -26,7 +26,7 @@ This macro detects the operating system, and transforms it into a generic
 label. The most common OS's that use Nagios software are recognized and
 used in subsequent macros.
 
-### AX_NAGIOS_GET_DISTRIB_TYPE alias AC_NAGIOS_GET_DISTRIB_TYPE
+### AX_NAGIOS_GET_DISTRIB_TYPE
 
 > Output Variables : `dist_type`, `dist_ver`
 
@@ -36,7 +36,7 @@ This macro detects the distribution type. For Linux, this would be rh
 For BSD, this would be openbsd, netbsd, freebsd, dragonfly, etc. It can
 also be aix, solaris, osx, and so on for Unix operating systems.
 
-### AX_NAGIOS_GET_INIT alias AC_NAGIOS_GET_INIT
+### AX_NAGIOS_GET_INIT
 
 > Output Variable : `init_type`
 
@@ -46,7 +46,7 @@ will generally be one of sysv (many), bsd (Slackware), newbsd (*BSD),
 launchd (OS X), smf10 or smf11 (Solaris), systemd (newer Linux),
 gentoo (older Gentoo), upstart (several), or unknown.
 
-### AX_NAGIOS_GET_INETD alias AC_NAGIOS_GET_INETD
+### AX_NAGIOS_GET_INETD
 
 > Output Variable : `inetd_type`
 
@@ -55,7 +55,7 @@ on demand, which historically has been "inetd". The inetd_type
 will generally be one of inetd, xinetd, launchd (OS X), smf10 or smf11
 (Solaris), systemd (newer Linux), upstart (several), or unknown.
 
-### AX_NAGIOS_GET_PATHS alias AC_NAGIOS_GET_PATHS
+### AX_NAGIOS_GET_PATHS
 
 > Output Variables : **many!**
 
@@ -67,7 +67,7 @@ located in /etc. For distributions or software repositories, the
 O/S dependant directories, such as /usr/bin, /usr/sbin, /var/lib/nagios,
 /usr/lib/nagios, etc. or for OS X, /Library/LaunchDaemons.
 
-### AX_NAGIOS_GET_FILES alias AC_NAGIOS_GET_FILES
+### AX_NAGIOS_GET_FILES
 
 > Output Variables : `src_init`, `src_inetd`, `src_tmpfile`
 
@@ -76,7 +76,7 @@ In that directory will be "*.in" files for the various "init_type" and
 "inetd_type" systems. This macro will determine which file(s) from
 that directory will be needed.
 
-### AX_NAGIOS_GET_SSL alias AC_NAGIOS_GET_SSL
+### AX_NAGIOS_GET_SSL
 
 > Output Variables : `HAVE_KRB5_H`, `HAVE_SSL`, `SSL_INC_DIR`, `SSL_LIB_DIR`, `CFLAGS`, `LDFLAGS`, `LIBS`
 
@@ -138,28 +138,28 @@ reference it.
 
 * Create (or add these lines to) file `YourProject/aclocal.m4`
 
-           m4_include([macros/ax_nagios_get_os])
-           m4_include([macros/ax_nagios_get_distrib])
-           m4_include([macros/ax_nagios_get_init])
-           m4_include([macros/ax_nagios_get_inetd])
-           m4_include([macros/ax_nagios_get_paths])
-           m4_include([macros/ax_nagios_get_files])
-           m4_include([macros/ax_nagios_get_ssl])
+           m4_include([macros/ax_nagios_get_os.m4])
+           m4_include([macros/ax_nagios_get_distrib.m4])
+           m4_include([macros/ax_nagios_get_init.m4])
+           m4_include([macros/ax_nagios_get_inetd.m4])
+           m4_include([macros/ax_nagios_get_paths.m4])
+           m4_include([macros/ax_nagios_get_files.m4])
+           m4_include([macros/ax_nagios_get_ssl.m4])
 
 * In your `YourProject/configure.ac` add the following lines. A good place
 to put them would be right after any `AC_PROG_*` entries:
 
-           AC_NAGIOS_GET_OS
-           AC_NAGIOS_GET_DISTRIB_TYPE
-           AC_NAGIOS_GET_INIT
-           AC_NAGIOS_GET_INETD
-           AC_NAGIOS_GET_PATHS
-           AC_NAGIOS_GET_FILES
+           AX_NAGIOS_GET_OS
+           AX_NAGIOS_GET_DISTRIB_TYPE
+           AX_NAGIOS_GET_INIT
+           AX_NAGIOS_GET_INETD
+           AX_NAGIOS_GET_PATHS
+           AX_NAGIOS_GET_FILES
 
 * If you need SSL functionality, add the following to `YourProject/configure.ac`
 where you want to check for SSL:
 
-           AC_NAGIOS_GET_SSL
+           AX_NAGIOS_GET_SSL
 
 * You will now be able to reference any of the variables in `config.h.in`
 and any files listed in the `AC_CONFIG_FILES` macro in `configure.ac`.

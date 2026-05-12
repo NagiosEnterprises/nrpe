@@ -27,7 +27,7 @@ typedef struct _SSL_PARMS {
 
 
 #ifdef HAVE_SSL
-# if (defined(__sun) && defined(SOLARIS_10)) || defined(_AIX) || defined(__hpux)
+# if (defined(__sun) && defined(SOLARIS_10)) || defined(__hpux)
 extern SSL_METHOD *meth;
 # else
 extern const SSL_METHOD *meth;

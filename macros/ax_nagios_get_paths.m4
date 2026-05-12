@@ -43,7 +43,6 @@
 #   exception to the GPL to apply to your modified version as well.
 # ===========================================================================
 
-AU_ALIAS([AC_NAGIOS_GET_PATHS], [AX_NAGIOS_GET_PATHS])
 AC_DEFUN([AX_NAGIOS_GET_PATHS],
 [
 
@@ -87,8 +86,7 @@ fi
 AC_MSG_CHECKING(for which paths to use )
 
 AC_ARG_ENABLE(install_method,
-	AC_HELP_STRING([--enable-install-method=<method>],
-	[sets the install method to use: 'default' (the default) will install to
+	AS_HELP_STRING([--enable-install-method=<method>],[sets the install method to use: 'default' (the default) will install to
 	/usr/local/nagios, 'os' will try to determine which method to use based
 	on OS type and distribution. Fine tuning using the '--bindir', etc.
 	overrides above will still work]),
@@ -97,8 +95,7 @@ AC_ARG_ENABLE(install_method,
 )
 
 AC_ARG_ENABLE(showdirs_only,
-	AC_HELP_STRING([--enable-showdirs-only=yes],
-	[This option will cause 'configure' to stop after determining the install
+	AS_HELP_STRING([--enable-showdirs-only=yes],[This option will cause 'configure' to stop after determining the install
 	 locations based on '--enable-install-method', so you can see the
 	 destinations before a full './configure', 'make', 'make install'
 	 process.]),
@@ -162,53 +159,43 @@ AS_CASE([$PKG_NAME],
 		need_plg=yes
 )
 
-AC_ARG_WITH(pkgsysconfdir, AC_HELP_STRING([--with-pkgsysconfdir=DIR],
-	[where configuration files should be placed]),
+AC_ARG_WITH(pkgsysconfdir, AS_HELP_STRING([--with-pkgsysconfdir=DIR],[where configuration files should be placed]),
 	if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
 		pkgsysconfdir="$withval"
 	fi)
-AC_ARG_WITH(objsysconfdir, AC_HELP_STRING([--with-objsysconfdir=DIR],
-	[where object configuration files should be placed]),
+AC_ARG_WITH(objsysconfdir, AS_HELP_STRING([--with-objsysconfdir=DIR],[where object configuration files should be placed]),
 	if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
 		objsysconfdir="$withval"
 	fi)
-AC_ARG_WITH(privatesysconfdir, AC_HELP_STRING([--with-privatesysconfdir=DIR],
-	[where private configuration files should be placed]),
+AC_ARG_WITH(privatesysconfdir, AS_HELP_STRING([--with-privatesysconfdir=DIR],[where private configuration files should be placed]),
 	if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
 		privatesysconfdir="$withval"
 	fi)
-AC_ARG_WITH(webdir, AC_HELP_STRING([--with-webdir=DIR],
-	[where the website files should be placed]),
+AC_ARG_WITH(webdir, AS_HELP_STRING([--with-webdir=DIR],[where the website files should be placed]),
 	if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
 		webdir="$withval"
 	fi)
-AC_ARG_WITH(pluginsdir, AC_HELP_STRING([--with-pluginsdir=DIR],
-	[where the plugins should be placed]),
+AC_ARG_WITH(pluginsdir, AS_HELP_STRING([--with-pluginsdir=DIR],[where the plugins should be placed]),
 	if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
 		pluginsdir="$withval"
 	fi)
-AC_ARG_WITH(brokersdir, AC_HELP_STRING([--with-brokersdir=DIR],
-	[where the broker modules should be placed]),
+AC_ARG_WITH(brokersdir, AS_HELP_STRING([--with-brokersdir=DIR],[where the broker modules should be placed]),
 	if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
 		brokersdir="$withval"
 	fi)
-AC_ARG_WITH(cgibindir, AC_HELP_STRING([--with-cgibindir=DIR],
-	[where the CGI programs should be placed]),
+AC_ARG_WITH(cgibindir, AS_HELP_STRING([--with-cgibindir=DIR],[where the CGI programs should be placed]),
 	if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
 		cgibindir="$withval"
 	fi)
-AC_ARG_WITH(logdir, AC_HELP_STRING([--with-logdir=DIR],
-	[where log files should be placed]),
+AC_ARG_WITH(logdir, AS_HELP_STRING([--with-logdir=DIR],[where log files should be placed]),
 	if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
 		logdir="$withval"
 	fi)
-AC_ARG_WITH(piddir, AC_HELP_STRING([--with-piddir=DIR],
-	[where the PID file should be placed]),
+AC_ARG_WITH(piddir, AS_HELP_STRING([--with-piddir=DIR],[where the PID file should be placed]),
 	if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
 		piddir="$withval"
 	fi)
-AC_ARG_WITH(pipedir, AC_HELP_STRING([--with-pipedir=DIR],
-	[where socket and pipe files should be placed]),
+AC_ARG_WITH(pipedir, AS_HELP_STRING([--with-pipedir=DIR],[where socket and pipe files should be placed]),
 	if test x$withval != x -a x$withval != xno -a x$withval != xyes; then
 		pipedir="$withval"
 	fi)
