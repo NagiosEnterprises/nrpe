@@ -1022,22 +1022,32 @@ int read_config_file(char *filename)
 /* process all config files in a specific config directory (with directory recursion) */
 int read_config_dir(char *dirname)
 {
-	struct dirent *dirfile;
-#ifdef HAVE_SCANDIR
-	struct dirent **dirfiles;
-	int       x, i, n;
+#if defined(HAVE_SCANDIR64) || defined(HAVE_SCANDIR)
+#if defined(HAVE_SCANDIR64)
+	struct dirent64 **dirfiles;
+	struct dirent64 *dirfile;
 #else
-	DIR      *dirp;
-	int       x;
+	struct dirent **dirfiles;
+	struct dirent *dirfile;
+#endif
+	int i, n;
+
+#else // opendir
+	DIR				*dirp;
+	struct dirent	*dirfile;
 #endif
 	struct stat buf;
 	char      config_file[MAX_FILENAME_LENGTH];
 	int       result = OK;
-	int rc;
+	int x, rc;
 
-#ifdef HAVE_SCANDIR
+#if defined(HAVE_SCANDIR64) || defined(HAVE_SCANDIR)
 	/* read and sort the directory contents */
+#if defined(HAVE_SCANDIR64)
+	n = scandir64(dirname, &dirfiles, 0, alphasort64);
+#else
 	n = scandir(dirname, &dirfiles, 0, alphasort);
+#endif
 	if (n < 0) {
 		logit(LOG_ERR, "Could not open config directory '%s' for reading.\n", dirname);
 		return ERROR;
@@ -1091,7 +1101,7 @@ int read_config_dir(char *dirname)
 		}
 	}
 
-#ifdef HAVE_SCANDIR
+#if defined(HAVE_SCANDIR64) || defined(HAVE_SCANDIR)
 	for (i = 0; i < n; i++)
 		free(dirfiles[i]);
 	free(dirfiles);
