@@ -44,7 +44,7 @@ SKIP: {
 
 SKIP: {
     @output = `$checknrpe -H 127.0.0.1 -p 40321 -c state_ok`;
-    is($?, STATE_OK, "state_ok exec") || diag @output && skip 'failed exec', 2;
+    is($?, STATE_OK, "state_ok exec") || diag explain @output && skip 'failed exec', 2;
 
     is(@output, 1, 'state_ok result lines');
     is($output[0], "OK: Everything is normal\n", 'state_ok result');

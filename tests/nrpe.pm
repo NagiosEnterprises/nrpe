@@ -30,8 +30,8 @@ defined($ARGV[0]) or die "Usage: $0 <top build dir>";
 
 my $top_builddir = $ARGV[0]; # shift @ARGV;
 our $nrpe = "$top_builddir/src/nrpe";
-our $checknrpe = "$top_builddir/src/check_nrpe --disable-syslog";
-#our $checknrpe = "valgrind --leak-check=full --log-file=logs/valgrind-check-%p.log $top_builddir/src/check_nrpe --disable-syslog";
+our $checknrpe = "$top_builddir/src/check_nrpe -D";
+#our $checknrpe = "valgrind --leak-check=full --log-file=logs/valgrind-check-%p.log $top_builddir/src/check_nrpe -D";
 my $nrpe_pid = 0;
 
 use constant {
@@ -89,7 +89,7 @@ sub wait_for_daemon {
 }
 
 sub launch_daemon {
-    my @output = `$nrpe --daemon --dont-chdir --config nrpe.cfg`;
+    my @output = `$nrpe -d -C -c nrpe.cfg`;
 #    my @output = `valgrind --leak-check=full --show-leak-kinds=all --log-file=logs/valgrind-%p.log $nrpe --daemon --dont-chdir --config nrpe.cfg`;
     my $pid = 0;
 
@@ -136,7 +136,7 @@ sub kill_daemon {
 }
 
 sub supports_ssl {
-    my @output = `$nrpe --help`;
+    my @output = `$nrpe -h`;
     return grep(m'^SSL/TLS Available', @output);
 }
 

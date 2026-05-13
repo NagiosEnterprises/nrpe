@@ -17,7 +17,7 @@ my @output;
 is($?, STATE_UNKNOWN, 'nrpe executes');
 like($output[0], qr/NRPE - Nagios Remote Plugin Executor/, 'nrpe banner');
 
-@output = `$nrpe --license`;
+@output = `$nrpe -l`;
 is($?, STATE_UNKNOWN, 'license') || diag @output;
 
 @output = `$checknrpe -V`;
@@ -25,21 +25,21 @@ is($?, STATE_UNKNOWN, 'check_nrpe executes');
 like($output[0], qr/NRPE Plugin for Nagios/, 'check_nrpe banner');
 
 
-@output = `$nrpe --daemon --dont-chdir --config configs/missing.cfg`;
+@output = `$nrpe -d -C -c configs/missing.cfg`;
 is($?, STATE_CRITICAL, 'missing config') || diag @output;
 
 SKIP: {
     skip 'no SSL', 5 if ! supports_ssl();
 
-    @output = `$nrpe --daemon --dont-chdir --config configs/ssl-invalid.cfg`;
+    @output = `$nrpe -d -C -c configs/ssl-invalid.cfg`;
     is($?, STATE_CRITICAL, 'invalid ssl config 1') || diag @output;
-    @output = `$nrpe --daemon --dont-chdir --config configs/ssl-invalid2.cfg`;
+    @output = `$nrpe -d -C -c configs/ssl-invalid2.cfg`;
     is($?, STATE_CRITICAL, 'invalid ssl config 2') || diag @output;
-    @output = `$nrpe --daemon --dont-chdir --config configs/ssl-invalid3.cfg`;
+    @output = `$nrpe -d -C -c configs/ssl-invalid3.cfg`;
     is($?, STATE_CRITICAL, 'invalid ssl config 3') || diag @output;
-    @output = `$nrpe --daemon --dont-chdir --config configs/ssl-invalid4.cfg`;
+    @output = `$nrpe -d -C -c configs/ssl-invalid4.cfg`;
     is($?, STATE_CRITICAL, 'invalid ssl config 4') || diag @output;
-    @output = `$nrpe --daemon --dont-chdir --config configs/ssl-invalid5.cfg`;
+    @output = `$nrpe -d -C -c configs/ssl-invalid5.cfg`;
     is($?, STATE_CRITICAL, 'invalid ssl config 5') || diag @output;
 }
 

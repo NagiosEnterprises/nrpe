@@ -47,7 +47,7 @@ restart_daemon();
 is($?, STATE_OK, 'connection ipv6 only') || diag @output;
 like($output[0], qr/NRPE v.*/, 'connection ipv6 only response') || diag @output;
 
-@output = `$checknrpe -H 127.0.0.1 -p 40321 --stderr-to-stdout`;
+@output = `$checknrpe -H 127.0.0.1 -p 40321 -E`;
 is($?, STATE_CRITICAL, 'connection ipv4 on ipv6 only') || diag @output;
 like($output[0], qr/connect to .*: Connection refused/, 'connection ipv6 only response') || diag @output;
 

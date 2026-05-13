@@ -2971,7 +2971,7 @@ int process_arguments(int argc, char **argv)
 	if (argc < 2)
 		return ERROR;
 
-	snprintf(optchars, MAX_INPUT_BUFFER, "c:hVldi46nsf");
+	snprintf(optchars, MAX_INPUT_BUFFER, "c:hVldi46nsfC");
 
 	while (1) {
 #ifdef HAVE_GETOPT_LONG
