@@ -94,6 +94,7 @@ clean:
 	rm -f core nrpe check_nrpe generate_dh_params utils.o nrpe-ssl.o $(SNPRINTF_O) $(SSL_DH_HEADER)
 	rm -f *~ */*~
 	rm -rf nrpe.dSYM check_nrpe.dSYM
+	rm -f *.gcda *.gcno
 
 distclean: clean
 	rm -f Makefile

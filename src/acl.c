@@ -101,24 +101,6 @@ int isvalidchar(int c) {
 }
 
 /*
- * Get substring from allowed_hosts from s position to e position.
- */
-
-char * acl_substring(char *string, int s, int e) {
-    char *substring;
-    int len = e - s;
-
-        if (len < 0)
-                return NULL;
-
-    if ( (substring = malloc(len + 1)) == NULL)
-        return NULL;
-
-    memmove(substring, string + s, len + 1);
-    return substring;
-}
-
-/*
  * Add IPv4 host or network to IP ACL. IPv4 format is X.X.X.X[/X].
  * Host will be added to ACL only if it has passed IPv4 format check.
  *
@@ -568,6 +550,7 @@ int is_an_allowed_host(int family, void *host)
 								if (debug == TRUE)
 									logit(LOG_INFO, "is_an_allowed_host (AF_INET): "
 											"host is in allowed host list!");
+								freeaddrinfo(res);
 								return 1;
 							}
 							break;
@@ -586,12 +569,15 @@ int is_an_allowed_host(int family, void *host)
 								if (debug == TRUE)
 									logit(LOG_INFO, "is_an_allowed_host (AF_INET6): "
 											"host is in allowed host list!");
+								freeaddrinfo(res);
 								return 1;
 							}
 							break;
 					}
 				}
 			}
+
+			freeaddrinfo(res);
 		}
 
 		dns_acl_curr = dns_acl_curr->next;

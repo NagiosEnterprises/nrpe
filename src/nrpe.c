@@ -71,47 +71,55 @@ int       rfc931_timeout=15;
 
 #define how_many(x,y) (((x)+((y)-1))/(y))
 
+
+/* Runtime variables */
 struct addrinfo *listen_addrs = NULL;
 int       listen_socks[MAX_LISTEN_SOCKS];
+int       num_listen_socks = 0;
 char      remote_host[MAX_HOST_ADDRESS_LENGTH];
 char     *macro_argv[MAX_COMMAND_ARGUMENTS];
-char      config_file[MAX_INPUT_BUFFER] = "nrpe.cfg";
-char      server_address[NI_MAXHOST] = "";
 char     *command_name = NULL;
+int       packet_ver = 0;
+int       wrote_pid_file = FALSE;
+int       sigrestart = FALSE;
+int       sigshutdown = FALSE;
+int       commands_running = 0;
+
+/* Command line configuration */
+char      config_file[MAX_INPUT_BUFFER] = "nrpe.cfg";
+int       show_help = FALSE;
+int       show_license = FALSE;
+int       show_version = FALSE;
+int       use_inetd = TRUE;
+int       use_src = FALSE;		/* Define parameter for SRC option */
+int       no_forking = FALSE;
+int       dont_chdir = FALSE;
+
+/* Config */
 int       log_facility = LOG_DAEMON;
+char      server_address[NI_MAXHOST] = "";
 int       server_port = DEFAULT_SERVER_PORT;
-int       num_listen_socks = 0;
 int       address_family = AF_UNSPEC;
 int       socket_timeout = DEFAULT_SOCKET_TIMEOUT;
 int       command_timeout = DEFAULT_COMMAND_TIMEOUT;
 int       connection_timeout = DEFAULT_CONNECTION_TIMEOUT;
 int       ssl_shutdown_timeout = DEFAULT_SSL_SHUTDOWN_TIMEOUT;
 char     *command_prefix = NULL;
-int       packet_ver = 0;
 command  *command_list = NULL;
 char     *nrpe_user = NULL;
 char     *nrpe_group = NULL;
 char     *allowed_hosts = NULL;
 char     *keep_env_vars = NULL;
 char     *pid_file = NULL;
-int       wrote_pid_file = FALSE;
 int       allow_arguments = FALSE;
 int       allow_bash_cmd_subst = FALSE;
 int       allow_weak_random_seed = FALSE;
-int       sigrestart = FALSE;
-int       sigshutdown = FALSE;
-int       show_help = FALSE;
-int       show_license = FALSE;
-int       show_version = FALSE;
-int       use_inetd = TRUE;
-int 	  commands_running = 0;
 int       max_commands = 0;
 int       debug = FALSE;
-int       use_src = FALSE;		/* Define parameter for SRC option */
-int       no_forking = FALSE;
 int       listen_queue_size = DEFAULT_LISTEN_QUEUE_SIZE;
 char     *nasty_metachars = NULL;
 extern char *log_file;
+int       disable_syslog = FALSE;
 
 
 SslParms sslprm = {
@@ -128,7 +136,49 @@ static void my_disconnect_sighandler(int sig);
 static void complete_SSL_shutdown(SSL *);
 #endif
 
-int disable_syslog = FALSE;
+static void free_commands(void);
+
+static void reset_config(void)
+{
+	address_family = AF_UNSPEC;
+	allow_arguments = FALSE;
+	allow_bash_cmd_subst = FALSE;
+	allow_weak_random_seed = FALSE;
+	command_timeout = DEFAULT_COMMAND_TIMEOUT;
+	connection_timeout = DEFAULT_CONNECTION_TIMEOUT;
+	debug = FALSE;
+	disable_syslog = FALSE;
+	listen_queue_size = DEFAULT_LISTEN_QUEUE_SIZE;
+	log_facility = LOG_DAEMON;
+	max_commands = 0;
+	server_port = DEFAULT_SERVER_PORT;
+	socket_timeout = DEFAULT_SOCKET_TIMEOUT;
+	ssl_shutdown_timeout = DEFAULT_SSL_SHUTDOWN_TIMEOUT;
+
+	memset(server_address, 0, sizeof(server_address));
+
+	free(allowed_hosts);
+	allowed_hosts = NULL;
+	free(command_prefix);
+	command_prefix = NULL;
+	free(keep_env_vars);
+	keep_env_vars = NULL;
+	free(log_file);
+	log_file = NULL;
+	free(nasty_metachars);
+	nasty_metachars = strdup(NASTY_METACHARS);
+
+	// These shouldn't change on restart. Maybe warn or abort if detected?
+//	nrpe_group = NULL;
+//	nrpe_user = NULL;
+//	pid_file = NULL;
+
+	free_commands();
+
+#ifdef HAVE_SSL
+	use_ssl = TRUE;
+#endif
+}
 
 int main(int argc, char **argv)
 {
@@ -194,8 +244,12 @@ int main(int argc, char **argv)
 		run_daemon();
 
 #ifdef HAVE_SSL
-	if (use_ssl == TRUE)
-		SSL_CTX_free(ctx);
+	if (use_ssl == TRUE) {
+		if (ctx) {
+			SSL_CTX_free(ctx);
+			ctx = NULL;
+		}
+	}
 #endif
 
 	/* We are now running in daemon mode, or the connection handed over by inetd has
@@ -205,14 +259,8 @@ int main(int argc, char **argv)
 
 int init(void)
 {
-	char     *env_string = NULL;
-	int       result = OK;
-
-	/* set some environment variables */
-	if (asprintf(&env_string, "NRPE_MULTILINESUPPORT=1") > 0)
-		putenv(env_string);
-	if (asprintf(&env_string, "NRPE_PROGRAMVERSION=%s", PROGRAM_VERSION) > 0)
-		putenv(env_string);
+	setenv("NRPE_MULTILINESUPPORT", "1", 1);
+	setenv("NRPE_PROGRAMVERSION", PROGRAM_VERSION, 1);
 
 	/* open a connection to the syslog facility */
 	/* facility name may be overridden later */
@@ -222,7 +270,7 @@ int init(void)
 	/* generate the CRC 32 table */
 	generate_crc32_table();
 
-	return result;
+	return OK;
 }
 
 void init_ssl(void)
@@ -314,6 +362,29 @@ void init_ssl(void)
 
 	ssl_set_protocol_version(sslprm.ssl_proto_ver, &ssl_opts);
 	SSL_CTX_set_options(ctx, ssl_opts);
+
+	if (sslprm.allowDH && sslprm.cert_file == 0) {
+		/* If we allow ADH and we don't have a certificate, we need to limit the protocol to below TLSv1.3 as it
+		 * doesn't have support for any ADH cipher suites. OpenSSL will fall back to TLSv1.2 automatically however
+		 * LibreSSL will not.
+		 */
+		int limited = 0;
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+		int max_ver = SSL_CTX_get_max_proto_version(ctx);
+		if (max_ver == 0 || max_ver > TLS1_2_VERSION) {
+			SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
+			limited = 1;
+		}
+#elif defined(SSL_OP_NO_TLSv1_3)
+		if ((ssl_opts & SSL_OP_NO_TLSv1_3) == 0) {
+			ssl_opts |= SSL_OP_NO_TLSv1_3;
+			limited = 1;
+		}
+#endif
+		if (limited)
+			logit(LOG_WARNING, "WARN: Limiting SSL/TLS version to v1.2 to support ADH");
+	}
 
 	if (!ssl_load_certificates()) {
 		SSL_CTX_free(ctx);
@@ -494,9 +565,11 @@ void set_stdio_sigs(void)
 	struct sigaction sig_action;
 #endif
 
-	if (chdir("/") == -1) {
-		printf("ERROR: chdir(): %s, bailing out...\n", strerror(errno));
-		exit(STATE_CRITICAL);
+	if (!dont_chdir) {
+		if (chdir("/") == -1) {
+			printf("ERROR: chdir(): %s, bailing out...\n", strerror(errno));
+			exit(STATE_CRITICAL);
+		}
 	}
 
 	close(0);					/* close standard file descriptors */
@@ -515,10 +588,14 @@ void set_stdio_sigs(void)
 	sigaction(SIGQUIT, &sig_action, NULL);
 	sigaction(SIGTERM, &sig_action, NULL);
 	sigaction(SIGHUP, &sig_action, NULL);
+
+	sig_action.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sig_action, NULL);
 #else	 /* HAVE_SIGACTION */
 	signal(SIGQUIT, sighandler);
 	signal(SIGTERM, sighandler);
 	signal(SIGHUP, sighandler);
+	signal(SIGPIPE, SIG_IGN);
 #endif	 /* HAVE_SIGACTION */
 
 	logit(LOG_NOTICE, "Starting up daemon");	/* log info */
@@ -536,16 +613,27 @@ void cleanup(void)
 {
 	int       result;
 
-	free_memory();				/* free all memory we allocated */
+	free_commands();				/* free all memory we allocated */
 
 	if (sigrestart == TRUE && sigshutdown == FALSE) {
+#ifdef HAVE_SSL
+		if (use_ssl == TRUE) {
+			if (ctx) {
+				SSL_CTX_free(ctx);
+				ctx = NULL;
+			}
+		}
+#endif
 		close_log_file();
+		reset_config();
 		result = read_config_file(config_file);	/* read the config file */
 
 		if (result == ERROR) {	/* exit if there are errors... */
 			logit(LOG_ERR, "Config file '%s' contained errors, bailing out...", config_file);
 			exit(STATE_CRITICAL);
 		}
+
+		init_ssl();
 		return;
 	}
 
@@ -715,6 +803,19 @@ int read_config_file(char *filename)
 					   filename, line);
 				return ERROR;
 			}
+		} else if (!strcmp(varname, "address_family")) {
+			if (!strcmp(varvalue, "any") || !strcmp(varvalue, "both"))
+				address_family = AF_UNSPEC;
+			else if (!strcmp(varvalue, "4"))
+				address_family = AF_INET;
+			else if (!strcmp(varvalue, "6"))
+				address_family = AF_INET6;
+			else {
+				logit(LOG_ERR,
+					   "Invalid address family specified in config file '%s' - Line %d\n",
+					   filename, line);
+				return ERROR;
+			}
 
 		} else if (!strcmp(varname, "command_prefix")) {
 			free(command_prefix);
@@ -807,6 +908,10 @@ int read_config_file(char *filename)
 				return ERROR;
 			}
 
+		} else if (!strcmp(varname, "ssl_enabled")) {
+#ifdef HAVE_SSL
+			use_ssl = (atoi(varvalue) == 1) ? TRUE : FALSE;
+#endif
 		} else if (!strcmp(varname, "ssl_version")) {
 			if (!strcmp(varvalue, "TLSv1.3"))
 				sslprm.ssl_proto_ver = TLSv1_3;
@@ -894,10 +999,11 @@ int read_config_file(char *filename)
 			free(keep_env_vars);
 			keep_env_vars = strdup(varvalue);
 
-		} else if (!strcmp(varname, "nasty_metachars"))
+		} else if (!strcmp(varname, "nasty_metachars")) {
+			free(nasty_metachars);
 			nasty_metachars = process_metachars(varvalue);
 
-		else if (!strcmp(varname, "log_file")) {
+		} else if (!strcmp(varname, "log_file")) {
 			free(log_file);
 			log_file = strdup(varvalue);
 			open_log_file();
@@ -916,22 +1022,32 @@ int read_config_file(char *filename)
 /* process all config files in a specific config directory (with directory recursion) */
 int read_config_dir(char *dirname)
 {
-	struct dirent *dirfile;
-#ifdef HAVE_SCANDIR
-	struct dirent **dirfiles;
-	int       x, i, n;
+#if defined(HAVE_SCANDIR64) || defined(HAVE_SCANDIR)
+#if defined(HAVE_SCANDIR64)
+	struct dirent64 **dirfiles;
+	struct dirent64 *dirfile;
 #else
-	DIR      *dirp;
-	int       x;
+	struct dirent **dirfiles;
+	struct dirent *dirfile;
+#endif
+	int i, n;
+
+#else // opendir
+	DIR				*dirp;
+	struct dirent	*dirfile;
 #endif
 	struct stat buf;
 	char      config_file[MAX_FILENAME_LENGTH];
 	int       result = OK;
-	int rc;
+	int x, rc;
 
-#ifdef HAVE_SCANDIR
+#if defined(HAVE_SCANDIR64) || defined(HAVE_SCANDIR)
 	/* read and sort the directory contents */
+#if defined(HAVE_SCANDIR64)
+	n = scandir64(dirname, &dirfiles, 0, alphasort64);
+#else
 	n = scandir(dirname, &dirfiles, 0, alphasort);
+#endif
 	if (n < 0) {
 		logit(LOG_ERR, "Could not open config directory '%s' for reading.\n", dirname);
 		return ERROR;
@@ -985,7 +1101,7 @@ int read_config_dir(char *dirname)
 		}
 	}
 
-#ifdef HAVE_SCANDIR
+#if defined(HAVE_SCANDIR64) || defined(HAVE_SCANDIR)
 	for (i = 0; i < n; i++)
 		free(dirfiles[i]);
 	free(dirfiles);
@@ -1094,6 +1210,27 @@ command  *find_command(char *command_name)
 	return NULL;
 }
 
+void free_commands(void)
+{
+	command  *this_command;
+	command  *next_command;
+
+	/* free memory for the command list */
+	this_command = command_list;
+	while (this_command != NULL) {
+		next_command = this_command->next;
+		if (this_command->command_name)
+			free(this_command->command_name);
+		if (this_command->command_line)
+			free(this_command->command_line);
+		free(this_command);
+		this_command = next_command;
+	}
+
+	command_list = NULL;
+	return;
+}
+
 /* Start listen on a particular port */
 void create_listener(struct addrinfo *ai)
 {
@@ -1163,12 +1300,12 @@ void create_listener(struct addrinfo *ai)
 /* Close all listening sockets */
 static void close_listen_socks(void)
 {
-	int       i;
+	int i;
 
-	for (i = 0; i <= num_listen_socks; i++) {
+	for (i = 0; i < num_listen_socks; i++) {
 		close(listen_socks[i]);
-		num_listen_socks--;
 	}
+	num_listen_socks = 0;
 }
 
 /* wait for incoming connection requests */
@@ -1245,6 +1382,9 @@ void wait_for_connections(void)
 				break;			/* else handle the error later */
 			}
 
+			/* ensure socket is non-blocking & close on exec */
+			fcntl(new_sd, F_SETFD, fcntl(new_sd, F_GETFD) | FD_CLOEXEC);
+			fcntl(new_sd, F_SETFL, fcntl(new_sd, F_GETFL) | O_NONBLOCK);
 
 			rc = wait_conn_fork(new_sd);
 			if (rc == TRUE)
@@ -1407,6 +1547,7 @@ void conn_check_peer(int sock)
 
 	char      ipstr[INET6_ADDRSTRLEN];
 	socklen_t addrlen;
+	int       remote_port = 0;
 	int       rc;
 
 	/* find out who just connected... */
@@ -1433,6 +1574,7 @@ void conn_check_peer(int sock)
 		nptr = (struct sockaddr_in *)&addr;
 		strncpy(remote_host, inet_ntoa(nptr->sin_addr), sizeof(remote_host) - 1);
 		remote_host[MAX_HOST_ADDRESS_LENGTH - 1] = '\0';
+		remote_port = ntohs(nptr->sin_port);
 		break;
 
 	case AF_INET6:
@@ -1443,12 +1585,13 @@ void conn_check_peer(int sock)
 		}
 		strncpy(remote_host, ipstr, sizeof(remote_host) - 1);
 		remote_host[MAX_HOST_ADDRESS_LENGTH - 1] = '\0';
+		remote_port = ntohs(nptr6->sin6_port);
 		break;
 	}
 
 	if (debug == TRUE)
 		logit(LOG_INFO, "CONN_CHECK_PEER: checking if host is allowed: %s port %d\n",
-			 remote_host, nptr->sin_port);
+			 remote_host, remote_port);
 
 	/* is this host allowed? */
 	if (allowed_hosts) {
@@ -1461,7 +1604,7 @@ void conn_check_peer(int sock)
 		case AF_INET:
 			/* log info */
 			if (debug == TRUE || (sslprm.log_opts & SSL_LogIpAddr))
-				logit(LOG_DEBUG, "Connection from %s port %d", remote_host, nptr->sin_port);
+				logit(LOG_DEBUG, "Connection from %s port %d", remote_host, remote_port);
 
 			if (!is_an_allowed_host(AF_INET, (void *)&(nptr->sin_addr))) {
 				/* log error */
@@ -1487,10 +1630,8 @@ void conn_check_peer(int sock)
 
 		case AF_INET6:
 			/* log info */
-			strncpy(remote_host, ipstr, sizeof(remote_host));
-			remote_host[sizeof(remote_host) - 1] = '\0';
 			if (debug == TRUE || (sslprm.log_opts & SSL_LogIpAddr)) {
-				logit(LOG_DEBUG, "Connection from %s port %d", ipstr, nptr6->sin6_port);
+				logit(LOG_DEBUG, "Connection from %s port %d", remote_host, remote_port);
 			}
 
 			if (!is_an_allowed_host(AF_INET6, (void *)&(nptr6->sin6_addr))) {
@@ -1771,7 +1912,7 @@ void handle_connection(int sock)
 	bytes_to_send = pkt_size;
 #ifdef HAVE_SSL
 	if (use_ssl)
-		SSL_write(ssl, send_pkt, bytes_to_send);
+		ssl_sendall(ssl, send_pkt, bytes_to_send);
 	else
 #endif
 		sendall(sock, send_pkt, &bytes_to_send);
@@ -1793,29 +1934,6 @@ void handle_connection(int sock)
 	free(send_buff);
 
 	return;
-}
-
-void init_handle_conn(void)
-{
-#ifdef HAVE_SIGACTION
-	struct sigaction sig_action;
-#endif
-
-	/* log info */
-	if (debug == TRUE)
-		logit(LOG_DEBUG, "Handling the connection...");
-
-	/* set connection handler */
-#ifdef HAVE_SIGACTION
-	sig_action.sa_sigaction = NULL;
-	sig_action.sa_handler = my_connection_sighandler;
-	sigfillset(&sig_action.sa_mask);
-	sig_action.sa_flags = SA_NODEFER | SA_RESTART;
-	sigaction(SIGALRM, &sig_action, NULL);
-#else
-	signal(SIGALRM, my_connection_sighandler);
-#endif	 /* HAVE_SIGACTION */
-	alarm(connection_timeout);
 }
 
 #ifdef HAVE_SSL
@@ -1915,7 +2033,7 @@ int handle_conn_ssl(int sock, void *ssl_ptr)
 				logit(LOG_NOTICE, "SSL Client %s Cert Issuer: %s",
 					   remote_host, buffer);
 			}
-
+			X509_free(peer);
 		} else if (sslprm.client_certs == 0)
 			logit(LOG_NOTICE, "SSL Not asking for client certification");
 
@@ -1951,6 +2069,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			logit(LOG_ERR, "Error: (use_ssl == false): Request packet version was invalid!");
 			return -1;
 		}
+		if (debug)
+			logit(LOG_DEBUG, "Received v%i packet", packet_ver);
 
 		if (packet_ver == NRPE_PACKET_VERSION_2) {
 			buffer_size = sizeof(v2_packet) - common_size;
@@ -2004,28 +2124,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 	}
 	else {
 		SSL      *ssl = (SSL *) ssl_ptr;
-		int       sockfd, retval;
-		fd_set    rfds;
-		struct timeval timeout;
 
-		sockfd = SSL_get_fd(ssl);
-
-		FD_ZERO(&rfds);
-		FD_SET(sockfd, &rfds);
-
-		timeout.tv_sec = connection_timeout;
-		timeout.tv_usec = 0;
-
-		do {
-			retval = select(sockfd + 1, &rfds, NULL, NULL, &timeout);
-
-			if (retval > 0) {
-				rc = SSL_read(ssl, v2_pkt, bytes_to_recv);
-			} else {
-				logit(LOG_ERR, "Error (!log_opts): Could not complete SSL_read with %s: timeout %d seconds", remote_host, connection_timeout);
-				return -1;
-			}
-		} while (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ);
+		rc = ssl_recvall(ssl, (char *)v2_pkt, &tot_bytes, socket_timeout);
 
 		if (rc <= 0 || rc != bytes_to_recv)
 			return -1;
@@ -2035,6 +2135,8 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 			logit(LOG_ERR, "Error: (use_ssl == true): Request packet version was invalid!");
 			return -1;
 		}
+		if (debug)
+			logit(LOG_DEBUG, "Received v%i packet", packet_ver);
 
 		if (packet_ver == NRPE_PACKET_VERSION_2) {
 			buffer_size = sizeof(v2_packet) - common_size;
@@ -2050,9 +2152,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 
 			/* Read the alignment filler */
 			bytes_to_recv = sizeof(int16_t);
-			while (((rc = SSL_read(ssl, &buffer_size, bytes_to_recv)) <= 0)
-				   && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ)) {
-			}
+			rc = ssl_recvall(ssl, (char *)&buffer_size, &bytes_to_recv, socket_timeout);
 
 			if (rc <= 0 || bytes_to_recv != sizeof(int16_t))
 				return -1;
@@ -2060,9 +2160,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 
 			/* Read the buffer size */
 			bytes_to_recv = sizeof(buffer_size);
-			while (((rc = SSL_read(ssl, &buffer_size, bytes_to_recv)) <= 0)
-				   && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ)) {
-			}
+			rc = ssl_recvall(ssl, (char *)&buffer_size, &bytes_to_recv, socket_timeout);
 
 			if (rc <= 0 || bytes_to_recv != sizeof(buffer_size))
 				return -1;
@@ -2085,9 +2183,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 		}
 
 		bytes_to_recv = buffer_size;
-		while (((rc = SSL_read(ssl, buff_ptr, bytes_to_recv)) <= 0)
-			   && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ)) {
-		}
+		rc = ssl_recvall(ssl, buff_ptr, &bytes_to_recv, socket_timeout);
 
 		if (rc <= 0 || rc != buffer_size) {
 			if (packet_ver == NRPE_PACKET_VERSION_3) {
@@ -2103,27 +2199,6 @@ int read_packet(int sock, void *ssl_ptr, v2_packet * v2_pkt, v3_packet ** v3_pkt
 	return tot_bytes;
 }
 
-/* free all allocated memory */
-void free_memory(void)
-{
-	command  *this_command;
-	command  *next_command;
-
-	/* free memory for the command list */
-	this_command = command_list;
-	while (this_command != NULL) {
-		next_command = this_command->next;
-		if (this_command->command_name)
-			free(this_command->command_name);
-		if (this_command->command_line)
-			free(this_command->command_line);
-		free(this_command);
-		this_command = next_command;
-	}
-
-	command_list = NULL;
-	return;
-}
 
 static int my_system_parent(pid_t pid, int fd, int timeout, time_t start_time, int *early_timeout, char **output);
 static int my_system_child(const char *command, int timeout, int fd);
@@ -2418,14 +2493,6 @@ void my_system_sighandler(int sig)
 	/* try to kill any child processes in our group */
 	kill(0, SIGTERM);
 	exit(STATE_CRITICAL);		/* force the child process to exit... */
-}
-
-/* handle errors where connection takes too long */
-void my_connection_sighandler(int sig)
-{
-	(void)sig;
-	logit(LOG_ERR, "Connection has taken too long to establish. Exiting...");
-	exit(STATE_CRITICAL);
 }
 
 /* drops privileges */
@@ -2888,13 +2955,14 @@ int process_arguments(int argc, char **argv)
 		/* To compatibility between short and long options but not used on AIX */
 		{"src", no_argument, 0, 's'},
 		{"no-forking", no_argument, 0, 'f'},
-		{"4", no_argument, 0, '4'},
+		{"ipv4", no_argument, 0, '4'},
 		{"ipv6", no_argument, 0, '6'},
 		{"daemon", no_argument, 0, 'd'},
 		{"no-ssl", no_argument, 0, 'n'},
 		{"help", no_argument, 0, 'h'},
 		{"license", no_argument, 0, 'l'},
 		{"version", no_argument, 0, 'V'},
+		{"dont-chdir", no_argument, 0, 'C'},
 		{0, 0, 0, 0}
 	};
 #endif
@@ -2903,7 +2971,7 @@ int process_arguments(int argc, char **argv)
 	if (argc < 2)
 		return ERROR;
 
-	snprintf(optchars, MAX_INPUT_BUFFER, "c:hVldi46nsf");
+	snprintf(optchars, MAX_INPUT_BUFFER, "c:hVldi46nsfC");
 
 	while (1) {
 #ifdef HAVE_GETOPT_LONG
@@ -2969,6 +3037,10 @@ int process_arguments(int argc, char **argv)
 			use_inetd = FALSE;
 			no_forking = TRUE;
 			have_mode = TRUE;
+			break;
+
+		case 'C':
+			dont_chdir = TRUE;
 			break;
 
 		default:

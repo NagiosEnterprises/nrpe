@@ -44,4 +44,7 @@ void ssl_log_startup(int server);
 int ssl_load_certificates(void);
 int ssl_set_ciphers(void);
 int ssl_verify_callback_common(int preverify_ok, X509_STORE_CTX * ctx, int is_invalid);
+
+int ssl_recvall(SSL *ssl, char *buf, int *len, int timeout);
+int ssl_sendall(SSL *ssl, char *buf, int len);
 #endif

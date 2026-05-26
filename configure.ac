@@ -50,6 +50,9 @@ AC_SUBST(TARGET_OS)
 AC_SUBST(TARGET_ARCH)
 AC_SUBST(TARGET_PLATFORM)
 
+AC_USE_SYSTEM_EXTENSIONS
+AC_SYS_LARGEFILE
+
 dnl Figure out how to invoke "install" and what install options to use.
 AC_PROG_INSTALL
 
@@ -77,6 +80,7 @@ fi
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
 	src/Makefile
+	tests/Makefile
 	nrpe.spec
 	uninstall
 	sample-config/nrpe.cfg
@@ -100,6 +104,7 @@ AC_CONFIG_FILES([Makefile
 	startup/upstart-init
 	startup/rh-upstart-init
 	include/common.h
+	tests/misc.cfg
 ])
 
 dnl Checks for programs.
@@ -255,7 +260,7 @@ if test x$check_for_tcpd != xno; then
 	])
 fi
 
-AC_CHECK_FUNCS(strdup strstr strtoul strtok_r initgroups closesocket sigaction scandir)
+AC_CHECK_FUNCS(strdup strstr strtoul strtok_r initgroups closesocket sigaction scandir scandir64)
 
 dnl socklen_t check - from curl
 AC_CHECK_TYPE([socklen_t], ,[

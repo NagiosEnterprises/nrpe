@@ -56,7 +56,7 @@ struct sockaddr hostaddr;
 #endif
 int address_family = AF_UNSPEC;
 char *command_name = NULL;
-int socket_timeout = DEFAULT_SOCKET_TIMEOUT;
+int socket_timeout = -1; // after processing command line (including possible config file), this will be set to DEFAULT_SOCKET_TIMEOUT if unchanged;
 char timeout_txt[10];
 int timeout_return_code = -1;
 int stderr_to_stdout = 0;
@@ -114,8 +114,6 @@ int main(int argc, char **argv)
 	if (result != OK || show_help == TRUE || show_license == TRUE || show_version == TRUE)
 		usage(result);			/* usage() will call exit() */
 
-	snprintf(timeout_txt, sizeof(timeout_txt), "%d", socket_timeout);
-
 	if (server_port == 0)
 		server_port = DEFAULT_SERVER_PORT;
 	if (socket_timeout == -1)
@@ -132,6 +130,8 @@ int main(int argc, char **argv)
 		sslprm.ssl_proto_ver = TLSv1_plus;
 	if (sslprm.allowDH == -1)
 		sslprm.allowDH = TRUE;
+
+	snprintf(timeout_txt, sizeof(timeout_txt), "%d", socket_timeout);
 
 	generate_crc32_table();		/* generate the CRC 32 table */
 	setup_ssl();				/* Do all the SSL/TLS set up */
@@ -842,16 +842,18 @@ void set_sig_handlers(void)
 {
 #ifdef HAVE_SIGACTION
 	struct sigaction sig_action;
-#endif
 
-#ifdef HAVE_SIGACTION
 	sig_action.sa_sigaction = NULL;
 	sig_action.sa_handler = alarm_handler;
 	sigfillset(&sig_action.sa_mask);
 	sig_action.sa_flags = SA_NODEFER | SA_RESTART;
 	sigaction(SIGALRM, &sig_action, NULL);
+
+	sig_action.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sig_action, NULL);
 #else
 	signal(SIGALRM, alarm_handler);
+	signal(SIGPIPE, SIG_IGN);
 #endif	 /* HAVE_SIGACTION */
 
 	/* set socket timeout */
@@ -925,7 +927,7 @@ int connect_to_remote(void)
 		if (ssl_err == 5) {
 			/* Often, errno will be zero, so print a generic message here */
 			if (ern == 0)
-				printf("CHECK_NRPE: Error - Could not connect to %s. Check system logs on %s\n", rem_host, rem_host);
+				printf("CHECK_NRPE: Error - Could not connect to %s: Check system logs on %s\n", rem_host, rem_host);
 			else
 				printf("CHECK_NRPE: Error - Could not connect to %s: %s\n", rem_host, strerror(ern));
 		} else {
@@ -942,7 +944,8 @@ int connect_to_remote(void)
 		 */
 		ERR_print_errors_fp(stdout);
 # endif
-		result = timeout_return_code;
+		/* fb4bdfa says we should be returning UNKOWN to match the non-SSL case*/
+		result = STATE_UNKNOWN;
 
 	} else {
 
@@ -1056,16 +1059,11 @@ int send_request(void)
 	bytes_to_send = pkt_size;
 
 #ifdef HAVE_SSL
-	if (use_ssl == FALSE)
+	if (use_ssl)
+		rc = ssl_sendall(ssl, send_pkt, bytes_to_send);
+	else
 #endif
 		rc = sendall(sd, (char *)send_pkt, &bytes_to_send);
-#ifdef HAVE_SSL
-	else {
-		rc = SSL_write(ssl, send_pkt, bytes_to_send);
-		if (rc < 0)
-			rc = -1;
-	}
-#endif
 
 	if (v3_send_packet) {
 		free(v3_send_packet);
@@ -1091,7 +1089,7 @@ int read_response(void)
 	u_int32_t packet_crc32;
 	u_int32_t calculated_crc32;
 	int32_t pkt_size, buffer_size;
-	int rc, result;
+	int rc, result, ern;
 
 	alarm(0);
 	set_sig_handlers();
@@ -1101,6 +1099,7 @@ int read_response(void)
 #else
 	rc = read_packet(sd, NULL, &v2_receive_packet, &v3_receive_packet);
 #endif
+	ern = errno;
 
 	alarm(0);
 
@@ -1125,6 +1124,11 @@ int read_response(void)
 		if (packet_ver >= NRPE_PACKET_VERSION_3) {
 			return -1;
 		}
+		if (ern == 0)
+			printf("CHECK_NRPE: Error - Could not connect to %s: Check system logs on %s\n", rem_host, rem_host);
+		else
+			printf("CHECK_NRPE: Error - Could not connect to %s: %s\n", rem_host, strerror(ern));
+
 		return STATE_UNKNOWN;
 
 	} else if (rc == 0) {
@@ -1224,9 +1228,6 @@ int read_response(void)
 
 int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pkt)
 {
-#ifdef HAVE_SSL
-	int32_t bytes_read = 0;
-#endif
 	v2_packet	packet;
 	int32_t pkt_size, common_size, tot_bytes, bytes_to_recv, buffer_size;
 	int rc;
@@ -1242,9 +1243,9 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		rc = recvall(sock, (char *)&packet, &tot_bytes, socket_timeout);
 
 		if (rc <= 0 || rc != bytes_to_recv) {
-			if (rc < bytes_to_recv) {
+			if (rc > 0 && rc < bytes_to_recv) {
 				if (packet_ver <= NRPE_PACKET_VERSION_3)
-					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%zu expected).\n", rc, sizeof(bytes_to_recv));
+					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%ld expected).\n", rc, (long)bytes_to_recv);
 			}
 			return -1;
 		}
@@ -1320,7 +1321,7 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 				*v2_pkt = NULL;
 			}
 			if (rc < buffer_size)
-				printf("CHECK_NRPE: Receive underflow - only %d bytes received (%zu expected).\n", rc, sizeof(buffer_size));
+				printf("CHECK_NRPE: Receive underflow - only %d bytes received (%ld expected).\n", rc, (long)buffer_size);
 			return -1;
 		} else
 			tot_bytes += rc;
@@ -1329,14 +1330,12 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 	else {
 		SSL *ssl = (SSL *) ssl_ptr;
 
-		while (((rc = SSL_read(ssl, &packet, bytes_to_recv)) <= 0)
-			   && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ)) {
-		}
+		rc = ssl_recvall(ssl, (char *)&packet, &tot_bytes, socket_timeout);
 
 		if (rc <= 0 || rc != bytes_to_recv) {
-			if (rc < bytes_to_recv) {
+			if (rc > 0 && rc < bytes_to_recv) {
 				if (packet_ver < NRPE_PACKET_VERSION_3 || packet_ver > NRPE_PACKET_VERSION_4)
-					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%zu expected).\n", rc, sizeof(bytes_to_recv));
+					printf("CHECK_NRPE: Receive header underflow - only %d bytes received (%ld expected).\n", rc, (long)bytes_to_recv);
 			}
 			return -1;
 		}
@@ -1371,20 +1370,14 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 
 			/* Read the alignment filler */
 			bytes_to_recv = sizeof(int16_t);
-			while (((rc = SSL_read(ssl, &buffer_size, bytes_to_recv)) <= 0)
-				   && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ)) {
-			}
-
+			rc = ssl_recvall(ssl, (char *)&buffer_size, &bytes_to_recv, socket_timeout);
 			if (rc <= 0 || bytes_to_recv != sizeof(int16_t))
 				return -1;
 			tot_bytes += rc;
 
 			/* Read the buffer size */
 			bytes_to_recv = sizeof(buffer_size);
-			while (((rc = SSL_read(ssl, &buffer_size, bytes_to_recv)) <= 0)
-				   && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ)) {
-			}
-
+			rc = ssl_recvall(ssl, (char *)&buffer_size, &bytes_to_recv, socket_timeout);
 			if (rc <= 0 || bytes_to_recv != sizeof(buffer_size))
 				return -1;
 			tot_bytes += rc;
@@ -1406,19 +1399,9 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 		}
 
 		bytes_to_recv = buffer_size;
-		for (;;) {
-			while (((rc = SSL_read(ssl, &buff_ptr[bytes_read], bytes_to_recv)) <= 0)
-				   && (SSL_get_error(ssl, rc) == SSL_ERROR_WANT_READ)) {
-			}
+		rc = ssl_recvall(ssl, buff_ptr, &bytes_to_recv, socket_timeout);
 
-			if (rc <= 0)
-				break;
-			bytes_read += rc;
-			bytes_to_recv -= rc;
-			tot_bytes += rc;
-		}
-
-		if (rc < 0 || bytes_read != buffer_size) {
+		if (rc <= 0 || rc != buffer_size) {
 			if (packet_ver >= NRPE_PACKET_VERSION_3) {
 				free(*v3_pkt);
 				*v3_pkt = NULL;
@@ -1426,11 +1409,11 @@ int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pk
 				free(*v2_pkt);
 				*v2_pkt = NULL;
 			}
-			if (bytes_read != buffer_size) {
+			if (rc > 0 && rc < buffer_size) {
 				if (packet_ver >= NRPE_PACKET_VERSION_3) {
-					printf("CHECK_NRPE: Receive buffer size - %ld bytes received (%zu expected).\n", (long)bytes_read, sizeof(buffer_size));
+					printf("CHECK_NRPE: Receive buffer size - %ld bytes received (%ld expected).\n", (long)rc, (long)buffer_size);
 				} else {
-					printf("CHECK_NRPE: Receive underflow - only %ld bytes received (%zu expected).\n", (long)bytes_read, sizeof(buffer_size));
+					printf("CHECK_NRPE: Receive underflow - only %ld bytes received (%ld expected).\n", (long)rc, (long)buffer_size);
 				}
 			}
 			return -1;

@@ -41,3 +41,16 @@ startup/solaris-init.xml
 startup/tmpfile.conf
 startup/upstart-init
 
+# Visual Studio Code IDE
+.vscode
+
+# gcov coverage files
+*.gcno
+*.gcda
+nrpe.info-file
+coverage-report/
+
+tests/logs
+tests/run
+tests/nrpe.cfg
+tests/misc.cfg

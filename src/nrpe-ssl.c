@@ -266,7 +266,7 @@ int ssl_verify_callback_common(int preverify_ok, X509_STORE_CTX * ctx, int is_in
 	X509 *err_cert;
 	int err;
 
-	if (preverify_ok || ((sslprm.log_opts & SSL_LogCertDetails) == 0))
+	if (preverify_ok && ((sslprm.log_opts & SSL_LogCertDetails) == 0))
 		return preverify_ok;
 
 	if (is_invalid || sslprm.log_opts & SSL_LogCertDetails) {
@@ -284,4 +284,141 @@ int ssl_verify_callback_common(int preverify_ok, X509_STORE_CTX * ctx, int is_in
 	}
 
 	return preverify_ok;
+}
+
+
+int ssl_recvall(SSL *ssl, char *buf, int *len, int timeout)
+{
+	time_t start_time;
+	time_t current_time;
+	int total = 0;
+	int bytesleft = *len;
+	int n = 0;
+	int fd = SSL_get_fd(ssl);
+
+	time(&start_time);
+
+	while (total < *len) {
+		int ern;
+		int ssl_err;
+		unsigned long x;
+
+		n = SSL_read(ssl, buf + total, bytesleft);
+		if (n > 0) {
+			// Success. Adjust and keep going
+			total += n;
+			bytesleft -= n;
+			continue;
+		}
+
+		ern = errno;
+		ssl_err = SSL_get_error(ssl, n);
+
+		if (ssl_err == SSL_ERROR_WANT_READ) {
+			int rc;
+			fd_set rfds;
+			struct timeval tv;
+
+			FD_ZERO(&rfds);
+			FD_SET(fd, &rfds);
+
+			tv.tv_sec = 2;
+			tv.tv_usec = 0;
+
+			rc = select(fd + 1, &rfds, NULL, NULL, &tv);
+			if (rc == -1) {
+				logit(LOG_ERR, "ERROR: ssl_recvall() select failed (errno=%i)", errno);
+				break;
+			}
+
+			if (rc == 0) {
+				// Timed out
+				time(&current_time);
+				if (current_time - start_time > timeout) {
+					logit(LOG_ERR, "ERROR: ssl_recvall() timed out");
+					break;
+				}
+			}
+
+			// we've either timed out or our fd should be ready for more data
+			continue;
+		}
+
+		logit(LOG_ERR, "ERROR: Error reading data! (rc=%i, errno=%i, ssl=%i)", n, ern, ssl_err);
+		while ((x = ERR_get_error()) != 0) {
+			logit(LOG_ERR, "     : %s", ERR_reason_error_string(x));
+		}
+
+		return -1;
+	}
+
+	/* return number of bytes actually received here */
+	*len = total;
+
+	/* return <=0 on failure, bytes received on success */
+	return (n <= 0) ? n : total;
+}
+
+int ssl_sendall(SSL *ssl, char *buf, int len)
+{
+	int total = 0;
+	int bytesleft = len;
+	int n = 0;
+	int timeouts = 0;
+	int fd = SSL_get_fd(ssl);
+
+	while (total < len) {
+		int ern;
+		int ssl_err;
+		unsigned long x;
+
+		n = SSL_write(ssl, buf + total, bytesleft);
+		if (n > 0) {
+			// Success. Adjust and keep going
+			total += n;
+			bytesleft -= n;
+			continue;
+		}
+
+		ern = errno;
+		ssl_err = SSL_get_error(ssl, n);
+
+		if (ssl_err == SSL_ERROR_WANT_WRITE) {
+			int rc;
+			fd_set wfds;
+			struct timeval tv;
+
+			FD_ZERO(&wfds);
+			FD_SET(fd, &wfds);
+
+			tv.tv_sec = 2;
+			tv.tv_usec = 0;
+
+			rc = select(fd + 1, NULL, &wfds, NULL, &tv);
+			if (rc == -1) {
+				logit(LOG_ERR, "ERROR: ssl_sendall() select failed (errno=%i)", errno);
+				break;
+			}
+
+			if (rc == 0) {
+				// Timed out
+				if (++timeouts > 5) {
+					logit(LOG_ERR, "ERROR: ssl_sendall() timed out");
+					break;
+				}
+			}
+
+			// we've either timed out or our fd should be ready for more data
+			continue;
+		}
+
+		logit(LOG_ERR, "ERROR: Error sending data! (rc=%i, errno=%i, ssl=%i)", n, ern, ssl_err);
+		while ((x = ERR_get_error()) != 0) {
+			logit(LOG_ERR, "     : %s", ERR_reason_error_string(x));
+		}
+
+		return -1;
+	}
+
+	return (total == len) ? 0 : -1;	/* return -1 on failure, 0 on success */
 }
