@@ -1,5 +1,24 @@
 NRPE Changelog
 ==============
+[4.2.0](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.2.0) - 2026-xx-xx
+------------------
+**ENHANCEMENTS**
+- Added testing and code coverage reporting (Doug Nazar)
+- Added config option to toggle between IPv4/IPv6 (Doug Nazar)
+- Added config option to enable or diasbale SSL/TLS (Doug Nazar)
+
+**FIXES**
+- Fixed compilation without OpenSSL engine.h (Emmett Kapsner)
+- Fixed various warnings when building with -Wall (Doug Nazar)
+- Fixed compilation on AIX and Solaris (Doug Nazar)
+- Fixed various memory leaks (Doug Nazar)
+- Fixed debug display of ACL IP addresses (Doug Nazar)
+- Fixed my_system() buffer error (Doug Nazar)
+- Fixed an issue where Makefile would always make all (Doug Nazar)
+- Fixed an issue where utils.c would be compiled twice (Doug Nazar)
+
+
+
 [4.1.3](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.1.3) - 2024-12-10
 ------------------
 **FIXES**
