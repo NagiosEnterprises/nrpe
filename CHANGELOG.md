@@ -5,7 +5,7 @@ NRPE Changelog
 **ENHANCEMENTS**
 - Added testing and code coverage reporting (Doug Nazar)
 - Added config option to toggle between IPv4/IPv6 (Doug Nazar)
-- Added config option to enable or diasbale SSL/TLS (Doug Nazar)
+- Added config option to enable or disable SSL/TLS (Doug Nazar)
 
 **FIXES**
 - Fixed compilation without OpenSSL engine.h (Emmett Kapsner)
