@@ -162,6 +162,14 @@ int add_ipv4_to_acl(char *ipv4) {
                 case '0': case '1': case '2': case '3': case '4':
                 case '5': case '6': case '7': case '8': case '9':
                         octet = octet * 10 + CHAR_TO_NUMBER(c);
+                        if (octet > 255) {
+                                /* reject octets >255 here - continuing to
+                                   accumulate would overflow int and wrap
+                                   to a small value, silently accepting a
+                                   different address than configured */
+                                state = -1;
+                                break;
+                        }
                         switch (state) {
                         case 0: case 2: case 4: case 6: case 8:
                                 state++;
