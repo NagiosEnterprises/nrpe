@@ -2780,7 +2780,7 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 
 	/* make sure buffer is terminated */
 	if (packet_ver >= NRPE_PACKET_VERSION_3) {
-		int32_t   l = ntohs(v3pkt->buffer_length);
+		int32_t   l = ntohl(v3pkt->buffer_length);
 		v3pkt->buffer[l - 1] = '\x0';
 		buff = v3pkt->buffer;
 	} else {
