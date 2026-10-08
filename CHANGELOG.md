@@ -1,6 +1,6 @@
 NRPE Changelog
 ==============
-[4.2.0](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.2.0) - 2026-xx-xx
+[4.2.0](https://github.com/NagiosEnterprises/nrpe/releases/tag/nrpe-4.2.0) - 2026-10-21
 ------------------
 **ENHANCEMENTS**
 - Added testing and code coverage reporting (Doug Nazar)
