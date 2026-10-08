@@ -2823,6 +2823,10 @@ int validate_request(v2_packet * v2pkt, v3_packet * v3pkt)
 #else
 	ptr = buff;
 #endif
+	if (ptr == NULL) {
+		logit(LOG_ERR, "Error: Request contained no command name!");
+		return ERROR;
+	}
 	command_name = strdup(ptr);
 	if (command_name == NULL) {
 		logit(LOG_ERR, "Error: Memory allocation failed");
