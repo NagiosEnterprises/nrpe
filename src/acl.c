@@ -162,6 +162,14 @@ int add_ipv4_to_acl(char *ipv4) {
                 case '0': case '1': case '2': case '3': case '4':
                 case '5': case '6': case '7': case '8': case '9':
                         octet = octet * 10 + CHAR_TO_NUMBER(c);
+                        if (octet > 255) {
+                                /* reject octets >255 here - continuing to
+                                   accumulate would overflow int and wrap
+                                   to a small value, silently accepting a
+                                   different address than configured */
+                                state = -1;
+                                break;
+                        }
                         switch (state) {
                         case 0: case 2: case 4: case 6: case 8:
                                 state++;
@@ -221,9 +229,13 @@ int add_ipv4_to_acl(char *ipv4) {
                 return 0;
         }
 
-        /* Convert ip and mask to unsigned long */
-        ip = htonl((data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3]);
-        mask =  htonl(~0u << (32 - data[4]));
+        /* Convert ip and mask to unsigned long - the shifts are done in
+           unsigned arithmetic: a first octet >= 128 would otherwise
+           overflow a signed-int shift into the sign bit (UB) */
+        ip = htonl(((unsigned int) data[0] << 24) +
+                   ((unsigned int) data[1] << 16) +
+                   ((unsigned int) data[2] << 8) + (unsigned int) data[3]);
+        mask = (data[4] == 0) ? 0 : htonl(~0u << (32 - data[4]));
 
         /* Wrong network address */
         if ( (ip & mask) != ip) {
