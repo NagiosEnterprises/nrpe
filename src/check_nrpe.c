@@ -1197,6 +1197,8 @@ int read_response(void)
 		if (v3_receive_packet->buffer_length == 0) {
 			printf("CHECK_NRPE: No output returned from daemon.\n");
 		} else {
+			int32_t   l = ntohl(v3_receive_packet->buffer_length);
+			v3_receive_packet->buffer[l - 1] = '\x0';
 			printf("%s\n", v3_receive_packet->buffer);
 		}
 	} else {
